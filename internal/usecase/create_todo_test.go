@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	domainentities "github.com/endge-lab/service-template-go/internal/domain/entities"
-	domainerrors "github.com/endge-lab/service-template-go/internal/domain/errors"
+	domainentities "github.com/endge-lab/service-backend/internal/domain/entities"
+	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )

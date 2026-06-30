@@ -1,6 +1,6 @@
-# Endge Service Template Go
+# Endge Service Backend
 
-`service-template-go` — пример Go-сервиса, который показывает, как подключать `github.com/endge-lab/service-kit-go` и строить backend с HTTP API, PostgreSQL, миграциями и чистыми слоями.
+`service-backend` — пример Go-сервиса, который показывает, как подключать `github.com/endge-lab/service-kit-go` и строить backend с HTTP API, PostgreSQL, миграциями и чистыми слоями.
 
 Шаблон по умолчанию подходит для простого монолита/API:
 
@@ -24,7 +24,7 @@
    module github.com/your-org/your-service
    ```
 
-3. Замените импорты `github.com/endge-lab/service-template-go/internal/...` на module path нового сервиса.
+3. Замените импорты `github.com/endge-lab/service-backend/internal/...` на module path нового сервиса.
 4. Скопируйте env-файл:
 
    ```bash
@@ -53,17 +53,17 @@
 ```text
 workspace/
 ├── service-kit-go/
-└── service-template-go/
+└── service-backend/
 ```
 
 Команда:
 
 ```bash
 cd workspace
-go work init ./service-kit-go ./service-template-go
+go work init ./service-kit-go ./service-backend
 ```
 
-В `service-template-go/go.mod` при этом остаётся обычная published-зависимость:
+В `service-backend/go.mod` при этом остаётся обычная published-зависимость:
 
 ```go
 require github.com/endge-lab/service-kit-go v0.1.0

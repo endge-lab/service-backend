@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/endge-lab/service-template-go/internal/util"
+	"github.com/endge-lab/service-backend/internal/util"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"

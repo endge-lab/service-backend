@@ -4,12 +4,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/endge-lab/service-template-go/internal/config"
-	domainerrors "github.com/endge-lab/service-template-go/internal/domain/errors"
-	"github.com/endge-lab/service-template-go/internal/middleware"
-	"github.com/endge-lab/service-template-go/internal/usecase"
-	"github.com/endge-lab/service-template-go/internal/util"
-	appvalidator "github.com/endge-lab/service-template-go/internal/validator"
+	"github.com/endge-lab/service-backend/internal/config"
+	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/middleware"
+	"github.com/endge-lab/service-backend/internal/usecase"
+	"github.com/endge-lab/service-backend/internal/util"
+	appvalidator "github.com/endge-lab/service-backend/internal/validator"
 
 	otelfiber "github.com/gofiber/contrib/otelfiber/v2"
 	"github.com/gofiber/fiber/v2"

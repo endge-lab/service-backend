@@ -3,7 +3,7 @@ package http
 import (
 	"time"
 
-	"github.com/endge-lab/service-template-go/internal/usecase"
+	"github.com/endge-lab/service-backend/internal/usecase"
 )
 
 type SessionResponse struct {

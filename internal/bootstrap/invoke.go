@@ -1,7 +1,7 @@
 package bootstrap
 
 import (
-	"github.com/endge-lab/service-template-go/internal/api/http"
+	"github.com/endge-lab/service-backend/internal/api/http"
 
 	"go.uber.org/fx"
 )

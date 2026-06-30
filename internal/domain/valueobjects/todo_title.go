@@ -3,7 +3,7 @@ package valueobjects
 import (
 	"strings"
 
-	domainerrors "github.com/endge-lab/service-template-go/internal/domain/errors"
+	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 )
 
 const todoTitleMaxLength = 160

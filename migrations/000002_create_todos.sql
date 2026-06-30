@@ -1,3 +1,4 @@
+-- +goose Up
 CREATE TABLE IF NOT EXISTS todos (
   id UUID PRIMARY KEY,
   title TEXT NOT NULL,
@@ -5,3 +6,6 @@ CREATE TABLE IF NOT EXISTS todos (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- +goose Down
+DROP TABLE IF EXISTS todos;

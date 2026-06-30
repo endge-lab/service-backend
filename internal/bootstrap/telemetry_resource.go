@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"context"
 
-	"github.com/endge-lab/service-template-go/internal/config"
+	"github.com/endge-lab/service-backend/internal/config"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"

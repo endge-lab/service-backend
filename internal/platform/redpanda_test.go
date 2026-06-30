@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/endge-lab/service-template-go/internal/config"
+	"github.com/endge-lab/service-backend/internal/config"
 
 	"go.uber.org/zap"
 )

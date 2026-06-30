@@ -1,10 +1,10 @@
 # CHANGELOG
 
-Краткий changelog для `service-template-go`.
+Краткий changelog для `service-backend`.
 
 ## 0.1.0
 
-- Подготовлен публичный Go module `github.com/endge-lab/service-template-go`.
+- Подготовлен публичный Go module `github.com/endge-lab/service-backend`.
 - Шаблон переведен на зависимость `github.com/endge-lab/service-kit-go v0.1.0`.
 - Удален `package.json`: версия Go-сервиса задается git tag-ами и `CHANGELOG.md`.
 - Добавлена инструкция на русском по публикации, локальному `go.work` и подключению kit из локальной папки.

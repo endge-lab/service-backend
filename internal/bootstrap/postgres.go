@@ -1,8 +1,8 @@
 package bootstrap
 
 import (
-	"github.com/endge-lab/service-template-go/internal/config"
-	"github.com/endge-lab/service-template-go/internal/platform"
+	"github.com/endge-lab/service-backend/internal/config"
+	"github.com/endge-lab/service-backend/internal/platform"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/fx"

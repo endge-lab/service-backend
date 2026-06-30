@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/endge-lab/service-template-go/internal/domain/entities"
-	domainerrors "github.com/endge-lab/service-template-go/internal/domain/errors"
-	"github.com/endge-lab/service-template-go/internal/ports"
+	"github.com/endge-lab/service-backend/internal/domain/entities"
+	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/ports"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"

@@ -4,10 +4,10 @@ import (
 	"context"
 	"strings"
 
-	"github.com/endge-lab/service-template-go/internal/domain/entities"
-	domainerrors "github.com/endge-lab/service-template-go/internal/domain/errors"
-	"github.com/endge-lab/service-template-go/internal/ports"
-	"github.com/endge-lab/service-template-go/internal/util"
+	"github.com/endge-lab/service-backend/internal/domain/entities"
+	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/ports"
+	"github.com/endge-lab/service-backend/internal/util"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"

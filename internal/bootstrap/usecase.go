@@ -1,13 +1,13 @@
 package bootstrap
 
 import (
-	"github.com/endge-lab/service-template-go/internal/api/http"
-	"github.com/endge-lab/service-template-go/internal/auth"
-	"github.com/endge-lab/service-template-go/internal/middleware"
-	"github.com/endge-lab/service-template-go/internal/ports"
-	"github.com/endge-lab/service-template-go/internal/repo/postgres"
-	"github.com/endge-lab/service-template-go/internal/services"
-	"github.com/endge-lab/service-template-go/internal/usecase"
+	"github.com/endge-lab/service-backend/internal/api/http"
+	"github.com/endge-lab/service-backend/internal/auth"
+	"github.com/endge-lab/service-backend/internal/middleware"
+	"github.com/endge-lab/service-backend/internal/ports"
+	"github.com/endge-lab/service-backend/internal/repo/postgres"
+	"github.com/endge-lab/service-backend/internal/services"
+	"github.com/endge-lab/service-backend/internal/usecase"
 
 	"go.uber.org/fx"
 )

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/endge-lab/service-template-go/internal/config"
+	"github.com/endge-lab/service-backend/internal/config"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/fx"

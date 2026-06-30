@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/endge-lab/service-template-go/internal/domain/entities"
-	"github.com/endge-lab/service-template-go/internal/domain/valueobjects"
-	"github.com/endge-lab/service-template-go/internal/util"
+	"github.com/endge-lab/service-backend/internal/domain/entities"
+	"github.com/endge-lab/service-backend/internal/domain/valueobjects"
+	"github.com/endge-lab/service-backend/internal/util"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"

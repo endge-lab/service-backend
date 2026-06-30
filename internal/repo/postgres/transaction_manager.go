@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/endge-lab/service-template-go/internal/util"
+	"github.com/endge-lab/service-backend/internal/util"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"

@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/endge-lab/service-template-go/internal/config"
+	"github.com/endge-lab/service-backend/internal/config"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"

@@ -3,7 +3,7 @@ package http
 import (
 	"time"
 
-	"github.com/endge-lab/service-template-go/internal/domain/entities"
+	"github.com/endge-lab/service-backend/internal/domain/entities"
 )
 
 // CreateTodoRequest contains the external payload for creating a Todo task.

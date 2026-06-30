@@ -3,9 +3,9 @@ package postgres
 import (
 	"context"
 
-	"github.com/endge-lab/service-template-go/internal/domain/entities"
-	domainerrors "github.com/endge-lab/service-template-go/internal/domain/errors"
-	"github.com/endge-lab/service-template-go/internal/util"
+	"github.com/endge-lab/service-backend/internal/domain/entities"
+	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/util"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel/attribute"

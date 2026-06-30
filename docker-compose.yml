@@ -1,6 +1,6 @@
 services:
-  service-template-go:
-    container_name: service-template-go
+  service-backend:
+    container_name: service-backend
     build:
       context: .
       dockerfile: Dockerfile
@@ -12,10 +12,10 @@ services:
     networks:
       edge:
         aliases:
-          - service-template-go.internal
+          - service-backend.internal
       observability:
         aliases:
-          - service-template-go.observability
+          - service-backend.observability
 
 networks:
   edge:

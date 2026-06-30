@@ -1,8 +1,8 @@
 package auth
 
 import (
+	"github.com/endge-lab/service-backend/internal/config"
 	serviceauth "github.com/endge-lab/service-kit-go/auth"
-	"github.com/endge-lab/service-template-go/internal/config"
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"

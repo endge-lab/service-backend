@@ -1,8 +1,8 @@
 package bootstrap
 
 import (
-	"github.com/endge-lab/service-template-go/internal/config"
-	"github.com/endge-lab/service-template-go/internal/platform"
+	"github.com/endge-lab/service-backend/internal/config"
+	"github.com/endge-lab/service-backend/internal/platform"
 
 	"go.opentelemetry.io/otel/propagation"
 	"go.uber.org/fx"

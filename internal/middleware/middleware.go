@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 
+	"github.com/endge-lab/service-backend/internal/auth"
+	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	kitfiberauth "github.com/endge-lab/service-kit-go/auth/fiber"
-	"github.com/endge-lab/service-template-go/internal/auth"
-	domainerrors "github.com/endge-lab/service-template-go/internal/domain/errors"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"

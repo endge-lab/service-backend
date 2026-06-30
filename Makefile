@@ -14,8 +14,8 @@ endif
 export
 
 LDFLAGS := -s -w
-MAIN := ./cmd/main.go
-BIN := ./tmp/service-template
+MAIN := ./cmd
+BIN := ./tmp/service-backend
 
 .PHONY: all
 all: mod build test
