@@ -1,0 +1,258 @@
+openapi: 3.0.3
+info:
+  title: Endge Service Template API
+  version: 1.0.21
+  description: |
+    Базовый шаблон нового Endge-сервиса с production-ready reference-фичей Todo.
+    Все ошибки API возвращаются в едином envelope: `code`, `message`, `details`.
+servers:
+  - url: /
+tags:
+  - name: health
+    description: Технические маршруты сервиса.
+  - name: session
+    description: Работа с текущей авторизованной сессией.
+  - name: todo
+    description: Reference-фича для новой бизнесовой функциональности.
+paths:
+  /health:
+    get:
+      tags: [health]
+      operationId: getHealth
+      summary: Проверка здоровья сервиса
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /version:
+    get:
+      tags: [health]
+      operationId: getVersion
+      summary: Текущая версия сервиса
+      responses:
+        '200':
+          description: Current service version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+  /api/session/me:
+    get:
+      tags: [session]
+      operationId: getCurrentSession
+      summary: Текущая сессия и локальный пользователь
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Session response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/todos:
+    post:
+      tags: [todo]
+      operationId: createTodo
+      summary: Создать задачу Todo
+      description: |
+        Эталонный endpoint новой фичи. Показывает transport DTO, use case, internal service,
+        transaction boundary и repository port в одном минимальном сценарии.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTodoRequest'
+      responses:
+        '201':
+          description: Todo created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, service, version, env]
+      properties:
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+          example: service_template
+        version:
+          type: string
+          example: 1.0.10
+        env:
+          type: string
+          example: production
+    VersionResponse:
+      type: object
+      required: [service, version, env]
+      properties:
+        service:
+          type: string
+          example: service_template
+        version:
+          type: string
+          example: 1.0.10
+        env:
+          type: string
+          example: production
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: todo.invalid_title
+        message:
+          type: string
+          example: Некорректные входные данные
+        details:
+          type: object
+          additionalProperties: true
+          example:
+            field: title
+    CreateTodoRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+          example: Позвонить в клинику
+    TodoResponse:
+      type: object
+      required: [id, title, isCompleted, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          example: 4f4f3be6-e24f-4df6-8ca6-e12aa4ca8b7f
+        title:
+          type: string
+          example: Позвонить в клинику
+        isCompleted:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-03-23T09:15:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2026-03-23T09:15:00Z'
+    SessionInfoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: session-123
+        sessionId:
+          type: string
+          example: session-123
+        app:
+          type: string
+          example: todo-web
+        platform:
+          type: string
+          example: web
+        scope:
+          type: array
+          items:
+            type: string
+            example: todo:write
+        expiresAt:
+          type: string
+          example: '2026-03-23T12:00:00Z'
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: user-123
+        authUserId:
+          type: string
+          example: auth-user-123
+        username:
+          type: string
+          example: egor
+        displayName:
+          type: string
+          example: Егор
+        role:
+          type: string
+          example: admin
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-03-23T09:15:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2026-03-23T09:15:00Z'
+    SessionResponse:
+      type: object
+      properties:
+        session:
+          $ref: '#/components/schemas/SessionInfoResponse'
+        user:
+          $ref: '#/components/schemas/UserResponse'
