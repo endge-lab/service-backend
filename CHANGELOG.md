@@ -6,6 +6,7 @@
 
 - Подготовлен публичный Go module `github.com/endge-lab/service-template-go`.
 - Шаблон переведен на зависимость `github.com/endge-lab/service-kit-go v0.1.0`.
+- Удален `package.json`: версия Go-сервиса задается git tag-ами и `CHANGELOG.md`.
 - Добавлена инструкция на русском по публикации, локальному `go.work` и подключению kit из локальной папки.
 - Auth сделан опциональным через `AUTH_ENABLED=false` по умолчанию.
 - Telemetry сделана опциональной через `TELEMETRY_ENABLED=false` по умолчанию.
