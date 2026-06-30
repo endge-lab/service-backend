@@ -2,35 +2,35 @@
 
 ## Контекст
 
-Нужно реализовать самостоятельный Go-сервис, который заменяет текущий storage-слой на Payload CMS для конфигуратора Endge.
+Нужно реализовать самостоятельный Go-сервис, который заменяет текущий storage-слой конфигуратора Endge. У разработчика нет доступа к исходным репозиториям Payload, frontend-конфигуратора и Pilot, поэтому этот документ должен считаться самодостаточным ТЗ первого этапа.
 
 Сервис должен быть монолитным backend API на Go + PostgreSQL. Авторизация, телеметрия, Redpanda/Kafka и отдельный админ-интерфейс на первом этапе не требуются.
 
-Основная задача сервиса:
+Основные задачи:
 
 - хранить конфигурационные сущности Endge-domain;
 - отдавать полный снимок домена для frontend-конфигуратора;
-- поддерживать CRUD по всем конфигурационным сущностям;
+- поддерживать CRUD по конфигурационным сущностям;
 - поддерживать папки, мягкое удаление, восстановление, жесткое удаление и версии;
-- не повторять Payload CMS физически один-в-один, но сохранить совместимую бизнес-логику и близкий REST-контракт.
+- сохранить бизнес-логику текущего конфигурационного storage, но не копировать физическую схему Payload CMS один-в-один.
 
 ## Термины
 
-- `identity` - стабильный человекочитаемый идентификатор документа. Например `root-components`, `default`, `UserTable`.
 - `id` - внутренний UUID документа в новом Go-сервисе.
+- `identity` - стабильный человекочитаемый уникальный идентификатор документа внутри коллекции. Например `root-components`, `default`, `UserTable`.
+- `collection` - имя коллекции в API, например `components`, `queries`, `folders`.
 - `folder_id` - ссылка на папку, в которой лежит документ.
 - `project_id` - ссылка на проект, если документ относится к проекту.
 - `deleted_at` - признак мягкого удаления. Если `deleted_at IS NOT NULL`, документ считается удаленным.
-- `soft-deleted` - системная папка-корзина. Используется для дерева конфигуратора.
-- `meta` - произвольные метаданные в JSONB.
-- `schema` - произвольное тело доменной сущности в JSONB.
+- `soft-deleted` - системная папка-корзина.
+- `meta` - произвольные метаданные в `jsonb`.
+- `schema` - произвольное тело доменной сущности в `jsonb`.
 
 ## Общие требования
 
-1. Все публичные API должны быть под префиксом `/api/v1`.
+1. Все публичные API должны быть под префиксом `/api`.
 2. Все ответы должны быть JSON.
 3. Все ошибки должны возвращаться в едином формате:
-4. Все методы строго описаны для swagger (scalar)
 
 ```json
 {
@@ -40,30 +40,34 @@
 }
 ```
 
-4. Для всех сущностей, где есть `identity`, пара `collection + identity` должна быть уникальной.
+4. Для всех сущностей, где есть `identity`, значение `identity` должно быть уникальным внутри своей коллекции.
 5. Нельзя создать документ без обязательных полей.
 6. Нельзя создать два документа с одинаковым `identity` в одной коллекции.
 7. Нельзя обновить, удалить, восстановить или переместить несуществующий документ.
 8. Мягко удаленный документ не должен попадать в обычные списки по умолчанию.
 9. Жесткое удаление должно физически удалять запись из БД.
-10. API должно быть идемпотентным там, где это явно указано ниже.
+10. Все операции записи должны обновлять `updated_at`.
+11. Нельзя менять `created_at` через API.
+12. Операции import/restore версии должны выполняться в транзакции.
 
 ## Технический стек
 
 - Go
 - PostgreSQL 16+
-- Fiber или net/http на усмотрение разработчика, но REST-контракт должен быть сохранен.
 - Миграции через goose.
+- UUID как внутренние id.
 - Сложные вложенные структуры хранить в `jsonb`.
-- UUID использовать как внутренние id.
+- HTTP framework: Fiber или стандартный `net/http`, но REST-контракт должен быть сохранен.
 
-## Базовые поля большинства таблиц
+## Таблицы
+
+### Общие поля
 
 Большинство таблиц должны иметь общий набор полей:
 
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-identity TEXT NOT NULL,
+identity TEXT NOT NULL UNIQUE,
 display_name TEXT NOT NULL,
 description TEXT NULL,
 folder_id UUID NULL REFERENCES folders(id) ON DELETE SET NULL,
@@ -78,15 +82,11 @@ created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ```
 
-Не все таблицы обязаны иметь все эти поля. Ниже для каждой таблицы указаны отличия.
-
-## Таблицы
+Не все таблицы обязаны иметь все поля. Ниже описаны отличия.
 
 ### folders
 
 Дерево папок для всех типов сущностей.
-
-Поля:
 
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -102,7 +102,7 @@ created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ```
 
-`entity_type` должен принимать значения:
+Допустимые `entity_type`:
 
 ```text
 projects
@@ -160,19 +160,17 @@ root-i18n-bundles
 soft-deleted
 ```
 
-Бизнес-правила:
+Правила:
 
 - системную папку нельзя жестко удалить;
-- root-папку нельзя переместить в другую папку;
+- root-папку нельзя переместить;
 - папку нельзя сделать дочерней самой себе;
 - папку нельзя сделать дочерней своему потомку;
-- при мягком удалении папка переносится под `soft-deleted` или получает `deleted_at`, но ее дочерние элементы должны продолжать считаться удаленными через дерево.
+- при мягком удалении папка переносится под `soft-deleted` или получает `deleted_at`.
 
 ### projects
 
 Проекты/контексты конфигуратора.
-
-Поля:
 
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -193,8 +191,6 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 
 Профили настроек runtime-приложения.
 
-Поля:
-
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 identity TEXT NOT NULL UNIQUE,
@@ -214,13 +210,11 @@ created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ```
 
-Важно: поля настроек могут содержать секреты. На первом этапе можно хранить как plain text, но код должен быть написан так, чтобы позже можно было добавить шифрование.
+Важно: настройки потенциально могут содержать секреты. На первом этапе можно хранить plain text, но код должен позволять позже добавить шифрование.
 
 ### types
 
 Типы данных и ссылки на сущности.
-
-Поля:
 
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -239,7 +233,7 @@ created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ```
 
-Seed-данные:
+Seed-минимум:
 
 ```text
 Any
@@ -279,8 +273,6 @@ RefView
 
 Описание REST/GraphQL/custom запросов.
 
-Поля:
-
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 identity TEXT NOT NULL UNIQUE,
@@ -317,8 +309,6 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 
 UI-компоненты и таблицы.
 
-Поля:
-
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 identity TEXT NOT NULL UNIQUE,
@@ -347,8 +337,6 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 
 Сценарии/скрипты.
 
-Поля:
-
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 identity TEXT NOT NULL UNIQUE,
@@ -368,8 +356,6 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ### actions
 
 Flow-действия.
-
-Поля:
 
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -402,8 +388,6 @@ load-vocabs
 
 Группы параметров.
 
-Поля:
-
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 identity TEXT NOT NULL UNIQUE,
@@ -424,8 +408,6 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 
 Фильтры для view/query/component.
 
-Поля:
-
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 identity TEXT NOT NULL UNIQUE,
@@ -445,8 +427,6 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ### converters
 
 Переиспользуемые конвертеры данных.
-
-Поля:
 
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -490,8 +470,6 @@ json-stringify
 
 Интеграции с внешними системами.
 
-Поля:
-
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 identity TEXT NOT NULL UNIQUE,
@@ -508,8 +486,6 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ### views
 
 Виды. Связывают компонент, запрос и фильтр.
-
-Поля:
 
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -532,8 +508,6 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 
 Снапшоты конфигурации.
 
-Поля:
-
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 identity TEXT NOT NULL,
@@ -544,13 +518,11 @@ created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ```
 
-`identity` может повторяться, если нужно хранить несколько версий с одинаковым названием. Если требуется уникальность, согласовать отдельно.
+`identity` может повторяться, если нужно хранить несколько версий с одинаковым названием.
 
 ### environments
 
 Окружения.
-
-Поля:
 
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -573,8 +545,6 @@ prod
 
 Тенанты.
 
-Поля:
-
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 identity TEXT NOT NULL UNIQUE,
@@ -590,8 +560,6 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 
 Политики.
 
-Поля:
-
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 identity TEXT NOT NULL UNIQUE,
@@ -605,8 +573,6 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ### styles
 
 Стили/темы.
-
-Поля:
 
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -632,8 +598,6 @@ default
 
 Шаблоны страниц.
 
-Поля:
-
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 identity TEXT NOT NULL UNIQUE,
@@ -653,8 +617,6 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ### pages
 
 Страницы приложения.
-
-Поля:
 
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -680,8 +642,6 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 
 Деревья навигации.
 
-Поля:
-
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 identity TEXT NOT NULL UNIQUE,
@@ -699,8 +659,6 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ### vocabs
 
 Справочники.
-
-Поля:
 
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -729,8 +687,6 @@ static
 
 Словари переводов.
 
-Поля:
-
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 identity TEXT NOT NULL UNIQUE,
@@ -747,8 +703,6 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ### behavior_bindings
 
 Декларативные биндинги поведения.
-
-Поля:
 
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -778,8 +732,6 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 
 Декларативные биндинги презентации.
 
-Поля:
-
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 identity TEXT NOT NULL UNIQUE,
@@ -805,9 +757,9 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 
 `mode`: `replace`, `append`, `prepend`, `disable`.
 
-## Универсальный REST API коллекций
+## Коллекции REST API
 
-Для каждой коллекции из списка ниже нужно реализовать одинаковый набор операций:
+Для всех коллекций ниже нужно реализовать общий набор операций:
 
 ```text
 projects
@@ -837,6 +789,8 @@ behavior-bindings
 presentation-bindings
 ```
 
+## REST API: чтение
+
 ### GET /api/{collection}
 
 Получить список документов.
@@ -846,20 +800,16 @@ Query parameters:
 ```text
 limit
 offset
-identity
-projectId
-folderId
 includeDeleted
 onlyDeleted
 sort
 ```
 
-Поведение:
+Правила:
 
 - по умолчанию не возвращать `deleted_at IS NOT NULL`;
-- если `includeDeleted=true`, вернуть и активные, и удаленные;
+- если `includeDeleted=true`, вернуть активные и удаленные;
 - если `onlyDeleted=true`, вернуть только удаленные;
-- если `identity` передан, фильтровать по точному identity;
 - если коллекция не существует, вернуть `404`.
 
 Ответ:
@@ -875,27 +825,99 @@ sort
 
 ### GET /api/{collection}/{id}
 
-Получить документ по UUID.
+Получить один документ по primary `id`.
 
-Ошибки:
+Правила:
 
-- `404 not_found`, если документа нет;
-- `404 not_found`, если документ мягко удален и не передан `includeDeleted=true`.
+- `id` передается только в URL;
+- `id` должен быть UUID;
+- если документа нет, вернуть `404`;
+- если документ мягко удален и не передан `includeDeleted=true`, вернуть `404`.
 
-### GET /api/{collection}/by-identity/{identity}
+### POST /api/{collection}/lookup
 
-Получить документ по `identity`.
+Найти ровно один документ по уникальному ключу через body.
 
-Ошибки:
+Body:
 
-- `404 not_found`, если документа нет.
+```json
+{
+  "id": "uuid optional",
+  "identity": "identity optional",
+  "includeDeleted": false
+}
+```
+
+Правила:
+
+- если передан `id`, искать по `id`;
+- если передан `identity`, искать по `identity`;
+- если переданы и `id`, и `identity`, они оба должны совпасть с одним документом;
+- если не передан ни `id`, ни `identity`, вернуть `400 validation_error`;
+- если документ не найден, вернуть `404 not_found`;
+- если документ мягко удален и `includeDeleted=false`, вернуть `404 not_found`;
+- endpoint возвращает один документ, а не список.
+
+Ответ:
+
+```json
+{
+  "doc": {}
+}
+```
+
+### POST /api/{collection}/search
+
+Поиск документов по фильтрам через body.
+
+Body:
+
+```json
+{
+  "id": "uuid optional",
+  "identity": "identity optional",
+  "projectId": "uuid optional",
+  "folderId": "uuid optional",
+  "includeDeleted": false,
+  "onlyDeleted": false,
+  "limit": 50,
+  "offset": 0,
+  "sort": [
+    { "field": "createdAt", "direction": "desc" }
+  ],
+  "filters": {}
+}
+```
+
+Правила:
+
+- если body пустой, вернуть обычный список;
+- если указан `id`, фильтровать по `id`;
+- если указан `identity`, фильтровать по точному `identity`;
+- если указаны `id` и `identity`, оба условия должны выполняться;
+- если ничего не найдено, вернуть пустой список, не `404`;
+- `includeDeleted` и `onlyDeleted` работают так же, как в `GET /api/{collection}`.
+
+Ответ:
+
+```json
+{
+  "docs": [],
+  "total": 0,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+## REST API: запись
 
 ### POST /api/{collection}
 
 Создать документ.
 
-Общие правила:
+Правила:
 
+- `POST /api/{collection}` используется только для создания, не для поиска;
 - `identity` обязателен, если есть в таблице;
 - `displayName` или `display_name` обязателен, если есть в таблице;
 - при конфликте identity вернуть `409 conflict`;
@@ -919,11 +941,6 @@ sort
 - `updated_at` обновляется автоматически;
 - если обновляется relation на несуществующий id, вернуть `400`.
 
-Ответ:
-
-- `200 OK`;
-- тело обновленного документа.
-
 ### DELETE /api/{collection}/{id}
 
 Жестко удалить документ.
@@ -933,25 +950,25 @@ sort
 - нельзя удалить несуществующий документ: `404`;
 - нельзя удалить системный документ, если `is_system=true`: `409`;
 - нельзя удалить root/system folder: `409`;
-- если на документ есть внешние ссылки, поведение зависит от таблицы:
-  - для nullable references ставить `NULL`;
-  - для критических references вернуть `409 referenced`;
-- после успешного удаления вернуть `204 No Content`.
+- если документ используется критичными ссылками, вернуть `409 referenced`;
+- успешный ответ: `204 No Content`.
 
 Важно: обычный `DELETE` должен быть жестким удалением. Для мягкого удаления есть отдельная операция.
 
-## Доменные операции
+## Доменные операции коллекций
 
 ### POST /api/{collection}/upsert
 
 Создать или обновить документ по `identity`.
+
+Body должен содержать `identity`.
 
 Правила:
 
 - если документа нет, создать;
 - если документ есть, обновить;
 - `identity` обязателен;
-- ответ должен содержать `"created": true|false`.
+- ответ должен содержать `created`.
 
 Ответ:
 
@@ -980,7 +997,7 @@ Body:
 - несуществующая папка: `400`;
 - если `folderId=null`, документ переносится в корень секции;
 - если тип папки не соответствует коллекции, вернуть `400`;
-- для `folders` использовать отдельный endpoint.
+- для `folders` использовать отдельные правила папок.
 
 ### POST /api/{collection}/{id}/soft-delete
 
@@ -989,10 +1006,10 @@ Body:
 Правила:
 
 - несуществующий документ: `404`;
-- уже мягко удаленный документ: вернуть `200` и текущий документ, операция идемпотентна;
-- системный документ (`is_system=true`) нельзя мягко удалить без отдельного force-флага: `409`;
+- уже мягко удаленный документ: вернуть `200`, операция идемпотентна;
+- системный документ (`is_system=true`) нельзя мягко удалить: `409`;
 - установить `deleted_at=NOW()`;
-- если есть папка `soft-deleted`, можно дополнительно проставить `folder_id` на эту папку;
+- при необходимости проставить `folder_id` на папку `soft-deleted`;
 - вернуть обновленный документ.
 
 ### POST /api/{collection}/{id}/restore
@@ -1007,19 +1024,6 @@ Body:
 - если документ лежал в `soft-deleted`, перенести в корневую папку своей секции или `folder_id=NULL`;
 - вернуть восстановленный документ.
 
-### DELETE /api/{collection}/{id}/hard
-
-Явное жесткое удаление.
-
-Дублирует обычный `DELETE`, но нужен для удобства UI.
-
-Правила:
-
-- несуществующий документ: `404`;
-- системный документ: `409`;
-- если документ не мягко удален, вернуть `409`, кроме случаев когда передан `?force=true`;
-- успешный ответ: `204`.
-
 ### POST /api/{collection}/{id}/duplicate
 
 Создать копию документа.
@@ -1029,7 +1033,8 @@ Body:
 ```json
 {
   "identity": "new-identity",
-  "displayName": "Copy name"
+  "displayName": "Copy name",
+  "folderId": "uuid optional"
 }
 ```
 
@@ -1127,8 +1132,7 @@ Body:
 Правила:
 
 - по умолчанию не включать мягко удаленные документы;
-- вернуть все коллекции, даже если они пустые;
-- failures по отдельным коллекциям на первом этапе можно считать общей ошибкой `500`.
+- вернуть все коллекции, даже если они пустые.
 
 ### POST /api/domain/import
 
@@ -1211,8 +1215,10 @@ Body:
 8. Нельзя по умолчанию отдавать мягко удаленные сущности в обычных списках.
 9. Нельзя сохранять невалидный JSON в JSONB-поля.
 10. Нельзя менять `created_at` через API.
-11. Все операции записи должны обновлять `updated_at`.
-12. Операции import/restore версии должны выполняться в транзакции.
+11. `POST /api/{collection}` нельзя использовать как поиск; это только создание.
+12. `POST /api/{collection}/lookup` должен возвращать один документ или ошибку.
+13. `POST /api/{collection}/search` должен возвращать список, даже если найден 0 или 1 документ.
+14. Операции import/restore версии должны выполняться в транзакции.
 
 ## Минимальные acceptance criteria первого этапа
 
@@ -1221,16 +1227,20 @@ Body:
 3. `go test ./...` проходит.
 4. `GET /api/domain/export` возвращает все коллекции.
 5. Для каждой коллекции работает:
-   - list;
-   - get by id;
-   - get by identity;
-   - create;
-   - patch;
-   - delete hard;
-   - upsert;
-   - soft delete;
-   - restore.
+   - `GET /api/{collection}`;
+   - `GET /api/{collection}/{id}`;
+   - `POST /api/{collection}/lookup`;
+   - `POST /api/{collection}/search`;
+   - `POST /api/{collection}`;
+   - `PATCH /api/{collection}/{id}`;
+   - `DELETE /api/{collection}/{id}`;
+   - `POST /api/{collection}/upsert`;
+   - `POST /api/{collection}/{id}/soft-delete`;
+   - `POST /api/{collection}/{id}/restore`.
 6. Проверены ошибки:
+   - lookup без `id` и `identity` -> `400`;
+   - lookup unknown -> `404`;
+   - search unknown -> `200` с пустым `docs`;
    - delete unknown -> `404`;
    - patch unknown -> `404`;
    - create duplicate identity -> `409`;
