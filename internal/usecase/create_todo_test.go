@@ -27,12 +27,24 @@ type fakeTodoRepository struct {
 	err      error
 }
 
-func (r *fakeTodoRepository) CreateTodo(_ context.Context, todo *domainentities.Todo) (*domainentities.Todo, error) {
+func (r *fakeTodoRepository) Create(_ context.Context, todo *domainentities.Todo) (*domainentities.Todo, error) {
 	r.received = todo
 	if r.err != nil {
 		return nil, r.err
 	}
 	return r.result, nil
+}
+
+func (r *fakeTodoRepository) GetByID(_ context.Context, _ string) (*domainentities.Todo, error) {
+	return nil, nil
+}
+
+func (r *fakeTodoRepository) Update(_ context.Context, todo *domainentities.Todo) (*domainentities.Todo, error) {
+	return todo, nil
+}
+
+func (r *fakeTodoRepository) Delete(_ context.Context, _ string) error {
+	return nil
 }
 
 type fakeTodoFactory struct {
@@ -72,7 +84,7 @@ func TestCreateTodoUseCaseExecute(t *testing.T) {
 
 		output, err := useCase.Execute(ctx, CreateTodoInput{Title: "Pay invoice"})
 		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
+			t.Fatalf("expected no transport, got %v", err)
 		}
 		if txManager.calls != 1 {
 			t.Fatalf("expected transaction manager to be called once, got %d", txManager.calls)
@@ -88,7 +100,7 @@ func TestCreateTodoUseCaseExecute(t *testing.T) {
 		}
 	})
 
-	t.Run("returns factory validation error", func(t *testing.T) {
+	t.Run("returns factory validation transport", func(t *testing.T) {
 		txManager := &fakeTxManager{}
 		repository := &fakeTodoRepository{}
 		factory := &fakeTodoFactory{err: domainerrors.ErrInvalidTodoTitle}
@@ -103,7 +115,7 @@ func TestCreateTodoUseCaseExecute(t *testing.T) {
 		}
 	})
 
-	t.Run("returns repository error", func(t *testing.T) {
+	t.Run("returns repository transport", func(t *testing.T) {
 		txManager := &fakeTxManager{}
 		now := time.Now().UTC()
 		todo := &domainentities.Todo{

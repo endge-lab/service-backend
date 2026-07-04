@@ -1,6 +1,6 @@
 package errors
 
-// Common error categories used across the service.
+// Common transport categories used across the service.
 //
 // Specific business errors should wrap one of these sentinels so callers can
 // match them with errors.Is while still getting a stable machine-readable code.

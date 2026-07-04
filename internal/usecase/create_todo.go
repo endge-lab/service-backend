@@ -7,26 +7,16 @@ import (
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	"github.com/endge-lab/service-backend/internal/ports"
 	"github.com/endge-lab/service-backend/internal/services"
+	"github.com/endge-lab/service-backend/internal/usecase/adapters"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
-// CreateTodoInput описывает вход для сценария создания todo.
-type CreateTodoInput struct {
-	Title string
-}
-
-// CreateTodoOutput возвращает созданную доменную todo.
-type CreateTodoOutput struct {
-	Todo *entities.Todo
-}
-
-// CreateTodoUseCase создаёт todo внутри транзакционной границы use case.
-type CreateTodoUseCase interface {
-	Execute(ctx context.Context, input CreateTodoInput) (*CreateTodoOutput, error)
-}
+type CreateTodoInput = adapters.CreateTodoInput
+type CreateTodoOutput = adapters.CreateTodoOutput
+type CreateTodoUseCase = adapters.CreateTodoService
 
 type createTodoUseCase struct {
 	observedUseCase
@@ -35,7 +25,15 @@ type createTodoUseCase struct {
 	todoFactory    services.TodoFactory
 }
 
-// NewCreateTodoUseCase собирает use case создания todo с telemetry и зависимостями.
+type CreateTodoParams struct {
+	TxManager      ports.TxManager
+	TodoRepository ports.TodoRepository
+	TodoFactory    services.TodoFactory
+	Tracer         trace.Tracer
+	Logger         *zap.Logger
+	Metrics        *UseCaseMetrics
+}
+
 func NewCreateTodoUseCase(
 	txManager ports.TxManager,
 	todoRepository ports.TodoRepository,
@@ -43,21 +41,33 @@ func NewCreateTodoUseCase(
 	tracer trace.Tracer,
 	logger *zap.Logger,
 	metrics *UseCaseMetrics,
-) CreateTodoUseCase {
+) adapters.CreateTodoService {
+	return newCreateTodoUseCase(CreateTodoParams{
+		TxManager:      txManager,
+		TodoRepository: todoRepository,
+		TodoFactory:    todoFactory,
+		Tracer:         tracer,
+		Logger:         logger,
+		Metrics:        metrics,
+	})
+}
+
+// newCreateTodoUseCase собирает use case создания todo с telemetry и зависимостями.
+func newCreateTodoUseCase(params CreateTodoParams) adapters.CreateTodoService {
 	return &createTodoUseCase{
 		observedUseCase: newObservedUseCase(
-			tracer,
-			logger.With(zap.String("component", "usecase"), zap.String("usecase", "create_todo")),
-			metrics,
+			params.Tracer,
+			params.Logger.With(zap.String("component", "usecase"), zap.String("usecase", "create_todo")),
+			params.Metrics,
 		),
-		txManager:      txManager,
-		todoRepository: todoRepository,
-		todoFactory:    todoFactory,
+		txManager:      params.TxManager,
+		todoRepository: params.TodoRepository,
+		todoFactory:    params.TodoFactory,
 	}
 }
 
 // Execute валидирует вход, создаёт todo и сохраняет её в репозитории.
-func (u *createTodoUseCase) Execute(ctx context.Context, input CreateTodoInput) (output *CreateTodoOutput, err error) {
+func (u *createTodoUseCase) Execute(ctx context.Context, input adapters.CreateTodoInput) (output *adapters.CreateTodoOutput, err error) {
 	title := strings.TrimSpace(input.Title)
 	ctx, obs := u.startObservedOperation(ctx, "create_todo", []attribute.KeyValue{
 		attribute.Int("todo.title_length", len(title)),
@@ -75,7 +85,7 @@ func (u *createTodoUseCase) Execute(ctx context.Context, input CreateTodoInput) 
 			return err
 		}
 
-		createdTodo, err = u.todoRepository.CreateTodo(txCtx, todo)
+		createdTodo, err = u.todoRepository.Create(txCtx, todo)
 		return err
 	})
 	if err != nil {
@@ -84,7 +94,7 @@ func (u *createTodoUseCase) Execute(ctx context.Context, input CreateTodoInput) 
 
 	logger.Debug("create todo use case completed", zap.String("todo_id", createdTodo.ID))
 
-	return &CreateTodoOutput{
+	return &adapters.CreateTodoOutput{
 		Todo: createdTodo,
 	}, nil
 }

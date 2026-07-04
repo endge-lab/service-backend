@@ -1,7 +1,9 @@
 package bootstrap
 
 import (
-	"github.com/endge-lab/service-backend/internal/api/http"
+	v1 "github.com/endge-lab/service-backend/internal/api/http/v1"
+	session "github.com/endge-lab/service-backend/internal/api/http/v1/session"
+	todo "github.com/endge-lab/service-backend/internal/api/http/v1/todo"
 	"github.com/endge-lab/service-backend/internal/auth"
 	"github.com/endge-lab/service-backend/internal/middleware"
 	"github.com/endge-lab/service-backend/internal/ports"
@@ -22,9 +24,10 @@ func UseCaseModules() fx.Option {
 			fx.Annotate(postgres.NewTodoRepository, fx.As(new(ports.TodoRepository))),
 			fx.Annotate(services.NewTodoFactory, fx.As(new(services.TodoFactory))),
 			usecase.NewUseCaseMetrics,
-			fx.Annotate(usecase.NewLoadSessionUseCase, fx.As(new(usecase.LoadSessionUseCase))),
-			fx.Annotate(usecase.NewCreateTodoUseCase, fx.As(new(usecase.CreateTodoUseCase))),
-			http.NewHandler,
+			usecase.NewService,
+			fx.Annotate(session.NewHandler, fx.As(new(session.SHandler))),
+			fx.Annotate(todo.NewHandler, fx.As(new(todo.THandler))),
+			v1.NewHandler,
 		),
 	)
 }

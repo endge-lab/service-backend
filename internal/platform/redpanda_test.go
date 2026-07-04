@@ -40,7 +40,7 @@ func TestNewRedpandaClientBuildsReaderAndWriter(t *testing.T) {
 
 	reader, err := client.NewReader("engagement.in-app.commands", "service-template")
 	if err != nil {
-		t.Fatalf("NewReader() error = %v", err)
+		t.Fatalf("NewReader() transport = %v", err)
 	}
 	t.Cleanup(func() {
 		_ = reader.Close()
@@ -55,7 +55,7 @@ func TestNewRedpandaClientBuildsReaderAndWriter(t *testing.T) {
 
 	writer, err := client.NewWriter("engagement.in-app.commands")
 	if err != nil {
-		t.Fatalf("NewWriter() error = %v", err)
+		t.Fatalf("NewWriter() transport = %v", err)
 	}
 	t.Cleanup(func() {
 		_ = writer.Close()

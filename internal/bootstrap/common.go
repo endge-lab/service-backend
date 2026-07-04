@@ -4,7 +4,6 @@ import (
 	"github.com/endge-lab/service-backend/internal/config"
 	"github.com/endge-lab/service-backend/internal/platform"
 
-	"go.opentelemetry.io/otel/propagation"
 	"go.uber.org/fx"
 )
 
@@ -17,17 +16,9 @@ func CommonModules() fx.Option {
 			InitValidator,
 			platform.NewRedpandaClient,
 			NewFiber,
-			newTelemetryResource,
-			newTextMapPropagator,
-			newTraceProvider,
-			newMeterProvider,
+			newTelemetryProviders,
 			newTracer,
 			newMeter,
-		),
-		fx.Invoke(
-			func(propagator propagation.TextMapPropagator) {
-				registerTextMapPropagator(propagator)
-			},
 		),
 	)
 }

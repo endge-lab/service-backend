@@ -20,7 +20,7 @@ type TodoResponse struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
-func newTodoResponse(todo *entities.Todo) *TodoResponse {
+func NewTodoResponse(todo *entities.Todo) *TodoResponse {
 	if todo == nil {
 		return nil
 	}

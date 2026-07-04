@@ -1,7 +1,7 @@
 package bootstrap
 
 import (
-	"github.com/endge-lab/service-backend/internal/api/http"
+	v1 "github.com/endge-lab/service-backend/internal/api/http/v1"
 
 	"go.uber.org/fx"
 )
@@ -9,8 +9,7 @@ import (
 func InvokeModules() fx.Option {
 	return fx.Options(
 		fx.Invoke(
-			Migrate,
-			http.SetupRoutes,
+			v1.SetupRoutes,
 		),
 	)
 }

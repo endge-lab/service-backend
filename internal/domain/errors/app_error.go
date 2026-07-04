@@ -7,7 +7,7 @@ import (
 
 type Code string
 
-// AppError is the canonical machine-readable error contract for the service.
+// AppError is the canonical machine-readable transport contract for the service.
 //
 // Rules:
 //   - return sentinels like ErrInvalidInput / ErrNotFound for common cases;

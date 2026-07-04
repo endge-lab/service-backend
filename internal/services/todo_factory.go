@@ -6,7 +6,8 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	"github.com/endge-lab/service-backend/internal/domain/valueobjects"
-	"github.com/endge-lab/service-backend/internal/util"
+	"github.com/endge-lab/service-kit-go/pkg/logging"
+	"github.com/endge-lab/service-kit-go/pkg/telemetry"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -35,7 +36,7 @@ func NewTodoFactory(tracer trace.Tracer, logger *zap.Logger) TodoFactory {
 // New создаёт новую todo и заполняет технические поля по правилам домена.
 func (f *todoFactory) New(ctx context.Context, title string) (todo *entities.Todo, err error) {
 	normalizedTitle := title
-	ctx, step := util.StartTrace(
+	ctx, step := telemetry.StartTrace(
 		ctx,
 		f.tracer,
 		f.logger,
@@ -44,10 +45,10 @@ func (f *todoFactory) New(ctx context.Context, title string) (todo *entities.Tod
 		attribute.Int("todo.title_length", len(normalizedTitle)),
 	)
 	defer func() {
-		step.EndTrace(err)
+		step.End(err)
 	}()
 
-	logger := util.LoggerWithTrace(ctx, f.logger)
+	logger := logging.WithContext(ctx, f.logger)
 	logger.Debug("todo factory started", zap.Int("title_length", len(normalizedTitle)))
 
 	todoTitle, err := valueobjects.NewTodoTitle(title)

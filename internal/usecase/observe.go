@@ -4,7 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/endge-lab/service-backend/internal/util"
+	"github.com/endge-lab/service-kit-go/pkg/logging"
+	"github.com/endge-lab/service-kit-go/pkg/telemetry"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -23,7 +24,7 @@ type observedOperation struct {
 	metrics   *UseCaseMetrics
 	op        string
 	startedAt time.Time
-	step      *util.TraceStep
+	step      *telemetry.Step
 }
 
 func newObservedUseCase(tracer trace.Tracer, logger *zap.Logger, metrics *UseCaseMetrics) observedUseCase {
@@ -49,9 +50,9 @@ func (u *observedUseCase) startObservedOperation(
 	spanAttrs = append(spanAttrs, attribute.String("usecase", op))
 	spanAttrs = append(spanAttrs, attrs...)
 
-	ctx, step := util.StartTrace(ctx, u.tracer, u.logger, "usecase."+op+".execute", spanAttrs...)
+	ctx, step := telemetry.StartTrace(ctx, u.tracer, u.logger, "usecase."+op+".execute", spanAttrs...)
 
-	logger := util.LoggerWithTrace(ctx, u.logger)
+	logger := logging.WithContext(ctx, u.logger)
 	if len(logFields) > 0 {
 		logger = logger.With(logFields...)
 	}
@@ -80,7 +81,7 @@ func (o *observedOperation) End(err *error) {
 		o.metrics.Record(o.ctx, o.op, o.startedAt, actualErr)
 	}
 	if o.step != nil {
-		o.step.EndTrace(actualErr)
+		o.step.End(actualErr)
 	}
 }
 

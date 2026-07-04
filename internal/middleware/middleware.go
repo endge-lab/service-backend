@@ -6,7 +6,7 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/auth"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	kitfiberauth "github.com/endge-lab/service-kit-go/auth/fiber"
+	kitfiberauth "github.com/endge-lab/service-kit-go/pkg/auth/fiber"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"

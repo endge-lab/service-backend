@@ -31,7 +31,7 @@ type UserResponse struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
-func newSessionResponse(output *usecase.LoadSessionOutput) *SessionResponse {
+func NewSessionResponse(output *usecase.LoadSessionOutput) *SessionResponse {
 	if output == nil {
 		return nil
 	}

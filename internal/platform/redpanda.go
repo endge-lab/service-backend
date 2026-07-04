@@ -2,7 +2,7 @@ package platform
 
 import (
 	"github.com/endge-lab/service-backend/internal/config"
-	serviceredpanda "github.com/endge-lab/service-kit-go/redpanda"
+	serviceredpanda "github.com/endge-lab/service-kit-go/pkg/redpanda"
 
 	"github.com/segmentio/kafka-go"
 	"go.opentelemetry.io/otel"

@@ -17,7 +17,7 @@ func TestTodoFactoryNew(t *testing.T) {
 	t.Run("creates normalized todo", func(t *testing.T) {
 		todo, err := factory.New(context.Background(), "  Call clinic  ")
 		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
+			t.Fatalf("expected no transport, got %v", err)
 		}
 		if todo == nil {
 			t.Fatal("expected todo to be created")

@@ -5,7 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/endge-lab/service-backend/internal/util"
+	"github.com/endge-lab/service-kit-go/pkg/logging"
+	"github.com/endge-lab/service-kit-go/pkg/telemetry"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -15,10 +16,6 @@ import (
 )
 
 type txContextKey struct{}
-
-type queryRower interface {
-	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
-}
 
 type TxManager struct {
 	pool   *pgxpool.Pool
@@ -35,7 +32,7 @@ func NewTxManager(pool *pgxpool.Pool, tracer trace.Tracer, logger *zap.Logger) *
 }
 
 func (m *TxManager) WithinTransaction(ctx context.Context, fn func(ctx context.Context) error) (err error) {
-	ctx, step := util.StartTrace(
+	ctx, step := telemetry.StartTrace(
 		ctx,
 		m.tracer,
 		m.logger,
@@ -43,10 +40,10 @@ func (m *TxManager) WithinTransaction(ctx context.Context, fn func(ctx context.C
 		attribute.String("repository", "transaction_manager"),
 	)
 	defer func() {
-		step.EndTrace(err)
+		step.End(err)
 	}()
 
-	logger := util.LoggerWithTrace(ctx, m.logger)
+	logger := logging.WithContext(ctx, m.logger)
 	logger.Debug("opening postgres transaction")
 
 	tx, err := m.pool.BeginTx(ctx, pgx.TxOptions{})
@@ -58,7 +55,7 @@ func (m *TxManager) WithinTransaction(ctx context.Context, fn func(ctx context.C
 	if err := fn(txCtx); err != nil {
 		logger.Warn("rolling back postgres transaction", zap.Error(err))
 		if rollbackErr := tx.Rollback(ctx); rollbackErr != nil && !errors.Is(rollbackErr, pgx.ErrTxClosed) {
-			return fmt.Errorf("rollback transaction: %v (original error: %w)", rollbackErr, err)
+			return fmt.Errorf("rollback transaction: %v (original transport: %w)", rollbackErr, err)
 		}
 		return err
 	}
@@ -71,10 +68,10 @@ func (m *TxManager) WithinTransaction(ctx context.Context, fn func(ctx context.C
 	return nil
 }
 
-func queryRowerFromContext(ctx context.Context, pool *pgxpool.Pool) queryRower {
+func txFromContext(ctx context.Context) (pgx.Tx, bool) {
 	if tx, ok := ctx.Value(txContextKey{}).(pgx.Tx); ok && tx != nil {
-		return tx
+		return tx, true
 	}
 
-	return pool
+	return nil, false
 }

@@ -7,36 +7,27 @@ import (
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/ports"
+	"github.com/endge-lab/service-backend/internal/usecase/adapters"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
-type LoadSessionInput struct {
-	AuthUserID  string
-	Username    string
-	DisplayName string
-	Role        string
-	SessionID   string
-	App         string
-	Platform    string
-	Scope       []string
-	ExpiresAt   string
-}
-
-type LoadSessionOutput struct {
-	Session *entities.SessionInfo
-	User    *entities.User
-}
-
-type LoadSessionUseCase interface {
-	Execute(ctx context.Context, input LoadSessionInput) (*LoadSessionOutput, error)
-}
+type LoadSessionInput = adapters.LoadSessionInput
+type LoadSessionOutput = adapters.LoadSessionOutput
+type LoadSessionUseCase = adapters.LoadSessionService
 
 type loadSessionUseCase struct {
 	observedUseCase
 	userRepository ports.UserRepository
+}
+
+type LoadSessionParams struct {
+	UserRepository ports.UserRepository
+	Tracer         trace.Tracer
+	Logger         *zap.Logger
+	Metrics        *UseCaseMetrics
 }
 
 func NewLoadSessionUseCase(
@@ -45,13 +36,22 @@ func NewLoadSessionUseCase(
 	logger *zap.Logger,
 	metrics *UseCaseMetrics,
 ) LoadSessionUseCase {
+	return newLoadSessionUseCase(LoadSessionParams{
+		UserRepository: userRepository,
+		Tracer:         tracer,
+		Logger:         logger,
+		Metrics:        metrics,
+	})
+}
+
+func newLoadSessionUseCase(params LoadSessionParams) LoadSessionUseCase {
 	return &loadSessionUseCase{
 		observedUseCase: newObservedUseCase(
-			tracer,
-			logger.With(zap.String("component", "usecase"), zap.String("usecase", "load_session")),
-			metrics,
+			params.Tracer,
+			params.Logger.With(zap.String("component", "usecase"), zap.String("usecase", "load_session")),
+			params.Metrics,
 		),
-		userRepository: userRepository,
+		userRepository: params.UserRepository,
 	}
 }
 

@@ -1,7 +1,7 @@
 package platform
 
 import (
-	servicelogging "github.com/endge-lab/service-kit-go/logging"
+	servicelogging "github.com/endge-lab/service-kit-go/pkg/logging"
 
 	"go.uber.org/zap"
 )

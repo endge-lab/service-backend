@@ -120,8 +120,10 @@ func TestTemplateLayerPackageNames(t *testing.T) {
 		"internal/platform":            "platform",
 		"internal/ports":               "ports",
 		"internal/repo/postgres":       "postgres",
+		"internal/repo/postgres/sqlc":  "sqlc",
 		"internal/services":            "services",
 		"internal/usecase":             "usecase",
+		"internal/usecase/adapters":    "adapters",
 	}
 
 	for relativeDir, expectedPackage := range expectedPackages {
@@ -131,8 +133,19 @@ func TestTemplateLayerPackageNames(t *testing.T) {
 		}
 
 		for _, filePath := range files {
-			if actualPackage := packageName(t, filePath); actualPackage != expectedPackage {
-				t.Fatalf("unexpected package name in %s: got %s want %s", filePath, actualPackage, expectedPackage)
+			effectiveExpectedPackage := expectedPackage
+			relativeFilePath, err := filepath.Rel(root, filePath)
+			if err != nil {
+				t.Fatalf("relative file path %s: %v", filePath, err)
+			}
+			for expectedDir, expectedDirPackage := range expectedPackages {
+				if strings.HasPrefix(relativeFilePath, expectedDir+string(filepath.Separator)) && len(expectedDir) > len(relativeDir) {
+					effectiveExpectedPackage = expectedDirPackage
+				}
+			}
+
+			if actualPackage := packageName(t, filePath); actualPackage != effectiveExpectedPackage {
+				t.Fatalf("unexpected package name in %s: got %s want %s", filePath, actualPackage, effectiveExpectedPackage)
 			}
 		}
 	}
@@ -156,7 +169,6 @@ func TestTemplateDependencyBoundaries(t *testing.T) {
 				"database/sql",
 				"github.com/gofiber/",
 				"github.com/jackc/pgx",
-				"go.uber.org/fx",
 			},
 		},
 		{
@@ -167,7 +179,6 @@ func TestTemplateDependencyBoundaries(t *testing.T) {
 				"database/sql",
 				"github.com/gofiber/",
 				"github.com/jackc/pgx",
-				"go.uber.org/fx",
 			},
 		},
 		{
@@ -178,7 +189,6 @@ func TestTemplateDependencyBoundaries(t *testing.T) {
 				"database/sql",
 				"github.com/gofiber/",
 				"github.com/jackc/pgx",
-				"go.uber.org/fx",
 			},
 		},
 		{

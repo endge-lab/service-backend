@@ -11,7 +11,7 @@ import (
 )
 
 func InitLogger(lc fx.Lifecycle, cfg *config.Config) *zap.Logger {
-	logger := platform.NewLogger(cfg.LoggerLevel, cfg.AppName, cfg.AppEnv, cfg.AppVersion)
+	logger := platform.NewLogger(cfg.Logger.Level, cfg.App.Name, cfg.App.Env, cfg.App.Version)
 	lc.Append(fx.Hook{
 		OnStop: func(ctx context.Context) error {
 			_ = logger.Sync()

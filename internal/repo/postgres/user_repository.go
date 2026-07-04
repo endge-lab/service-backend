@@ -7,7 +7,9 @@ import (
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/ports"
-	"github.com/endge-lab/service-backend/internal/util"
+	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
+	"github.com/endge-lab/service-kit-go/pkg/logging"
+	"github.com/endge-lab/service-kit-go/pkg/telemetry"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -17,21 +19,21 @@ import (
 )
 
 type UserRepository struct {
-	pool   *pgxpool.Pool
+	baseRepository
 	tracer trace.Tracer
 	logger *zap.Logger
 }
 
 func NewUserRepository(pool *pgxpool.Pool, tracer trace.Tracer, logger *zap.Logger) *UserRepository {
 	return &UserRepository{
-		pool:   pool,
-		tracer: tracer,
-		logger: logger.With(zap.String("component", "repo"), zap.String("repository", "user")),
+		baseRepository: newBaseRepository(pool),
+		tracer:         tracer,
+		logger:         logger.With(zap.String("component", "repo"), zap.String("repository", "user")),
 	}
 }
 
 func (r *UserRepository) SyncUserFromIdentity(ctx context.Context, input ports.SyncUserInput) (user *entities.User, err error) {
-	ctx, step := util.StartTrace(
+	ctx, step := telemetry.StartTrace(
 		ctx,
 		r.tracer,
 		r.logger,
@@ -40,10 +42,10 @@ func (r *UserRepository) SyncUserFromIdentity(ctx context.Context, input ports.S
 		attribute.String("auth.user_id", strings.TrimSpace(input.AuthUserID)),
 	)
 	defer func() {
-		step.EndTrace(err)
+		step.End(err)
 	}()
 
-	logger := util.LoggerWithTrace(ctx, r.logger)
+	logger := logging.WithContext(ctx, r.logger)
 	authUserID := strings.TrimSpace(input.AuthUserID)
 	if authUserID == "" {
 		return nil, domainerrors.ErrAuthUserIDRequired
@@ -51,48 +53,18 @@ func (r *UserRepository) SyncUserFromIdentity(ctx context.Context, input ports.S
 
 	logger.Debug("syncing service user from identity", zap.String("auth_user_id", authUserID))
 
-	row := queryRowerFromContext(ctx, r.pool).QueryRow(ctx, `
-		INSERT INTO service_users (
-			id, auth_user_id, username, display_name, role, created_at, updated_at
-		)
-		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-		ON CONFLICT (auth_user_id) DO UPDATE
-		SET
-			username = CASE
-				WHEN EXCLUDED.username <> '' THEN EXCLUDED.username
-				ELSE service_users.username
-			END,
-			display_name = CASE
-				WHEN EXCLUDED.display_name <> '' THEN EXCLUDED.display_name
-				ELSE service_users.display_name
-			END,
-			role = CASE
-				WHEN EXCLUDED.role <> '' THEN EXCLUDED.role
-				ELSE service_users.role
-			END,
-			updated_at = NOW()
-		RETURNING id, auth_user_id, username, display_name, role, created_at, updated_at
-	`,
-		uuid.New(),
-		authUserID,
-		strings.TrimSpace(input.Username),
-		strings.TrimSpace(input.DisplayName),
-		strings.TrimSpace(input.Role),
-	)
-
-	user = &entities.User{}
-	if err = row.Scan(
-		&user.ID,
-		&user.AuthUserID,
-		&user.Username,
-		&user.DisplayName,
-		&user.Role,
-		&user.CreatedAt,
-		&user.UpdatedAt,
-	); err != nil {
-		return nil, err
+	record, err := r.queries(ctx).UpsertServiceUserFromIdentity(ctx, sqlc.UpsertServiceUserFromIdentityParams{
+		ID:          uuid.New(),
+		AuthUserID:  authUserID,
+		Username:    strings.TrimSpace(input.Username),
+		DisplayName: strings.TrimSpace(input.DisplayName),
+		Role:        strings.TrimSpace(input.Role),
+	})
+	if err != nil {
+		return nil, mapPostgresError(err, "user.sync_from_identity")
 	}
 
+	user = mapServiceUser(record)
 	logger.Debug("service user synced", zap.String("service_user_id", user.ID))
 	return user, nil
 }

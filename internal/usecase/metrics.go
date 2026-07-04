@@ -46,7 +46,7 @@ func (m *UseCaseMetrics) Record(ctx context.Context, useCaseName string, started
 
 	status := "ok"
 	if err != nil {
-		status = "error"
+		status = "transport"
 	}
 
 	attrs := metric.WithAttributes(
@@ -57,7 +57,7 @@ func (m *UseCaseMetrics) Record(ctx context.Context, useCaseName string, started
 		attrs = metric.WithAttributes(
 			attribute.String("usecase", useCaseName),
 			attribute.String("status", status),
-			attribute.String("error.code", domainerrors.CodeOf(err)),
+			attribute.String("transport.code", domainerrors.CodeOf(err)),
 		)
 	}
 

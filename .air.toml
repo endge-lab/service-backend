@@ -1,0 +1,22 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go mod download && mkdir -p tmp && go build -buildvcs=false -ldflags='-s -w' -o tmp/main ./cmd"
+bin = "tmp/main"
+include_ext = ["go"]
+exclude_dir = ["tmp", "vendor", ".git", ".idea", ".vscode"]
+delay = 500
+stop_on_error = true
+send_interrupt = true
+kill_delay = "500ms"
+
+[color]
+main = "yellow"
+watcher = "cyan"
+build = "green"
+runner = "magenta"
+
+[log]
+level = "debug"
+time = true

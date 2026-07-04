@@ -15,7 +15,7 @@ func TestCodeOfReturnsSpecificWrappedCode(t *testing.T) {
 		t.Fatalf("HTTPStatusOf() = %d, want 400", got)
 	}
 	if !errors.Is(err, ErrInvalidInput) {
-		t.Fatal("expected wrapped error to match ErrInvalidInput")
+		t.Fatal("expected wrapped transport to match ErrInvalidInput")
 	}
 }
 
