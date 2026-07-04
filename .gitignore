@@ -6,3 +6,6 @@ main
 .env
 .env.*
 !.env.*.example
+/configs/development.yaml
+/configs/production.yaml
+/configs/local.yaml
