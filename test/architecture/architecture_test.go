@@ -91,7 +91,8 @@ func TestTemplateRequiredPathsExist(t *testing.T) {
 		"internal/domain/valueobjects",
 		"internal/middleware",
 		"internal/platform",
-		"internal/ports",
+		"internal/repo",
+		"internal/repo/ports",
 		"internal/repo/postgres",
 		"internal/services",
 		"internal/usecase",
@@ -118,7 +119,8 @@ func TestTemplateLayerPackageNames(t *testing.T) {
 		"internal/domain/valueobjects": "valueobjects",
 		"internal/middleware":          "middleware",
 		"internal/platform":            "platform",
-		"internal/ports":               "ports",
+		"internal/repo":                "repo",
+		"internal/repo/ports":          "ports",
 		"internal/repo/postgres":       "postgres",
 		"internal/repo/postgres/sqlc":  "sqlc",
 		"internal/services":            "services",
@@ -138,9 +140,11 @@ func TestTemplateLayerPackageNames(t *testing.T) {
 			if err != nil {
 				t.Fatalf("relative file path %s: %v", filePath, err)
 			}
+			matchedDir := relativeDir
 			for expectedDir, expectedDirPackage := range expectedPackages {
-				if strings.HasPrefix(relativeFilePath, expectedDir+string(filepath.Separator)) && len(expectedDir) > len(relativeDir) {
+				if strings.HasPrefix(relativeFilePath, expectedDir+string(filepath.Separator)) && len(expectedDir) > len(matchedDir) {
 					effectiveExpectedPackage = expectedDirPackage
+					matchedDir = expectedDir
 				}
 			}
 
@@ -218,16 +222,35 @@ func TestTemplateDependencyBoundaries(t *testing.T) {
 	}
 }
 
+func TestBootstrapRepositoryModulesWireReferenceLayers(t *testing.T) {
+	root := repoRoot(t)
+	imports := parsedImports(t, filepath.Join(root, "internal/bootstrap/repository.go"))
+
+	requiredImports := []string{
+		"/internal/repo",
+		"/internal/repo/ports",
+	}
+
+	for _, requiredImport := range requiredImports {
+		found := false
+		for _, importedPath := range imports {
+			if strings.Contains(importedPath, requiredImport) {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			t.Fatalf("bootstrap/repository.go must import %s", requiredImport)
+		}
+	}
+}
+
 func TestBootstrapUseCaseModulesWireReferenceLayers(t *testing.T) {
 	root := repoRoot(t)
 	imports := parsedImports(t, filepath.Join(root, "internal/bootstrap/usecase.go"))
 
 	requiredImports := []string{
-		"/internal/api/http",
-		"/internal/auth",
-		"/internal/middleware",
-		"/internal/ports",
-		"/internal/repo/postgres",
 		"/internal/services",
 		"/internal/usecase",
 	}
@@ -243,6 +266,31 @@ func TestBootstrapUseCaseModulesWireReferenceLayers(t *testing.T) {
 
 		if !found {
 			t.Fatalf("bootstrap/usecase.go must import %s", requiredImport)
+		}
+	}
+}
+
+func TestBootstrapHandlerModulesWireReferenceLayers(t *testing.T) {
+	root := repoRoot(t)
+	imports := parsedImports(t, filepath.Join(root, "internal/bootstrap/handler.go"))
+
+	requiredImports := []string{
+		"/internal/api/http",
+		"/internal/auth",
+		"/internal/middleware",
+	}
+
+	for _, requiredImport := range requiredImports {
+		found := false
+		for _, importedPath := range imports {
+			if strings.Contains(importedPath, requiredImport) {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			t.Fatalf("bootstrap/handler.go must import %s", requiredImport)
 		}
 	}
 }

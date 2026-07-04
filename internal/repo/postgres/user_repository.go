@@ -6,7 +6,7 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/ports"
+	"github.com/endge-lab/service-backend/internal/repo/ports"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
 	"github.com/endge-lab/service-kit-go/pkg/logging"
 	"github.com/endge-lab/service-kit-go/pkg/telemetry"
@@ -19,14 +19,14 @@ import (
 )
 
 type UserRepository struct {
-	baseRepository
+	*baseRepository
 	tracer trace.Tracer
 	logger *zap.Logger
 }
 
-func NewUserRepository(pool *pgxpool.Pool, tracer trace.Tracer, logger *zap.Logger) *UserRepository {
+func NewUserRepository(_ *pgxpool.Pool, queries *sqlc.Queries, tracer trace.Tracer, logger *zap.Logger) *UserRepository {
 	return &UserRepository{
-		baseRepository: newBaseRepository(pool),
+		baseRepository: newBaseRepository(queries),
 		tracer:         tracer,
 		logger:         logger.With(zap.String("component", "repo"), zap.String("repository", "user")),
 	}

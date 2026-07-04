@@ -20,14 +20,14 @@ import (
 
 // TodoRepository saves todos in PostgreSQL through sqlc.
 type TodoRepository struct {
-	baseRepository
+	*baseRepository
 	tracer trace.Tracer
 	logger *zap.Logger
 }
 
-func NewTodoRepository(pool *pgxpool.Pool, tracer trace.Tracer, logger *zap.Logger) *TodoRepository {
+func NewTodoRepository(_ *pgxpool.Pool, queries *sqlc.Queries, tracer trace.Tracer, logger *zap.Logger) *TodoRepository {
 	return &TodoRepository{
-		baseRepository: newBaseRepository(pool),
+		baseRepository: newBaseRepository(queries),
 		tracer:         tracer,
 		logger:         logger.With(zap.String("component", "repo"), zap.String("repository", "todo")),
 	}
