@@ -29,6 +29,10 @@ func RepositoryModules() fx.Option {
 				},
 				fx.As(new(ports.TxManager)),
 			),
+			fx.Annotate(
+				func(repository *repo.Repository) ports.ProjectsRepository { return repository.Project() },
+				fx.As(new(ports.ProjectsRepository)),
+			),
 		),
 	)
 }

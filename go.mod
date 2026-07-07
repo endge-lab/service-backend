@@ -2,7 +2,7 @@ module github.com/endge-lab/service-backend
 
 go 1.26.1
 
-replace github.com/endge-lab/service-kit-go => /home/bob/GolandProjects/my-projects/service-kit-go
+replace github.com/endge-lab/service-kit-go => /home/bob/GolandProjects/my-projects/egor-open-source/service-kit-go
 
 require (
 	github.com/gofiber/contrib/otelfiber/v2 v2.2.3
@@ -25,7 +25,7 @@ require (
 	github.com/go-playground/validator/v10 v10.30.3 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
-	github.com/pelletier/go-toml/v2 v2.4.2 // indirect
+	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/pressly/goose/v3 v3.27.2 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect

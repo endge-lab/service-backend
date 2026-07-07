@@ -31,7 +31,7 @@
    cp .env.development.example .env.development
    ```
 
-5. Настройте `DATABASE_URI`, `APP_NAME`, `PUBLIC_URL`, `CORS_ALLOWED_ORIGINS`.
+5. Настройте `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DATABASE`, `APP_NAME`, `PUBLIC_URL`, `CORS_ALLOWED_ORIGINS`.
 6. Запустите тесты:
 
    ```bash

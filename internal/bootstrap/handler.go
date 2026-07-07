@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	v1 "github.com/endge-lab/service-backend/internal/api/http/v1"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/project"
 	session "github.com/endge-lab/service-backend/internal/api/http/v1/session"
 	todo "github.com/endge-lab/service-backend/internal/api/http/v1/todo"
 	"github.com/endge-lab/service-backend/internal/auth"
@@ -17,6 +18,7 @@ func HandlerModules() fx.Option {
 			fx.Annotate(middleware.NewAuthMiddleware, fx.As(new(middleware.AuthMiddleware))),
 			fx.Annotate(session.NewHandler, fx.As(new(session.SHandler))),
 			fx.Annotate(todo.NewHandler, fx.As(new(todo.THandler))),
+			fx.Annotate(project.NewHandler, fx.As(new(project.PHandler))),
 			v1.NewHandler,
 		),
 	)

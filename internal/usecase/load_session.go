@@ -8,6 +8,7 @@ import (
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/repo/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	"github.com/endge-lab/service-backend/internal/usecase/shared"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -19,7 +20,7 @@ type LoadSessionOutput = adapters.LoadSessionOutput
 type LoadSessionUseCase = adapters.LoadSessionService
 
 type loadSessionUseCase struct {
-	observedUseCase
+	observed       shared.ObservedUseCase
 	userRepository ports.UserRepository
 }
 
@@ -27,14 +28,14 @@ type LoadSessionParams struct {
 	UserRepository ports.UserRepository
 	Tracer         trace.Tracer
 	Logger         *zap.Logger
-	Metrics        *UseCaseMetrics
+	Metrics        *shared.UseCaseMetrics
 }
 
 func NewLoadSessionUseCase(
 	userRepository ports.UserRepository,
 	tracer trace.Tracer,
 	logger *zap.Logger,
-	metrics *UseCaseMetrics,
+	metrics *shared.UseCaseMetrics,
 ) LoadSessionUseCase {
 	return newLoadSessionUseCase(LoadSessionParams{
 		UserRepository: userRepository,
@@ -46,7 +47,7 @@ func NewLoadSessionUseCase(
 
 func newLoadSessionUseCase(params LoadSessionParams) LoadSessionUseCase {
 	return &loadSessionUseCase{
-		observedUseCase: newObservedUseCase(
+		observed: shared.NewObservedUseCase(
 			params.Tracer,
 			params.Logger.With(zap.String("component", "usecase"), zap.String("usecase", "load_session")),
 			params.Metrics,
@@ -56,7 +57,7 @@ func newLoadSessionUseCase(params LoadSessionParams) LoadSessionUseCase {
 }
 
 func (u *loadSessionUseCase) Execute(ctx context.Context, input LoadSessionInput) (output *LoadSessionOutput, err error) {
-	ctx, obs := u.startObservedOperation(ctx, "load_session", []attribute.KeyValue{
+	ctx, obs := u.observed.StartObservedOperation(ctx, "load_session", []attribute.KeyValue{
 		attribute.String("auth.user_id", strings.TrimSpace(input.AuthUserID)),
 	}, nil)
 	defer obs.End(&err)

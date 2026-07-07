@@ -1,4 +1,4 @@
-package usecase
+package shared
 
 import (
 	"context"
@@ -12,13 +12,13 @@ import (
 	"go.uber.org/zap"
 )
 
-type observedUseCase struct {
+type ObservedUseCase struct {
 	tracer  trace.Tracer
 	logger  *zap.Logger
 	metrics *UseCaseMetrics
 }
 
-type observedOperation struct {
+type ObservedOperation struct {
 	ctx       context.Context
 	logger    *zap.Logger
 	metrics   *UseCaseMetrics
@@ -27,24 +27,25 @@ type observedOperation struct {
 	step      *telemetry.Step
 }
 
-func newObservedUseCase(tracer trace.Tracer, logger *zap.Logger, metrics *UseCaseMetrics) observedUseCase {
+func NewObservedUseCase(tracer trace.Tracer, logger *zap.Logger, metrics *UseCaseMetrics) ObservedUseCase {
 	if logger == nil {
 		logger = zap.NewNop()
 	}
 
-	return observedUseCase{
+	return ObservedUseCase{
 		tracer:  tracer,
 		logger:  logger,
 		metrics: metrics,
 	}
 }
 
-func (u *observedUseCase) startObservedOperation(
+func (u *ObservedUseCase) StartObservedOperation(
 	ctx context.Context,
 	op string,
 	attrs []attribute.KeyValue,
+
 	logFields []zap.Field,
-) (context.Context, *observedOperation) {
+) (context.Context, *ObservedOperation) {
 	startedAt := time.Now()
 	spanAttrs := make([]attribute.KeyValue, 0, len(attrs)+1)
 	spanAttrs = append(spanAttrs, attribute.String("usecase", op))
@@ -57,7 +58,7 @@ func (u *observedUseCase) startObservedOperation(
 		logger = logger.With(logFields...)
 	}
 
-	return ctx, &observedOperation{
+	return ctx, &ObservedOperation{
 		ctx:       ctx,
 		logger:    logger,
 		metrics:   u.metrics,
@@ -67,7 +68,7 @@ func (u *observedUseCase) startObservedOperation(
 	}
 }
 
-func (o *observedOperation) End(err *error) {
+func (o *ObservedOperation) End(err *error) {
 	if o == nil {
 		return
 	}
@@ -85,7 +86,7 @@ func (o *observedOperation) End(err *error) {
 	}
 }
 
-func (o *observedOperation) Logger() *zap.Logger {
+func (o *ObservedOperation) Logger() *zap.Logger {
 	if o == nil || o.logger == nil {
 		return zap.NewNop()
 	}

@@ -25,3 +25,8 @@ func (f *repositoryFactory) BuildTodoRepository() ports.TodoRepository {
 func (f *repositoryFactory) BuildTxManager() ports.TxManager {
 	return postgres.NewTxManager(f.deps.DB, f.deps.Tracer, f.deps.Logger)
 }
+
+func (f *repositoryFactory) BuildProjectsRepository() ports.ProjectsRepository {
+	return postgres.NewProjectsRepository(
+		f.deps.DB, sqlc.New(f.deps.DB), f.deps.Logger, f.deps.Tracer)
+}

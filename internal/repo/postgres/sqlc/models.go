@@ -8,7 +8,23 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type Project struct {
+	ID                    uuid.UUID          `json:"id"`
+	Identity              string             `json:"identity"`
+	DisplayName           string             `json:"display_name"`
+	ExtendSettings        bool               `json:"extend_settings"`
+	SettingsID            pgtype.UUID        `json:"settings_id"`
+	NavigationID          pgtype.UUID        `json:"navigation_id"`
+	FolderID              pgtype.UUID        `json:"folder_id"`
+	AllowedEnvironmentIds []uuid.UUID        `json:"allowed_environment_ids"`
+	DeletedAt             pgtype.Timestamptz `json:"deleted_at"`
+	Meta                  []byte             `json:"meta"`
+	CreatedAt             time.Time          `json:"created_at"`
+	UpdatedAt             time.Time          `json:"updated_at"`
+}
 
 type ServiceUser struct {
 	ID          uuid.UUID `json:"id"`

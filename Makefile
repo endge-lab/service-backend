@@ -23,7 +23,14 @@ DOCKER_COMPOSE_DEV := docker-compose.dev.yml
 COMPOSE_ENV_FILE_ARG := $(if $(wildcard $(RUNTIME_ENV_FILE)),--env-file $(RUNTIME_ENV_FILE),)
 
 MIGRATIONS_DIR ?= ./migrations
-DATABASE_URI ?= postgres://postgres:postgres@localhost:5432/service_backend?sslmode=disable
+POSTGRES_HOST ?= localhost
+POSTGRES_PORT ?= 5432
+POSTGRES_USER ?= postgres
+POSTGRES_PASSWORD ?= postgres
+POSTGRES_DATABASE ?= $(if $(POSTGRES_DB),$(POSTGRES_DB),service_backend)
+POSTGRES_SCHEMA ?= public
+POSTGRES_SSLMODE ?= disable
+POSTGRES_DSN := postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DATABASE)?sslmode=$(POSTGRES_SSLMODE)&search_path=$(POSTGRES_SCHEMA)
 
 LDFLAGS := -s -w
 
@@ -124,12 +131,12 @@ create-migration:
 .PHONY: migrate-up
 migrate-up:
 	@echo "Applying migrations..."
-	goose -dir $(MIGRATIONS_DIR) postgres "$(DATABASE_URI)" up
+	goose -dir $(MIGRATIONS_DIR) postgres "$(POSTGRES_DSN)" up
 
 .PHONY: migrate-down
 migrate-down:
 	@echo "Rolling back one migration..."
-	goose -dir $(MIGRATIONS_DIR) postgres "$(DATABASE_URI)" down
+	goose -dir $(MIGRATIONS_DIR) postgres "$(POSTGRES_DSN)" down
 
 .PHONY: docker-up
 docker-up:

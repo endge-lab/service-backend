@@ -13,6 +13,7 @@ type Repository struct {
 	user      ports.UserRepository
 	todo      ports.TodoRepository
 	txManager ports.TxManager
+	project   ports.ProjectsRepository
 }
 
 type Params struct {
@@ -30,6 +31,7 @@ func NewRepository(params Params) *Repository {
 		user:      factory.BuildUserRepository(),
 		todo:      factory.BuildTodoRepository(),
 		txManager: factory.BuildTxManager(),
+		project:   factory.BuildProjectsRepository(),
 	}
 }
 
@@ -43,4 +45,7 @@ func (r *Repository) Todo() ports.TodoRepository {
 
 func (r *Repository) TxManager() ports.TxManager {
 	return r.txManager
+}
+func (r *Repository) Project() ports.ProjectsRepository {
+	return r.project
 }

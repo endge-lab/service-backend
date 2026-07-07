@@ -11,7 +11,7 @@ type Config struct {
 }
 
 func RegisterRoutes(app *fiber.App, cfg Config) {
-	app.Get("/swagger/openapi.yaml", func(c *fiber.Ctx) error {
+	app.Get("/swagger/openapi3.yaml", func(c *fiber.Ctx) error {
 		return handleOpenAPISpec(c, cfg)
 	})
 	app.Get("/swagger", handleSwaggerUI)
@@ -41,7 +41,7 @@ func handleSwaggerUI(c *fiber.Ctx) error {
   <body>
     <script
       id="api-reference"
-      data-url="/swagger/openapi.yaml"
+      data-url="/swagger/openapi3.yaml"
       data-configuration='{"theme":"blue","layout":"modern","showSidebar":true,"persistAuth":true,"defaultOpenAllTags":false}'></script>
     <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.28.5"></script>
   </body>

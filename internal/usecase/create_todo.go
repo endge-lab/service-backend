@@ -8,6 +8,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/repo/ports"
 	"github.com/endge-lab/service-backend/internal/services"
 	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	"github.com/endge-lab/service-backend/internal/usecase/shared"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -19,7 +20,7 @@ type CreateTodoOutput = adapters.CreateTodoOutput
 type CreateTodoUseCase = adapters.CreateTodoService
 
 type createTodoUseCase struct {
-	observedUseCase
+	Observed       shared.ObservedUseCase
 	txManager      ports.TxManager
 	todoRepository ports.TodoRepository
 	todoFactory    services.TodoFactory
@@ -31,7 +32,7 @@ type CreateTodoParams struct {
 	TodoFactory    services.TodoFactory
 	Tracer         trace.Tracer
 	Logger         *zap.Logger
-	Metrics        *UseCaseMetrics
+	Metrics        *shared.UseCaseMetrics
 }
 
 func NewCreateTodoUseCase(
@@ -40,7 +41,7 @@ func NewCreateTodoUseCase(
 	todoFactory services.TodoFactory,
 	tracer trace.Tracer,
 	logger *zap.Logger,
-	metrics *UseCaseMetrics,
+	metrics *shared.UseCaseMetrics,
 ) adapters.CreateTodoService {
 	return newCreateTodoUseCase(CreateTodoParams{
 		TxManager:      txManager,
@@ -55,7 +56,7 @@ func NewCreateTodoUseCase(
 // newCreateTodoUseCase собирает use case создания todo с telemetry и зависимостями.
 func newCreateTodoUseCase(params CreateTodoParams) adapters.CreateTodoService {
 	return &createTodoUseCase{
-		observedUseCase: newObservedUseCase(
+		Observed: shared.NewObservedUseCase(
 			params.Tracer,
 			params.Logger.With(zap.String("component", "usecase"), zap.String("usecase", "create_todo")),
 			params.Metrics,
@@ -69,7 +70,7 @@ func newCreateTodoUseCase(params CreateTodoParams) adapters.CreateTodoService {
 // Execute валидирует вход, создаёт todo и сохраняет её в репозитории.
 func (u *createTodoUseCase) Execute(ctx context.Context, input adapters.CreateTodoInput) (output *adapters.CreateTodoOutput, err error) {
 	title := strings.TrimSpace(input.Title)
-	ctx, obs := u.startObservedOperation(ctx, "create_todo", []attribute.KeyValue{
+	ctx, obs := u.Observed.StartObservedOperation(ctx, "create_todo", []attribute.KeyValue{
 		attribute.Int("todo.title_length", len(title)),
 	}, nil)
 	defer obs.End(&err)

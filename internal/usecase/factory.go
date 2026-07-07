@@ -1,6 +1,9 @@
 package usecase
 
-import "github.com/endge-lab/service-backend/internal/usecase/adapters"
+import (
+	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	"github.com/endge-lab/service-backend/internal/usecase/projects"
+)
 
 type serviceFactory struct {
 	deps Params
@@ -27,5 +30,14 @@ func (f *serviceFactory) CreateCreateTodoUseCase() adapters.CreateTodoService {
 		Tracer:         f.deps.Tracer,
 		Logger:         f.deps.Logger,
 		Metrics:        f.deps.Metrics,
+	})
+}
+
+func (f *serviceFactory) CreateProjectsUseCase() adapters.ProjectService {
+	return projects.NewProjectService(projects.ProjectParams{
+		ProjectRepository: f.deps.ProjectRepository,
+		Tracer:            f.deps.Tracer,
+		Logger:            f.deps.Logger,
+		Metrics:           f.deps.Metrics,
 	})
 }

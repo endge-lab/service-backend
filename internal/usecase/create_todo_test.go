@@ -8,6 +8,7 @@ import (
 
 	domainentities "github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/usecase/shared"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
@@ -61,7 +62,7 @@ func (f *fakeTodoFactory) New(_ context.Context, _ string) (*domainentities.Todo
 
 func TestCreateTodoUseCaseExecute(t *testing.T) {
 	ctx := context.Background()
-	metrics, err := NewUseCaseMetrics(otel.GetMeterProvider().Meter("test"))
+	metrics, err := shared.NewUseCaseMetrics(otel.GetMeterProvider().Meter("test"))
 	if err != nil {
 		t.Fatalf("expected metrics to initialize, got %v", err)
 	}

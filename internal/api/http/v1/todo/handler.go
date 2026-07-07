@@ -12,6 +12,8 @@ import (
 	"go.uber.org/zap"
 )
 
+type ErrorResponse = transport.ErrorResponse
+
 type Handler struct {
 	loadSessionUseCase usecase.LoadSessionUseCase
 	createTodoUseCase  usecase.CreateTodoUseCase
