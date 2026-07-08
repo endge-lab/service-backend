@@ -35,11 +35,3 @@ type ServiceUser struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
-
-type Todo struct {
-	ID          uuid.UUID `json:"id"`
-	Title       string    `json:"title"`
-	IsCompleted bool      `json:"is_completed"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-}

@@ -82,7 +82,7 @@ func TestTemplateRequiredPathsExist(t *testing.T) {
 
 	requiredPaths := []string{
 		"docs/architecture.md",
-		"docs/openapi.yaml",
+		"docs/openapi3.yaml",
 		"internal/api/http",
 		"internal/bootstrap/usecase.go",
 		"internal/config",
@@ -92,10 +92,9 @@ func TestTemplateRequiredPathsExist(t *testing.T) {
 		"internal/middleware",
 		"internal/platform",
 		"internal/repo",
-		"internal/repo/ports",
 		"internal/repo/postgres",
-		"internal/services",
 		"internal/usecase",
+		"internal/usecase/ports",
 		"test/contract",
 		"test/e2e",
 		"test/integration",
@@ -112,20 +111,25 @@ func TestTemplateLayerPackageNames(t *testing.T) {
 	root := repoRoot(t)
 
 	expectedPackages := map[string]string{
-		"internal/api/http":            "http",
-		"internal/bootstrap":           "bootstrap",
-		"internal/domain/entities":     "entities",
-		"internal/domain/errors":       "errors",
-		"internal/domain/valueobjects": "valueobjects",
-		"internal/middleware":          "middleware",
-		"internal/platform":            "platform",
-		"internal/repo":                "repo",
-		"internal/repo/ports":          "ports",
-		"internal/repo/postgres":       "postgres",
-		"internal/repo/postgres/sqlc":  "sqlc",
-		"internal/services":            "services",
-		"internal/usecase":             "usecase",
-		"internal/usecase/adapters":    "adapters",
+		"internal/api/http":              "http",
+		"internal/api/http/v1":           "http",
+		"internal/api/http/v1/docs":      "docs",
+		"internal/api/http/v1/health":    "http",
+		"internal/api/http/v1/project":   "project",
+		"internal/api/http/v1/session":   "http",
+		"internal/api/http/v1/transport": "http",
+		"internal/bootstrap":             "bootstrap",
+		"internal/domain/entities":       "entities",
+		"internal/domain/errors":         "errors",
+		"internal/middleware":            "middleware",
+		"internal/platform":              "platform",
+		"internal/repo/postgres":         "postgres",
+		"internal/repo/postgres/sqlc":    "sqlc",
+		"internal/usecase":               "usecase",
+		"internal/usecase/adapters":      "adapters",
+		"internal/usecase/ports":         "ports",
+		"internal/usecase/projects":      "projects",
+		"internal/usecase/shared":        "shared",
 	}
 
 	for relativeDir, expectedPackage := range expectedPackages {
@@ -176,16 +180,6 @@ func TestTemplateDependencyBoundaries(t *testing.T) {
 			},
 		},
 		{
-			relativeDir: "internal/services",
-			forbiddenImports: []string{
-				"/internal/api/http",
-				"/internal/repo/postgres",
-				"database/sql",
-				"github.com/gofiber/",
-				"github.com/jackc/pgx",
-			},
-		},
-		{
 			relativeDir: "internal/usecase",
 			forbiddenImports: []string{
 				"/internal/api/http",
@@ -227,8 +221,8 @@ func TestBootstrapRepositoryModulesWireReferenceLayers(t *testing.T) {
 	imports := parsedImports(t, filepath.Join(root, "internal/bootstrap/repository.go"))
 
 	requiredImports := []string{
-		"/internal/repo",
-		"/internal/repo/ports",
+		"/internal/repo/postgres",
+		"/internal/usecase/ports",
 	}
 
 	for _, requiredImport := range requiredImports {
@@ -251,7 +245,6 @@ func TestBootstrapUseCaseModulesWireReferenceLayers(t *testing.T) {
 	imports := parsedImports(t, filepath.Join(root, "internal/bootstrap/usecase.go"))
 
 	requiredImports := []string{
-		"/internal/services",
 		"/internal/usecase",
 	}
 

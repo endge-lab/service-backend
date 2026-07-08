@@ -1,30 +1,19 @@
-package http
+package docs
 
 import (
-	"os"
+	contractdocs "github.com/endge-lab/service-backend/docs"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-type Config struct {
-	OpenAPIPath string
-}
-
-func RegisterRoutes(app *fiber.App, cfg Config) {
-	app.Get("/swagger/openapi3.yaml", func(c *fiber.Ctx) error {
-		return handleOpenAPISpec(c, cfg)
-	})
+func RegisterRoutes(app *fiber.App) {
+	app.Get("/swagger/openapi3.yaml", handleOpenAPISpec)
 	app.Get("/swagger", handleSwaggerUI)
 }
 
-func handleOpenAPISpec(c *fiber.Ctx, cfg Config) error {
-	payload, err := os.ReadFile(cfg.OpenAPIPath)
-	if err != nil {
-		return err
-	}
-
+func handleOpenAPISpec(c *fiber.Ctx) error {
 	c.Set("Content-Type", "application/yaml; charset=utf-8")
-	return c.Send(payload)
+	return c.Send(contractdocs.OpenAPI3YAML())
 }
 
 func handleSwaggerUI(c *fiber.Ctx) error {
@@ -33,7 +22,7 @@ func handleSwaggerUI(c *fiber.Ctx) error {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Endge Service Template Scalar</title>
+    <title>Endge Service Backend Scalar</title>
     <style>
       body { margin: 0; }
     </style>

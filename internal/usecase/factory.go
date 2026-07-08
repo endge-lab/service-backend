@@ -22,17 +22,6 @@ func (f *serviceFactory) CreateLoadSessionUseCase() adapters.LoadSessionService 
 	})
 }
 
-func (f *serviceFactory) CreateCreateTodoUseCase() adapters.CreateTodoService {
-	return newCreateTodoUseCase(CreateTodoParams{
-		TxManager:      f.deps.TxManager,
-		TodoRepository: f.deps.TodoRepository,
-		TodoFactory:    f.deps.TodoFactory,
-		Tracer:         f.deps.Tracer,
-		Logger:         f.deps.Logger,
-		Metrics:        f.deps.Metrics,
-	})
-}
-
 func (f *serviceFactory) CreateProjectsUseCase() adapters.ProjectService {
 	return projects.NewProjectService(projects.ProjectParams{
 		ProjectRepository: f.deps.ProjectRepository,

@@ -1,37 +1,31 @@
 package bootstrap
 
 import (
-	"github.com/endge-lab/service-backend/internal/repo"
-	"github.com/endge-lab/service-backend/internal/repo/ports"
+	"github.com/endge-lab/service-backend/internal/repo/postgres"
+	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/fx"
 )
 
 func RepositoryModules() fx.Option {
 	return fx.Options(
 		fx.Provide(
-			repo.NewRepository,
+			func(db *pgxpool.Pool) *sqlc.Queries {
+				return sqlc.New(db)
+			},
 			fx.Annotate(
-				func(repository *repo.Repository) ports.UserRepository {
-					return repository.User()
-				},
+				postgres.NewUserRepository,
 				fx.As(new(ports.UserRepository)),
 			),
 			fx.Annotate(
-				func(repository *repo.Repository) ports.TodoRepository {
-					return repository.Todo()
-				},
-				fx.As(new(ports.TodoRepository)),
-			),
-			fx.Annotate(
-				func(repository *repo.Repository) ports.TxManager {
-					return repository.TxManager()
-				},
-				fx.As(new(ports.TxManager)),
-			),
-			fx.Annotate(
-				func(repository *repo.Repository) ports.ProjectsRepository { return repository.Project() },
+				postgres.NewProjectsRepository,
 				fx.As(new(ports.ProjectsRepository)),
+			),
+			fx.Annotate(
+				postgres.NewTxManager,
+				fx.As(new(ports.TxManager)),
 			),
 		),
 	)

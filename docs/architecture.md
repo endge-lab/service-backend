@@ -18,7 +18,6 @@
 flowchart LR
     Client["Client"] --> HTTP["api/http"]
     HTTP --> UseCase["usecase"]
-    UseCase --> Services["services"]
     UseCase --> Ports["ports"]
     Ports --> Repo["repo/postgres"]
     Repo --> DB["PostgreSQL"]
@@ -39,12 +38,6 @@ flowchart LR
 - `entities` для сущностей
 - `valueobjects` для значимых значений с инвариантами
 - `errors` для бизнесовых и application-level ошибок
-
-Пример из шаблона:
-
-- `Todo`
-- `TodoTitle`
-- `ErrInvalidTodoTitle`
 
 ## 4. Auth flow
 
@@ -134,7 +127,7 @@ flowchart LR
 
 Контракт должен жить в двух местах одновременно:
 
-- `docs/openapi.yaml`
+- `docs/openapi3.yaml`
 - OpenAPI-комментарии в `api/http`
 
 Это позволяет:
@@ -159,18 +152,3 @@ flowchart LR
 - integration tests на persistence/fanout слой;
 - contract tests на HTTP receipts и polling;
 - e2e-сценарии с ingest -> fanout -> client ack/dismiss.
-
-## 11. Todo как reference-feature
-
-`Todo` в шаблоне специально сделан как минимальный, но production-pattern пример:
-
-- одна сущность
-- один value object
-- один набор доменных ошибок
-- один сервис
-- один порт репозитория
-- один `TxManager`
-- один use case
-- один transport endpoint
-
-Если новая фича не укладывается в этот pipeline, сначала нужно понять, это правда особый случай или мы начинаем размывать архитектурный стандарт.

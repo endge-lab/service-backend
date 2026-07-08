@@ -8,7 +8,7 @@
 - package naming слоёв
 - dependency boundaries между `domain`, `services`, `usecase`, `api/http`, `repo/postgres`
 - reference wiring в `internal/bootstrap/usecase.go`
-- обязательные артефакты `docs/openapi.yaml` и `test/*`
+- обязательные артефакты `docs/openapi3.yaml` и `test/*`
 
 ## Риски
 - `P0`: шаблон перестаёт быть эталоном и новые сервисы стартуют с размытыми слоями

@@ -9,8 +9,7 @@
 - миграции через `goose`;
 - DI через `fx`;
 - health/version endpoints;
-- OpenAPI-файл в `docs/openapi.yaml`;
-- пример фичи `Todo`;
+- OpenAPI-файл в `docs/openapi3.yaml`;
 - auth выключен по умолчанию;
 - telemetry выключена по умолчанию;
 - Redpanda/Kafka выключены по умолчанию.
@@ -87,7 +86,7 @@ Auth опционален. По умолчанию:
 AUTH_ENABLED=false
 ```
 
-В этом режиме `/api/todos` открыт, а `/api/session/me` не регистрируется.
+В этом режиме публичные API регистрируются без JWT middleware, а `/api/session/me` не регистрируется.
 
 Чтобы включить JWT/JWKS auth:
 

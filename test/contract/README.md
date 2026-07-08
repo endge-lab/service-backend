@@ -4,4 +4,4 @@
 
 - HTTP status codes
 - request/response payload shape
-- совместимость `docs/openapi.yaml` с реальным поведением handlers
+- совместимость `docs/openapi3.yaml` с реальным поведением handlers

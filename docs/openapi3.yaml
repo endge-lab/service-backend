@@ -1,8 +1,7 @@
 openapi: 3.0.0
 info:
   description: Production-ready шаблон Endge-сервиса с эталонными
-    RedPanda-обёртками, reference-фичей Todo и строгими архитектурными
-    границами.
+    RedPanda-обёртками и строгими архитектурными границами.
   title: Endge Service Backend API
   contact: {}
   version: 1.0.20
@@ -390,47 +389,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/internal_api_http_v1_session.ErrorResponse"
-  /api/todos:
-    post:
-      security:
-        - BearerAuth: []
-      description: Создает новую задачу Todo и сохраняет ее в PostgreSQL в рамках
-        transaction boundary use case слоя.
-      tags:
-        - todo
-      summary: Создать задачу Todo
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/internal_api_http_v1_todo.CreateTodoRequest"
-        description: Параметры создаваемой задачи
-        required: true
-      responses:
-        "201":
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/internal_api_http_v1_todo.TodoResponse"
-        "400":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/internal_api_http_v1_todo.ErrorResponse"
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/internal_api_http_v1_todo.ErrorResponse"
-        "500":
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/internal_api_http_v1_todo.ErrorResponse"
 servers:
   - url: /
 components:
@@ -626,36 +584,4 @@ components:
         updatedAt:
           type: string
         username:
-          type: string
-    internal_api_http_v1_todo.CreateTodoRequest:
-      type: object
-      required:
-        - title
-      properties:
-        title:
-          type: string
-          maxLength: 160
-          minLength: 1
-    internal_api_http_v1_todo.ErrorResponse:
-      type: object
-      properties:
-        code:
-          type: string
-        details:
-          type: object
-          additionalProperties: {}
-        message:
-          type: string
-    internal_api_http_v1_todo.TodoResponse:
-      type: object
-      properties:
-        createdAt:
-          type: string
-        id:
-          type: string
-        isCompleted:
-          type: boolean
-        title:
-          type: string
-        updatedAt:
           type: string

@@ -6,10 +6,10 @@ import (
 )
 
 func TestCodeOfReturnsSpecificWrappedCode(t *testing.T) {
-	err := InvalidInput("todo.invalid_title", "Некорректный заголовок задачи")
+	err := InvalidInput("validation.invalid_input", "Некорректные входные данные")
 
-	if got := CodeOf(err); got != "todo.invalid_title" {
-		t.Fatalf("CodeOf() = %q, want %q", got, "todo.invalid_title")
+	if got := CodeOf(err); got != "validation.invalid_input" {
+		t.Fatalf("CodeOf() = %q, want %q", got, "validation.invalid_input")
 	}
 	if got := HTTPStatusOf(err); got != 400 {
 		t.Fatalf("HTTPStatusOf() = %d, want 400", got)

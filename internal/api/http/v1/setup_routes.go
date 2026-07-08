@@ -5,7 +5,6 @@ import (
 	health "github.com/endge-lab/service-backend/internal/api/http/v1/health"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/project"
 	session "github.com/endge-lab/service-backend/internal/api/http/v1/session"
-	todo "github.com/endge-lab/service-backend/internal/api/http/v1/todo"
 	transport "github.com/endge-lab/service-backend/internal/api/http/v1/transport"
 	"github.com/endge-lab/service-backend/internal/config"
 	"github.com/endge-lab/service-backend/internal/middleware"
@@ -17,12 +16,11 @@ import (
 
 type Handler struct {
 	SessionHandler session.SHandler
-	TodoHandler    todo.THandler
 	ProjectHandler project.PHandler
 }
 
-func NewHandler(sessionHandler session.SHandler, todoHandler todo.THandler, projectHandler project.PHandler) *Handler {
-	return &Handler{SessionHandler: sessionHandler, TodoHandler: todoHandler, ProjectHandler: projectHandler}
+func NewHandler(sessionHandler session.SHandler, projectHandler project.PHandler) *Handler {
+	return &Handler{SessionHandler: sessionHandler, ProjectHandler: projectHandler}
 }
 
 func SetupRoutes(
@@ -36,9 +34,7 @@ func SetupRoutes(
 	setupMiddlewares(app, cfg, meter, logger)
 
 	if !cfg.App.IsProduction() {
-		docs.RegisterRoutes(app, docs.Config{
-			OpenAPIPath: "./docs/openapi3.yaml",
-		})
+		docs.RegisterRoutes(app)
 	}
 
 	health.RegisterRoutes(app, health.Config{
@@ -52,7 +48,6 @@ func SetupRoutes(
 		api.Use(authMiddleware.AuthMiddleware())
 		session.RegisterRoutes(api, handler.SessionHandler)
 	}
-	todo.RegisterRoutes(api, handler.TodoHandler)
 	project.RegisterRoutes(api, handler.ProjectHandler)
 	app.Use(func(c *fiber.Ctx) error {
 		return transport.WriteErrorResponse(c, transport.ErrRouteNotFound)

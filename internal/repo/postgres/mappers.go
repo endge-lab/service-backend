@@ -11,16 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func mapTodo(todo sqlc.Todo) *entities.Todo {
-	return &entities.Todo{
-		ID:          todo.ID.String(),
-		Title:       todo.Title,
-		IsCompleted: todo.IsCompleted,
-		CreatedAt:   todo.CreatedAt,
-		UpdatedAt:   todo.UpdatedAt,
-	}
-}
-
 func mapServiceUser(user sqlc.ServiceUser) *entities.User {
 	return &entities.User{
 		ID:          user.ID.String(),

@@ -6,13 +6,12 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/repo/ports"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-kit-go/pkg/logging"
 	"github.com/endge-lab/service-kit-go/pkg/telemetry"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -20,15 +19,11 @@ import (
 
 type UserRepository struct {
 	*baseRepository
-	tracer trace.Tracer
-	logger *zap.Logger
 }
 
-func NewUserRepository(_ *pgxpool.Pool, queries *sqlc.Queries, tracer trace.Tracer, logger *zap.Logger) *UserRepository {
+func NewUserRepository(queries *sqlc.Queries, tracer trace.Tracer, logger *zap.Logger) *UserRepository {
 	return &UserRepository{
-		baseRepository: newBaseRepository(queries),
-		tracer:         tracer,
-		logger:         logger.With(zap.String("component", "repo"), zap.String("repository", "user")),
+		baseRepository: newBaseRepository(queries, tracer, logger, "user"),
 	}
 }
 

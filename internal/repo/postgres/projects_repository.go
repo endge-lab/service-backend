@@ -11,29 +11,21 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 type ProjectsRepository struct {
-	db      *pgxpool.Pool
-	queries *sqlc.Queries
-	logger  *zap.Logger
-	tracer  trace.Tracer
+	*baseRepository
 }
 
 func NewProjectsRepository(
-	db *pgxpool.Pool,
 	queries *sqlc.Queries,
-	logger *zap.Logger,
 	tracer trace.Tracer,
+	logger *zap.Logger,
 ) *ProjectsRepository {
 	return &ProjectsRepository{
-		db:      db,
-		queries: queries,
-		logger:  logger,
-		tracer:  tracer,
+		baseRepository: newBaseRepository(queries, tracer, logger, "projects"),
 	}
 }
 
@@ -43,7 +35,7 @@ func (r *ProjectsRepository) Create(ctx context.Context, project *entities.Proje
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
 
-	created, err := r.queries.CreateProject(ctx, mapCreateProjectParams(project))
+	created, err := r.queries(ctx).CreateProject(ctx, mapCreateProjectParams(project))
 	if err != nil {
 		r.logger.Error("create project failed", zap.Error(err))
 		return nil, apperrors.Internal("projects.create_failed", "failed to create project")
@@ -58,7 +50,7 @@ func (r *ProjectsRepository) GetByID(ctx context.Context, id uuid.UUID) (result 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
 
-	project, err := r.queries.GetProjectByID(ctx, id)
+	project, err := r.queries(ctx).GetProjectByID(ctx, id)
 	if err != nil {
 		if stderrors.Is(err, pgx.ErrNoRows) {
 			return nil, apperrors.NotFound("projects.not_found", "project not found")
@@ -77,7 +69,7 @@ func (r *ProjectsRepository) GetByIdentity(ctx context.Context, identity string)
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
 
-	project, err := r.queries.GetProjectByIdentity(ctx, identity)
+	project, err := r.queries(ctx).GetProjectByIdentity(ctx, identity)
 	if err != nil {
 		if stderrors.Is(err, pgx.ErrNoRows) {
 			return nil, apperrors.NotFound("projects.not_found", "project not found")
@@ -96,7 +88,7 @@ func (r *ProjectsRepository) List(ctx context.Context) (result []*entities.Proje
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
 
-	projects, err := r.queries.ListProjects(ctx)
+	projects, err := r.queries(ctx).ListProjects(ctx)
 	if err != nil {
 		r.logger.Error("list projects failed", zap.Error(err))
 		return nil, apperrors.Internal("projects.list_failed", "failed to list projects")
@@ -116,7 +108,7 @@ func (r *ProjectsRepository) Update(ctx context.Context, project *entities.Proje
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
 
-	updated, err := r.queries.UpdateProject(ctx, mapUpdateProjectParams(project))
+	updated, err := r.queries(ctx).UpdateProject(ctx, mapUpdateProjectParams(project))
 	if err != nil {
 		if stderrors.Is(err, pgx.ErrNoRows) {
 			return nil, apperrors.NotFound("projects.not_found", "project not found")
@@ -135,7 +127,7 @@ func (r *ProjectsRepository) SoftDelete(ctx context.Context, id uuid.UUID) (err 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
 
-	if err := r.queries.SoftDeleteProject(ctx, id); err != nil {
+	if err := r.queries(ctx).SoftDeleteProject(ctx, id); err != nil {
 		r.logger.Error("soft delete project failed", zap.Error(err))
 		return apperrors.Internal("projects.soft_delete_failed", "failed to delete project")
 	}
@@ -149,7 +141,7 @@ func (r *ProjectsRepository) Restore(ctx context.Context, id uuid.UUID) (err err
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
 
-	if err := r.queries.RestoreProjects(ctx, id); err != nil {
+	if err := r.queries(ctx).RestoreProjects(ctx, id); err != nil {
 		r.logger.Error("restore project failed", zap.Error(err))
 		return apperrors.Internal("projects.restore_failed", "failed to restore project")
 	}
@@ -163,7 +155,7 @@ func (r *ProjectsRepository) HardDelete(ctx context.Context, id uuid.UUID) (err 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
 
-	if err := r.queries.HardDeleteProject(ctx, id); err != nil {
+	if err := r.queries(ctx).HardDeleteProject(ctx, id); err != nil {
 		r.logger.Error("hard delete project failed", zap.Error(err))
 		return apperrors.Internal("projects.hard_delete_failed", "failed to delete project")
 	}
@@ -177,7 +169,7 @@ func (r *ProjectsRepository) ExistsByIdentity(ctx context.Context, identity stri
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
 
-	exists, err := r.queries.ExistsProjectByIdentity(ctx, identity)
+	exists, err := r.queries(ctx).ExistsProjectByIdentity(ctx, identity)
 	if err != nil {
 		r.logger.Error("exists project by identity failed", zap.Error(err))
 		return false, apperrors.Internal("projects.exists_by_identity_failed", "failed to check project identity")
@@ -192,7 +184,7 @@ func (r *ProjectsRepository) Count(ctx context.Context) (result int64, err error
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
 
-	count, err := r.queries.CountProject(ctx)
+	count, err := r.queries(ctx).CountProject(ctx)
 	if err != nil {
 		r.logger.Error("count projects failed", zap.Error(err))
 		return 0, apperrors.Internal("projects.count_failed", "failed to count projects")

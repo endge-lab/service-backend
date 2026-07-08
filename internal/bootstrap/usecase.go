@@ -1,7 +1,6 @@
 package bootstrap
 
 import (
-	"github.com/endge-lab/service-backend/internal/services"
 	"github.com/endge-lab/service-backend/internal/usecase"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 
@@ -11,7 +10,6 @@ import (
 func UseCaseModules() fx.Option {
 	return fx.Options(
 		fx.Provide(
-			fx.Annotate(services.NewTodoFactory, fx.As(new(services.TodoFactory))),
 			shared.NewUseCaseMetrics,
 			usecase.NewService,
 		),

@@ -19,7 +19,6 @@ import (
 type ErrorResponse = transport.ErrorResponse
 type Handler struct {
 	loadSessionUseCase usecase.LoadSessionUseCase
-	createTodoUseCase  usecase.CreateTodoUseCase
 	validator          appvalidator.Validator
 	logger             *zap.Logger
 	tracer             trace.Tracer
@@ -33,7 +32,6 @@ func NewHandler(
 ) *Handler {
 	return &Handler{
 		loadSessionUseCase: service.LoadSession,
-		createTodoUseCase:  service.CreateTodo,
 		validator:          validator,
 		logger:             logger.With(zap.String("component", "http_handler")),
 		tracer:             tracer,

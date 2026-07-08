@@ -26,15 +26,3 @@ type LoadSessionOutput struct {
 	Session *entities.SessionInfo
 	User    *entities.User
 }
-
-type CreateTodoService interface {
-	Execute(ctx context.Context, input CreateTodoInput) (*CreateTodoOutput, error)
-}
-
-type CreateTodoInput struct {
-	Title string
-}
-
-type CreateTodoOutput struct {
-	Todo *entities.Todo
-}
