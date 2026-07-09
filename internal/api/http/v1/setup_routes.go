@@ -2,6 +2,7 @@ package http
 
 import (
 	docs "github.com/endge-lab/service-backend/internal/api/http/v1/docs"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/folder"
 	health "github.com/endge-lab/service-backend/internal/api/http/v1/health"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/project"
 	session "github.com/endge-lab/service-backend/internal/api/http/v1/session"
@@ -17,10 +18,19 @@ import (
 type Handler struct {
 	SessionHandler session.SHandler
 	ProjectHandler project.PHandler
+	FolderHandler  folder.FHandler
 }
 
-func NewHandler(sessionHandler session.SHandler, projectHandler project.PHandler) *Handler {
-	return &Handler{SessionHandler: sessionHandler, ProjectHandler: projectHandler}
+func NewHandler(
+	sessionHandler session.SHandler,
+	projectHandler project.PHandler,
+	folderHandler folder.FHandler,
+) *Handler {
+	return &Handler{
+		SessionHandler: sessionHandler,
+		ProjectHandler: projectHandler,
+		FolderHandler:  folderHandler,
+	}
 }
 
 func SetupRoutes(
@@ -49,6 +59,7 @@ func SetupRoutes(
 		session.RegisterRoutes(api, handler.SessionHandler)
 	}
 	project.RegisterRoutes(api, handler.ProjectHandler)
+	folder.RegisterRoutes(api, handler.FolderHandler)
 	app.Use(func(c *fiber.Ctx) error {
 		return transport.WriteErrorResponse(c, transport.ErrRouteNotFound)
 	})

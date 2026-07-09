@@ -1,38 +1,24 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS projects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    identity TEXT NOT NULL UNIQUE,
+    identity TEXT NOT NULL,
     display_name TEXT NOT NULL,
-    extend_settings BOOLEAN NOT NULL DEFAULT FALSE,
-    settings_id UUID NULL REFERENCES settings(id) ON DELETE SET NULL,
-    navigation_id UUID NULL REFERENCES navigations(id) ON DELETE SET NULL,
-    folder_id UUID NULL REFERENCES folders(id) ON DELETE SET NULL,
-    allowed_environment_ids UUID[] NOT NULL DEFAULT '{}',
+    description TEXT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
     deleted_at TIMESTAMPTZ NULL,
     meta JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT projects_identity_unique UNIQUE (identity),
+    CONSTRAINT projects_identity_not_empty_check CHECK (btrim(identity) <> ''),
+    CONSTRAINT projects_display_name_not_empty_check CHECK (btrim(display_name) <> '')
 );
 
 ALTER TABLE folders
     ADD CONSTRAINT folders_project_id_fkey
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL;
-
-ALTER TABLE settings
-    ADD CONSTRAINT settings_project_id_fkey
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL;
-
-ALTER TABLE navigations
-    ADD CONSTRAINT navigations_project_id_fkey
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL;
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE;
 
 -- +goose Down
-ALTER TABLE IF EXISTS navigations
-    DROP CONSTRAINT IF EXISTS navigations_project_id_fkey;
-
-ALTER TABLE IF EXISTS settings
-    DROP CONSTRAINT IF EXISTS settings_project_id_fkey;
-
 ALTER TABLE IF EXISTS folders
     DROP CONSTRAINT IF EXISTS folders_project_id_fkey;
 

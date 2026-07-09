@@ -9,3 +9,4 @@ main
 /configs/development.yaml
 /configs/production.yaml
 /configs/local.yaml
+/config/local.yaml

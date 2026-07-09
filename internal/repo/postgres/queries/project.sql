@@ -2,11 +2,8 @@
 INSERT INTO projects (
     identity,
     display_name,
-    extend_settings,
-    settings_id,
-    navigation_id,
-    folder_id,
-    allowed_environment_ids,
+    description,
+    active,
     meta
 )
 VALUES (
@@ -14,10 +11,7 @@ VALUES (
            $2,
            $3,
            $4,
-           $5,
-           $6,
-           $7,
-           $8
+           $5
        )
     RETURNING *;
 
@@ -33,6 +27,11 @@ FROM projects
 WHERE identity = $1
   AND deleted_at IS NULL;
 
+-- name: GetProjectByIdentityIncludingDeleted :one
+SELECT *
+FROM projects
+WHERE identity = $1;
+
 -- name: ListProjects :many
 SELECT *
 FROM projects
@@ -42,20 +41,16 @@ ORDER BY created_at DESC;
 -- name: UpdateProject :one
 UPDATE projects
 SET
-    identity = $2,
-    display_name = $3,
-    extend_settings = $4,
-    settings_id = $5,
-    navigation_id = $6,
-    folder_id = $7,
-    allowed_environment_ids = $8,
-    meta = $9,
+    display_name = $2,
+    description = $3,
+    active = $4,
+    meta = $5,
     updated_at = NOW()
 WHERE id = $1
   AND deleted_at IS NULL
     RETURNING *;
 
--- name: SoftDeleteProject :exec
+-- name: SoftDeleteProject :execrows
 UPDATE projects
 SET
     deleted_at = NOW(),
@@ -63,14 +58,15 @@ SET
 WHERE id = $1
   AND deleted_at IS NULL;
 
--- name: RestoreProjects :exec
+-- name: RestoreProject :execrows
 UPDATE projects
 SET
     deleted_at = NULL,
     updated_at = NOW()
-WHERE id = $1;
+WHERE id = $1
+  AND deleted_at IS NOT NULL;
 
--- name: HardDeleteProject :exec
+-- name: HardDeleteProject :execrows
 DELETE FROM projects
 WHERE id = $1;
 
@@ -79,7 +75,6 @@ SELECT EXISTS(
     SELECT 1
     FROM projects
     WHERE identity = $1
-      AND deleted_at IS NULL
 );
 
 -- name: CountProject :one

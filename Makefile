@@ -63,6 +63,7 @@ docs:
 	swagger2openapi ./docs/swagger.json -o ./docs/openapi3.yaml
 	rm -f ./docs/swagger.json
 	rm -f ./docs/swagger.yaml
+	rm -f ./docs/docs.go
 
 .PHONY: docs-clean
 docs-clean:
@@ -138,26 +139,29 @@ migrate-down:
 	@echo "Rolling back one migration..."
 	goose -dir $(MIGRATIONS_DIR) postgres "$(POSTGRES_DSN)" down
 
-.PHONY: docker-up
-docker-up:
-	APP_RUNTIME_ENV_FILE=$(RUNTIME_ENV_FILE) docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) up --build --remove-orphans
+.PHONY: compose-up
+compose-up:
+	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) up --build --remove-orphans
 
-.PHONY: docker-up-app
-docker-up-app:
-	APP_RUNTIME_ENV_FILE=$(RUNTIME_ENV_FILE) docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) up --build --remove-orphans app
+.PHONY: compose-app
+compose-app:
+	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) up --build --remove-orphans app
 
-.PHONY: docker-down
-docker-down:
-	APP_RUNTIME_ENV_FILE=$(RUNTIME_ENV_FILE) docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) down
+.PHONY: compose-down
+compose-down:
+	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) down
 
-.PHONY: docker-clean
-docker-clean:
-	APP_RUNTIME_ENV_FILE=$(RUNTIME_ENV_FILE) docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) down --volumes --remove-orphans
+.PHONY: compose-clean
+compose-clean:
+	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) down --volumes --remove-orphans
 
-.PHONY: docker-recreate
-docker-recreate:
-	APP_RUNTIME_ENV_FILE=$(RUNTIME_ENV_FILE) docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) up --build --force-recreate --remove-orphans
+.PHONY: compose-logs
+compose-logs:
+	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) logs -f
 
+.PHONY: compose-ps
+compose-ps:
+	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) ps
 .PHONY: db
 db:
 	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) exec postgres psql -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-service_backend}

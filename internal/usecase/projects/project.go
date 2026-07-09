@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
+	"github.com/endge-lab/service-backend/internal/repo/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/adapters"
-	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 	apperrors "github.com/endge-lab/service-kit-go/pkg/errors"
 
@@ -22,11 +22,15 @@ var _ adapters.ProjectService = (*Project)(nil)
 
 type Project struct {
 	projectRepository ports.ProjectsRepository
+	folderRepository  ports.FoldersRepository
+	txManager         ports.TxManager
 	observed          shared.ObservedUseCase
 }
 
 type ProjectParams struct {
 	ProjectRepository ports.ProjectsRepository
+	FolderRepository  ports.FoldersRepository
+	TxManager         ports.TxManager
 	Tracer            trace.Tracer
 	Logger            *zap.Logger
 	Metrics           *shared.UseCaseMetrics
@@ -35,6 +39,8 @@ type ProjectParams struct {
 func NewProjectService(params ProjectParams) *Project {
 	return &Project{
 		projectRepository: params.ProjectRepository,
+		folderRepository:  params.FolderRepository,
+		txManager:         params.TxManager,
 		observed: shared.NewObservedUseCase(
 			params.Tracer,
 			params.Logger,
@@ -64,14 +70,27 @@ func (s *Project) Create(ctx context.Context, input adapters.CreateProjectInput)
 	}
 
 	if exists {
-		err = apperrors.Conflict("projects.identity_already_exists", "project identity already exists")
+		err = apperrors.Conflict("identity_conflict", "project identity already exists")
 		observed.Logger().Error(op, zap.Error(err), zap.String("identity", input.Identity))
 		return nil, err
 	}
 
 	project := projectFromCreateInput(input)
 
-	result, err = s.projectRepository.Create(ctx, project)
+	err = s.txManager.WithinTransaction(ctx, func(txCtx context.Context) error {
+		result, err = s.projectRepository.Create(txCtx, project)
+		if err != nil {
+			return err
+		}
+
+		for _, root := range projectRootFolders(result.ID) {
+			if _, err = s.folderRepository.Create(txCtx, root); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 	if err != nil {
 		observed.Logger().Error(op, zap.Error(err))
 		return nil, err
@@ -90,7 +109,7 @@ func (s *Project) GetByID(ctx context.Context, id uuid.UUID) (result *entities.P
 	defer observed.End(&err)
 
 	if id == uuid.Nil {
-		err = apperrors.InvalidInput("projects.empty_id", "project id is required")
+		err = apperrors.InvalidInput("validation_error", "project id is required")
 		observed.Logger().Error(op, zap.Error(err))
 		return nil, err
 	}
@@ -116,7 +135,7 @@ func (s *Project) GetByIdentity(ctx context.Context, identity string) (result *e
 	defer observed.End(&err)
 
 	if identity == "" {
-		err = apperrors.InvalidInput("projects.empty_identity", "project identity is required")
+		err = apperrors.InvalidInput("validation_error", "project identity is required")
 		observed.Logger().Error(op, zap.Error(err))
 		return nil, err
 	}
@@ -162,27 +181,13 @@ func (s *Project) Update(ctx context.Context, input adapters.UpdateProjectInput)
 		return nil, err
 	}
 
-	current, err := s.projectRepository.GetByID(ctx, input.ID)
+	current, err := s.projectRepository.GetByIdentity(ctx, input.Identity)
 	if err != nil {
-		observed.Logger().Error(op, zap.Error(err), zap.String("project_id", input.ID.String()))
+		observed.Logger().Error(op, zap.Error(err), zap.String("identity", input.Identity))
 		return nil, err
 	}
 
-	if current.Identity != input.Identity {
-		exists, err := s.projectRepository.ExistsByIdentity(ctx, input.Identity)
-		if err != nil {
-			observed.Logger().Error(op, zap.Error(err), zap.String("identity", input.Identity))
-			return nil, err
-		}
-
-		if exists {
-			err = apperrors.Conflict("projects.identity_already_exists", "project identity already exists")
-			observed.Logger().Error(op, zap.Error(err), zap.String("identity", input.Identity))
-			return nil, err
-		}
-	}
-
-	project := projectFromUpdateInput(input)
+	project := projectFromUpdateInput(current, input)
 
 	result, err = s.projectRepository.Update(ctx, project)
 	if err != nil {
@@ -193,7 +198,7 @@ func (s *Project) Update(ctx context.Context, input adapters.UpdateProjectInput)
 	return result, nil
 }
 
-func (s *Project) SoftDelete(ctx context.Context, id uuid.UUID) (err error) {
+func (s *Project) SoftDelete(ctx context.Context, identity string) (err error) {
 	const op = "project.soft_delete"
 
 	ctx, cancel := context.WithTimeout(ctx, projectOperationTimeout)
@@ -202,22 +207,29 @@ func (s *Project) SoftDelete(ctx context.Context, id uuid.UUID) (err error) {
 	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
 	defer observed.End(&err)
 
-	if id == uuid.Nil {
-		err = apperrors.InvalidInput("projects.empty_id", "project id is required")
+	identity = strings.TrimSpace(identity)
+	if identity == "" {
+		err = apperrors.InvalidInput("validation_error", "project identity is required")
 		observed.Logger().Error(op, zap.Error(err))
 		return err
 	}
 
-	err = s.projectRepository.SoftDelete(ctx, id)
+	project, err := s.projectRepository.GetByIdentity(ctx, identity)
 	if err != nil {
-		observed.Logger().Error(op, zap.Error(err), zap.String("project_id", id.String()))
+		observed.Logger().Error(op, zap.Error(err), zap.String("identity", identity))
+		return err
+	}
+
+	err = s.projectRepository.SoftDelete(ctx, project.ID)
+	if err != nil {
+		observed.Logger().Error(op, zap.Error(err), zap.String("identity", identity))
 		return err
 	}
 
 	return nil
 }
 
-func (s *Project) Restore(ctx context.Context, id uuid.UUID) (err error) {
+func (s *Project) Restore(ctx context.Context, identity string) (err error) {
 	const op = "project.restore"
 
 	ctx, cancel := context.WithTimeout(ctx, projectOperationTimeout)
@@ -226,22 +238,29 @@ func (s *Project) Restore(ctx context.Context, id uuid.UUID) (err error) {
 	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
 	defer observed.End(&err)
 
-	if id == uuid.Nil {
-		err = apperrors.InvalidInput("projects.empty_id", "project id is required")
+	identity = strings.TrimSpace(identity)
+	if identity == "" {
+		err = apperrors.InvalidInput("validation_error", "project identity is required")
 		observed.Logger().Error(op, zap.Error(err))
 		return err
 	}
 
-	err = s.projectRepository.Restore(ctx, id)
+	project, err := s.projectRepository.GetByIdentityIncludingDeleted(ctx, identity)
 	if err != nil {
-		observed.Logger().Error(op, zap.Error(err), zap.String("project_id", id.String()))
+		observed.Logger().Error(op, zap.Error(err), zap.String("identity", identity))
+		return err
+	}
+
+	err = s.projectRepository.Restore(ctx, project.ID)
+	if err != nil {
+		observed.Logger().Error(op, zap.Error(err), zap.String("identity", identity))
 		return err
 	}
 
 	return nil
 }
 
-func (s *Project) HardDelete(ctx context.Context, id uuid.UUID) (err error) {
+func (s *Project) HardDelete(ctx context.Context, identity string) (err error) {
 	const op = "project.hard_delete"
 
 	ctx, cancel := context.WithTimeout(ctx, projectOperationTimeout)
@@ -250,15 +269,22 @@ func (s *Project) HardDelete(ctx context.Context, id uuid.UUID) (err error) {
 	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
 	defer observed.End(&err)
 
-	if id == uuid.Nil {
-		err = apperrors.InvalidInput("projects.empty_id", "project id is required")
+	identity = strings.TrimSpace(identity)
+	if identity == "" {
+		err = apperrors.InvalidInput("validation_error", "project identity is required")
 		observed.Logger().Error(op, zap.Error(err))
 		return err
 	}
 
-	err = s.projectRepository.HardDelete(ctx, id)
+	project, err := s.projectRepository.GetByIdentityIncludingDeleted(ctx, identity)
 	if err != nil {
-		observed.Logger().Error(op, zap.Error(err), zap.String("project_id", id.String()))
+		observed.Logger().Error(op, zap.Error(err), zap.String("identity", identity))
+		return err
+	}
+
+	err = s.projectRepository.HardDelete(ctx, project.ID)
+	if err != nil {
+		observed.Logger().Error(op, zap.Error(err), zap.String("identity", identity))
 		return err
 	}
 
@@ -288,19 +314,15 @@ func normalizeAndValidateCreateProjectInput(input *adapters.CreateProjectInput) 
 	input.DisplayName = strings.TrimSpace(input.DisplayName)
 
 	if input.Identity == "" {
-		return apperrors.InvalidInput("projects.empty_identity", "project identity is required")
+		return apperrors.InvalidInput("validation_error", "project identity is required")
 	}
 
 	if input.DisplayName == "" {
-		return apperrors.InvalidInput("projects.empty_display_name", "project display name is required")
+		return apperrors.InvalidInput("validation_error", "project display name is required")
 	}
 
 	if input.Meta == nil {
 		input.Meta = map[string]any{}
-	}
-
-	if input.AllowedEnvironmentIDs == nil {
-		input.AllowedEnvironmentIDs = []uuid.UUID{}
 	}
 
 	return nil

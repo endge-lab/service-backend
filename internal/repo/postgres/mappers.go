@@ -25,18 +25,15 @@ func mapServiceUser(user sqlc.ServiceUser) *entities.User {
 
 func mapProject(project sqlc.Project) *entities.Project {
 	return &entities.Project{
-		ID:                    project.ID,
-		Identity:              project.Identity,
-		DisplayName:           project.DisplayName,
-		ExtendSettings:        project.ExtendSettings,
-		SettingsID:            mapNullableUUIDToEntity(project.SettingsID),
-		NavigationID:          mapNullableUUIDToEntity(project.NavigationID),
-		FolderID:              mapNullableUUIDToEntity(project.FolderID),
-		AllowedEnvironmentIDs: project.AllowedEnvironmentIds,
-		DeletedAt:             mapNullableTimeToEntity(project.DeletedAt),
-		Meta:                  mapJSONBToEntity(project.Meta),
-		CreatedAt:             project.CreatedAt,
-		UpdatedAt:             project.UpdatedAt,
+		ID:          project.ID,
+		Identity:    project.Identity,
+		DisplayName: project.DisplayName,
+		Description: mapNullableTextToEntity(project.Description),
+		Active:      project.Active,
+		DeletedAt:   mapNullableTimeToEntity(project.DeletedAt),
+		Meta:        mapJSONBToEntity(project.Meta),
+		CreatedAt:   project.CreatedAt,
+		UpdatedAt:   project.UpdatedAt,
 	}
 }
 
@@ -46,14 +43,11 @@ func mapCreateProjectParams(project *entities.Project) sqlc.CreateProjectParams 
 	}
 
 	return sqlc.CreateProjectParams{
-		Identity:              project.Identity,
-		DisplayName:           project.DisplayName,
-		ExtendSettings:        project.ExtendSettings,
-		SettingsID:            mapNullableUUIDToSQLC(project.SettingsID),
-		NavigationID:          mapNullableUUIDToSQLC(project.NavigationID),
-		FolderID:              mapNullableUUIDToSQLC(project.FolderID),
-		AllowedEnvironmentIds: project.AllowedEnvironmentIDs,
-		Meta:                  mapJSONBToSQLC(project.Meta),
+		Identity:    project.Identity,
+		DisplayName: project.DisplayName,
+		Description: mapNullableTextToSQLC(project.Description),
+		Active:      project.Active,
+		Meta:        mapJSONBToSQLC(project.Meta),
 	}
 }
 
@@ -63,15 +57,31 @@ func mapUpdateProjectParams(project *entities.Project) sqlc.UpdateProjectParams 
 	}
 
 	return sqlc.UpdateProjectParams{
-		ID:                    project.ID,
-		Identity:              project.Identity,
-		DisplayName:           project.DisplayName,
-		ExtendSettings:        project.ExtendSettings,
-		SettingsID:            mapNullableUUIDToSQLC(project.SettingsID),
-		NavigationID:          mapNullableUUIDToSQLC(project.NavigationID),
-		FolderID:              mapNullableUUIDToSQLC(project.FolderID),
-		AllowedEnvironmentIds: project.AllowedEnvironmentIDs,
-		Meta:                  mapJSONBToSQLC(project.Meta),
+		ID:          project.ID,
+		DisplayName: project.DisplayName,
+		Description: mapNullableTextToSQLC(project.Description),
+		Active:      project.Active,
+		Meta:        mapJSONBToSQLC(project.Meta),
+	}
+}
+
+func mapNullableTextToEntity(value pgtype.Text) *string {
+	if !value.Valid {
+		return nil
+	}
+
+	text := value.String
+	return &text
+}
+
+func mapNullableTextToSQLC(value *string) pgtype.Text {
+	if value == nil {
+		return pgtype.Text{}
+	}
+
+	return pgtype.Text{
+		String: *value,
+		Valid:  true,
 	}
 }
 

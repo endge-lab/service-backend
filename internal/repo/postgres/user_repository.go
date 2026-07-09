@@ -6,8 +6,8 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/repo/ports"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
-	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-kit-go/pkg/logging"
 	"github.com/endge-lab/service-kit-go/pkg/telemetry"
 

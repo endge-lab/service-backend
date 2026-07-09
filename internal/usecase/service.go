@@ -1,8 +1,8 @@
 package usecase
 
 import (
+	"github.com/endge-lab/service-backend/internal/repo/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/adapters"
-	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 
 	"go.opentelemetry.io/otel/trace"
@@ -13,6 +13,7 @@ import (
 type Service struct {
 	LoadSession adapters.LoadSessionService
 	Projects    adapters.ProjectService
+	Folders     adapters.FolderService
 }
 
 type Params struct {
@@ -23,6 +24,7 @@ type Params struct {
 	Metrics           *shared.UseCaseMetrics
 	UserRepository    ports.UserRepository
 	ProjectRepository ports.ProjectsRepository
+	FolderRepository  ports.FoldersRepository
 	TxManager         ports.TxManager
 }
 
@@ -32,5 +34,6 @@ func NewService(params Params) *Service {
 	return &Service{
 		LoadSession: factory.CreateLoadSessionUseCase(),
 		Projects:    factory.CreateProjectsUseCase(),
+		Folders:     factory.CreateFoldersUseCase(),
 	}
 }
