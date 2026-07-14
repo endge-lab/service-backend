@@ -28,6 +28,14 @@ func RepositoryModules() fx.Option {
 				fx.As(new(ports.FoldersRepository)),
 			),
 			fx.Annotate(
+				postgres.NewComponentsRepository,
+				fx.As(new(ports.ComponentsRepository)),
+			),
+			fx.Annotate(
+				postgres.NewConvertersRepository,
+				fx.As(new(ports.ConvertersRepository)),
+			),
+			fx.Annotate(
 				postgres.NewTxManager,
 				fx.As(new(ports.TxManager)),
 			),

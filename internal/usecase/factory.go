@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	"github.com/endge-lab/service-backend/internal/usecase/components"
+	"github.com/endge-lab/service-backend/internal/usecase/converters"
 	"github.com/endge-lab/service-backend/internal/usecase/folders"
 	"github.com/endge-lab/service-backend/internal/usecase/projects"
 )
@@ -41,5 +43,27 @@ func (f *serviceFactory) CreateFoldersUseCase() adapters.FolderService {
 		Tracer:            f.deps.Tracer,
 		Logger:            f.deps.Logger,
 		Metrics:           f.deps.Metrics,
+	})
+}
+
+func (f *serviceFactory) CreateComponentsUseCase() *components.Component {
+	return components.NewComponentService(components.ComponentParams{
+		ComponentRepository: f.deps.ComponentRepository,
+		FolderRepository:    f.deps.FolderRepository,
+		ProjectRepository:   f.deps.ProjectRepository,
+		Tracer:              f.deps.Tracer,
+		Logger:              f.deps.Logger,
+		Metrics:             f.deps.Metrics,
+	})
+}
+
+func (f *serviceFactory) CreateConvertersUseCase() *converters.Converter {
+	return converters.NewConverterService(converters.ConverterParams{
+		ConverterRepository: f.deps.ConverterRepository,
+		FolderRepository:    f.deps.FolderRepository,
+		ProjectRepository:   f.deps.ProjectRepository,
+		Tracer:              f.deps.Tracer,
+		Logger:              f.deps.Logger,
+		Metrics:             f.deps.Metrics,
 	})
 }

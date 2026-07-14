@@ -7,6 +7,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/repo/ports"
+	"github.com/endge-lab/service-backend/internal/repo/postgres/mappers"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
 	"github.com/endge-lab/service-kit-go/pkg/logging"
 	"github.com/endge-lab/service-kit-go/pkg/telemetry"
@@ -59,7 +60,7 @@ func (r *UserRepository) SyncUserFromIdentity(ctx context.Context, input ports.S
 		return nil, mapPostgresError(err, "user.sync_from_identity")
 	}
 
-	user = mapServiceUser(record)
+	user = mappers.ServiceUser(record)
 	logger.Debug("service user synced", zap.String("service_user_id", user.ID))
 	return user, nil
 }

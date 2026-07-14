@@ -9,6 +9,11 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+func isIdentityConflict(err error, constraint string) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == postgresUniqueViolation && pgErr.ConstraintName == constraint
+}
+
 const (
 	postgresUniqueViolation     = "23505"
 	postgresForeignKeyViolation = "23503"

@@ -49,6 +49,22 @@ func NewProjectService(params ProjectParams) *Project {
 	}
 }
 
+// Create создает проект и его системные корневые папки.
+//
+// Параметры:
+//
+//	ctx - контекст выполнения
+//	input - данные для создания проекта
+//
+// Что делает функция:
+//
+//	Валидирует входные данные и создает проект.
+//	В одной транзакции создает root folders для всех поддерживаемых entity types.
+//
+// Возвращаемые значения:
+//
+//	*entities.Project - созданный проект
+//	error - ошибка, возникшая при выполнении операции
 func (s *Project) Create(ctx context.Context, input adapters.CreateProjectInput) (result *entities.Project, err error) {
 	const op = "project.create"
 
@@ -85,6 +101,12 @@ func (s *Project) Create(ctx context.Context, input adapters.CreateProjectInput)
 
 		for _, root := range projectRootFolders(result.ID) {
 			if _, err = s.folderRepository.Create(txCtx, root); err != nil {
+				observed.Logger().Error(op,
+					zap.Error(err),
+					zap.String("project_id", result.ID.String()),
+					zap.String("root_identity", root.Identity),
+					zap.String("entity_type", string(root.EntityType)),
+				)
 				return err
 			}
 		}
@@ -96,9 +118,30 @@ func (s *Project) Create(ctx context.Context, input adapters.CreateProjectInput)
 		return nil, err
 	}
 
+	observed.Logger().Debug("project created with root folders",
+		zap.String("project_id", result.ID.String()),
+		zap.String("identity", result.Identity),
+		zap.Int("root_count", len(projectRootEntityTypes)),
+	)
 	return result, nil
 }
 
+// GetByID возвращает активный проект по техническому UUID.
+//
+// Параметры:
+//
+//	ctx - контекст выполнения
+//	id - UUID проекта
+//
+// Что делает функция:
+//
+//	Валидирует UUID и получает проект из repository.
+//	Soft-deleted проекты не возвращаются.
+//
+// Возвращаемые значения:
+//
+//	*entities.Project - найденный проект
+//	error - ошибка, возникшая при выполнении операции
 func (s *Project) GetByID(ctx context.Context, id uuid.UUID) (result *entities.Project, err error) {
 	const op = "project.get_by_id"
 
@@ -123,6 +166,22 @@ func (s *Project) GetByID(ctx context.Context, id uuid.UUID) (result *entities.P
 	return result, nil
 }
 
+// GetByIdentity возвращает активный проект по identity.
+//
+// Параметры:
+//
+//	ctx - контекст выполнения
+//	identity - человекочитаемый идентификатор проекта
+//
+// Что делает функция:
+//
+//	Нормализует identity и получает проект из repository.
+//	Soft-deleted проекты не возвращаются.
+//
+// Возвращаемые значения:
+//
+//	*entities.Project - найденный проект
+//	error - ошибка, возникшая при выполнении операции
 func (s *Project) GetByIdentity(ctx context.Context, identity string) (result *entities.Project, err error) {
 	const op = "project.get_by_identity"
 
@@ -149,6 +208,21 @@ func (s *Project) GetByIdentity(ctx context.Context, identity string) (result *e
 	return result, nil
 }
 
+// List возвращает список активных проектов.
+//
+// Параметры:
+//
+//	ctx - контекст выполнения
+//
+// Что делает функция:
+//
+//	Получает список проектов из repository.
+//	Исключает soft-deleted записи.
+//
+// Возвращаемые значения:
+//
+//	[]*entities.Project - список проектов
+//	error - ошибка, возникшая при выполнении операции
 func (s *Project) List(ctx context.Context) (result []*entities.Project, err error) {
 	const op = "project.list"
 
@@ -164,9 +238,26 @@ func (s *Project) List(ctx context.Context) (result []*entities.Project, err err
 		return nil, err
 	}
 
+	observed.Logger().Debug("projects listed", zap.Int("count", len(result)))
 	return result, nil
 }
 
+// Update обновляет проект, найденный по identity.
+//
+// Параметры:
+//
+//	ctx - контекст выполнения
+//	input - identity проекта и новые значения редактируемых полей
+//
+// Что делает функция:
+//
+//	Находит активный проект по identity.
+//	Обновляет displayName, description, active и meta.
+//
+// Возвращаемые значения:
+//
+//	*entities.Project - обновленный проект
+//	error - ошибка, возникшая при выполнении операции
 func (s *Project) Update(ctx context.Context, input adapters.UpdateProjectInput) (result *entities.Project, err error) {
 	const op = "project.update"
 
@@ -195,9 +286,28 @@ func (s *Project) Update(ctx context.Context, input adapters.UpdateProjectInput)
 		return nil, err
 	}
 
+	observed.Logger().Debug("project updated",
+		zap.String("project_id", result.ID.String()),
+		zap.String("identity", result.Identity),
+	)
 	return result, nil
 }
 
+// SoftDelete выполняет мягкое удаление проекта.
+//
+// Параметры:
+//
+//	ctx - контекст выполнения
+//	identity - человекочитаемый идентификатор проекта
+//
+// Что делает функция:
+//
+//	Разрешает identity во внутренний UUID.
+//	Заполняет deletedAt и обновляет updatedAt.
+//
+// Возвращаемые значения:
+//
+//	error - ошибка, возникшая при выполнении операции
 func (s *Project) SoftDelete(ctx context.Context, identity string) (err error) {
 	const op = "project.soft_delete"
 
@@ -226,9 +336,28 @@ func (s *Project) SoftDelete(ctx context.Context, identity string) (err error) {
 		return err
 	}
 
+	observed.Logger().Debug("project soft deleted",
+		zap.String("project_id", project.ID.String()),
+		zap.String("identity", identity),
+	)
 	return nil
 }
 
+// Restore восстанавливает мягко удаленный проект.
+//
+// Параметры:
+//
+//	ctx - контекст выполнения
+//	identity - человекочитаемый идентификатор проекта
+//
+// Что делает функция:
+//
+//	Находит проект с учетом soft-deleted записей.
+//	Очищает deletedAt и обновляет updatedAt.
+//
+// Возвращаемые значения:
+//
+//	error - ошибка, возникшая при выполнении операции
 func (s *Project) Restore(ctx context.Context, identity string) (err error) {
 	const op = "project.restore"
 
@@ -257,9 +386,28 @@ func (s *Project) Restore(ctx context.Context, identity string) (err error) {
 		return err
 	}
 
+	observed.Logger().Debug("project restored",
+		zap.String("project_id", project.ID.String()),
+		zap.String("identity", identity),
+	)
 	return nil
 }
 
+// HardDelete физически удаляет проект.
+//
+// Параметры:
+//
+//	ctx - контекст выполнения
+//	identity - человекочитаемый идентификатор проекта
+//
+// Что делает функция:
+//
+//	Разрешает identity во внутренний UUID.
+//	Удаляет проект и каскадно удаляет связанные folders.
+//
+// Возвращаемые значения:
+//
+//	error - ошибка, возникшая при выполнении операции
 func (s *Project) HardDelete(ctx context.Context, identity string) (err error) {
 	const op = "project.hard_delete"
 
@@ -288,9 +436,27 @@ func (s *Project) HardDelete(ctx context.Context, identity string) (err error) {
 		return err
 	}
 
+	observed.Logger().Debug("project hard deleted",
+		zap.String("project_id", project.ID.String()),
+		zap.String("identity", identity),
+	)
 	return nil
 }
 
+// Count возвращает количество активных проектов.
+//
+// Параметры:
+//
+//	ctx - контекст выполнения
+//
+// Что делает функция:
+//
+//	Подсчитывает проекты без soft-deleted записей.
+//
+// Возвращаемые значения:
+//
+//	int64 - количество проектов
+//	error - ошибка, возникшая при выполнении операции
 func (s *Project) Count(ctx context.Context) (result int64, err error) {
 	const op = "project.count"
 
@@ -306,6 +472,7 @@ func (s *Project) Count(ctx context.Context) (result int64, err error) {
 		return 0, err
 	}
 
+	observed.Logger().Debug("projects counted", zap.Int64("count", result))
 	return result, nil
 }
 

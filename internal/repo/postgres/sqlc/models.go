@@ -55,38 +55,38 @@ type BehaviorBinding struct {
 
 type Component struct {
 	ID            uuid.UUID          `json:"id"`
+	ProjectID     uuid.UUID          `json:"project_id"`
+	FolderID      uuid.UUID          `json:"folder_id"`
 	Identity      string             `json:"identity"`
 	DisplayName   string             `json:"display_name"`
+	Description   pgtype.Text        `json:"description"`
 	ComponentType string             `json:"component_type"`
-	InputFields   []byte             `json:"input_fields"`
-	JsxScript     pgtype.Text        `json:"jsx_script"`
-	RowSize       pgtype.Text        `json:"row_size"`
+	Source        string             `json:"source"`
+	SourceFormat  string             `json:"source_format"`
+	PropsSchema   []byte             `json:"props_schema"`
 	Bindings      []byte             `json:"bindings"`
-	Columns       []byte             `json:"columns"`
-	Schema        []byte             `json:"schema"`
-	FolderID      uuid.UUID          `json:"folder_id"`
-	ProjectID     pgtype.UUID        `json:"project_id"`
-	Active        bool               `json:"active"`
-	Inherited     bool               `json:"inherited"`
-	DeletedAt     pgtype.Timestamptz `json:"deleted_at"`
-	Author        pgtype.Text        `json:"author"`
 	Meta          []byte             `json:"meta"`
+	Active        bool               `json:"active"`
+	DeletedAt     pgtype.Timestamptz `json:"deleted_at"`
 	CreatedAt     time.Time          `json:"created_at"`
 	UpdatedAt     time.Time          `json:"updated_at"`
 }
 
 type Converter struct {
-	ID          uuid.UUID   `json:"id"`
-	Identity    string      `json:"identity"`
-	DisplayName string      `json:"display_name"`
-	Description pgtype.Text `json:"description"`
-	IsSystem    bool        `json:"is_system"`
-	FolderID    pgtype.UUID `json:"folder_id"`
-	ProjectID   pgtype.UUID `json:"project_id"`
-	Inherited   bool        `json:"inherited"`
-	Meta        []byte      `json:"meta"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
+	ID            uuid.UUID          `json:"id"`
+	ProjectID     uuid.UUID          `json:"project_id"`
+	FolderID      uuid.UUID          `json:"folder_id"`
+	Identity      string             `json:"identity"`
+	DisplayName   string             `json:"display_name"`
+	Description   pgtype.Text        `json:"description"`
+	ConverterType string             `json:"converter_type"`
+	Source        []byte             `json:"source"`
+	IsSystem      bool               `json:"is_system"`
+	Meta          []byte             `json:"meta"`
+	Active        bool               `json:"active"`
+	DeletedAt     pgtype.Timestamptz `json:"deleted_at"`
+	CreatedAt     time.Time          `json:"created_at"`
+	UpdatedAt     time.Time          `json:"updated_at"`
 }
 
 type Environment struct {

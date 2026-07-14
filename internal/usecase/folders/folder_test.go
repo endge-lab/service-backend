@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
+	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/adapters"
 	"github.com/google/uuid"
 )
@@ -89,5 +90,111 @@ func TestValidateNoCycleAllowsUnrelatedParent(t *testing.T) {
 
 	if err := service.validateNoCycle(context.Background(), folderID, uuidPointer(parentID)); err != nil {
 		t.Fatalf("validateNoCycle() error = %v", err)
+	}
+}
+
+func TestValidateNoCycleRejectsSelfParent(t *testing.T) {
+	folderID := uuid.New()
+
+	service := &Folder{
+		folderRepository: &foldersRepositoryStub{},
+	}
+
+	err := service.validateNoCycle(
+		context.Background(),
+		folderID,
+		uuidPointer(folderID),
+	)
+	if err == nil {
+		t.Fatal("expected folder cycle error")
+	}
+}
+
+func TestUpdateRejectsSelfParent(t *testing.T) {
+	projectID := uuid.New()
+	folderID := uuid.New()
+	parentIdentity := "folder"
+
+	repository := &foldersRepositoryStub{
+		foldersByIdentity: map[string]*entities.Folder{
+			"folder": {
+				ID:         folderID,
+				ProjectID:  uuidPointer(projectID),
+				EntityType: entities.FolderEntityTypeComponents,
+				Identity:   "folder",
+			},
+		},
+	}
+
+	service := &Folder{
+		folderRepository: repository,
+		projectRepository: &projectsRepositoryStub{
+			project: &entities.Project{
+				ID:       projectID,
+				Identity: "demo-project",
+			},
+		},
+	}
+
+	_, err := service.Update(context.Background(), adapters.UpdateFolderInput{
+		ProjectIdentity: "demo-project",
+		EntityType:      entities.FolderEntityTypeComponents,
+		Identity:        "folder",
+		DisplayName:     "Folder",
+		ParentIdentity:  &parentIdentity,
+	})
+
+	if err == nil {
+		t.Fatal("expected folder cycle error")
+	}
+}
+
+func TestValidateNoCycleRejectsExistingCycleInParentChain(t *testing.T) {
+	folderID := uuid.New()
+	parentA := uuid.New()
+	parentB := uuid.New()
+
+	repository := &foldersRepositoryStub{
+		folders: map[uuid.UUID]*entities.Folder{
+			parentA: {
+				ID:       parentA,
+				ParentID: uuidPointer(parentB),
+			},
+			parentB: {
+				ID:       parentB,
+				ParentID: uuidPointer(parentA),
+			},
+		},
+	}
+
+	service := &Folder{folderRepository: repository}
+
+	err := service.validateNoCycle(
+		context.Background(),
+		folderID,
+		uuidPointer(parentA),
+	)
+	if err == nil {
+		t.Fatal("expected folder cycle error")
+	}
+}
+func TestResolveParentIDRejectsWrongProjectOrEntityType(t *testing.T) {
+	projectID := uuid.New()
+	parentIdentity := "root-components"
+
+	repository := &foldersRepositoryStub{
+		getByIdentityErr: apperrors.NotFound("not_found", "folder not found"),
+	}
+
+	service := &Folder{folderRepository: repository}
+
+	_, err := service.resolveParentID(
+		context.Background(),
+		projectID,
+		entities.FolderEntityTypeComponents,
+		&parentIdentity,
+	)
+	if err == nil {
+		t.Fatal("expected validation error")
 	}
 }

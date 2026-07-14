@@ -31,6 +31,21 @@ func NewTxManager(pool *pgxpool.Pool, tracer trace.Tracer, logger *zap.Logger) *
 	}
 }
 
+// WithinTransaction выполняет callback внутри транзакции.
+//
+// Параметры:
+//
+//	ctx - контекст выполнения
+//	fn - функция, которая получает транзакционный context
+//
+// Что делает функция:
+//
+//	Открывает PostgreSQL transaction и передает ее через context.
+//	Выполняет commit при успехе или rollback при ошибке callback.
+//
+// Возвращаемые значения:
+//
+//	error - ошибка callback, открытия, commit или rollback транзакции
 func (m *TxManager) WithinTransaction(ctx context.Context, fn func(ctx context.Context) error) (err error) {
 	ctx, step := telemetry.StartTrace(
 		ctx,

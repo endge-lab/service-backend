@@ -29,15 +29,25 @@ func (s *Folder) resolveFolder(
 	}
 
 	if includeDeleted {
-		return s.folderRepository.GetByIdentityIncludingDeleted(
+		folder, err := s.folderRepository.GetByIdentityIncludingDeleted(
 			ctx,
 			&project.ID,
 			input.EntityType,
 			input.Identity,
 		)
+		if err != nil {
+			return nil, err
+		}
+
+		return folder, nil
 	}
 
-	return s.folderRepository.GetByIdentity(ctx, &project.ID, input.EntityType, input.Identity)
+	folder, err := s.folderRepository.GetByIdentity(ctx, &project.ID, input.EntityType, input.Identity)
+	if err != nil {
+		return nil, err
+	}
+
+	return folder, nil
 }
 
 func (s *Folder) resolveParentID(
@@ -46,16 +56,28 @@ func (s *Folder) resolveParentID(
 	entityType entities.FolderEntityType,
 	parentIdentity *string,
 ) (*uuid.UUID, error) {
-	if parentIdentity == nil {
+	if parentIdentity == nil || strings.TrimSpace(*parentIdentity) == "" {
 		return nil, nil
 	}
 
-	parent, err := s.folderRepository.GetByIdentity(ctx, &projectID, entityType, *parentIdentity)
+	parent, err := s.folderRepository.GetByIdentity(
+		ctx,
+		&projectID,
+		entityType,
+		strings.TrimSpace(*parentIdentity),
+	)
 	if err != nil {
+		if apperrors.CodeOf(err) == "not_found" {
+			return nil, apperrors.InvalidInput(
+				"validation_error",
+				"parent folder must belong to the same project and entity type",
+			)
+		}
+
 		return nil, err
 	}
 
-	return uuidPointer(parent.ID), nil
+	return new(parent.ID), nil
 }
 
 func (s *Folder) validateNoCycle(ctx context.Context, folderID uuid.UUID, parentID *uuid.UUID) error {
@@ -196,4 +218,12 @@ func sameNullableUUID(left, right *uuid.UUID) bool {
 	}
 
 	return *left == *right
+}
+
+func nullableString(value *string) string {
+	if value == nil {
+		return ""
+	}
+
+	return *value
 }

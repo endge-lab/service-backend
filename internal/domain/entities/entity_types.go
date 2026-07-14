@@ -6,50 +6,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type Component struct {
-	ID            uuid.UUID      `json:"id"`
-	Identity      string         `json:"identity"`
-	DisplayName   string         `json:"display_name"`
-	ComponentType string         `json:"component_type"`
-	InputFields   []any          `json:"input_fields"`
-	JSXScript     *string        `json:"jsx_script,omitempty"`
-	RowSize       *string        `json:"row_size,omitempty"`
-	Bindings      map[string]any `json:"bindings"`
-	Columns       []any          `json:"columns"`
-	Schema        map[string]any `json:"schema"`
-	FolderID      uuid.UUID      `json:"folder_id"`
-	ProjectID     *uuid.UUID     `json:"project_id,omitempty"`
-	Active        bool           `json:"active"`
-	Inherited     bool           `json:"inherited"`
-	DeletedAt     *time.Time     `json:"deleted_at,omitempty"`
-	Author        *string        `json:"author,omitempty"`
-	Meta          map[string]any `json:"meta"`
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     time.Time      `json:"updated_at"`
-}
-
-func (Component) FolderEntityType() FolderEntityType {
-	return FolderEntityTypeComponents
-}
-
-type Converter struct {
-	ID          uuid.UUID      `json:"id"`
-	Identity    string         `json:"identity"`
-	DisplayName string         `json:"display_name"`
-	Description *string        `json:"description,omitempty"`
-	IsSystem    bool           `json:"is_system"`
-	FolderID    *uuid.UUID     `json:"folder_id,omitempty"`
-	ProjectID   *uuid.UUID     `json:"project_id,omitempty"`
-	Inherited   bool           `json:"inherited"`
-	Meta        map[string]any `json:"meta"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-}
-
-func (Converter) FolderEntityType() FolderEntityType {
-	return FolderEntityTypeConverters
-}
-
 type Query struct {
 	ID                   uuid.UUID      `json:"id"`
 	Identity             string         `json:"identity"`
