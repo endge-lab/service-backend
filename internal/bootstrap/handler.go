@@ -22,7 +22,7 @@ func HandlerModules() fx.Option {
 			fx.Annotate(project.NewHandler, fx.As(new(project.PHandler))),
 			fx.Annotate(folder.NewHandler, fx.As(new(folder.FHandler))),
 			fx.Annotate(component.NewHandler, fx.As(new(component.CHandler))),
-			fx.Annotate(converter.NewHandler, fx.As(new(converter.ConverterHandler))),
+			fx.Annotate(converter.NewHandler, fx.As(new(converter.ConvHandler))),
 			v1.NewHandler,
 		),
 	)
