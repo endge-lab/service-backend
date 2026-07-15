@@ -1,9 +1,9 @@
 package converter
 
 import (
-	"github.com/endge-lab/service-backend/internal/domain/entities"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type CreateConverterRequest struct {
@@ -45,11 +45,4 @@ type ConverterResponse struct {
 }
 type ConvertersListResponse struct {
 	Items []*ConverterResponse `json:"items"`
-}
-
-func newConverterResponse(value *entities.Converter, projectIdentity, folderIdentity string) *ConverterResponse {
-	if value == nil {
-		return nil
-	}
-	return &ConverterResponse{ID: value.ID, ProjectIdentity: projectIdentity, FolderIdentity: folderIdentity, Identity: value.Identity, DisplayName: value.DisplayName, Description: value.Description, ConverterType: value.ConverterType, Source: value.Source, IsSystem: value.IsSystem, Meta: value.Meta, Active: value.Active, DeletedAt: value.DeletedAt, CreatedAt: value.CreatedAt, UpdatedAt: value.UpdatedAt}
 }

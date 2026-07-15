@@ -2,10 +2,8 @@ package project
 
 import (
 	transport "github.com/endge-lab/service-backend/internal/api/http/v1/transport"
-	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase"
 	"github.com/endge-lab/service-backend/internal/usecase/adapters"
-	servicefiber "github.com/endge-lab/service-kit-go/pkg/httpkit/fiber"
 	"github.com/endge-lab/service-kit-go/pkg/logging"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
@@ -68,7 +66,7 @@ func (h *Handler) CreateProject(c *fiber.Ctx) error {
 		Meta:        request.Meta,
 	})
 	if err != nil {
-		return h.respondDomainError(c, err)
+		return transport.RespondDomainError(c, h.logger, err)
 	}
 
 	logger.Debug("create project handler completed", zap.String("project_id", project.ID.String()))
@@ -87,7 +85,7 @@ func (h *Handler) CreateProject(c *fiber.Ctx) error {
 func (h *Handler) ListProjects(c *fiber.Ctx) error {
 	projects, err := h.projectService.List(c.UserContext())
 	if err != nil {
-		return h.respondDomainError(c, err)
+		return transport.RespondDomainError(c, h.logger, err)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(NewProjectsListResponse(projects))
@@ -108,7 +106,7 @@ func (h *Handler) ListProjects(c *fiber.Ctx) error {
 func (h *Handler) GetProjectByIdentity(c *fiber.Ctx) error {
 	project, err := h.projectService.GetByIdentity(c.UserContext(), c.Params("project_identity"))
 	if err != nil {
-		return h.respondDomainError(c, err)
+		return transport.RespondDomainError(c, h.logger, err)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(NewProjectResponse(project))
@@ -145,7 +143,7 @@ func (h *Handler) UpdateProject(c *fiber.Ctx) error {
 		Meta:        request.Meta,
 	})
 	if err != nil {
-		return h.respondDomainError(c, err)
+		return transport.RespondDomainError(c, h.logger, err)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(NewProjectResponse(project))
@@ -164,7 +162,7 @@ func (h *Handler) UpdateProject(c *fiber.Ctx) error {
 // @Router /api/v1/projects/{project_identity} [delete]
 func (h *Handler) SoftDeleteProject(c *fiber.Ctx) error {
 	if err := h.projectService.SoftDelete(c.UserContext(), c.Params("project_identity")); err != nil {
-		return h.respondDomainError(c, err)
+		return transport.RespondDomainError(c, h.logger, err)
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
@@ -183,7 +181,7 @@ func (h *Handler) SoftDeleteProject(c *fiber.Ctx) error {
 // @Router /api/v1/projects/{project_identity}/restore [post]
 func (h *Handler) RestoreProject(c *fiber.Ctx) error {
 	if err := h.projectService.Restore(c.UserContext(), c.Params("project_identity")); err != nil {
-		return h.respondDomainError(c, err)
+		return transport.RespondDomainError(c, h.logger, err)
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
@@ -202,30 +200,8 @@ func (h *Handler) RestoreProject(c *fiber.Ctx) error {
 // @Router /api/v1/projects/{project_identity}/hard [delete]
 func (h *Handler) HardDeleteProject(c *fiber.Ctx) error {
 	if err := h.projectService.HardDelete(c.UserContext(), c.Params("project_identity")); err != nil {
-		return h.respondDomainError(c, err)
+		return transport.RespondDomainError(c, h.logger, err)
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
-}
-
-func (h *Handler) TraceMiddleware(spanName string) fiber.Handler {
-	return servicefiber.TraceMiddleware(h.tracer, h.logger, spanName)
-}
-
-func (h *Handler) respondDomainError(c *fiber.Ctx, err error) error {
-	fields := []zap.Field{
-		zap.Error(err),
-		zap.String("error_code", domainerrors.CodeOf(err)),
-		zap.String("method", c.Method()),
-		zap.String("path", c.Path()),
-	}
-
-	logger := logging.WithContext(c.UserContext(), h.logger)
-	if domainerrors.HTTPStatusOf(err) >= fiber.StatusInternalServerError {
-		logger.Error("unexpected request transport", fields...)
-	} else {
-		logger.Warn("request completed with business transport", fields...)
-	}
-
-	return transport.WriteErrorResponse(c, err)
 }

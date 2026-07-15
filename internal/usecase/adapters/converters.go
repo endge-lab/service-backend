@@ -51,14 +51,19 @@ type ListConvertersInput struct {
 	FolderIdentity  *string
 }
 
+type ConverterWithFolder struct {
+	Converter      *entities.Converter
+	FolderIdentity string
+}
+
 type ConverterService interface {
-	Create(ctx context.Context, input CreateConverterInput) (*entities.Converter, error)
+	Create(ctx context.Context, input CreateConverterInput) (*ConverterWithFolder, error)
 
-	Update(ctx context.Context, input UpdateConverterInput) (*entities.Converter, error)
+	Update(ctx context.Context, input UpdateConverterInput) (*ConverterWithFolder, error)
 
-	GetByIdentity(ctx context.Context, input GetConverterInput) (*entities.Converter, error)
+	GetByIdentity(ctx context.Context, input GetConverterInput) (*ConverterWithFolder, error)
 
-	List(ctx context.Context, input ListConvertersInput) ([]*entities.Converter, error)
+	List(ctx context.Context, input ListConvertersInput) ([]*ConverterWithFolder, error)
 
 	SoftDelete(ctx context.Context, input ConverterIdentityInput) error
 

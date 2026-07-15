@@ -4,8 +4,10 @@ import (
 	v1 "github.com/endge-lab/service-backend/internal/api/http/v1"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/component"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/converter"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/data_view"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/folder"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/project"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/query"
 	session "github.com/endge-lab/service-backend/internal/api/http/v1/session"
 	"github.com/endge-lab/service-backend/internal/auth"
 	"github.com/endge-lab/service-backend/internal/middleware"
@@ -23,6 +25,8 @@ func HandlerModules() fx.Option {
 			fx.Annotate(folder.NewHandler, fx.As(new(folder.FHandler))),
 			fx.Annotate(component.NewHandler, fx.As(new(component.CHandler))),
 			fx.Annotate(converter.NewHandler, fx.As(new(converter.ConvHandler))),
+			fx.Annotate(query.NewHandler, fx.As(new(query.QHandler))),
+			fx.Annotate(data_view.NewHandler, fx.As(new(data_view.DVHandler))),
 			v1.NewHandler,
 		),
 	)

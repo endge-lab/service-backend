@@ -2,23 +2,106 @@ package components
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/adapters"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
+
+func logOperationError(logger *zap.Logger, operation string, err error, fields ...zap.Field) {
+	fields = append([]zap.Field{zap.Error(err)}, fields...)
+	if apperrors.HTTPStatusOf(err) >= 500 {
+		logger.Error(operation, fields...)
+		return
+	}
+
+	logger.Warn(operation, fields...)
+}
+
+func dereferenceString(value *string) string {
+	if value == nil {
+		return ""
+	}
+
+	return *value
+}
 
 func (c *Component) resolveFolderID(ctx context.Context, projectID uuid.UUID, identity *string) (*uuid.UUID, error) {
 	if identity == nil {
 		return nil, nil
 	}
-	folder, err := c.folderRepository.GetByIdentity(ctx, &projectID, entities.FolderEntityTypeComponents, *identity)
+
+	folder, err := c.resolveFolder(ctx, projectID, *identity)
 	if err != nil {
-		return nil, apperrors.InvalidInput("folder_entity_type_mismatch", "folder must belong to the project and have components entity type")
+		return nil, err
 	}
+
 	return &folder.ID, nil
+}
+
+func (c *Component) resolveFolder(ctx context.Context, projectID uuid.UUID, identity string) (*entities.Folder, error) {
+	folder, err := c.folderRepository.GetByIdentity(ctx, &projectID, entities.FolderEntityTypeComponents, identity)
+	if err == nil {
+		return folder, nil
+	}
+	if errors.Is(err, apperrors.ErrNotFound) {
+		return nil, apperrors.InvalidInput(
+			"folder_entity_type_mismatch",
+			"folder must belong to the project and have components entity type",
+		)
+	}
+
+	return nil, err
+}
+
+func componentWithFolder(component *entities.Component, folderIdentity string) *adapters.ComponentWithFolder {
+	return &adapters.ComponentWithFolder{
+		Component:      component,
+		FolderIdentity: folderIdentity,
+	}
+}
+
+func componentWithFolders(
+	components []*entities.Component,
+	folders []*entities.Folder,
+) ([]*adapters.ComponentWithFolder, error) {
+	folderIdentities := make(map[uuid.UUID]string, len(folders))
+	for _, folder := range folders {
+		folderIdentities[folder.ID] = folder.Identity
+	}
+
+	result := make([]*adapters.ComponentWithFolder, 0, len(components))
+	for _, component := range components {
+		folderIdentity, ok := folderIdentities[component.FolderID]
+		if !ok {
+			return nil, apperrors.Internal(
+				"component_folder_not_found",
+				"component references an unavailable folder",
+			)
+		}
+		result = append(result, componentWithFolder(component, folderIdentity))
+	}
+
+	return result, nil
+}
+
+func firstComponentWithUnavailableFolder(components []*entities.Component, folders []*entities.Folder) *entities.Component {
+	folderIDs := make(map[uuid.UUID]struct{}, len(folders))
+	for _, folder := range folders {
+		folderIDs[folder.ID] = struct{}{}
+	}
+
+	for _, component := range components {
+		if _, ok := folderIDs[component.FolderID]; !ok {
+			return component
+		}
+	}
+
+	return nil
 }
 
 func (c *Component) resolveComponent(ctx context.Context, input adapters.ComponentIdentityInput, includeDeleted bool) (*entities.Component, error) {

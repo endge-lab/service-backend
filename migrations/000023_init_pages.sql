@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS pages (
     route_name TEXT NULL,
     route_path TEXT NULL,
     template_id UUID NULL REFERENCES page_templates(id) ON DELETE SET NULL,
-    controller_id UUID NULL REFERENCES views(id) ON DELETE SET NULL,
+    controller_id UUID NULL REFERENCES data_views(id) ON DELETE SET NULL,
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
     areas JSONB NOT NULL DEFAULT '[]'::jsonb,
     meta JSONB NOT NULL DEFAULT '{}'::jsonb,

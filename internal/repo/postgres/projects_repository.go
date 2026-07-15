@@ -12,7 +12,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -390,12 +389,5 @@ func (r *ProjectsRepository) Count(ctx context.Context) (result int64, err error
 }
 
 func mapProjectWriteError(err error) error {
-	var pgErr *pgconn.PgError
-	if stderrors.As(err, &pgErr) &&
-		pgErr.Code == postgresUniqueViolation &&
-		pgErr.ConstraintName == "projects_identity_unique" {
-		return apperrors.Conflict("identity_conflict", "project identity already exists")
-	}
-
-	return apperrors.Internal("internal_error", "failed to create project")
+	return mapStorageError(err, projectStorageErrorMapping)
 }

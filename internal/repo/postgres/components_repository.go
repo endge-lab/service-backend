@@ -290,10 +290,7 @@ func (r *ComponentsRepository) mapGetError(err error, message string) (*entities
 
 func (r *ComponentsRepository) mapWriteError(err error, message string) error {
 	r.logger.Error(message, zap.Error(err))
-	if isIdentityConflict(err, "components_project_identity_unique") {
-		return apperrors.Conflict("identity_conflict", "component identity already exists")
-	}
-	return apperrors.Internal("internal_error", "failed to save component")
+	return mapStorageError(err, componentStorageErrorMapping)
 }
 
 func componentTypeString(value *entities.ComponentType) *string {

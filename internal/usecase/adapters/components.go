@@ -54,14 +54,19 @@ type ListComponentsInput struct {
 	ComponentType   *entities.ComponentType
 }
 
+type ComponentWithFolder struct {
+	Component      *entities.Component
+	FolderIdentity string
+}
+
 type ComponentService interface {
-	Create(ctx context.Context, input CreateComponentInput) (*entities.Component, error)
+	Create(ctx context.Context, input CreateComponentInput) (*ComponentWithFolder, error)
 
-	Update(ctx context.Context, input UpdateComponentInput) (*entities.Component, error)
+	Update(ctx context.Context, input UpdateComponentInput) (*ComponentWithFolder, error)
 
-	GetByIdentity(ctx context.Context, input GetComponentInput) (*entities.Component, error)
+	GetByIdentity(ctx context.Context, input GetComponentInput) (*ComponentWithFolder, error)
 
-	List(ctx context.Context, input ListComponentsInput) ([]*entities.Component, error)
+	List(ctx context.Context, input ListComponentsInput) ([]*ComponentWithFolder, error)
 
 	SoftDelete(ctx context.Context, input ComponentIdentityInput) error
 

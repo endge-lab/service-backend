@@ -9,17 +9,118 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-func isIdentityConflict(err error, constraint string) bool {
-	var pgErr *pgconn.PgError
-	return errors.As(err, &pgErr) && pgErr.Code == postgresUniqueViolation && pgErr.ConstraintName == constraint
-}
-
 const (
 	postgresUniqueViolation     = "23505"
 	postgresForeignKeyViolation = "23503"
 	postgresCheckViolation      = "23514"
 	errorDetailConstraint       = "constraint"
 )
+
+type postgresErrorKind uint8
+
+const (
+	postgresErrorUnknown postgresErrorKind = iota
+	postgresErrorUniqueViolation
+	postgresErrorForeignKeyViolation
+	postgresErrorCheckViolation
+)
+
+type postgresErrorInfo struct {
+	kind           postgresErrorKind
+	constraintName string
+}
+
+type storageErrorMapping struct {
+	identityConstraintNames []string
+	identityConflictMessage string
+	validationMessage       string
+	internalCode            domainerrors.Code
+	internalStorageMessage  string
+}
+
+var (
+	projectStorageErrorMapping = storageErrorMapping{
+		identityConstraintNames: []string{"projects_identity_unique"},
+		identityConflictMessage: "project identity already exists",
+		validationMessage:       "project data violates a constraint",
+		internalCode:            "internal_error",
+		internalStorageMessage:  "failed to create project",
+	}
+	componentStorageErrorMapping = storageErrorMapping{
+		identityConstraintNames: []string{"components_project_identity_unique"},
+		identityConflictMessage: "component identity already exists",
+		validationMessage:       "component data violates a constraint",
+		internalCode:            "internal_error",
+		internalStorageMessage:  "failed to save component",
+	}
+	converterStorageErrorMapping = storageErrorMapping{
+		identityConstraintNames: []string{"converters_project_identity_unique"},
+		identityConflictMessage: "converter identity already exists",
+		validationMessage:       "converter data violates a constraint",
+		internalCode:            "internal_error",
+		internalStorageMessage:  "failed to save converter",
+	}
+	queryStorageErrorMapping = storageErrorMapping{
+		identityConstraintNames: []string{"queries_project_identity_unique"},
+		identityConflictMessage: "query identity already exists",
+		validationMessage:       "query data violates a constraint",
+		internalCode:            "internal_error",
+		internalStorageMessage:  "failed to save query",
+	}
+	dataViewStorageErrorMapping = storageErrorMapping{
+		identityConstraintNames: []string{"data_views_project_identity_unique"},
+		identityConflictMessage: "data view identity already exists",
+		validationMessage:       "data view data violates a constraint",
+		internalCode:            "internal_error",
+		internalStorageMessage:  "failed to save data view",
+	}
+)
+
+func classifyPostgresError(err error) postgresErrorInfo {
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
+		return postgresErrorInfo{kind: postgresErrorUnknown}
+	}
+
+	info := postgresErrorInfo{constraintName: pgErr.ConstraintName}
+	switch pgErr.Code {
+	case postgresUniqueViolation:
+		info.kind = postgresErrorUniqueViolation
+	case postgresForeignKeyViolation:
+		info.kind = postgresErrorForeignKeyViolation
+	case postgresCheckViolation:
+		info.kind = postgresErrorCheckViolation
+	default:
+		info.kind = postgresErrorUnknown
+	}
+
+	return info
+}
+
+func mapStorageError(err error, mapping storageErrorMapping) error {
+	postgresError := classifyPostgresError(err)
+
+	if postgresError.kind == postgresErrorUniqueViolation &&
+		containsConstraint(mapping.identityConstraintNames, postgresError.constraintName) {
+		return domainerrors.Conflict("identity_conflict", mapping.identityConflictMessage)
+	}
+
+	if postgresError.kind == postgresErrorForeignKeyViolation || postgresError.kind == postgresErrorCheckViolation {
+		return domainerrors.InvalidInput("validation_error", mapping.validationMessage)
+	}
+
+	return domainerrors.Internal(mapping.internalCode, mapping.internalStorageMessage)
+}
+
+func containsConstraint(constraints []string, value string) bool {
+	for _, constraint := range constraints {
+		if constraint == value {
+			return true
+		}
+	}
+
+	return false
+}
 
 func mapPostgresError(err error, codePrefix string) error {
 	if err == nil {

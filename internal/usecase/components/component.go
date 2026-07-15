@@ -53,9 +53,9 @@ func NewComponentService(params ComponentParams) *Component {
 // Возвращаемые значения:
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
-func (c *Component) Create(ctx context.Context, input adapters.CreateComponentInput) (result *entities.Component, err error) {
+func (c *Component) Create(ctx context.Context, input adapters.CreateComponentInput) (result *adapters.ComponentWithFolder, err error) {
 
-	const op = "components.create"
+	const op = "component.create"
 
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
@@ -64,35 +64,25 @@ func (c *Component) Create(ctx context.Context, input adapters.CreateComponentIn
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateCreateInput(&input); err != nil {
-		observed.Logger().Warn(op, zap.Error(err))
+		logOperationError(observed.Logger(), op, err)
 		return nil, err
 	}
 
 	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
-		observed.Logger().Error(op,
-			zap.Error(err),
+		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
 		)
 		return nil, err
 	}
 
-	folder, err := c.folderRepository.GetByIdentity(
-		ctx,
-		&project.ID,
-		entities.FolderEntityTypeComponents,
-		input.FolderIdentity,
-	)
+	folder, err := c.resolveFolder(ctx, project.ID, input.FolderIdentity)
 	if err != nil {
-		observed.Logger().Warn(op,
-			zap.Error(err),
+		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
 			zap.String("folder_identity", input.FolderIdentity),
 		)
-		return nil, apperrors.InvalidInput(
-			"folder_entity_type_mismatch",
-			"folder must belong to the project and have components entity type",
-		)
+		return nil, err
 	}
 
 	exists, err := c.componentRepository.ExistsByIdentity(
@@ -101,8 +91,8 @@ func (c *Component) Create(ctx context.Context, input adapters.CreateComponentIn
 		input.Identity,
 	)
 	if err != nil {
-		observed.Logger().Error(op,
-			zap.Error(err),
+		logOperationError(observed.Logger(), op, err,
+			zap.String("project_identity", input.ProjectIdentity),
 			zap.String("component_identity", input.Identity),
 		)
 		return nil, err
@@ -112,8 +102,7 @@ func (c *Component) Create(ctx context.Context, input adapters.CreateComponentIn
 			"identity_conflict",
 			"component identity already exists",
 		)
-		observed.Logger().Error(op,
-			zap.Error(err),
+		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
 			zap.String("component_identity", input.Identity))
 		return nil, err
@@ -134,16 +123,24 @@ func (c *Component) Create(ctx context.Context, input adapters.CreateComponentIn
 		Active:        input.Active,
 	}
 
-	result, err = c.componentRepository.Create(ctx, component)
+	componentResult, err := c.componentRepository.Create(ctx, component)
 	if err != nil {
-		observed.Logger().Error(op,
-			zap.Error(err),
+		logOperationError(observed.Logger(), op, err,
+			zap.String("project_identity", input.ProjectIdentity),
 			zap.String("component_identity", input.Identity),
 		)
 		return nil, err
 	}
+	observed.Logger().Debug("component created",
+		zap.String("component_id", componentResult.ID.String()),
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("component_identity", componentResult.Identity),
+		zap.String("folder_id", folder.ID.String()),
+		zap.String("folder_identity", folder.Identity),
+		zap.String("component_type", string(componentResult.ComponentType)),
+	)
 
-	return result, nil
+	return componentWithFolder(componentResult, folder.Identity), nil
 }
 
 // Update обновляет компонент в указанной папке проекта.
@@ -159,9 +156,9 @@ func (c *Component) Create(ctx context.Context, input adapters.CreateComponentIn
 // Возвращаемые значения:
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
-func (c *Component) Update(ctx context.Context, input adapters.UpdateComponentInput) (result *entities.Component, err error) {
+func (c *Component) Update(ctx context.Context, input adapters.UpdateComponentInput) (result *adapters.ComponentWithFolder, err error) {
 
-	const op = "components.update"
+	const op = "component.update"
 
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
@@ -170,14 +167,13 @@ func (c *Component) Update(ctx context.Context, input adapters.UpdateComponentIn
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateUpdateInput(&input); err != nil {
-		observed.Logger().Warn(op, zap.Error(err))
+		logOperationError(observed.Logger(), op, err)
 		return nil, err
 	}
 
 	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
-		observed.Logger().Error(op,
-			zap.Error(err),
+		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
 		)
 		return nil, err
@@ -185,30 +181,20 @@ func (c *Component) Update(ctx context.Context, input adapters.UpdateComponentIn
 
 	current, err := c.componentRepository.GetByIdentity(ctx, project.ID, input.ComponentIdentity)
 	if err != nil {
-		observed.Logger().Error(op,
-			zap.Error(err),
+		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
 			zap.String("component_identity", input.ComponentIdentity))
 		return nil, err
 	}
 
-	folder, err := c.folderRepository.GetByIdentity(
-		ctx,
-		&project.ID,
-		entities.FolderEntityTypeComponents,
-		input.FolderIdentity,
-	)
+	folder, err := c.resolveFolder(ctx, project.ID, input.FolderIdentity)
 	if err != nil {
-		observed.Logger().Warn(op,
-			zap.Error(err),
+		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
 			zap.String("folder_identity", input.FolderIdentity),
 		)
 
-		return nil, apperrors.InvalidInput(
-			"folder_entity_type_mismatch",
-			"folder must belong to the project and have components entity type",
-		)
+		return nil, err
 	}
 
 	updated := &entities.Component{
@@ -230,16 +216,24 @@ func (c *Component) Update(ctx context.Context, input adapters.UpdateComponentIn
 		UpdatedAt:     current.UpdatedAt,
 	}
 
-	result, err = c.componentRepository.Update(ctx, updated)
+	componentResult, err := c.componentRepository.Update(ctx, updated)
 	if err != nil {
-		observed.Logger().Error(op,
-			zap.Error(err),
+		logOperationError(observed.Logger(), op, err,
+			zap.String("project_identity", input.ProjectIdentity),
 			zap.String("component_identity", current.Identity),
 		)
 		return nil, err
 	}
+	observed.Logger().Debug("component updated",
+		zap.String("component_id", componentResult.ID.String()),
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("component_identity", componentResult.Identity),
+		zap.String("folder_id", folder.ID.String()),
+		zap.String("folder_identity", folder.Identity),
+		zap.String("component_type", string(componentResult.ComponentType)),
+	)
 
-	return result, nil
+	return componentWithFolder(componentResult, folder.Identity), nil
 
 }
 
@@ -259,7 +253,7 @@ func (c *Component) Update(ctx context.Context, input adapters.UpdateComponentIn
 func (c *Component) GetByIdentity(
 	ctx context.Context,
 	input adapters.GetComponentInput,
-) (result *entities.Component, err error) {
+) (result *adapters.ComponentWithFolder, err error) {
 	const op = "component.get_by_identity"
 
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
@@ -272,7 +266,7 @@ func (c *Component) GetByIdentity(
 		&input.ProjectIdentity,
 		&input.ComponentIdentity,
 	); err != nil {
-		observed.Logger().Warn(op, zap.Error(err))
+		logOperationError(observed.Logger(), op, err)
 		return nil, err
 	}
 
@@ -281,30 +275,49 @@ func (c *Component) GetByIdentity(
 		input.ProjectIdentity,
 	)
 	if err != nil {
-		observed.Logger().Error(
-			op,
-			zap.Error(err),
+		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
 		)
 		return nil, err
 	}
 
-	result, err = c.componentRepository.GetByIdentity(
+	component, err := c.componentRepository.GetByIdentity(
 		ctx,
 		project.ID,
 		input.ComponentIdentity,
 	)
 	if err != nil {
-		observed.Logger().Error(
-			op,
-			zap.Error(err),
+		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
 			zap.String("component_identity", input.ComponentIdentity),
 		)
 		return nil, err
 	}
 
-	return result, nil
+	folder, err := c.folderRepository.GetByID(ctx, component.FolderID)
+	if err != nil {
+		relationErr := apperrors.Internal(
+			"component_folder_not_found",
+			"component references an unavailable folder",
+		)
+		logOperationError(observed.Logger(), op, relationErr,
+			zap.NamedError("repository_error", err),
+			zap.String("project_identity", input.ProjectIdentity),
+			zap.String("component_id", component.ID.String()),
+			zap.String("component_identity", component.Identity),
+			zap.String("folder_id", component.FolderID.String()),
+		)
+		return nil, relationErr
+	}
+	observed.Logger().Debug("component retrieved",
+		zap.String("component_id", component.ID.String()),
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("component_identity", component.Identity),
+		zap.String("folder_id", component.FolderID.String()),
+		zap.String("folder_identity", folder.Identity),
+	)
+
+	return componentWithFolder(component, folder.Identity), nil
 }
 
 // List возвращает активные компоненты проекта с учетом фильтров.
@@ -320,7 +333,7 @@ func (c *Component) GetByIdentity(
 // Возвращаемые значения:
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
-func (c *Component) List(ctx context.Context, input adapters.ListComponentsInput) (result []*entities.Component, err error) {
+func (c *Component) List(ctx context.Context, input adapters.ListComponentsInput) (result []*adapters.ComponentWithFolder, err error) {
 	const op = "component.list"
 
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
@@ -334,13 +347,17 @@ func (c *Component) List(ctx context.Context, input adapters.ListComponentsInput
 		input.FolderIdentity,
 		input.ComponentType,
 	); err != nil {
+		logOperationError(observed.Logger(), op, err,
+			zap.String("project_identity", input.ProjectIdentity),
+		)
 		return nil, err
 	}
 
 	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
-		observed.Logger().Error(op,
-			zap.Error(err))
+		logOperationError(observed.Logger(), op, err,
+			zap.String("project_identity", input.ProjectIdentity),
+		)
 		return nil, err
 	}
 
@@ -351,15 +368,56 @@ func (c *Component) List(ctx context.Context, input adapters.ListComponentsInput
 
 	filter.FolderID, err = c.resolveFolderID(ctx, project.ID, input.FolderIdentity)
 	if err != nil {
+		logOperationError(observed.Logger(), op, err,
+			zap.String("project_identity", input.ProjectIdentity),
+			zap.String("folder_identity", dereferenceString(input.FolderIdentity)),
+		)
 		return nil, err
 	}
 
-	result, err = c.componentRepository.List(ctx, filter)
+	components, err := c.componentRepository.List(ctx, filter)
 	if err != nil {
-		observed.Logger().Error(op,
-			zap.Error(err),
+		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity))
+		return nil, err
 	}
+	if len(components) == 0 {
+		observed.Logger().Debug("components listed",
+			zap.String("project_identity", input.ProjectIdentity),
+			zap.String("folder_identity", dereferenceString(input.FolderIdentity)),
+			zap.Int("count", 0),
+		)
+		return make([]*adapters.ComponentWithFolder, 0), nil
+	}
+
+	folders, err := c.folderRepository.List(ctx, &project.ID, entities.FolderEntityTypeComponents)
+	if err != nil {
+		logOperationError(observed.Logger(), op, err,
+			zap.String("project_identity", input.ProjectIdentity))
+		return nil, err
+	}
+
+	result, err = componentWithFolders(components, folders)
+	if err != nil {
+		fields := []zap.Field{
+			zap.String("project_identity", input.ProjectIdentity),
+			zap.Int("component_count", len(components)),
+		}
+		if component := firstComponentWithUnavailableFolder(components, folders); component != nil {
+			fields = append(fields,
+				zap.String("component_id", component.ID.String()),
+				zap.String("component_identity", component.Identity),
+				zap.String("folder_id", component.FolderID.String()),
+			)
+		}
+		logOperationError(observed.Logger(), op, err, fields...)
+		return nil, err
+	}
+	observed.Logger().Debug("components listed",
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("folder_identity", dereferenceString(input.FolderIdentity)),
+		zap.Int("count", len(result)),
+	)
 
 	return result, err
 }
@@ -386,13 +444,25 @@ func (c *Component) SoftDelete(ctx context.Context, input adapters.ComponentIden
 
 	component, err := c.resolveComponent(ctx, input, false)
 	if err != nil {
-		observed.Logger().Error(op, zap.Error(err))
+		logOperationError(observed.Logger(), op, err,
+			zap.String("project_identity", input.ProjectIdentity),
+			zap.String("component_identity", input.ComponentIdentity),
+		)
 		return err
 	}
 	if err = c.componentRepository.SoftDelete(ctx, component.ID); err != nil {
-		observed.Logger().Error(op, zap.Error(err), zap.String("component_identity", component.Identity))
+		logOperationError(observed.Logger(), op, err,
+			zap.String("project_identity", input.ProjectIdentity),
+			zap.String("component_id", component.ID.String()),
+			zap.String("component_identity", component.Identity),
+		)
 		return err
 	}
+	observed.Logger().Debug("component soft deleted",
+		zap.String("component_id", component.ID.String()),
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("component_identity", component.Identity),
+	)
 	return nil
 }
 
@@ -418,13 +488,25 @@ func (c *Component) Restore(ctx context.Context, input adapters.ComponentIdentit
 
 	component, err := c.resolveComponent(ctx, input, true)
 	if err != nil {
-		observed.Logger().Error(op, zap.Error(err))
+		logOperationError(observed.Logger(), op, err,
+			zap.String("project_identity", input.ProjectIdentity),
+			zap.String("component_identity", input.ComponentIdentity),
+		)
 		return err
 	}
 	if err = c.componentRepository.Restore(ctx, component.ID); err != nil {
-		observed.Logger().Error(op, zap.Error(err), zap.String("component_identity", component.Identity))
+		logOperationError(observed.Logger(), op, err,
+			zap.String("project_identity", input.ProjectIdentity),
+			zap.String("component_id", component.ID.String()),
+			zap.String("component_identity", component.Identity),
+		)
 		return err
 	}
+	observed.Logger().Debug("component restored",
+		zap.String("component_id", component.ID.String()),
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("component_identity", component.Identity),
+	)
 	return nil
 }
 
@@ -450,13 +532,25 @@ func (c *Component) HardDelete(ctx context.Context, input adapters.ComponentIden
 
 	component, err := c.resolveComponent(ctx, input, true)
 	if err != nil {
-		observed.Logger().Error(op, zap.Error(err))
+		logOperationError(observed.Logger(), op, err,
+			zap.String("project_identity", input.ProjectIdentity),
+			zap.String("component_identity", input.ComponentIdentity),
+		)
 		return err
 	}
 	if err = c.componentRepository.HardDelete(ctx, component.ID); err != nil {
-		observed.Logger().Error(op, zap.Error(err), zap.String("component_identity", component.Identity))
+		logOperationError(observed.Logger(), op, err,
+			zap.String("project_identity", input.ProjectIdentity),
+			zap.String("component_id", component.ID.String()),
+			zap.String("component_identity", component.Identity),
+		)
 		return err
 	}
+	observed.Logger().Debug("component hard deleted",
+		zap.String("component_id", component.ID.String()),
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("component_identity", component.Identity),
+	)
 	return nil
 }
 
@@ -481,22 +575,38 @@ func (c *Component) Count(ctx context.Context, input adapters.ListComponentsInpu
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateListInput(&input.ProjectIdentity, input.FolderIdentity, input.ComponentType); err != nil {
-		observed.Logger().Warn(op, zap.Error(err))
+		logOperationError(observed.Logger(), op, err,
+			zap.String("project_identity", input.ProjectIdentity),
+		)
 		return 0, err
 	}
 	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
+		logOperationError(observed.Logger(), op, err,
+			zap.String("project_identity", input.ProjectIdentity),
+		)
 		return 0, err
 	}
 	filter := ports.ComponentsFilter{ProjectID: project.ID, ComponentType: input.ComponentType}
 	filter.FolderID, err = c.resolveFolderID(ctx, project.ID, input.FolderIdentity)
 	if err != nil {
+		logOperationError(observed.Logger(), op, err,
+			zap.String("project_identity", input.ProjectIdentity),
+			zap.String("folder_identity", dereferenceString(input.FolderIdentity)),
+		)
 		return 0, err
 	}
 	count, err = c.componentRepository.Count(ctx, filter)
 	if err != nil {
-		observed.Logger().Error(op, zap.Error(err))
+		logOperationError(observed.Logger(), op, err,
+			zap.String("project_identity", input.ProjectIdentity),
+		)
 		return 0, err
 	}
+	observed.Logger().Debug("components counted",
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("folder_identity", dereferenceString(input.FolderIdentity)),
+		zap.Int64("count", count),
+	)
 	return count, nil
 }

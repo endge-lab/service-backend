@@ -116,9 +116,11 @@ func TestTemplateLayerPackageNames(t *testing.T) {
 		"internal/api/http/v1/docs":      "docs",
 		"internal/api/http/v1/component": "component",
 		"internal/api/http/v1/converter": "converter",
+		"internal/api/http/v1/data_view": "data_view",
 		"internal/api/http/v1/folder":    "folder",
 		"internal/api/http/v1/health":    "http",
 		"internal/api/http/v1/project":   "project",
+		"internal/api/http/v1/query":     "query",
 		"internal/api/http/v1/session":   "http",
 		"internal/api/http/v1/transport": "http",
 		"internal/bootstrap":             "bootstrap",
@@ -134,8 +136,10 @@ func TestTemplateLayerPackageNames(t *testing.T) {
 		"internal/usecase/adapters":      "adapters",
 		"internal/usecase/components":    "components",
 		"internal/usecase/converters":    "converters",
+		"internal/usecase/data_views":    "data_views",
 		"internal/usecase/folders":       "folders",
 		"internal/usecase/projects":      "projects",
+		"internal/usecase/queries":       "queries",
 		"internal/usecase/shared":        "shared",
 	}
 

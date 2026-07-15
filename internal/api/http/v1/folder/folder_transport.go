@@ -42,29 +42,3 @@ type FolderResponse struct {
 type FoldersListResponse struct {
 	Items []*FolderResponse `json:"items"`
 }
-
-func NewFolderResponse(
-	folder *entities.Folder,
-	projectIdentity string,
-	parentIdentity *string,
-) *FolderResponse {
-	if folder == nil {
-		return nil
-	}
-
-	return &FolderResponse{
-		ID:              folder.ID,
-		ProjectIdentity: projectIdentity,
-		EntityType:      folder.EntityType,
-		Identity:        folder.Identity,
-		DisplayName:     folder.DisplayName,
-		Description:     folder.Description,
-		ParentIdentity:  parentIdentity,
-		IsRoot:          folder.IsRoot,
-		IsSystem:        folder.IsSystem,
-		DeletedAt:       folder.DeletedAt,
-		Meta:            folder.Meta,
-		CreatedAt:       folder.CreatedAt,
-		UpdatedAt:       folder.UpdatedAt,
-	}
-}

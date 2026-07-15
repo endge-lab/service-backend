@@ -50,10 +50,3 @@ type ComponentResponse struct {
 type ComponentsListResponse struct {
 	Items []*ComponentResponse `json:"items"`
 }
-
-func newComponentResponse(value *entities.Component, projectIdentity, folderIdentity string) *ComponentResponse {
-	if value == nil {
-		return nil
-	}
-	return &ComponentResponse{ID: value.ID, ProjectIdentity: projectIdentity, FolderIdentity: folderIdentity, Identity: value.Identity, DisplayName: value.DisplayName, Description: value.Description, ComponentType: value.ComponentType, Source: value.Source, SourceFormat: value.SourceFormat, PropsSchema: value.PropsSchema, Bindings: value.Bindings, Meta: value.Meta, Active: value.Active, DeletedAt: value.DeletedAt, CreatedAt: value.CreatedAt, UpdatedAt: value.UpdatedAt}
-}

@@ -508,27 +508,26 @@ func (r *FoldersRepository) mapGetError(err error, message string) (*entities.Fo
 
 func mapFolderStorageError(err error, fallbackCode string) error {
 	var pgErr *pgconn.PgError
-	if !stderrors.As(err, &pgErr) {
-		return apperrors.Internal(apperrors.Code(fallbackCode), "folder storage operation failed")
-	}
-
-	switch {
-	case pgErr.Code == postgresUniqueViolation &&
-		(pgErr.ConstraintName == "folders_project_entity_identity_unique" ||
-			pgErr.ConstraintName == "folders_global_entity_identity_unique"):
-		return apperrors.Conflict("identity_conflict", "folder identity already exists")
-	case strings.Contains(pgErr.Message, "folder cycle"):
+	if stderrors.As(err, &pgErr) && strings.Contains(pgErr.Message, "folder cycle") {
 		return apperrors.Conflict("folder_cycle", "folder cycle is not allowed")
-	case strings.Contains(pgErr.Message, "system root folder cannot be hard-deleted"):
+	}
+	if stderrors.As(err, &pgErr) && strings.Contains(pgErr.Message, "system root folder cannot be hard-deleted") {
 		return apperrors.Conflict(
 			"system_folder_delete_forbidden",
 			"system root folder cannot be hard deleted",
 		)
-	case pgErr.Code == postgresForeignKeyViolation || pgErr.Code == postgresCheckViolation:
-		return apperrors.InvalidInput("validation_error", "folder data violates a constraint")
-	default:
-		return apperrors.Internal(apperrors.Code(fallbackCode), "folder storage operation failed")
 	}
+
+	return mapStorageError(err, storageErrorMapping{
+		identityConstraintNames: []string{
+			"folders_project_entity_identity_unique",
+			"folders_global_entity_identity_unique",
+		},
+		identityConflictMessage: "folder identity already exists",
+		validationMessage:       "folder data violates a constraint",
+		internalCode:            apperrors.Code(fallbackCode),
+		internalStorageMessage:  "folder storage operation failed",
+	})
 }
 
 func folderNotFoundError() error {

@@ -287,8 +287,5 @@ func (r *ConvertersRepository) mapGetError(err error, message string) (*entities
 }
 func (r *ConvertersRepository) mapWriteError(err error, message string) error {
 	r.logger.Error(message, zap.Error(err))
-	if isIdentityConflict(err, "converters_project_identity_unique") {
-		return apperrors.Conflict("identity_conflict", "converter identity already exists")
-	}
-	return apperrors.Internal("internal_error", "failed to save converter")
+	return mapStorageError(err, converterStorageErrorMapping)
 }

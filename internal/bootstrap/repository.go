@@ -36,6 +36,14 @@ func RepositoryModules() fx.Option {
 				fx.As(new(ports.ConvertersRepository)),
 			),
 			fx.Annotate(
+				postgres.NewQueriesRepository,
+				fx.As(new(ports.QueriesRepository)),
+			),
+			fx.Annotate(
+				postgres.NewDataViewsRepository,
+				fx.As(new(ports.DataViewsRepository)),
+			),
+			fx.Annotate(
 				postgres.NewTxManager,
 				fx.As(new(ports.TxManager)),
 			),

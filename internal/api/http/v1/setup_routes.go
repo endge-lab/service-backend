@@ -3,10 +3,12 @@ package http
 import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/component"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/converter"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/data_view"
 	docs "github.com/endge-lab/service-backend/internal/api/http/v1/docs"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/folder"
 	health "github.com/endge-lab/service-backend/internal/api/http/v1/health"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/project"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/query"
 	session "github.com/endge-lab/service-backend/internal/api/http/v1/session"
 	transport "github.com/endge-lab/service-backend/internal/api/http/v1/transport"
 	"github.com/endge-lab/service-backend/internal/config"
@@ -23,6 +25,8 @@ type Handler struct {
 	FolderHandler    folder.FHandler
 	ComponentHandler component.CHandler
 	ConverterHandler converter.ConvHandler
+	QueryHandler     query.QHandler
+	DataViewHandler  data_view.DVHandler
 }
 
 func NewHandler(
@@ -31,6 +35,8 @@ func NewHandler(
 	folderHandler folder.FHandler,
 	componentHandler component.CHandler,
 	converterHandler converter.ConvHandler,
+	queryHandler query.QHandler,
+	dataViewHandler data_view.DVHandler,
 ) *Handler {
 	return &Handler{
 		SessionHandler:   sessionHandler,
@@ -38,6 +44,8 @@ func NewHandler(
 		FolderHandler:    folderHandler,
 		ComponentHandler: componentHandler,
 		ConverterHandler: converterHandler,
+		QueryHandler:     queryHandler,
+		DataViewHandler:  dataViewHandler,
 	}
 }
 
@@ -70,6 +78,8 @@ func SetupRoutes(
 	folder.RegisterRoutes(api, handler.FolderHandler)
 	component.RegisterRoutes(api, handler.ComponentHandler)
 	converter.RegisterRoutes(api, handler.ConverterHandler)
+	query.RegisterRoutes(api, handler.QueryHandler)
+	data_view.RegisterRoutes(api, handler.DataViewHandler)
 	app.Use(func(c *fiber.Ctx) error {
 		return transport.WriteErrorResponse(c, transport.ErrRouteNotFound)
 	})

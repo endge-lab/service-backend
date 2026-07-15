@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	transport "github.com/endge-lab/service-backend/internal/api/http/v1/transport"
-	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/middleware"
 	"github.com/endge-lab/service-backend/internal/usecase"
 	servicefiber "github.com/endge-lab/service-kit-go/pkg/httpkit/fiber"
@@ -71,7 +70,7 @@ func (h *Handler) LoadSession(c *fiber.Ctx) (err error) {
 		ExpiresAt:   identity.ExpiresAt,
 	})
 	if err != nil {
-		return h.respondDomainError(c, err)
+		return transport.RespondDomainError(c, h.logger, err)
 	}
 
 	logger.Debug("load session handler completed", zap.String("service_user_id", response.User.ID))
@@ -80,27 +79,4 @@ func (h *Handler) LoadSession(c *fiber.Ctx) (err error) {
 
 func (h *Handler) TraceMiddleware(spanName string) fiber.Handler {
 	return servicefiber.TraceMiddleware(h.tracer, h.logger, spanName)
-}
-
-func (h *Handler) respondDomainError(c *fiber.Ctx, err error) error {
-	return h.respondUnexpectedError(c, err)
-}
-
-func (h *Handler) respondUnexpectedError(c *fiber.Ctx, err error) error {
-	fields := []zap.Field{
-		zap.Error(err),
-		zap.String("error_code", domainerrors.CodeOf(err)),
-		zap.String("method", c.Method()),
-		zap.String("path", c.Path()),
-	}
-
-	logger := logging.WithContext(c.UserContext(), h.logger)
-
-	if domainerrors.HTTPStatusOf(err) >= fiber.StatusInternalServerError {
-		logger.Error("unexpected request transport", fields...)
-	} else {
-		logger.Warn("request completed with business transport", fields...)
-	}
-
-	return transport.WriteErrorResponse(c, err)
 }

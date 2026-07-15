@@ -1,13 +1,9 @@
 package converter
 
 import (
-	"context"
-
 	transport "github.com/endge-lab/service-backend/internal/api/http/v1/transport"
-	"github.com/endge-lab/service-backend/internal/domain/entities"
 	"github.com/endge-lab/service-backend/internal/usecase"
 	"github.com/endge-lab/service-backend/internal/usecase/adapters"
-	servicefiber "github.com/endge-lab/service-kit-go/pkg/httpkit/fiber"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 	"go.opentelemetry.io/otel/trace"
@@ -16,22 +12,13 @@ import (
 
 type Handler struct {
 	service   adapters.ConverterService
-	folders   adapters.FolderService
 	validator appvalidator.Validator
 	logger    *zap.Logger
 	tracer    trace.Tracer
 }
 
 func NewHandler(s *usecase.Service, v appvalidator.Validator, l *zap.Logger, t trace.Tracer) *Handler {
-	return &Handler{service: s.Converters, folders: s.Folders, validator: v, logger: l, tracer: t}
-}
-
-func (h *Handler) response(c *fiber.Ctx, value *entities.Converter, project string) (*ConverterResponse, error) {
-	folder, err := h.folders.GetByID(c.UserContext(), value.FolderID)
-	if err != nil {
-		return nil, err
-	}
-	return newConverterResponse(value, project, folder.Identity), nil
+	return &Handler{service: s.Converters, validator: v, logger: l.With(zap.String("component", "converter_http_handler")), tracer: t}
 }
 
 // Create godoc
@@ -60,13 +47,9 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 	project := c.Params("project_identity")
 	value, err := h.service.Create(c.UserContext(), adapters.CreateConverterInput{ProjectIdentity: project, FolderIdentity: request.FolderIdentity, Identity: request.Identity, DisplayName: request.DisplayName, Description: request.Description, ConverterType: request.ConverterType, Source: request.Source, IsSystem: request.IsSystem, Meta: request.Meta, Active: request.Active})
 	if err != nil {
-		return transport.WriteErrorResponse(c, err)
+		return transport.RespondDomainError(c, h.logger, err)
 	}
-	response, err := h.response(c, value, project)
-	if err != nil {
-		return transport.WriteErrorResponse(c, err)
-	}
-	return c.Status(fiber.StatusCreated).JSON(response)
+	return c.Status(fiber.StatusCreated).JSON(h.response(value, project))
 }
 
 // List godoc
@@ -90,15 +73,11 @@ func (h *Handler) List(c *fiber.Ctx) error {
 	}
 	values, err := h.service.List(c.UserContext(), adapters.ListConvertersInput{ProjectIdentity: project, FolderIdentity: folder})
 	if err != nil {
-		return transport.WriteErrorResponse(c, err)
+		return transport.RespondDomainError(c, h.logger, err)
 	}
 	items := make([]*ConverterResponse, 0, len(values))
 	for _, value := range values {
-		response, err := h.response(c, value, project)
-		if err != nil {
-			return transport.WriteErrorResponse(c, err)
-		}
-		items = append(items, response)
+		items = append(items, h.response(value, project))
 	}
 	return c.JSON(ConvertersListResponse{Items: items})
 }
@@ -120,13 +99,9 @@ func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
 	project := c.Params("project_identity")
 	value, err := h.service.GetByIdentity(c.UserContext(), adapters.GetConverterInput{ProjectIdentity: project, ConverterIdentity: c.Params("converter_identity")})
 	if err != nil {
-		return transport.WriteErrorResponse(c, err)
+		return transport.RespondDomainError(c, h.logger, err)
 	}
-	response, err := h.response(c, value, project)
-	if err != nil {
-		return transport.WriteErrorResponse(c, err)
-	}
-	return c.JSON(response)
+	return c.JSON(h.response(value, project))
 }
 
 // Update godoc
@@ -155,13 +130,9 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 	project := c.Params("project_identity")
 	value, err := h.service.Update(c.UserContext(), adapters.UpdateConverterInput{ProjectIdentity: project, ConverterIdentity: c.Params("converter_identity"), FolderIdentity: request.FolderIdentity, DisplayName: request.DisplayName, Description: request.Description, ConverterType: request.ConverterType, Source: request.Source, IsSystem: request.IsSystem, Meta: request.Meta, Active: request.Active})
 	if err != nil {
-		return transport.WriteErrorResponse(c, err)
+		return transport.RespondDomainError(c, h.logger, err)
 	}
-	response, err := h.response(c, value, project)
-	if err != nil {
-		return transport.WriteErrorResponse(c, err)
-	}
-	return c.JSON(response)
+	return c.JSON(h.response(value, project))
 }
 
 // SoftDelete godoc
@@ -206,13 +177,3 @@ func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Res
 // @Failure 500 {object} transport.ErrorResponse
 // @Router /api/v1/projects/{project_identity}/converters/{converter_identity}/hard [delete]
 func (h *Handler) HardDelete(c *fiber.Ctx) error { return h.change(c, h.service.HardDelete) }
-
-func (h *Handler) change(c *fiber.Ctx, fn func(context.Context, adapters.ConverterIdentityInput) error) error {
-	if err := fn(c.UserContext(), adapters.ConverterIdentityInput{ProjectIdentity: c.Params("project_identity"), ConverterIdentity: c.Params("converter_identity")}); err != nil {
-		return transport.WriteErrorResponse(c, err)
-	}
-	return c.SendStatus(fiber.StatusNoContent)
-}
-func (h *Handler) TraceMiddleware(name string) fiber.Handler {
-	return servicefiber.TraceMiddleware(h.tracer, h.logger, name)
-}

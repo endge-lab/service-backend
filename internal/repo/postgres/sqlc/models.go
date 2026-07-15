@@ -67,6 +67,25 @@ type Converter struct {
 	UpdatedAt     time.Time          `json:"updated_at"`
 }
 
+type DataView struct {
+	ID           uuid.UUID          `json:"id"`
+	ProjectID    uuid.UUID          `json:"project_id"`
+	FolderID     uuid.UUID          `json:"folder_id"`
+	QueryID      uuid.UUID          `json:"query_id"`
+	Identity     string             `json:"identity"`
+	DisplayName  string             `json:"display_name"`
+	Description  pgtype.Text        `json:"description"`
+	ViewType     string             `json:"view_type"`
+	Source       []byte             `json:"source"`
+	InputSchema  []byte             `json:"input_schema"`
+	OutputSchema []byte             `json:"output_schema"`
+	Meta         []byte             `json:"meta"`
+	Active       bool               `json:"active"`
+	DeletedAt    pgtype.Timestamptz `json:"deleted_at"`
+	CreatedAt    time.Time          `json:"created_at"`
+	UpdatedAt    time.Time          `json:"updated_at"`
+}
+
 type Environment struct {
 	ID          uuid.UUID   `json:"id"`
 	Identity    string      `json:"identity"`
@@ -224,33 +243,25 @@ type Project struct {
 }
 
 type Query struct {
-	ID                   uuid.UUID          `json:"id"`
-	Identity             string             `json:"identity"`
-	DisplayName          string             `json:"display_name"`
-	Type                 string             `json:"type"`
-	Endpoint             pgtype.Text        `json:"endpoint"`
-	Query                pgtype.Text        `json:"query"`
-	SubField             pgtype.Text        `json:"sub_field"`
-	Method               pgtype.Text        `json:"method"`
-	Headers              []byte             `json:"headers"`
-	TimeoutMs            pgtype.Int4        `json:"timeout_ms"`
-	SendAsFormUrlencoded bool               `json:"send_as_form_urlencoded"`
-	Params               []byte             `json:"params"`
-	ReturnField          []byte             `json:"return_field"`
-	MockData             []byte             `json:"mock_data"`
-	MockDataEnabled      bool               `json:"mock_data_enabled"`
-	Auth                 []byte             `json:"auth"`
-	FilterMode           pgtype.Text        `json:"filter_mode"`
-	Filters              []byte             `json:"filters"`
-	FolderID             uuid.UUID          `json:"folder_id"`
-	ProjectID            pgtype.UUID        `json:"project_id"`
-	Active               bool               `json:"active"`
-	Inherited            bool               `json:"inherited"`
-	DeletedAt            pgtype.Timestamptz `json:"deleted_at"`
-	Author               pgtype.Text        `json:"author"`
-	Meta                 []byte             `json:"meta"`
-	CreatedAt            time.Time          `json:"created_at"`
-	UpdatedAt            time.Time          `json:"updated_at"`
+	ID              uuid.UUID          `json:"id"`
+	ProjectID       uuid.UUID          `json:"project_id"`
+	FolderID        uuid.UUID          `json:"folder_id"`
+	Identity        string             `json:"identity"`
+	DisplayName     string             `json:"display_name"`
+	Description     pgtype.Text        `json:"description"`
+	QueryType       string             `json:"query_type"`
+	Source          []byte             `json:"source"`
+	Params          []byte             `json:"params"`
+	Headers         []byte             `json:"headers"`
+	Auth            []byte             `json:"auth"`
+	TimeoutMs       pgtype.Int4        `json:"timeout_ms"`
+	MockData        []byte             `json:"mock_data"`
+	MockDataEnabled bool               `json:"mock_data_enabled"`
+	Active          bool               `json:"active"`
+	DeletedAt       pgtype.Timestamptz `json:"deleted_at"`
+	Meta            []byte             `json:"meta"`
+	CreatedAt       time.Time          `json:"created_at"`
+	UpdatedAt       time.Time          `json:"updated_at"`
 }
 
 type Scenario struct {
@@ -346,23 +357,6 @@ type Version struct {
 	Description pgtype.Text `json:"description"`
 	Data        []byte      `json:"data"`
 	ProjectID   pgtype.UUID `json:"project_id"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
-}
-
-type View struct {
-	ID          uuid.UUID   `json:"id"`
-	Identity    string      `json:"identity"`
-	DisplayName string      `json:"display_name"`
-	Description pgtype.Text `json:"description"`
-	IsSystem    bool        `json:"is_system"`
-	FolderID    pgtype.UUID `json:"folder_id"`
-	ProjectID   pgtype.UUID `json:"project_id"`
-	ComponentID pgtype.UUID `json:"component_id"`
-	FilterID    pgtype.UUID `json:"filter_id"`
-	QueryID     pgtype.UUID `json:"query_id"`
-	Inherited   bool        `json:"inherited"`
-	Meta        []byte      `json:"meta"`
 	CreatedAt   time.Time   `json:"created_at"`
 	UpdatedAt   time.Time   `json:"updated_at"`
 }

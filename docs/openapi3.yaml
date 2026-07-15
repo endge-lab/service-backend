@@ -236,6 +236,1087 @@ paths:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
                   ttp_v1_transport.ErrorResponse"
+  "/api/v1/projects/{project_identity}/components":
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает неудаленные компоненты проекта с optional фильтрами
+        папки и типа.
+      tags:
+        - components
+      summary: Список компонентов
+      parameters:
+        - example: demo-project
+          description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - example: root-components
+          description: Folder identity
+          name: folder_identity
+          in: query
+          schema:
+            type: string
+        - description: Component type
+          name: component_type
+          in: query
+          schema:
+            type: string
+            enum:
+              - component-sfc
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_component.ComponentsListRespon\
+                  se"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+    post:
+      security:
+        - BearerAuth: []
+      description: Создает component-sfc в папке проекта. Source хранится как
+        authoring source и не компилируется и не выполняется.
+      tags:
+        - components
+      summary: Создать компонент
+      parameters:
+        - example: demo-project
+          description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/internal_api_http_v1_component.CreateComponentReque\
+                st"
+        description: Параметры компонента
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_component.ComponentResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+  "/api/v1/projects/{project_identity}/components/{component_identity}":
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает активный компонент по identity в пределах проекта.
+      tags:
+        - components
+      summary: Получить компонент
+      parameters:
+        - example: demo-project
+          description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - example: user-card
+          description: Component identity
+          name: component_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_component.ComponentResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+    delete:
+      security:
+        - BearerAuth: []
+      description: Выполняет soft-delete компонента по identity.
+      tags:
+        - components
+      summary: Удалить компонент
+      parameters:
+        - description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Component identity
+          name: component_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+    patch:
+      security:
+        - BearerAuth: []
+      description: Заменяет editable payload компонента, сохраняя id, identity,
+        createdAt и deletedAt.
+      tags:
+        - components
+      summary: Обновить компонент
+      parameters:
+        - example: demo-project
+          description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - example: user-card
+          description: Component identity
+          name: component_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/internal_api_http_v1_component.UpdateComponentReque\
+                st"
+        description: Параметры обновления компонента
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_component.ComponentResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+  "/api/v1/projects/{project_identity}/components/{component_identity}/hard":
+    delete:
+      security:
+        - BearerAuth: []
+      description: Выполняет hard-delete компонента по identity.
+      tags:
+        - components
+      summary: Физически удалить компонент
+      parameters:
+        - description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Component identity
+          name: component_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+  "/api/v1/projects/{project_identity}/components/{component_identity}/restore":
+    post:
+      security:
+        - BearerAuth: []
+      description: Восстанавливает soft-deleted компонент по identity.
+      tags:
+        - components
+      summary: Восстановить компонент
+      parameters:
+        - description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Component identity
+          name: component_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+  "/api/v1/projects/{project_identity}/converters":
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает неудаленные конвертеры проекта с optional фильтром папки.
+      tags:
+        - converters
+      summary: Список конвертеров
+      parameters:
+        - description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Folder identity
+          name: folder_identity
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_converter.ConvertersListRespon\
+                  se"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+    post:
+      security:
+        - BearerAuth: []
+      description: Создает конвертер с JSON source/config. Source не исполняется.
+      tags:
+        - converters
+      summary: Создать конвертер
+      parameters:
+        - example: demo-project
+          description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/internal_api_http_v1_converter.CreateConverterReque\
+                st"
+        description: Параметры конвертера
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_converter.ConverterResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+  "/api/v1/projects/{project_identity}/converters/{converter_identity}":
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает активный конвертер по identity.
+      tags:
+        - converters
+      summary: Получить конвертер
+      parameters:
+        - description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Converter identity
+          name: converter_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_converter.ConverterResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+    delete:
+      security:
+        - BearerAuth: []
+      description: Выполняет soft-delete конвертера.
+      tags:
+        - converters
+      summary: Удалить конвертер
+      parameters:
+        - description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Converter identity
+          name: converter_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+    patch:
+      security:
+        - BearerAuth: []
+      description: Заменяет editable payload конвертера, сохраняя id, identity,
+        createdAt и deletedAt.
+      tags:
+        - converters
+      summary: Обновить конвертер
+      parameters:
+        - description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Converter identity
+          name: converter_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/internal_api_http_v1_converter.UpdateConverterReque\
+                st"
+        description: Параметры обновления конвертера
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_converter.ConverterResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+  "/api/v1/projects/{project_identity}/converters/{converter_identity}/hard":
+    delete:
+      security:
+        - BearerAuth: []
+      description: Выполняет hard-delete конвертера; system converter удалить нельзя.
+      tags:
+        - converters
+      summary: Физически удалить конвертер
+      parameters:
+        - description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Converter identity
+          name: converter_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+  "/api/v1/projects/{project_identity}/converters/{converter_identity}/restore":
+    post:
+      security:
+        - BearerAuth: []
+      description: Восстанавливает soft-deleted конвертер.
+      tags:
+        - converters
+      summary: Восстановить конвертер
+      parameters:
+        - description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Converter identity
+          name: converter_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+  "/api/v1/projects/{project_identity}/data-views":
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает активные DataView проекта с optional фильтрами папки и
+        Query. DataView, связанные с soft-deleted Query, не возвращаются.
+      tags:
+        - data-views
+      summary: Список DataView
+      parameters:
+        - example: demo-project
+          description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - example: root-data-views
+          description: Folder identity
+          name: folder_identity
+          in: query
+          schema:
+            type: string
+        - example: users-list
+          description: Query identity
+          name: query_identity
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_data_view.DataViewsListRespons\
+                  e"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+    post:
+      security:
+        - BearerAuth: []
+      description: Создает DataView в папке проекта и связывает его с активной Query
+        этого же проекта. Source и schema хранятся как authoring configuration и
+        не компилируются и не выполняются.
+      tags:
+        - data-views
+      summary: Создать DataView
+      parameters:
+        - example: demo-project
+          description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/internal_api_http_v1_data_view.CreateDataViewReques\
+                t"
+        description: Параметры DataView
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_data_view.DataViewResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+  "/api/v1/projects/{project_identity}/data-views/{data_view_identity}":
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает активный DataView по identity в пределах проекта вместе
+        с identity папки и связанной Query.
+      tags:
+        - data-views
+      summary: Получить DataView
+      parameters:
+        - example: demo-project
+          description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - example: users-table-view
+          description: DataView identity
+          name: data_view_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_data_view.DataViewResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+    delete:
+      security:
+        - BearerAuth: []
+      description: Выполняет soft-delete DataView по identity в пределах проекта.
+      tags:
+        - data-views
+      summary: Удалить DataView
+      parameters:
+        - description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: DataView identity
+          name: data_view_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+    patch:
+      security:
+        - BearerAuth: []
+      description: Полностью заменяет editable payload DataView, включая папку,
+        связанную Query и authoring configuration. Поля id, identity, createdAt
+        и deletedAt сохраняются.
+      tags:
+        - data-views
+      summary: Обновить DataView
+      parameters:
+        - example: demo-project
+          description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - example: users-table-view
+          description: DataView identity
+          name: data_view_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/internal_api_http_v1_data_view.UpdateDataViewReques\
+                t"
+        description: Параметры обновления DataView
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_data_view.DataViewResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+  "/api/v1/projects/{project_identity}/data-views/{data_view_identity}/hard":
+    delete:
+      security:
+        - BearerAuth: []
+      description: Выполняет hard-delete soft-deleted DataView по identity в пределах
+        проекта.
+      tags:
+        - data-views
+      summary: Физически удалить DataView
+      parameters:
+        - description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: DataView identity
+          name: data_view_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+  "/api/v1/projects/{project_identity}/data-views/{data_view_identity}/restore":
+    post:
+      security:
+        - BearerAuth: []
+      description: Восстанавливает soft-deleted DataView по identity в пределах проекта.
+      tags:
+        - data-views
+      summary: Восстановить DataView
+      parameters:
+        - description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: DataView identity
+          name: data_view_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
   "/api/v1/projects/{project_identity}/folders":
     get:
       security:
@@ -711,6 +1792,368 @@ paths:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
                   ttp_v1_transport.ErrorResponse"
+  "/api/v1/projects/{project_identity}/queries":
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает активные Query проекта. Можно отфильтровать записи по
+        identity папки и query type; soft-deleted Query не возвращаются.
+      tags:
+        - queries
+      summary: Список Query
+      parameters:
+        - example: demo-project
+          description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - example: root-queries
+          description: Folder identity
+          name: folder_identity
+          in: query
+          schema:
+            type: string
+        - example: http
+          description: Query type
+          name: query_type
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_query.QueriesListResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+    post:
+      security:
+        - BearerAuth: []
+      description: Создает конфигурацию Query в папке проекта. Query source, headers,
+        параметры и mock data только хранятся и не исполняются сервисом.
+      tags:
+        - queries
+      summary: Создать Query
+      parameters:
+        - example: demo-project
+          description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/internal_api_http_v1_query.CreateQueryRequest"
+        description: Параметры Query
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_query.QueryResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+  "/api/v1/projects/{project_identity}/queries/{query_identity}":
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает активную Query по identity в пределах проекта вместе с
+        identity ее папки.
+      tags:
+        - queries
+      summary: Получить Query
+      parameters:
+        - example: demo-project
+          description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - example: users-list
+          description: Query identity
+          name: query_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_query.QueryResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+    delete:
+      security:
+        - BearerAuth: []
+      description: Выполняет soft-delete Query. Связанные DataView физически не
+        удаляются, но не попадают в обычные query-based сценарии.
+      tags:
+        - queries
+      summary: Удалить Query
+      parameters:
+        - description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Query identity
+          name: query_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+    patch:
+      security:
+        - BearerAuth: []
+      description: Полностью заменяет editable payload Query, включая папку, source,
+        параметры, headers, auth и mock data. Поля id, identity, createdAt и
+        deletedAt сохраняются.
+      tags:
+        - queries
+      summary: Обновить Query
+      parameters:
+        - example: demo-project
+          description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - example: users-list
+          description: Query identity
+          name: query_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/internal_api_http_v1_query.UpdateQueryRequest"
+        description: Параметры обновления Query
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_query.QueryResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+  "/api/v1/projects/{project_identity}/queries/{query_identity}/hard":
+    delete:
+      security:
+        - BearerAuth: []
+      description: Выполняет hard-delete soft-deleted Query. Связанные DataView
+        удаляются каскадно на уровне базы данных.
+      tags:
+        - queries
+      summary: Физически удалить Query
+      parameters:
+        - description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Query identity
+          name: query_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+  "/api/v1/projects/{project_identity}/queries/{query_identity}/restore":
+    post:
+      security:
+        - BearerAuth: []
+      description: Восстанавливает soft-deleted Query по identity в пределах проекта.
+      tags:
+        - queries
+      summary: Восстановить Query
+      parameters:
+        - description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Query identity
+          name: query_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_v1_transport.ErrorResponse"
   "/api/v1/projects/{project_identity}/restore":
     post:
       security:
@@ -770,6 +2213,18 @@ components:
           additionalProperties: {}
         message:
           type: string
+    github_com_endge-lab_service-backend_internal_domain_entities.ComponentSourceFormat:
+      type: string
+      enum:
+        - sfc
+      x-enum-varnames:
+        - ComponentSourceFormatSFC
+    github_com_endge-lab_service-backend_internal_domain_entities.ComponentType:
+      type: string
+      enum:
+        - component-sfc
+      x-enum-varnames:
+        - ComponentTypeSFC
     github_com_endge-lab_service-backend_internal_domain_entities.FolderEntityType:
       type: string
       enum:
@@ -782,6 +2237,324 @@ components:
         - FolderEntityTypeConverters
         - FolderEntityTypeQueries
         - FolderEntityTypeDataViews
+    internal_api_http_v1_component.ComponentResponse:
+      type: object
+      properties:
+        active:
+          type: boolean
+        bindings:
+          type: object
+          additionalProperties: {}
+        componentType:
+          $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
+            n_entities.ComponentType"
+        createdAt:
+          type: string
+        deletedAt:
+          type: string
+        description:
+          type: string
+        displayName:
+          type: string
+        folderIdentity:
+          type: string
+        id:
+          type: string
+        identity:
+          type: string
+        meta:
+          type: object
+          additionalProperties: {}
+        projectIdentity:
+          type: string
+        propsSchema:
+          type: object
+          additionalProperties: {}
+        source:
+          type: string
+        sourceFormat:
+          $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
+            n_entities.ComponentSourceFormat"
+        updatedAt:
+          type: string
+    internal_api_http_v1_component.ComponentsListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/internal_api_http_v1_component.ComponentResponse"
+    internal_api_http_v1_component.CreateComponentRequest:
+      type: object
+      required:
+        - componentType
+        - displayName
+        - folderIdentity
+        - identity
+        - source
+      properties:
+        active:
+          type: boolean
+        bindings:
+          type: object
+          additionalProperties: {}
+        componentType:
+          $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
+            n_entities.ComponentType"
+        description:
+          type: string
+        displayName:
+          type: string
+        folderIdentity:
+          type: string
+        identity:
+          type: string
+        meta:
+          type: object
+          additionalProperties: {}
+        propsSchema:
+          type: object
+          additionalProperties: {}
+        source:
+          type: string
+    internal_api_http_v1_component.UpdateComponentRequest:
+      type: object
+      required:
+        - componentType
+        - displayName
+        - folderIdentity
+        - source
+      properties:
+        active:
+          type: boolean
+        bindings:
+          type: object
+          additionalProperties: {}
+        componentType:
+          $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
+            n_entities.ComponentType"
+        description:
+          type: string
+        displayName:
+          type: string
+        folderIdentity:
+          type: string
+        meta:
+          type: object
+          additionalProperties: {}
+        propsSchema:
+          type: object
+          additionalProperties: {}
+        source:
+          type: string
+    internal_api_http_v1_converter.ConverterResponse:
+      type: object
+      properties:
+        active:
+          type: boolean
+        converterType:
+          type: string
+        createdAt:
+          type: string
+        deletedAt:
+          type: string
+        description:
+          type: string
+        displayName:
+          type: string
+        folderIdentity:
+          type: string
+        id:
+          type: string
+        identity:
+          type: string
+        isSystem:
+          type: boolean
+        meta:
+          type: object
+          additionalProperties: {}
+        projectIdentity:
+          type: string
+        source:
+          type: object
+          additionalProperties: {}
+        updatedAt:
+          type: string
+    internal_api_http_v1_converter.ConvertersListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/internal_api_http_v1_converter.ConverterResponse"
+    internal_api_http_v1_converter.CreateConverterRequest:
+      type: object
+      required:
+        - converterType
+        - displayName
+        - folderIdentity
+        - identity
+      properties:
+        active:
+          type: boolean
+        converterType:
+          type: string
+        description:
+          type: string
+        displayName:
+          type: string
+        folderIdentity:
+          type: string
+        identity:
+          type: string
+        isSystem:
+          type: boolean
+        meta:
+          type: object
+          additionalProperties: {}
+        source:
+          type: object
+          additionalProperties: {}
+    internal_api_http_v1_converter.UpdateConverterRequest:
+      type: object
+      required:
+        - converterType
+        - displayName
+        - folderIdentity
+      properties:
+        active:
+          type: boolean
+        converterType:
+          type: string
+        description:
+          type: string
+        displayName:
+          type: string
+        folderIdentity:
+          type: string
+        isSystem:
+          type: boolean
+        meta:
+          type: object
+          additionalProperties: {}
+        source:
+          type: object
+          additionalProperties: {}
+    internal_api_http_v1_data_view.CreateDataViewRequest:
+      type: object
+      required:
+        - displayName
+        - folderIdentity
+        - identity
+        - queryIdentity
+        - source
+        - viewType
+      properties:
+        active:
+          type: boolean
+        description:
+          type: string
+        displayName:
+          type: string
+        folderIdentity:
+          type: string
+        identity:
+          type: string
+        inputSchema:
+          type: object
+          additionalProperties: {}
+        meta:
+          type: object
+          additionalProperties: {}
+        outputSchema:
+          type: object
+          additionalProperties: {}
+        queryIdentity:
+          type: string
+        source:
+          type: object
+          additionalProperties: {}
+        viewType:
+          type: string
+    internal_api_http_v1_data_view.DataViewResponse:
+      type: object
+      properties:
+        active:
+          type: boolean
+        createdAt:
+          type: string
+        deletedAt:
+          type: string
+        description:
+          type: string
+        displayName:
+          type: string
+        folderIdentity:
+          type: string
+        id:
+          type: string
+        identity:
+          type: string
+        inputSchema:
+          type: object
+          additionalProperties: {}
+        meta:
+          type: object
+          additionalProperties: {}
+        outputSchema:
+          type: object
+          additionalProperties: {}
+        projectIdentity:
+          type: string
+        queryIdentity:
+          type: string
+        source:
+          type: object
+          additionalProperties: {}
+        updatedAt:
+          type: string
+        viewType:
+          type: string
+    internal_api_http_v1_data_view.DataViewsListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/internal_api_http_v1_data_view.DataViewResponse"
+    internal_api_http_v1_data_view.UpdateDataViewRequest:
+      type: object
+      required:
+        - displayName
+        - folderIdentity
+        - queryIdentity
+        - source
+        - viewType
+      properties:
+        active:
+          type: boolean
+        description:
+          type: string
+        displayName:
+          type: string
+        folderIdentity:
+          type: string
+        inputSchema:
+          type: object
+          additionalProperties: {}
+        meta:
+          type: object
+          additionalProperties: {}
+        outputSchema:
+          type: object
+          additionalProperties: {}
+        queryIdentity:
+          type: string
+        source:
+          type: object
+          additionalProperties: {}
+        viewType:
+          type: string
     internal_api_http_v1_folder.CreateFolderRequest:
       type: object
       required:
@@ -968,6 +2741,143 @@ components:
           example: Demo Project
         meta:
           type: object
+    internal_api_http_v1_query.CreateQueryRequest:
+      type: object
+      required:
+        - displayName
+        - folderIdentity
+        - identity
+        - queryType
+        - source
+      properties:
+        active:
+          type: boolean
+        auth:
+          type: object
+          additionalProperties: {}
+        description:
+          type: string
+        displayName:
+          type: string
+        folderIdentity:
+          type: string
+        headers:
+          type: object
+          additionalProperties: {}
+        identity:
+          type: string
+        meta:
+          type: object
+          additionalProperties: {}
+        mockData:
+          type: object
+          additionalProperties: {}
+        mockDataEnabled:
+          type: boolean
+        params:
+          type: array
+          items: {}
+        queryType:
+          type: string
+        source:
+          type: object
+          additionalProperties: {}
+        timeoutMs:
+          type: integer
+    internal_api_http_v1_query.QueriesListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/internal_api_http_v1_query.QueryResponse"
+    internal_api_http_v1_query.QueryResponse:
+      type: object
+      properties:
+        active:
+          type: boolean
+        auth:
+          type: object
+          additionalProperties: {}
+        createdAt:
+          type: string
+        deletedAt:
+          type: string
+        description:
+          type: string
+        displayName:
+          type: string
+        folderIdentity:
+          type: string
+        headers:
+          type: object
+          additionalProperties: {}
+        id:
+          type: string
+        identity:
+          type: string
+        meta:
+          type: object
+          additionalProperties: {}
+        mockData:
+          type: object
+          additionalProperties: {}
+        mockDataEnabled:
+          type: boolean
+        params:
+          type: array
+          items: {}
+        projectIdentity:
+          type: string
+        queryType:
+          type: string
+        source:
+          type: object
+          additionalProperties: {}
+        timeoutMs:
+          type: integer
+        updatedAt:
+          type: string
+    internal_api_http_v1_query.UpdateQueryRequest:
+      type: object
+      required:
+        - displayName
+        - folderIdentity
+        - queryType
+        - source
+      properties:
+        active:
+          type: boolean
+        auth:
+          type: object
+          additionalProperties: {}
+        description:
+          type: string
+        displayName:
+          type: string
+        folderIdentity:
+          type: string
+        headers:
+          type: object
+          additionalProperties: {}
+        meta:
+          type: object
+          additionalProperties: {}
+        mockData:
+          type: object
+          additionalProperties: {}
+        mockDataEnabled:
+          type: boolean
+        params:
+          type: array
+          items: {}
+        queryType:
+          type: string
+        source:
+          type: object
+          additionalProperties: {}
+        timeoutMs:
+          type: integer
     internal_api_http_v1_session.ErrorResponse:
       type: object
       properties:

@@ -1,13 +1,10 @@
 package component
 
 import (
-	"context"
-
 	transport "github.com/endge-lab/service-backend/internal/api/http/v1/transport"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	"github.com/endge-lab/service-backend/internal/usecase"
 	"github.com/endge-lab/service-backend/internal/usecase/adapters"
-	servicefiber "github.com/endge-lab/service-kit-go/pkg/httpkit/fiber"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 	"go.opentelemetry.io/otel/trace"
@@ -16,21 +13,13 @@ import (
 
 type Handler struct {
 	service   adapters.ComponentService
-	folders   adapters.FolderService
 	validator appvalidator.Validator
 	logger    *zap.Logger
 	tracer    trace.Tracer
 }
 
 func NewHandler(s *usecase.Service, v appvalidator.Validator, l *zap.Logger, t trace.Tracer) *Handler {
-	return &Handler{service: s.Components, folders: s.Folders, validator: v, logger: l, tracer: t}
-}
-func (h *Handler) response(c *fiber.Ctx, v *entities.Component, p string) (*ComponentResponse, error) {
-	f, e := h.folders.GetByID(c.UserContext(), v.FolderID)
-	if e != nil {
-		return nil, e
-	}
-	return newComponentResponse(v, p, f.Identity), nil
+	return &Handler{service: s.Components, validator: v, logger: l.With(zap.String("component", "component_http_handler")), tracer: t}
 }
 
 // Create godoc
@@ -59,13 +48,9 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 	p := c.Params("project_identity")
 	v, e := h.service.Create(c.UserContext(), adapters.CreateComponentInput{ProjectIdentity: p, FolderIdentity: r.FolderIdentity, Identity: r.Identity, DisplayName: r.DisplayName, Description: r.Description, ComponentType: r.ComponentType, Source: r.Source, PropsSchema: r.PropsSchema, Bindings: r.Bindings, Meta: r.Meta, Active: r.Active})
 	if e != nil {
-		return transport.WriteErrorResponse(c, e)
+		return transport.RespondDomainError(c, h.logger, e)
 	}
-	out, e := h.response(c, v, p)
-	if e != nil {
-		return transport.WriteErrorResponse(c, e)
-	}
-	return c.Status(201).JSON(out)
+	return c.Status(201).JSON(h.response(v, p))
 }
 
 // GetByIdentity godoc
@@ -85,13 +70,9 @@ func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
 	p := c.Params("project_identity")
 	v, e := h.service.GetByIdentity(c.UserContext(), adapters.GetComponentInput{ProjectIdentity: p, ComponentIdentity: c.Params("component_identity")})
 	if e != nil {
-		return transport.WriteErrorResponse(c, e)
+		return transport.RespondDomainError(c, h.logger, e)
 	}
-	out, e := h.response(c, v, p)
-	if e != nil {
-		return transport.WriteErrorResponse(c, e)
-	}
-	return c.JSON(out)
+	return c.JSON(h.response(v, p))
 }
 
 // List godoc
@@ -121,15 +102,11 @@ func (h *Handler) List(c *fiber.Ctx) error {
 	}
 	values, e := h.service.List(c.UserContext(), adapters.ListComponentsInput{ProjectIdentity: p, FolderIdentity: folder, ComponentType: typ})
 	if e != nil {
-		return transport.WriteErrorResponse(c, e)
+		return transport.RespondDomainError(c, h.logger, e)
 	}
 	items := make([]*ComponentResponse, 0, len(values))
-	for _, v := range values {
-		out, e := h.response(c, v, p)
-		if e != nil {
-			return transport.WriteErrorResponse(c, e)
-		}
-		items = append(items, out)
+	for _, value := range values {
+		items = append(items, h.response(value, p))
 	}
 	return c.JSON(ComponentsListResponse{Items: items})
 }
@@ -160,13 +137,9 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 	p := c.Params("project_identity")
 	v, e := h.service.Update(c.UserContext(), adapters.UpdateComponentInput{ProjectIdentity: p, ComponentIdentity: c.Params("component_identity"), FolderIdentity: r.FolderIdentity, DisplayName: r.DisplayName, Description: r.Description, ComponentType: r.ComponentType, Source: r.Source, PropsSchema: r.PropsSchema, Bindings: r.Bindings, Meta: r.Meta, Active: r.Active})
 	if e != nil {
-		return transport.WriteErrorResponse(c, e)
+		return transport.RespondDomainError(c, h.logger, e)
 	}
-	out, e := h.response(c, v, p)
-	if e != nil {
-		return transport.WriteErrorResponse(c, e)
-	}
-	return c.JSON(out)
+	return c.JSON(h.response(v, p))
 }
 
 // SoftDelete godoc
@@ -210,13 +183,3 @@ func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Res
 // @Security BearerAuth
 // @Router /api/v1/projects/{project_identity}/components/{component_identity}/hard [delete]
 func (h *Handler) HardDelete(c *fiber.Ctx) error { return h.change(c, h.service.HardDelete) }
-
-func (h *Handler) change(c *fiber.Ctx, fn func(context.Context, adapters.ComponentIdentityInput) error) error {
-	if err := fn(c.UserContext(), adapters.ComponentIdentityInput{ProjectIdentity: c.Params("project_identity"), ComponentIdentity: c.Params("component_identity")}); err != nil {
-		return transport.WriteErrorResponse(c, err)
-	}
-	return c.SendStatus(204)
-}
-func (h *Handler) TraceMiddleware(n string) fiber.Handler {
-	return servicefiber.TraceMiddleware(h.tracer, h.logger, n)
-}
