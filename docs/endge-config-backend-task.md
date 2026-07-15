@@ -143,7 +143,6 @@ root-types
 root-converters
 root-parameters
 root-filters
-root-views
 root-integrations
 root-environments
 root-tenants
@@ -406,7 +405,7 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 
 ### filters
 
-Фильтры для view/query/component.
+Фильтры для query/component.
 
 ```sql
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1110,7 +1109,6 @@ Body:
   "actions": [],
   "converters": [],
   "integrations": [],
-  "views": [],
   "settings": [],
   "vocabs": [],
   "i18nBundles": [],
