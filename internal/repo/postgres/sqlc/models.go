@@ -31,28 +31,6 @@ type Action struct {
 	UpdatedAt   time.Time          `json:"updated_at"`
 }
 
-type BehaviorBinding struct {
-	ID              uuid.UUID   `json:"id"`
-	Identity        string      `json:"identity"`
-	DisplayName     string      `json:"display_name"`
-	ProjectID       pgtype.UUID `json:"project_id"`
-	OwnerType       string      `json:"owner_type"`
-	OwnerID         string      `json:"owner_id"`
-	TargetType      string      `json:"target_type"`
-	TargetID        string      `json:"target_id"`
-	EventName       string      `json:"event_name"`
-	ScriptRef       string      `json:"script_ref"`
-	Mode            string      `json:"mode"`
-	Priority        int32       `json:"priority"`
-	IsEnabled       bool        `json:"is_enabled"`
-	EnvironmentID   pgtype.UUID `json:"environment_id"`
-	IsInherited     bool        `json:"is_inherited"`
-	OriginBindingID pgtype.UUID `json:"origin_binding_id"`
-	FolderID        pgtype.UUID `json:"folder_id"`
-	CreatedAt       time.Time   `json:"created_at"`
-	UpdatedAt       time.Time   `json:"updated_at"`
-}
-
 type Component struct {
 	ID            uuid.UUID          `json:"id"`
 	ProjectID     uuid.UUID          `json:"project_id"`
@@ -231,29 +209,6 @@ type Policy struct {
 	FolderID    pgtype.UUID `json:"folder_id"`
 	CreatedAt   time.Time   `json:"created_at"`
 	UpdatedAt   time.Time   `json:"updated_at"`
-}
-
-type PresentationBinding struct {
-	ID              uuid.UUID   `json:"id"`
-	Identity        string      `json:"identity"`
-	DisplayName     string      `json:"display_name"`
-	ProjectID       pgtype.UUID `json:"project_id"`
-	OwnerType       string      `json:"owner_type"`
-	OwnerID         string      `json:"owner_id"`
-	TargetType      string      `json:"target_type"`
-	TargetID        pgtype.Text `json:"target_id"`
-	Role            string      `json:"role"`
-	RendererRef     string      `json:"renderer_ref"`
-	WhenExpression  pgtype.Text `json:"when_expression"`
-	Mode            string      `json:"mode"`
-	Priority        int32       `json:"priority"`
-	IsEnabled       bool        `json:"is_enabled"`
-	EnvironmentID   pgtype.UUID `json:"environment_id"`
-	IsInherited     bool        `json:"is_inherited"`
-	OriginBindingID pgtype.UUID `json:"origin_binding_id"`
-	FolderID        pgtype.UUID `json:"folder_id"`
-	CreatedAt       time.Time   `json:"created_at"`
-	UpdatedAt       time.Time   `json:"updated_at"`
 }
 
 type Project struct {

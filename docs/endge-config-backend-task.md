@@ -118,8 +118,6 @@ views
 integrations
 environments
 tenants
-behavior-bindings
-presentation-bindings
 policies
 styles
 page-templates
@@ -146,8 +144,6 @@ root-filters
 root-integrations
 root-environments
 root-tenants
-root-bindings
-root-presentation-bindings
 root-policies
 root-styles
 root-page-templates
@@ -244,8 +240,6 @@ Null
 DateTime
 Time
 RefAction
-RefBinding
-RefPresentationBinding
 RefComponent
 RefConverter
 RefEnvironment
@@ -699,63 +693,6 @@ created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ```
 
-### behavior_bindings
-
-Декларативные биндинги поведения.
-
-```sql
-id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-identity TEXT NOT NULL UNIQUE,
-display_name TEXT NOT NULL,
-project_id UUID NULL REFERENCES projects(id) ON DELETE SET NULL,
-owner_type TEXT NOT NULL,
-owner_id TEXT NOT NULL,
-target_type TEXT NOT NULL,
-target_id TEXT NOT NULL,
-event_name TEXT NOT NULL,
-script_ref TEXT NOT NULL,
-mode TEXT NOT NULL DEFAULT 'replace',
-priority INTEGER NOT NULL DEFAULT 0,
-is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-environment_id UUID NULL REFERENCES environments(id) ON DELETE SET NULL,
-is_inherited BOOLEAN NOT NULL DEFAULT FALSE,
-origin_binding_id UUID NULL REFERENCES behavior_bindings(id) ON DELETE SET NULL,
-folder_id UUID NULL REFERENCES folders(id) ON DELETE SET NULL,
-created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-```
-
-`mode`: `replace`, `append`, `prepend`, `disable`.
-
-### presentation_bindings
-
-Декларативные биндинги презентации.
-
-```sql
-id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-identity TEXT NOT NULL UNIQUE,
-display_name TEXT NOT NULL,
-project_id UUID NULL REFERENCES projects(id) ON DELETE SET NULL,
-owner_type TEXT NOT NULL,
-owner_id TEXT NOT NULL,
-target_type TEXT NOT NULL,
-target_id TEXT NULL,
-role TEXT NOT NULL,
-renderer_ref TEXT NOT NULL,
-when_expression TEXT NULL,
-mode TEXT NOT NULL DEFAULT 'replace',
-priority INTEGER NOT NULL DEFAULT 0,
-is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-environment_id UUID NULL REFERENCES environments(id) ON DELETE SET NULL,
-is_inherited BOOLEAN NOT NULL DEFAULT FALSE,
-origin_binding_id UUID NULL REFERENCES presentation_bindings(id) ON DELETE SET NULL,
-folder_id UUID NULL REFERENCES folders(id) ON DELETE SET NULL,
-created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-```
-
-`mode`: `replace`, `append`, `prepend`, `disable`.
-
 ## Коллекции REST API
 
 Для всех коллекций ниже нужно реализовать общий набор операций:
@@ -784,8 +721,6 @@ pages
 navigations
 vocabs
 i18n-bundles
-behavior-bindings
-presentation-bindings
 ```
 
 ## REST API: чтение
@@ -1117,8 +1052,6 @@ Body:
   "versions": [],
   "environments": [],
   "tenants": [],
-  "behaviorBindings": [],
-  "presentationBindings": [],
   "policies": [],
   "styles": [],
   "pageTemplates": [],
