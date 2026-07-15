@@ -29,11 +29,8 @@ const createProject = `-- name: CreateProject :one
 INSERT INTO projects (
     identity,
     display_name,
-    extend_settings,
-    settings_id,
-    navigation_id,
-    folder_id,
-    allowed_environment_ids,
+    description,
+    active,
     meta
 )
 VALUES (
@@ -41,34 +38,25 @@ VALUES (
            $2,
            $3,
            $4,
-           $5,
-           $6,
-           $7,
-           $8
+           $5
        )
-    RETURNING id, identity, display_name, extend_settings, settings_id, navigation_id, folder_id, allowed_environment_ids, deleted_at, meta, created_at, updated_at
+    RETURNING id, identity, display_name, description, active, deleted_at, meta, created_at, updated_at
 `
 
 type CreateProjectParams struct {
-	Identity              string      `json:"identity"`
-	DisplayName           string      `json:"display_name"`
-	ExtendSettings        bool        `json:"extend_settings"`
-	SettingsID            pgtype.UUID `json:"settings_id"`
-	NavigationID          pgtype.UUID `json:"navigation_id"`
-	FolderID              pgtype.UUID `json:"folder_id"`
-	AllowedEnvironmentIds []uuid.UUID `json:"allowed_environment_ids"`
-	Meta                  []byte      `json:"meta"`
+	Identity    string      `json:"identity"`
+	DisplayName string      `json:"display_name"`
+	Description pgtype.Text `json:"description"`
+	Active      bool        `json:"active"`
+	Meta        []byte      `json:"meta"`
 }
 
 func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error) {
 	row := q.db.QueryRow(ctx, createProject,
 		arg.Identity,
 		arg.DisplayName,
-		arg.ExtendSettings,
-		arg.SettingsID,
-		arg.NavigationID,
-		arg.FolderID,
-		arg.AllowedEnvironmentIds,
+		arg.Description,
+		arg.Active,
 		arg.Meta,
 	)
 	var i Project
@@ -76,11 +64,8 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		&i.ID,
 		&i.Identity,
 		&i.DisplayName,
-		&i.ExtendSettings,
-		&i.SettingsID,
-		&i.NavigationID,
-		&i.FolderID,
-		&i.AllowedEnvironmentIds,
+		&i.Description,
+		&i.Active,
 		&i.DeletedAt,
 		&i.Meta,
 		&i.CreatedAt,
@@ -94,7 +79,6 @@ SELECT EXISTS(
     SELECT 1
     FROM projects
     WHERE identity = $1
-      AND deleted_at IS NULL
 )
 `
 
@@ -106,7 +90,7 @@ func (q *Queries) ExistsProjectByIdentity(ctx context.Context, identity string) 
 }
 
 const getProjectByID = `-- name: GetProjectByID :one
-SELECT id, identity, display_name, extend_settings, settings_id, navigation_id, folder_id, allowed_environment_ids, deleted_at, meta, created_at, updated_at
+SELECT id, identity, display_name, description, active, deleted_at, meta, created_at, updated_at
 FROM projects
 WHERE id = $1
   AND deleted_at IS NULL
@@ -119,11 +103,8 @@ func (q *Queries) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, er
 		&i.ID,
 		&i.Identity,
 		&i.DisplayName,
-		&i.ExtendSettings,
-		&i.SettingsID,
-		&i.NavigationID,
-		&i.FolderID,
-		&i.AllowedEnvironmentIds,
+		&i.Description,
+		&i.Active,
 		&i.DeletedAt,
 		&i.Meta,
 		&i.CreatedAt,
@@ -133,7 +114,7 @@ func (q *Queries) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, er
 }
 
 const getProjectByIdentity = `-- name: GetProjectByIdentity :one
-SELECT id, identity, display_name, extend_settings, settings_id, navigation_id, folder_id, allowed_environment_ids, deleted_at, meta, created_at, updated_at
+SELECT id, identity, display_name, description, active, deleted_at, meta, created_at, updated_at
 FROM projects
 WHERE identity = $1
   AND deleted_at IS NULL
@@ -146,11 +127,8 @@ func (q *Queries) GetProjectByIdentity(ctx context.Context, identity string) (Pr
 		&i.ID,
 		&i.Identity,
 		&i.DisplayName,
-		&i.ExtendSettings,
-		&i.SettingsID,
-		&i.NavigationID,
-		&i.FolderID,
-		&i.AllowedEnvironmentIds,
+		&i.Description,
+		&i.Active,
 		&i.DeletedAt,
 		&i.Meta,
 		&i.CreatedAt,
@@ -159,18 +137,44 @@ func (q *Queries) GetProjectByIdentity(ctx context.Context, identity string) (Pr
 	return i, err
 }
 
-const hardDeleteProject = `-- name: HardDeleteProject :exec
+const getProjectByIdentityIncludingDeleted = `-- name: GetProjectByIdentityIncludingDeleted :one
+SELECT id, identity, display_name, description, active, deleted_at, meta, created_at, updated_at
+FROM projects
+WHERE identity = $1
+`
+
+func (q *Queries) GetProjectByIdentityIncludingDeleted(ctx context.Context, identity string) (Project, error) {
+	row := q.db.QueryRow(ctx, getProjectByIdentityIncludingDeleted, identity)
+	var i Project
+	err := row.Scan(
+		&i.ID,
+		&i.Identity,
+		&i.DisplayName,
+		&i.Description,
+		&i.Active,
+		&i.DeletedAt,
+		&i.Meta,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const hardDeleteProject = `-- name: HardDeleteProject :execrows
 DELETE FROM projects
 WHERE id = $1
 `
 
-func (q *Queries) HardDeleteProject(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, hardDeleteProject, id)
-	return err
+func (q *Queries) HardDeleteProject(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, hardDeleteProject, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const listProjects = `-- name: ListProjects :many
-SELECT id, identity, display_name, extend_settings, settings_id, navigation_id, folder_id, allowed_environment_ids, deleted_at, meta, created_at, updated_at
+SELECT id, identity, display_name, description, active, deleted_at, meta, created_at, updated_at
 FROM projects
 WHERE deleted_at IS NULL
 ORDER BY created_at DESC
@@ -189,11 +193,8 @@ func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
 			&i.ID,
 			&i.Identity,
 			&i.DisplayName,
-			&i.ExtendSettings,
-			&i.SettingsID,
-			&i.NavigationID,
-			&i.FolderID,
-			&i.AllowedEnvironmentIds,
+			&i.Description,
+			&i.Active,
 			&i.DeletedAt,
 			&i.Meta,
 			&i.CreatedAt,
@@ -209,20 +210,24 @@ func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
 	return items, nil
 }
 
-const restoreProjects = `-- name: RestoreProjects :exec
+const restoreProject = `-- name: RestoreProject :execrows
 UPDATE projects
 SET
     deleted_at = NULL,
     updated_at = NOW()
 WHERE id = $1
+  AND deleted_at IS NOT NULL
 `
 
-func (q *Queries) RestoreProjects(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, restoreProjects, id)
-	return err
+func (q *Queries) RestoreProject(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreProject, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
-const softDeleteProject = `-- name: SoftDeleteProject :exec
+const softDeleteProject = `-- name: SoftDeleteProject :execrows
 UPDATE projects
 SET
     deleted_at = NOW(),
@@ -231,50 +236,41 @@ WHERE id = $1
   AND deleted_at IS NULL
 `
 
-func (q *Queries) SoftDeleteProject(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, softDeleteProject, id)
-	return err
+func (q *Queries) SoftDeleteProject(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, softDeleteProject, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const updateProject = `-- name: UpdateProject :one
 UPDATE projects
 SET
-    identity = $2,
-    display_name = $3,
-    extend_settings = $4,
-    settings_id = $5,
-    navigation_id = $6,
-    folder_id = $7,
-    allowed_environment_ids = $8,
-    meta = $9,
+    display_name = $2,
+    description = $3,
+    active = $4,
+    meta = $5,
     updated_at = NOW()
 WHERE id = $1
   AND deleted_at IS NULL
-    RETURNING id, identity, display_name, extend_settings, settings_id, navigation_id, folder_id, allowed_environment_ids, deleted_at, meta, created_at, updated_at
+    RETURNING id, identity, display_name, description, active, deleted_at, meta, created_at, updated_at
 `
 
 type UpdateProjectParams struct {
-	ID                    uuid.UUID   `json:"id"`
-	Identity              string      `json:"identity"`
-	DisplayName           string      `json:"display_name"`
-	ExtendSettings        bool        `json:"extend_settings"`
-	SettingsID            pgtype.UUID `json:"settings_id"`
-	NavigationID          pgtype.UUID `json:"navigation_id"`
-	FolderID              pgtype.UUID `json:"folder_id"`
-	AllowedEnvironmentIds []uuid.UUID `json:"allowed_environment_ids"`
-	Meta                  []byte      `json:"meta"`
+	ID          uuid.UUID   `json:"id"`
+	DisplayName string      `json:"display_name"`
+	Description pgtype.Text `json:"description"`
+	Active      bool        `json:"active"`
+	Meta        []byte      `json:"meta"`
 }
 
 func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error) {
 	row := q.db.QueryRow(ctx, updateProject,
 		arg.ID,
-		arg.Identity,
 		arg.DisplayName,
-		arg.ExtendSettings,
-		arg.SettingsID,
-		arg.NavigationID,
-		arg.FolderID,
-		arg.AllowedEnvironmentIds,
+		arg.Description,
+		arg.Active,
 		arg.Meta,
 	)
 	var i Project
@@ -282,11 +278,8 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (P
 		&i.ID,
 		&i.Identity,
 		&i.DisplayName,
-		&i.ExtendSettings,
-		&i.SettingsID,
-		&i.NavigationID,
-		&i.FolderID,
-		&i.AllowedEnvironmentIds,
+		&i.Description,
+		&i.Active,
 		&i.DeletedAt,
 		&i.Meta,
 		&i.CreatedAt,

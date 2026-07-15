@@ -12,6 +12,7 @@ type ProjectsRepository interface {
 
 	GetByID(ctx context.Context, id uuid.UUID) (*entities.Project, error)
 	GetByIdentity(ctx context.Context, identity string) (*entities.Project, error)
+	GetByIdentityIncludingDeleted(ctx context.Context, identity string) (*entities.Project, error)
 
 	List(ctx context.Context) ([]*entities.Project, error)
 

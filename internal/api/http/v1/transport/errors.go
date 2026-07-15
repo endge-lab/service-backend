@@ -7,9 +7,9 @@ import (
 )
 
 var (
-	ErrRouteNotFound   = domainerrors.NotFound("http.route_not_found", "Маршрут не найден")
-	ErrInvalidBody     = domainerrors.InvalidInput("http.invalid_body", "Некорректное тело запроса")
-	ErrValidationError = domainerrors.InvalidInput("http.validation_failed", "Некорректные поля запроса")
+	ErrRouteNotFound   = domainerrors.NotFound("not_found", "Маршрут не найден")
+	ErrInvalidBody     = domainerrors.InvalidInput("validation_error", "Некорректное тело запроса")
+	ErrValidationError = domainerrors.InvalidInput("validation_error", "Некорректные поля запроса")
 	ErrInvalidToken    = domainerrors.Unauthorized("auth.invalid_access_token", "Access token недействителен или просрочен")
 	ErrMissingToken    = domainerrors.Unauthorized("auth.access_token_required", "Требуется access token")
 	ErrMissingIdentity = domainerrors.Unauthorized("auth.identity_missing", "В токене отсутствует идентификатор пользователя")

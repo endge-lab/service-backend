@@ -92,9 +92,9 @@ func TestTemplateRequiredPathsExist(t *testing.T) {
 		"internal/middleware",
 		"internal/platform",
 		"internal/repo",
+		"internal/repo/ports",
 		"internal/repo/postgres",
 		"internal/usecase",
-		"internal/usecase/ports",
 		"test/contract",
 		"test/e2e",
 		"test/integration",
@@ -114,6 +114,9 @@ func TestTemplateLayerPackageNames(t *testing.T) {
 		"internal/api/http":              "http",
 		"internal/api/http/v1":           "http",
 		"internal/api/http/v1/docs":      "docs",
+		"internal/api/http/v1/component": "component",
+		"internal/api/http/v1/converter": "converter",
+		"internal/api/http/v1/folder":    "folder",
 		"internal/api/http/v1/health":    "http",
 		"internal/api/http/v1/project":   "project",
 		"internal/api/http/v1/session":   "http",
@@ -123,11 +126,15 @@ func TestTemplateLayerPackageNames(t *testing.T) {
 		"internal/domain/errors":         "errors",
 		"internal/middleware":            "middleware",
 		"internal/platform":              "platform",
+		"internal/repo/ports":            "ports",
 		"internal/repo/postgres":         "postgres",
+		"internal/repo/postgres/mappers": "mappers",
 		"internal/repo/postgres/sqlc":    "sqlc",
 		"internal/usecase":               "usecase",
 		"internal/usecase/adapters":      "adapters",
-		"internal/usecase/ports":         "ports",
+		"internal/usecase/components":    "components",
+		"internal/usecase/converters":    "converters",
+		"internal/usecase/folders":       "folders",
 		"internal/usecase/projects":      "projects",
 		"internal/usecase/shared":        "shared",
 	}
@@ -222,7 +229,7 @@ func TestBootstrapRepositoryModulesWireReferenceLayers(t *testing.T) {
 
 	requiredImports := []string{
 		"/internal/repo/postgres",
-		"/internal/usecase/ports",
+		"/internal/repo/ports",
 	}
 
 	for _, requiredImport := range requiredImports {

@@ -6,8 +6,8 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/repo/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/adapters"
-	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 
 	"go.opentelemetry.io/otel/attribute"

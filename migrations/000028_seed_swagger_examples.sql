@@ -4,16 +4,20 @@ INSERT INTO folders (
     identity,
     display_name,
     entity_type,
+    description,
     is_root,
-    is_system
+    is_system,
+    meta
 )
 VALUES (
     '00000000-0000-4000-8000-000000000002',
-    'swagger-projects-folder',
-    'Swagger Projects Folder',
-    'projects',
-    false,
-    true
+    'root-components',
+    'Root Components',
+    'components',
+    'Swagger examples root folder',
+    true,
+    true,
+    '{"source":"swagger-example"}'::jsonb
 )
 ON CONFLICT (id) DO NOTHING;
 
@@ -69,22 +73,16 @@ INSERT INTO projects (
     id,
     identity,
     display_name,
-    extend_settings,
-    settings_id,
-    navigation_id,
-    folder_id,
-    allowed_environment_ids,
+    description,
+    active,
     meta
 )
 VALUES (
     '00000000-0000-4000-8000-000000000001',
     'swagger-project',
     'Swagger Project',
+    'Project for Swagger examples',
     false,
-    '00000000-0000-4000-8000-000000000003',
-    '00000000-0000-4000-8000-000000000004',
-    '00000000-0000-4000-8000-000000000002',
-    ARRAY['00000000-0000-4000-8000-000000000005']::uuid[],
     '{"source":"swagger-example"}'::jsonb
 )
 ON CONFLICT (id) DO NOTHING;
@@ -102,5 +100,9 @@ WHERE id = '00000000-0000-4000-8000-000000000004';
 DELETE FROM settings
 WHERE id = '00000000-0000-4000-8000-000000000003';
 
+ALTER TABLE folders DISABLE TRIGGER USER;
+
 DELETE FROM folders
 WHERE id = '00000000-0000-4000-8000-000000000002';
+
+ALTER TABLE folders ENABLE TRIGGER USER;

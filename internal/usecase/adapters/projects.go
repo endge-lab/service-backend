@@ -15,31 +15,24 @@ type ProjectService interface {
 	GetByIdentity(ctx context.Context, identity string) (*entities.Project, error)
 	List(ctx context.Context) ([]*entities.Project, error)
 
-	SoftDelete(ctx context.Context, id uuid.UUID) error
-	Restore(ctx context.Context, id uuid.UUID) error
-	HardDelete(ctx context.Context, id uuid.UUID) error
+	SoftDelete(ctx context.Context, identity string) error
+	Restore(ctx context.Context, identity string) error
+	HardDelete(ctx context.Context, identity string) error
 	Count(ctx context.Context) (int64, error)
 }
 
 type CreateProjectInput struct {
-	Identity              string
-	DisplayName           string
-	ExtendSettings        bool
-	SettingsID            *uuid.UUID
-	NavigationID          *uuid.UUID
-	FolderID              *uuid.UUID
-	AllowedEnvironmentIDs []uuid.UUID
-	Meta                  map[string]any
+	Identity    string
+	DisplayName string
+	Description *string
+	Active      bool
+	Meta        map[string]any
 }
 
 type UpdateProjectInput struct {
-	ID                    uuid.UUID
-	Identity              string
-	DisplayName           string
-	ExtendSettings        bool
-	SettingsID            *uuid.UUID
-	NavigationID          *uuid.UUID
-	FolderID              *uuid.UUID
-	AllowedEnvironmentIDs []uuid.UUID
-	Meta                  map[string]any
+	Identity    string
+	DisplayName string
+	Description *string
+	Active      bool
+	Meta        map[string]any
 }
