@@ -46,8 +46,8 @@ var (
 		internalCode:            "internal_error",
 		internalStorageMessage:  "failed to create project",
 	}
-	componentStorageErrorMapping = storageErrorMapping{
-		identityConstraintNames: []string{"components_project_identity_unique"},
+	componentLegacyStorageErrorMapping = storageErrorMapping{
+		identityConstraintNames: []string{"components_legacy_project_identity_unique"},
 		identityConflictMessage: "component identity already exists",
 		validationMessage:       "component data violates a constraint",
 		internalCode:            "internal_error",

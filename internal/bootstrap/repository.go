@@ -1,9 +1,9 @@
 package bootstrap
 
 import (
-	"github.com/endge-lab/service-backend/internal/repo/ports"
 	"github.com/endge-lab/service-backend/internal/repo/postgres"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/fx"
@@ -28,8 +28,8 @@ func RepositoryModules() fx.Option {
 				fx.As(new(ports.FoldersRepository)),
 			),
 			fx.Annotate(
-				postgres.NewComponentsRepository,
-				fx.As(new(ports.ComponentsRepository)),
+				postgres.NewComponentsLegacyRepository,
+				fx.As(new(ports.ComponentsLegacyRepository)),
 			),
 			fx.Annotate(
 				postgres.NewConvertersRepository,

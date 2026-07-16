@@ -1,9 +1,8 @@
 package query
 
 import (
-	transport "github.com/endge-lab/service-backend/internal/api/http/v1/transport"
-	"github.com/endge-lab/service-backend/internal/usecase"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	respond "github.com/endge-lab/service-backend/internal/api/http/respond"
+	"github.com/endge-lab/service-backend/internal/usecase/queries"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 	"go.opentelemetry.io/otel/trace"
@@ -11,14 +10,14 @@ import (
 )
 
 type Handler struct {
-	service   adapters.QueryService
+	service   UseCase
 	validator appvalidator.Validator
 	logger    *zap.Logger
 	tracer    trace.Tracer
 }
 
-func NewHandler(s *usecase.Service, v appvalidator.Validator, l *zap.Logger, t trace.Tracer) *Handler {
-	return &Handler{service: s.Queries, validator: v, logger: l.With(zap.String("component", "query_http_handler")), tracer: t}
+func NewHandler(s UseCase, v appvalidator.Validator, l *zap.Logger, t trace.Tracer) *Handler {
+	return &Handler{service: s, validator: v, logger: l.With(zap.String("component", "query_http_handler")), tracer: t}
 }
 
 // Create godoc
@@ -30,24 +29,24 @@ func NewHandler(s *usecase.Service, v appvalidator.Validator, l *zap.Logger, t t
 // @Param project_identity path string true "Project identity" example(demo-project)
 // @Param request body CreateQueryRequest true "Параметры Query"
 // @Success 201 {object} QueryResponse
-// @Failure 400 {object} transport.ErrorResponse
-// @Failure 404 {object} transport.ErrorResponse
-// @Failure 409 {object} transport.ErrorResponse
-// @Failure 500 {object} transport.ErrorResponse
+// @Failure 400 {object} respond.ErrorResponse
+// @Failure 404 {object} respond.ErrorResponse
+// @Failure 409 {object} respond.ErrorResponse
+// @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
 // @Router /api/v1/projects/{project_identity}/queries [post]
 func (h *Handler) Create(c *fiber.Ctx) error {
 	var request CreateQueryRequest
 	if err := c.BodyParser(&request); err != nil {
-		return transport.WriteErrorResponse(c, transport.ErrInvalidBody)
+		return respond.WriteErrorResponse(c, respond.ErrInvalidBody)
 	}
 	if err := h.validator.Validate(&request); err != nil {
-		return transport.WriteErrorResponse(c, transport.ErrValidationError)
+		return respond.WriteErrorResponse(c, respond.ErrValidationError)
 	}
 	project := c.Params("project_identity")
-	value, err := h.service.Create(c.UserContext(), adapters.CreateQueryInput{ProjectIdentity: project, FolderIdentity: request.FolderIdentity, Identity: request.Identity, DisplayName: request.DisplayName, Description: request.Description, QueryType: request.QueryType, Source: request.Source, Params: request.Params, Headers: request.Headers, Auth: request.Auth, TimeoutMS: request.TimeoutMS, MockData: request.MockData, MockDataEnabled: request.MockDataEnabled, Meta: request.Meta, Active: request.Active})
+	value, err := h.service.Create(c.UserContext(), queries.CreateQueryInput{ProjectIdentity: project, FolderIdentity: request.FolderIdentity, Identity: request.Identity, DisplayName: request.DisplayName, Description: request.Description, QueryType: request.QueryType, Source: request.Source, Params: request.Params, Headers: request.Headers, Auth: request.Auth, TimeoutMS: request.TimeoutMS, MockData: request.MockData, MockDataEnabled: request.MockDataEnabled, Meta: request.Meta, Active: request.Active})
 	if err != nil {
-		return transport.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.logger, err)
 	}
 	return c.Status(fiber.StatusCreated).JSON(h.response(value, project))
 }
@@ -61,9 +60,9 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 // @Param folder_identity query string false "Folder identity" example(root-queries)
 // @Param query_type query string false "Query type" example(http)
 // @Success 200 {object} QueriesListResponse
-// @Failure 400 {object} transport.ErrorResponse
-// @Failure 404 {object} transport.ErrorResponse
-// @Failure 500 {object} transport.ErrorResponse
+// @Failure 400 {object} respond.ErrorResponse
+// @Failure 404 {object} respond.ErrorResponse
+// @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
 // @Router /api/v1/projects/{project_identity}/queries [get]
 func (h *Handler) List(c *fiber.Ctx) error {
@@ -75,9 +74,9 @@ func (h *Handler) List(c *fiber.Ctx) error {
 	if value := c.Query("query_type"); value != "" {
 		queryType = &value
 	}
-	values, err := h.service.List(c.UserContext(), adapters.ListQueriesInput{ProjectIdentity: project, FolderIdentity: folder, QueryType: queryType})
+	values, err := h.service.List(c.UserContext(), queries.ListQueriesInput{ProjectIdentity: project, FolderIdentity: folder, QueryType: queryType})
 	if err != nil {
-		return transport.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.logger, err)
 	}
 	items := make([]*QueryResponse, 0, len(values))
 	for _, value := range values {
@@ -94,16 +93,16 @@ func (h *Handler) List(c *fiber.Ctx) error {
 // @Param project_identity path string true "Project identity" example(demo-project)
 // @Param query_identity path string true "Query identity" example(users-list)
 // @Success 200 {object} QueryResponse
-// @Failure 400 {object} transport.ErrorResponse
-// @Failure 404 {object} transport.ErrorResponse
-// @Failure 500 {object} transport.ErrorResponse
+// @Failure 400 {object} respond.ErrorResponse
+// @Failure 404 {object} respond.ErrorResponse
+// @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
 // @Router /api/v1/projects/{project_identity}/queries/{query_identity} [get]
 func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
 	project := c.Params("project_identity")
-	value, err := h.service.GetByIdentity(c.UserContext(), adapters.GetQueryInput{ProjectIdentity: project, QueryIdentity: c.Params("query_identity")})
+	value, err := h.service.GetByIdentity(c.UserContext(), queries.GetQueryInput{ProjectIdentity: project, QueryIdentity: c.Params("query_identity")})
 	if err != nil {
-		return transport.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.logger, err)
 	}
 	return c.JSON(h.response(value, project))
 }
@@ -118,23 +117,23 @@ func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
 // @Param query_identity path string true "Query identity" example(users-list)
 // @Param request body UpdateQueryRequest true "Параметры обновления Query"
 // @Success 200 {object} QueryResponse
-// @Failure 400 {object} transport.ErrorResponse
-// @Failure 404 {object} transport.ErrorResponse
-// @Failure 500 {object} transport.ErrorResponse
+// @Failure 400 {object} respond.ErrorResponse
+// @Failure 404 {object} respond.ErrorResponse
+// @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
 // @Router /api/v1/projects/{project_identity}/queries/{query_identity} [patch]
 func (h *Handler) Update(c *fiber.Ctx) error {
 	var request UpdateQueryRequest
 	if err := c.BodyParser(&request); err != nil {
-		return transport.WriteErrorResponse(c, transport.ErrInvalidBody)
+		return respond.WriteErrorResponse(c, respond.ErrInvalidBody)
 	}
 	if err := h.validator.Validate(&request); err != nil {
-		return transport.WriteErrorResponse(c, transport.ErrValidationError)
+		return respond.WriteErrorResponse(c, respond.ErrValidationError)
 	}
 	project := c.Params("project_identity")
-	value, err := h.service.Update(c.UserContext(), adapters.UpdateQueryInput{ProjectIdentity: project, QueryIdentity: c.Params("query_identity"), FolderIdentity: request.FolderIdentity, DisplayName: request.DisplayName, Description: request.Description, QueryType: request.QueryType, Source: request.Source, Params: request.Params, Headers: request.Headers, Auth: request.Auth, TimeoutMS: request.TimeoutMS, MockData: request.MockData, MockDataEnabled: request.MockDataEnabled, Meta: request.Meta, Active: request.Active})
+	value, err := h.service.Update(c.UserContext(), queries.UpdateQueryInput{ProjectIdentity: project, QueryIdentity: c.Params("query_identity"), FolderIdentity: request.FolderIdentity, DisplayName: request.DisplayName, Description: request.Description, QueryType: request.QueryType, Source: request.Source, Params: request.Params, Headers: request.Headers, Auth: request.Auth, TimeoutMS: request.TimeoutMS, MockData: request.MockData, MockDataEnabled: request.MockDataEnabled, Meta: request.Meta, Active: request.Active})
 	if err != nil {
-		return transport.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.logger, err)
 	}
 	return c.JSON(h.response(value, project))
 }
@@ -146,9 +145,9 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 // @Param project_identity path string true "Project identity"
 // @Param query_identity path string true "Query identity"
 // @Success 204
-// @Failure 400 {object} transport.ErrorResponse
-// @Failure 404 {object} transport.ErrorResponse
-// @Failure 500 {object} transport.ErrorResponse
+// @Failure 400 {object} respond.ErrorResponse
+// @Failure 404 {object} respond.ErrorResponse
+// @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
 // @Router /api/v1/projects/{project_identity}/queries/{query_identity} [delete]
 func (h *Handler) SoftDelete(c *fiber.Ctx) error { return h.change(c, h.service.SoftDelete) }
@@ -160,9 +159,9 @@ func (h *Handler) SoftDelete(c *fiber.Ctx) error { return h.change(c, h.service.
 // @Param project_identity path string true "Project identity"
 // @Param query_identity path string true "Query identity"
 // @Success 204
-// @Failure 400 {object} transport.ErrorResponse
-// @Failure 404 {object} transport.ErrorResponse
-// @Failure 500 {object} transport.ErrorResponse
+// @Failure 400 {object} respond.ErrorResponse
+// @Failure 404 {object} respond.ErrorResponse
+// @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
 // @Router /api/v1/projects/{project_identity}/queries/{query_identity}/restore [post]
 func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Restore) }
@@ -174,9 +173,9 @@ func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Res
 // @Param project_identity path string true "Project identity"
 // @Param query_identity path string true "Query identity"
 // @Success 204
-// @Failure 400 {object} transport.ErrorResponse
-// @Failure 404 {object} transport.ErrorResponse
-// @Failure 500 {object} transport.ErrorResponse
+// @Failure 400 {object} respond.ErrorResponse
+// @Failure 404 {object} respond.ErrorResponse
+// @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
 // @Router /api/v1/projects/{project_identity}/queries/{query_identity}/hard [delete]
 func (h *Handler) HardDelete(c *fiber.Ctx) error { return h.change(c, h.service.HardDelete) }

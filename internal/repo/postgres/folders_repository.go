@@ -7,9 +7,9 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/repo/ports"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/mappers"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-kit-go/pkg/telemetry"
 
 	"github.com/google/uuid"
@@ -48,12 +48,12 @@ func NewFoldersRepository(
 //
 // Возвращаемые значения:
 //
-//	*entities.Folder - созданная папка
+//	*entities.RFolder - созданная папка
 //	error - ошибка, возникшая при выполнении операции
 func (r *FoldersRepository) Create(
 	ctx context.Context,
-	folder *entities.Folder,
-) (result *entities.Folder, err error) {
+	folder *entities.RFolder,
+) (result *entities.RFolder, err error) {
 	const op = "repo.folders.Create"
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
@@ -81,12 +81,12 @@ func (r *FoldersRepository) Create(
 //
 // Возвращаемые значения:
 //
-//	*entities.Folder - обновленная папка
+//	*entities.RFolder - обновленная папка
 //	error - ошибка, возникшая при выполнении операции
 func (r *FoldersRepository) Update(
 	ctx context.Context,
-	folder *entities.Folder,
-) (result *entities.Folder, err error) {
+	folder *entities.RFolder,
+) (result *entities.RFolder, err error) {
 	const op = "repo.folders.Update"
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
@@ -118,12 +118,12 @@ func (r *FoldersRepository) Update(
 //
 // Возвращаемые значения:
 //
-//	*entities.Folder - найденная папка
+//	*entities.RFolder - найденная папка
 //	error - ошибка, возникшая при выполнении операции
 func (r *FoldersRepository) GetByID(
 	ctx context.Context,
 	id uuid.UUID,
-) (result *entities.Folder, err error) {
+) (result *entities.RFolder, err error) {
 	const op = "repo.folders.GetByID"
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
@@ -150,12 +150,12 @@ func (r *FoldersRepository) GetByID(
 //
 // Возвращаемые значения:
 //
-//	*entities.Folder - найденная папка
+//	*entities.RFolder - найденная папка
 //	error - ошибка, возникшая при выполнении операции
 func (r *FoldersRepository) GetByIDIncludingDeleted(
 	ctx context.Context,
 	id uuid.UUID,
-) (result *entities.Folder, err error) {
+) (result *entities.RFolder, err error) {
 	const op = "repo.folders.GetByIDIncludingDeleted"
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
@@ -184,14 +184,14 @@ func (r *FoldersRepository) GetByIDIncludingDeleted(
 //
 // Возвращаемые значения:
 //
-//	*entities.Folder - найденная папка
+//	*entities.RFolder - найденная папка
 //	error - ошибка, возникшая при выполнении операции
 func (r *FoldersRepository) GetByIdentity(
 	ctx context.Context,
 	projectID *uuid.UUID,
 	entityType entities.FolderEntityType,
 	identity string,
-) (result *entities.Folder, err error) {
+) (result *entities.RFolder, err error) {
 	const op = "repo.folders.GetByIdentity"
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
@@ -227,14 +227,14 @@ func (r *FoldersRepository) GetByIdentity(
 //
 // Возвращаемые значения:
 //
-//	*entities.Folder - найденная папка
+//	*entities.RFolder - найденная папка
 //	error - ошибка, возникшая при выполнении операции
 func (r *FoldersRepository) GetByIdentityIncludingDeleted(
 	ctx context.Context,
 	projectID *uuid.UUID,
 	entityType entities.FolderEntityType,
 	identity string,
-) (result *entities.Folder, err error) {
+) (result *entities.RFolder, err error) {
 	const op = "repo.folders.GetByIdentityIncludingDeleted"
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
@@ -269,13 +269,13 @@ func (r *FoldersRepository) GetByIdentityIncludingDeleted(
 //
 // Возвращаемые значения:
 //
-//	[]*entities.Folder - список папок
+//	[]*entities.RFolder - список папок
 //	error - ошибка, возникшая при выполнении операции
 func (r *FoldersRepository) List(
 	ctx context.Context,
 	projectID *uuid.UUID,
 	entityType entities.FolderEntityType,
-) (result []*entities.Folder, err error) {
+) (result []*entities.RFolder, err error) {
 	const op = "repo.folders.List"
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
@@ -293,7 +293,7 @@ func (r *FoldersRepository) List(
 		return nil, apperrors.Internal("internal_error", "failed to list folders")
 	}
 
-	result = make([]*entities.Folder, 0, len(folders))
+	result = make([]*entities.RFolder, 0, len(folders))
 	for _, folder := range folders {
 		result = append(result, mappers.Folder(folder))
 	}
@@ -497,7 +497,7 @@ func (r *FoldersRepository) Count(
 	return count, nil
 }
 
-func (r *FoldersRepository) mapGetError(err error, message string) (*entities.Folder, error) {
+func (r *FoldersRepository) mapGetError(err error, message string) (*entities.RFolder, error) {
 	if stderrors.Is(err, pgx.ErrNoRows) {
 		return nil, folderNotFoundError()
 	}

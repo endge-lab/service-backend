@@ -7,7 +7,6 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -43,7 +42,7 @@ func (c *Converter) resolveFolderID(ctx context.Context, projectID uuid.UUID, id
 	return &folder.ID, nil
 }
 
-func (c *Converter) resolveFolder(ctx context.Context, projectID uuid.UUID, identity string) (*entities.Folder, error) {
+func (c *Converter) resolveFolder(ctx context.Context, projectID uuid.UUID, identity string) (*entities.RFolder, error) {
 	folder, err := c.folderRepository.GetByIdentity(ctx, &projectID, entities.FolderEntityTypeConverters, identity)
 	if err == nil {
 		return folder, nil
@@ -58,23 +57,23 @@ func (c *Converter) resolveFolder(ctx context.Context, projectID uuid.UUID, iden
 	return nil, err
 }
 
-func converterWithFolder(converter *entities.Converter, folderIdentity string) *adapters.ConverterWithFolder {
-	return &adapters.ConverterWithFolder{
+func converterWithFolder(converter *entities.RConverter, folderIdentity string) *ConverterWithFolder {
+	return &ConverterWithFolder{
 		Converter:      converter,
 		FolderIdentity: folderIdentity,
 	}
 }
 
 func converterWithFolders(
-	converters []*entities.Converter,
-	folders []*entities.Folder,
-) ([]*adapters.ConverterWithFolder, error) {
+	converters []*entities.RConverter,
+	folders []*entities.RFolder,
+) ([]*ConverterWithFolder, error) {
 	folderIdentities := make(map[uuid.UUID]string, len(folders))
 	for _, folder := range folders {
 		folderIdentities[folder.ID] = folder.Identity
 	}
 
-	result := make([]*adapters.ConverterWithFolder, 0, len(converters))
+	result := make([]*ConverterWithFolder, 0, len(converters))
 	for _, converter := range converters {
 		folderIdentity, ok := folderIdentities[converter.FolderID]
 		if !ok {
@@ -89,7 +88,7 @@ func converterWithFolders(
 	return result, nil
 }
 
-func firstConverterWithUnavailableFolder(converters []*entities.Converter, folders []*entities.Folder) *entities.Converter {
+func firstConverterWithUnavailableFolder(converters []*entities.RConverter, folders []*entities.RFolder) *entities.RConverter {
 	folderIDs := make(map[uuid.UUID]struct{}, len(folders))
 	for _, folder := range folders {
 		folderIDs[folder.ID] = struct{}{}
@@ -104,7 +103,7 @@ func firstConverterWithUnavailableFolder(converters []*entities.Converter, folde
 	return nil
 }
 
-func (c *Converter) resolveConverter(ctx context.Context, input adapters.ConverterIdentityInput, includeDeleted bool) (*entities.Converter, error) {
+func (c *Converter) resolveConverter(ctx context.Context, input ConverterIdentityInput, includeDeleted bool) (*entities.RConverter, error) {
 	if err := normalizeAndValidateIdentityInput(&input.ProjectIdentity, &input.ConverterIdentity); err != nil {
 		return nil, err
 	}
@@ -117,7 +116,7 @@ func (c *Converter) resolveConverter(ctx context.Context, input adapters.Convert
 	}
 	return c.converterRepository.GetByIdentity(ctx, project.ID, input.ConverterIdentity)
 }
-func normalizeAndValidateCreateInput(input *adapters.CreateConverterInput) error {
+func normalizeAndValidateCreateInput(input *CreateConverterInput) error {
 	input.ProjectIdentity = strings.TrimSpace(input.ProjectIdentity)
 	input.FolderIdentity = strings.TrimSpace(input.FolderIdentity)
 	input.Identity = strings.TrimSpace(input.Identity)
@@ -138,7 +137,7 @@ func normalizeAndValidateCreateInput(input *adapters.CreateConverterInput) error
 	}
 	return nil
 }
-func normalizeAndValidateUpdateInput(input *adapters.UpdateConverterInput) error {
+func normalizeAndValidateUpdateInput(input *UpdateConverterInput) error {
 	input.ProjectIdentity = strings.TrimSpace(input.ProjectIdentity)
 	input.ConverterIdentity = strings.TrimSpace(input.ConverterIdentity)
 	input.FolderIdentity = strings.TrimSpace(input.FolderIdentity)

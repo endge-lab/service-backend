@@ -6,8 +6,7 @@ import (
 	"time"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
-	"github.com/endge-lab/service-backend/internal/repo/ports"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 	apperrors "github.com/endge-lab/service-kit-go/pkg/errors"
 
@@ -17,8 +16,6 @@ import (
 )
 
 const projectOperationTimeout = 15 * time.Second
-
-var _ adapters.ProjectService = (*Project)(nil)
 
 type Project struct {
 	projectRepository ports.ProjectsRepository
@@ -63,9 +60,9 @@ func NewProjectService(params ProjectParams) *Project {
 //
 // Возвращаемые значения:
 //
-//	*entities.Project - созданный проект
+//	*entities.RProject - созданный проект
 //	error - ошибка, возникшая при выполнении операции
-func (s *Project) Create(ctx context.Context, input adapters.CreateProjectInput) (result *entities.Project, err error) {
+func (s *Project) Create(ctx context.Context, input CreateProjectInput) (result *entities.RProject, err error) {
 	const op = "project.create"
 
 	ctx, cancel := context.WithTimeout(ctx, projectOperationTimeout)
@@ -140,9 +137,9 @@ func (s *Project) Create(ctx context.Context, input adapters.CreateProjectInput)
 //
 // Возвращаемые значения:
 //
-//	*entities.Project - найденный проект
+//	*entities.RProject - найденный проект
 //	error - ошибка, возникшая при выполнении операции
-func (s *Project) GetByID(ctx context.Context, id uuid.UUID) (result *entities.Project, err error) {
+func (s *Project) GetByID(ctx context.Context, id uuid.UUID) (result *entities.RProject, err error) {
 	const op = "project.get_by_id"
 
 	ctx, cancel := context.WithTimeout(ctx, projectOperationTimeout)
@@ -180,9 +177,9 @@ func (s *Project) GetByID(ctx context.Context, id uuid.UUID) (result *entities.P
 //
 // Возвращаемые значения:
 //
-//	*entities.Project - найденный проект
+//	*entities.RProject - найденный проект
 //	error - ошибка, возникшая при выполнении операции
-func (s *Project) GetByIdentity(ctx context.Context, identity string) (result *entities.Project, err error) {
+func (s *Project) GetByIdentity(ctx context.Context, identity string) (result *entities.RProject, err error) {
 	const op = "project.get_by_identity"
 
 	ctx, cancel := context.WithTimeout(ctx, projectOperationTimeout)
@@ -221,9 +218,9 @@ func (s *Project) GetByIdentity(ctx context.Context, identity string) (result *e
 //
 // Возвращаемые значения:
 //
-//	[]*entities.Project - список проектов
+//	[]*entities.RProject - список проектов
 //	error - ошибка, возникшая при выполнении операции
-func (s *Project) List(ctx context.Context) (result []*entities.Project, err error) {
+func (s *Project) List(ctx context.Context) (result []*entities.RProject, err error) {
 	const op = "project.list"
 
 	ctx, cancel := context.WithTimeout(ctx, projectOperationTimeout)
@@ -256,9 +253,9 @@ func (s *Project) List(ctx context.Context) (result []*entities.Project, err err
 //
 // Возвращаемые значения:
 //
-//	*entities.Project - обновленный проект
+//	*entities.RProject - обновленный проект
 //	error - ошибка, возникшая при выполнении операции
-func (s *Project) Update(ctx context.Context, input adapters.UpdateProjectInput) (result *entities.Project, err error) {
+func (s *Project) Update(ctx context.Context, input UpdateProjectInput) (result *entities.RProject, err error) {
 	const op = "project.update"
 
 	ctx, cancel := context.WithTimeout(ctx, projectOperationTimeout)
@@ -476,7 +473,7 @@ func (s *Project) Count(ctx context.Context) (result int64, err error) {
 	return result, nil
 }
 
-func normalizeAndValidateCreateProjectInput(input *adapters.CreateProjectInput) error {
+func normalizeAndValidateCreateProjectInput(input *CreateProjectInput) error {
 	input.Identity = strings.TrimSpace(input.Identity)
 	input.DisplayName = strings.TrimSpace(input.DisplayName)
 

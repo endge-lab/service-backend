@@ -6,24 +6,23 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/repo/ports"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
 
 func TestConverterCreateAndUpdateReturnFolderIdentity(t *testing.T) {
-	project := &entities.Project{ID: uuid.New(), Identity: "demo"}
-	folder := &entities.Folder{ID: uuid.New(), Identity: "root-converters"}
+	project := &entities.RProject{ID: uuid.New(), Identity: "demo"}
+	folder := &entities.RFolder{ID: uuid.New(), Identity: "root-converters"}
 	repository := &converterRepositoryTestStub{
-		createResult: &entities.Converter{ID: uuid.New(), Identity: "date-format", FolderID: folder.ID},
-		getResult:    &entities.Converter{ID: uuid.New(), Identity: "date-format", ProjectID: project.ID, FolderID: folder.ID},
-		updateResult: &entities.Converter{ID: uuid.New(), Identity: "date-format", FolderID: folder.ID},
+		createResult: &entities.RConverter{ID: uuid.New(), Identity: "date-format", FolderID: folder.ID},
+		getResult:    &entities.RConverter{ID: uuid.New(), Identity: "date-format", ProjectID: project.ID, FolderID: folder.ID},
+		updateResult: &entities.RConverter{ID: uuid.New(), Identity: "date-format", FolderID: folder.ID},
 	}
 	service := newConverterServiceForTest(project, &foldersRepositoryStub{folder: folder}, repository)
 
-	created, err := service.Create(context.Background(), adapters.CreateConverterInput{
+	created, err := service.Create(context.Background(), CreateConverterInput{
 		ProjectIdentity: "demo", FolderIdentity: folder.Identity, Identity: "date-format", DisplayName: "Date format", ConverterType: "format",
 	})
 	if err != nil {
@@ -33,7 +32,7 @@ func TestConverterCreateAndUpdateReturnFolderIdentity(t *testing.T) {
 		t.Fatalf("create result = %#v, created = %#v", created, repository.created)
 	}
 
-	updated, err := service.Update(context.Background(), adapters.UpdateConverterInput{
+	updated, err := service.Update(context.Background(), UpdateConverterInput{
 		ProjectIdentity: "demo", ConverterIdentity: "date-format", FolderIdentity: folder.Identity, DisplayName: "Date format", ConverterType: "format",
 	})
 	if err != nil {
@@ -45,11 +44,11 @@ func TestConverterCreateAndUpdateReturnFolderIdentity(t *testing.T) {
 }
 
 func TestConverterCreateRejectsIdentityConflict(t *testing.T) {
-	project := &entities.Project{ID: uuid.New(), Identity: "demo"}
-	folder := &entities.Folder{ID: uuid.New(), Identity: "root-converters"}
+	project := &entities.RProject{ID: uuid.New(), Identity: "demo"}
+	folder := &entities.RFolder{ID: uuid.New(), Identity: "root-converters"}
 	service := newConverterServiceForTest(project, &foldersRepositoryStub{folder: folder}, &converterRepositoryTestStub{exists: true})
 
-	_, err := service.Create(context.Background(), adapters.CreateConverterInput{
+	_, err := service.Create(context.Background(), CreateConverterInput{
 		ProjectIdentity: "demo", FolderIdentity: folder.Identity, Identity: "date-format", DisplayName: "Date format", ConverterType: "format",
 	})
 	if got := apperrors.CodeOf(err); got != "identity_conflict" {
@@ -58,16 +57,16 @@ func TestConverterCreateRejectsIdentityConflict(t *testing.T) {
 }
 
 func TestConverterGetAndListResolveFoldersInUseCase(t *testing.T) {
-	project := &entities.Project{ID: uuid.New(), Identity: "demo"}
-	firstFolder := &entities.Folder{ID: uuid.New(), Identity: "root-converters"}
-	secondFolder := &entities.Folder{ID: uuid.New(), Identity: "formatters"}
-	firstConverter := &entities.Converter{ID: uuid.New(), ProjectID: project.ID, FolderID: firstFolder.ID, Identity: "date-format"}
-	secondConverter := &entities.Converter{ID: uuid.New(), ProjectID: project.ID, FolderID: secondFolder.ID, Identity: "currency-format"}
-	folders := &foldersRepositoryStub{getByIDFolder: firstFolder, folders: []*entities.Folder{firstFolder, secondFolder}}
-	repository := &converterRepositoryTestStub{getResult: firstConverter, listResult: []*entities.Converter{firstConverter, secondConverter}}
+	project := &entities.RProject{ID: uuid.New(), Identity: "demo"}
+	firstFolder := &entities.RFolder{ID: uuid.New(), Identity: "root-converters"}
+	secondFolder := &entities.RFolder{ID: uuid.New(), Identity: "formatters"}
+	firstConverter := &entities.RConverter{ID: uuid.New(), ProjectID: project.ID, FolderID: firstFolder.ID, Identity: "date-format"}
+	secondConverter := &entities.RConverter{ID: uuid.New(), ProjectID: project.ID, FolderID: secondFolder.ID, Identity: "currency-format"}
+	folders := &foldersRepositoryStub{getByIDFolder: firstFolder, folders: []*entities.RFolder{firstFolder, secondFolder}}
+	repository := &converterRepositoryTestStub{getResult: firstConverter, listResult: []*entities.RConverter{firstConverter, secondConverter}}
 	service := newConverterServiceForTest(project, folders, repository)
 
-	got, err := service.GetByIdentity(context.Background(), adapters.GetConverterInput{ProjectIdentity: "demo", ConverterIdentity: "date-format"})
+	got, err := service.GetByIdentity(context.Background(), GetConverterInput{ProjectIdentity: "demo", ConverterIdentity: "date-format"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +74,7 @@ func TestConverterGetAndListResolveFoldersInUseCase(t *testing.T) {
 		t.Fatalf("get result = %#v, folder calls = %d", got, folders.getByIDCalls)
 	}
 
-	items, err := service.List(context.Background(), adapters.ListConvertersInput{ProjectIdentity: "demo"})
+	items, err := service.List(context.Background(), ListConvertersInput{ProjectIdentity: "demo"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,36 +87,36 @@ func TestConverterGetAndListResolveFoldersInUseCase(t *testing.T) {
 }
 
 func TestConverterListSkipsFoldersForEmptyResultAndDetectsUnavailableFolder(t *testing.T) {
-	project := &entities.Project{ID: uuid.New(), Identity: "demo"}
+	project := &entities.RProject{ID: uuid.New(), Identity: "demo"}
 	folders := &foldersRepositoryStub{}
 	service := newConverterServiceForTest(project, folders, &converterRepositoryTestStub{})
 
-	items, err := service.List(context.Background(), adapters.ListConvertersInput{ProjectIdentity: "demo"})
+	items, err := service.List(context.Background(), ListConvertersInput{ProjectIdentity: "demo"})
 	if err != nil || len(items) != 0 || folders.listCalls != 0 {
 		t.Fatalf("items = %#v, err = %v, list calls = %d", items, err, folders.listCalls)
 	}
 
-	service = newConverterServiceForTest(project, folders, &converterRepositoryTestStub{listResult: []*entities.Converter{{FolderID: uuid.New()}}})
-	_, err = service.List(context.Background(), adapters.ListConvertersInput{ProjectIdentity: "demo"})
+	service = newConverterServiceForTest(project, folders, &converterRepositoryTestStub{listResult: []*entities.RConverter{{FolderID: uuid.New()}}})
+	_, err = service.List(context.Background(), ListConvertersInput{ProjectIdentity: "demo"})
 	if got := apperrors.CodeOf(err); got != "converter_folder_not_found" {
 		t.Fatalf("error code = %q, want converter_folder_not_found", got)
 	}
 }
 
 func TestConverterDeleteOperations(t *testing.T) {
-	project := &entities.Project{ID: uuid.New(), Identity: "demo"}
-	active := &entities.Converter{ID: uuid.New(), ProjectID: project.ID, Identity: "date-format"}
-	deleted := &entities.Converter{ID: uuid.New(), ProjectID: project.ID, Identity: "deleted-format"}
+	project := &entities.RProject{ID: uuid.New(), Identity: "demo"}
+	active := &entities.RConverter{ID: uuid.New(), ProjectID: project.ID, Identity: "date-format"}
+	deleted := &entities.RConverter{ID: uuid.New(), ProjectID: project.ID, Identity: "deleted-format"}
 	repository := &converterRepositoryTestStub{getResult: active, getIncludingDeletedResult: deleted}
 	service := newConverterServiceForTest(project, &foldersRepositoryStub{}, repository)
 
-	if err := service.SoftDelete(context.Background(), adapters.ConverterIdentityInput{ProjectIdentity: "demo", ConverterIdentity: "date-format"}); err != nil {
+	if err := service.SoftDelete(context.Background(), ConverterIdentityInput{ProjectIdentity: "demo", ConverterIdentity: "date-format"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := service.Restore(context.Background(), adapters.ConverterIdentityInput{ProjectIdentity: "demo", ConverterIdentity: "deleted-format"}); err != nil {
+	if err := service.Restore(context.Background(), ConverterIdentityInput{ProjectIdentity: "demo", ConverterIdentity: "deleted-format"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := service.HardDelete(context.Background(), adapters.ConverterIdentityInput{ProjectIdentity: "demo", ConverterIdentity: "deleted-format"}); err != nil {
+	if err := service.HardDelete(context.Background(), ConverterIdentityInput{ProjectIdentity: "demo", ConverterIdentity: "deleted-format"}); err != nil {
 		t.Fatal(err)
 	}
 	if repository.softDeletedID != active.ID || repository.restoredID != deleted.ID || repository.hardDeletedID != deleted.ID {
@@ -126,12 +125,12 @@ func TestConverterDeleteOperations(t *testing.T) {
 }
 
 func TestConverterHardDeleteRejectsSystemConverter(t *testing.T) {
-	project := &entities.Project{ID: uuid.New(), Identity: "demo"}
-	systemConverter := &entities.Converter{ID: uuid.New(), ProjectID: project.ID, Identity: "system", IsSystem: true}
+	project := &entities.RProject{ID: uuid.New(), Identity: "demo"}
+	systemConverter := &entities.RConverter{ID: uuid.New(), ProjectID: project.ID, Identity: "system", IsSystem: true}
 	repository := &converterRepositoryTestStub{getIncludingDeletedResult: systemConverter}
 	service := newConverterServiceForTest(project, &foldersRepositoryStub{}, repository)
 
-	err := service.HardDelete(context.Background(), adapters.ConverterIdentityInput{ProjectIdentity: "demo", ConverterIdentity: "system"})
+	err := service.HardDelete(context.Background(), ConverterIdentityInput{ProjectIdentity: "demo", ConverterIdentity: "system"})
 	if got := apperrors.CodeOf(err); got != "system_converter_delete_forbidden" {
 		t.Fatalf("error code = %q, want system_converter_delete_forbidden", got)
 	}
@@ -141,7 +140,7 @@ func TestConverterHardDeleteRejectsSystemConverter(t *testing.T) {
 }
 
 func newConverterServiceForTest(
-	project *entities.Project,
+	project *entities.RProject,
 	folders *foldersRepositoryStub,
 	converters *converterRepositoryTestStub,
 ) *Converter {
@@ -156,30 +155,30 @@ func newConverterServiceForTest(
 
 type converterProjectRepositoryStub struct {
 	ports.ProjectsRepository
-	project *entities.Project
+	project *entities.RProject
 	err     error
 }
 
-func (s *converterProjectRepositoryStub) GetByIdentity(context.Context, string) (*entities.Project, error) {
+func (s *converterProjectRepositoryStub) GetByIdentity(context.Context, string) (*entities.RProject, error) {
 	return s.project, s.err
 }
 
 type converterRepositoryTestStub struct {
 	ports.ConvertersRepository
-	createResult              *entities.Converter
+	createResult              *entities.RConverter
 	createErr                 error
-	updateResult              *entities.Converter
+	updateResult              *entities.RConverter
 	updateErr                 error
-	getResult                 *entities.Converter
+	getResult                 *entities.RConverter
 	getErr                    error
-	getIncludingDeletedResult *entities.Converter
+	getIncludingDeletedResult *entities.RConverter
 	getIncludingDeletedErr    error
-	listResult                []*entities.Converter
+	listResult                []*entities.RConverter
 	listErr                   error
 	exists                    bool
 	existsErr                 error
-	created                   *entities.Converter
-	updated                   *entities.Converter
+	created                   *entities.RConverter
+	updated                   *entities.RConverter
 	softDeletedID             uuid.UUID
 	restoredID                uuid.UUID
 	hardDeletedID             uuid.UUID
@@ -188,25 +187,25 @@ type converterRepositoryTestStub struct {
 	hardDeleteErr             error
 }
 
-func (s *converterRepositoryTestStub) Create(_ context.Context, converter *entities.Converter) (*entities.Converter, error) {
+func (s *converterRepositoryTestStub) Create(_ context.Context, converter *entities.RConverter) (*entities.RConverter, error) {
 	s.created = converter
 	return s.createResult, s.createErr
 }
 
-func (s *converterRepositoryTestStub) Update(_ context.Context, converter *entities.Converter) (*entities.Converter, error) {
+func (s *converterRepositoryTestStub) Update(_ context.Context, converter *entities.RConverter) (*entities.RConverter, error) {
 	s.updated = converter
 	return s.updateResult, s.updateErr
 }
 
-func (s *converterRepositoryTestStub) GetByIdentity(context.Context, uuid.UUID, string) (*entities.Converter, error) {
+func (s *converterRepositoryTestStub) GetByIdentity(context.Context, uuid.UUID, string) (*entities.RConverter, error) {
 	return s.getResult, s.getErr
 }
 
-func (s *converterRepositoryTestStub) GetByIdentityIncludingDeleted(context.Context, uuid.UUID, string) (*entities.Converter, error) {
+func (s *converterRepositoryTestStub) GetByIdentityIncludingDeleted(context.Context, uuid.UUID, string) (*entities.RConverter, error) {
 	return s.getIncludingDeletedResult, s.getIncludingDeletedErr
 }
 
-func (s *converterRepositoryTestStub) List(context.Context, ports.ConvertersFilter) ([]*entities.Converter, error) {
+func (s *converterRepositoryTestStub) List(context.Context, ports.ConvertersFilter) ([]*entities.RConverter, error) {
 	return s.listResult, s.listErr
 }
 

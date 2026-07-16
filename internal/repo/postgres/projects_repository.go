@@ -43,9 +43,9 @@ func NewProjectsRepository(
 //
 // Возвращаемые значения:
 //
-//	*entities.Project - созданный проект
+//	*entities.RProject - созданный проект
 //	error - ошибка, возникшая при выполнении операции
-func (r *ProjectsRepository) Create(ctx context.Context, project *entities.Project) (result *entities.Project, err error) {
+func (r *ProjectsRepository) Create(ctx context.Context, project *entities.RProject) (result *entities.RProject, err error) {
 	const op = "repo.projects.Create"
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
@@ -73,9 +73,9 @@ func (r *ProjectsRepository) Create(ctx context.Context, project *entities.Proje
 //
 // Возвращаемые значения:
 //
-//	*entities.Project - найденный проект
+//	*entities.RProject - найденный проект
 //	error - ошибка, возникшая при выполнении операции
-func (r *ProjectsRepository) GetByID(ctx context.Context, id uuid.UUID) (result *entities.Project, err error) {
+func (r *ProjectsRepository) GetByID(ctx context.Context, id uuid.UUID) (result *entities.RProject, err error) {
 	const op = "repo.projects.GetByID"
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
@@ -107,9 +107,9 @@ func (r *ProjectsRepository) GetByID(ctx context.Context, id uuid.UUID) (result 
 //
 // Возвращаемые значения:
 //
-//	*entities.Project - найденный проект
+//	*entities.RProject - найденный проект
 //	error - ошибка, возникшая при выполнении операции
-func (r *ProjectsRepository) GetByIdentity(ctx context.Context, identity string) (result *entities.Project, err error) {
+func (r *ProjectsRepository) GetByIdentity(ctx context.Context, identity string) (result *entities.RProject, err error) {
 	const op = "repo.projects.GetByIdentity"
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
@@ -141,12 +141,12 @@ func (r *ProjectsRepository) GetByIdentity(ctx context.Context, identity string)
 //
 // Возвращаемые значения:
 //
-//	*entities.Project - найденный проект
+//	*entities.RProject - найденный проект
 //	error - ошибка, возникшая при выполнении операции
 func (r *ProjectsRepository) GetByIdentityIncludingDeleted(
 	ctx context.Context,
 	identity string,
-) (result *entities.Project, err error) {
+) (result *entities.RProject, err error) {
 	const op = "repo.projects.GetByIdentityIncludingDeleted"
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
@@ -177,9 +177,9 @@ func (r *ProjectsRepository) GetByIdentityIncludingDeleted(
 //
 // Возвращаемые значения:
 //
-//	[]*entities.Project - список проектов
+//	[]*entities.RProject - список проектов
 //	error - ошибка, возникшая при выполнении операции
-func (r *ProjectsRepository) List(ctx context.Context) (result []*entities.Project, err error) {
+func (r *ProjectsRepository) List(ctx context.Context) (result []*entities.RProject, err error) {
 	const op = "repo.projects.List"
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
@@ -191,7 +191,7 @@ func (r *ProjectsRepository) List(ctx context.Context) (result []*entities.Proje
 		return nil, apperrors.Internal("internal_error", "failed to list projects")
 	}
 
-	result = make([]*entities.Project, 0, len(projects))
+	result = make([]*entities.RProject, 0, len(projects))
 	for _, project := range projects {
 		result = append(result, mappers.Project(project))
 	}
@@ -212,9 +212,9 @@ func (r *ProjectsRepository) List(ctx context.Context) (result []*entities.Proje
 //
 // Возвращаемые значения:
 //
-//	*entities.Project - обновленный проект
+//	*entities.RProject - обновленный проект
 //	error - ошибка, возникшая при выполнении операции
-func (r *ProjectsRepository) Update(ctx context.Context, project *entities.Project) (result *entities.Project, err error) {
+func (r *ProjectsRepository) Update(ctx context.Context, project *entities.RProject) (result *entities.RProject, err error) {
 	const op = "repo.projects.Update"
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)

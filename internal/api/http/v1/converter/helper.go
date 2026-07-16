@@ -3,14 +3,14 @@ package converter
 import (
 	"context"
 
-	transport "github.com/endge-lab/service-backend/internal/api/http/v1/transport"
+	respond "github.com/endge-lab/service-backend/internal/api/http/respond"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	"github.com/endge-lab/service-backend/internal/usecase/converters"
 	servicefiber "github.com/endge-lab/service-kit-go/pkg/httpkit/fiber"
 	"github.com/gofiber/fiber/v2"
 )
 
-func (h *Handler) response(value *adapters.ConverterWithFolder, projectIdentity string) *ConverterResponse {
+func (h *Handler) response(value *converters.ConverterWithFolder, projectIdentity string) *ConverterResponse {
 	if value == nil {
 		return nil
 	}
@@ -18,7 +18,7 @@ func (h *Handler) response(value *adapters.ConverterWithFolder, projectIdentity 
 	return newConverterResponse(value.Converter, projectIdentity, value.FolderIdentity)
 }
 
-func newConverterResponse(value *entities.Converter, projectIdentity, folderIdentity string) *ConverterResponse {
+func newConverterResponse(value *entities.RConverter, projectIdentity, folderIdentity string) *ConverterResponse {
 	if value == nil {
 		return nil
 	}
@@ -41,12 +41,12 @@ func newConverterResponse(value *entities.Converter, projectIdentity, folderIden
 	}
 }
 
-func (h *Handler) change(c *fiber.Ctx, fn func(context.Context, adapters.ConverterIdentityInput) error) error {
-	if err := fn(c.UserContext(), adapters.ConverterIdentityInput{
+func (h *Handler) change(c *fiber.Ctx, fn func(context.Context, converters.ConverterIdentityInput) error) error {
+	if err := fn(c.UserContext(), converters.ConverterIdentityInput{
 		ProjectIdentity:   c.Params("project_identity"),
 		ConverterIdentity: c.Params("converter_identity"),
 	}); err != nil {
-		return transport.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.logger, err)
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)

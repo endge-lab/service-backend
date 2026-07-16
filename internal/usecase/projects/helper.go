@@ -4,20 +4,19 @@ import (
 	"strings"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
 	apperrors "github.com/endge-lab/service-kit-go/pkg/errors"
 	"github.com/google/uuid"
 )
 
 var projectRootEntityTypes = []entities.FolderEntityType{
-	entities.FolderEntityTypeComponents,
+	entities.FolderEntityTypeComponentsLegacy,
 	entities.FolderEntityTypeConverters,
 	entities.FolderEntityTypeQueries,
 	entities.FolderEntityTypeDataViews,
 }
 
-func projectFromCreateInput(input adapters.CreateProjectInput) *entities.Project {
-	return &entities.Project{
+func projectFromCreateInput(input CreateProjectInput) *entities.RProject {
+	return &entities.RProject{
 		Identity:    input.Identity,
 		DisplayName: input.DisplayName,
 		Description: input.Description,
@@ -26,8 +25,8 @@ func projectFromCreateInput(input adapters.CreateProjectInput) *entities.Project
 	}
 }
 
-func projectFromUpdateInput(current *entities.Project, input adapters.UpdateProjectInput) *entities.Project {
-	return &entities.Project{
+func projectFromUpdateInput(current *entities.RProject, input UpdateProjectInput) *entities.RProject {
+	return &entities.RProject{
 		ID:          current.ID,
 		Identity:    current.Identity,
 		DisplayName: input.DisplayName,
@@ -40,12 +39,12 @@ func projectFromUpdateInput(current *entities.Project, input adapters.UpdateProj
 	}
 }
 
-func projectRootFolders(projectID uuid.UUID) []*entities.Folder {
-	roots := make([]*entities.Folder, 0, len(projectRootEntityTypes))
+func projectRootFolders(projectID uuid.UUID) []*entities.RFolder {
+	roots := make([]*entities.RFolder, 0, len(projectRootEntityTypes))
 	for _, entityType := range projectRootEntityTypes {
 		id := projectID
 		identity := "root-" + string(entityType)
-		roots = append(roots, &entities.Folder{
+		roots = append(roots, &entities.RFolder{
 			ProjectID:   &id,
 			EntityType:  entityType,
 			Identity:    identity,
@@ -59,7 +58,7 @@ func projectRootFolders(projectID uuid.UUID) []*entities.Folder {
 	return roots
 }
 
-func normalizeAndValidateUpdateProjectInput(input *adapters.UpdateProjectInput) error {
+func normalizeAndValidateUpdateProjectInput(input *UpdateProjectInput) error {
 	input.Identity = strings.TrimSpace(input.Identity)
 	input.DisplayName = strings.TrimSpace(input.DisplayName)
 

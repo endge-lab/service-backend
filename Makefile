@@ -17,7 +17,13 @@ APP_NAME ?= service-backend
 MAIN := ./cmd
 BIN := ./tmp/$(APP_NAME)
 GOCACHE ?= /tmp/$(APP_NAME)-go-build
-SQLC ?= $(shell command -v sqlc 2>/dev/null || command -v /tmp/bin/sqlc 2>/dev/null)
+SQLC_VERSION ?= v1.31.1
+SQLC ?= go run github.com/sqlc-dev/sqlc/cmd/sqlc@$(SQLC_VERSION)
+SWAG_VERSION ?= v1.16.6
+SWAGGER2OPENAPI_VERSION ?= 7.0.8
+OPENAPI_TMP_DIR := ./tmp/openapi
+OPENAPI_SPEC := ./docs/openapi3.yaml
+OPENAPI_GENERATED_GO := ./internal/api/http/openapi/openapi.gen.go
 
 DOCKER_COMPOSE_DEV := docker-compose.dev.yml
 COMPOSE_ENV_FILE_ARG := $(if $(wildcard $(RUNTIME_ENV_FILE)),--env-file $(RUNTIME_ENV_FILE),)
@@ -59,15 +65,17 @@ mod-update:
 
 .PHONY: docs
 docs:
-	swag init --parseDependency --parseInternal --parseDepth 5 -g ./cmd/main.go
-	swagger2openapi ./docs/swagger.json -o ./docs/openapi3.yaml
-	rm -f ./docs/swagger.json
-	rm -f ./docs/swagger.yaml
-	rm -f ./docs/docs.go
+	rm -rf $(OPENAPI_TMP_DIR)
+	mkdir -p $(OPENAPI_TMP_DIR)
+	go run github.com/swaggo/swag/cmd/swag@$(SWAG_VERSION) init --parseDependency --parseInternal --parseDepth 5 --outputTypes json --output $(OPENAPI_TMP_DIR) -g ./cmd/main.go
+	npx --yes swagger2openapi@$(SWAGGER2OPENAPI_VERSION) $(OPENAPI_TMP_DIR)/swagger.json -o $(OPENAPI_SPEC)
+	go run ./internal/tools/openapiembed -input $(OPENAPI_SPEC) -output $(OPENAPI_GENERATED_GO)
+	rm -rf $(OPENAPI_TMP_DIR)
 
 .PHONY: docs-clean
 docs-clean:
-	rm -f docs/swagger.json docs/swagger.yaml docs/openapi3.yaml
+	rm -rf $(OPENAPI_TMP_DIR)
+	rm -f $(OPENAPI_SPEC) $(OPENAPI_GENERATED_GO)
 
 .PHONY: fmt
 fmt:

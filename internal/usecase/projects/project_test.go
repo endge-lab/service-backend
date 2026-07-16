@@ -2,13 +2,11 @@ package projects
 
 import (
 	"testing"
-
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
 )
 
 func TestNormalizeAndValidateCreateProjectInput(t *testing.T) {
 	t.Run("normalizes valid input", func(t *testing.T) {
-		input := adapters.CreateProjectInput{
+		input := CreateProjectInput{
 			Identity:    " demo-project ",
 			DisplayName: " Demo Project ",
 		}
@@ -28,7 +26,7 @@ func TestNormalizeAndValidateCreateProjectInput(t *testing.T) {
 	})
 
 	t.Run("rejects empty identity", func(t *testing.T) {
-		input := adapters.CreateProjectInput{Identity: " ", DisplayName: "Demo Project"}
+		input := CreateProjectInput{Identity: " ", DisplayName: "Demo Project"}
 
 		if err := normalizeAndValidateCreateProjectInput(&input); err == nil {
 			t.Fatal("expected validation error")
@@ -36,7 +34,7 @@ func TestNormalizeAndValidateCreateProjectInput(t *testing.T) {
 	})
 
 	t.Run("rejects empty display name", func(t *testing.T) {
-		input := adapters.CreateProjectInput{Identity: "demo-project", DisplayName: " "}
+		input := CreateProjectInput{Identity: "demo-project", DisplayName: " "}
 
 		if err := normalizeAndValidateCreateProjectInput(&input); err == nil {
 			t.Fatal("expected validation error")
@@ -45,7 +43,7 @@ func TestNormalizeAndValidateCreateProjectInput(t *testing.T) {
 }
 
 func TestNormalizeAndValidateUpdateProjectInput(t *testing.T) {
-	input := adapters.UpdateProjectInput{
+	input := UpdateProjectInput{
 		Identity:    " demo-project ",
 		DisplayName: " Demo Project ",
 	}

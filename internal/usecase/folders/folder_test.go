@@ -6,17 +6,16 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
 	"github.com/google/uuid"
 )
 
 func TestNormalizeAndValidateCreateInput(t *testing.T) {
-	parentIdentity := " root-components "
-	input := adapters.CreateFolderInput{
+	parentIdentity := " root-components-legacy "
+	input := CreateFolderInput{
 		ProjectIdentity: " demo-project ",
-		EntityType:      entities.FolderEntityTypeComponents,
-		Identity:        " shared-components ",
-		DisplayName:     " Shared Components ",
+		EntityType:      entities.FolderEntityTypeComponentsLegacy,
+		Identity:        " shared-components-legacy ",
+		DisplayName:     " Shared legacy components ",
 		ParentIdentity:  &parentIdentity,
 	}
 
@@ -26,13 +25,13 @@ func TestNormalizeAndValidateCreateInput(t *testing.T) {
 	if input.ProjectIdentity != "demo-project" {
 		t.Fatalf("project identity = %q", input.ProjectIdentity)
 	}
-	if input.Identity != "shared-components" {
+	if input.Identity != "shared-components-legacy" {
 		t.Fatalf("folder identity = %q", input.Identity)
 	}
-	if input.DisplayName != "Shared Components" {
+	if input.DisplayName != "Shared legacy components" {
 		t.Fatalf("display name = %q", input.DisplayName)
 	}
-	if input.ParentIdentity == nil || *input.ParentIdentity != "root-components" {
+	if input.ParentIdentity == nil || *input.ParentIdentity != "root-components-legacy" {
 		t.Fatalf("parent identity = %v", input.ParentIdentity)
 	}
 	if input.Meta == nil {
@@ -41,7 +40,7 @@ func TestNormalizeAndValidateCreateInput(t *testing.T) {
 }
 
 func TestNormalizeAndValidateCreateInputRejectsUnsupportedEntityType(t *testing.T) {
-	input := adapters.CreateFolderInput{
+	input := CreateFolderInput{
 		ProjectIdentity: "demo-project",
 		EntityType:      entities.FolderEntityType("unsupported"),
 		Identity:        "folder",
@@ -59,7 +58,7 @@ func TestValidateNoCycle(t *testing.T) {
 	grandchildID := uuid.New()
 
 	repository := &foldersRepositoryStub{
-		folders: map[uuid.UUID]*entities.Folder{
+		folders: map[uuid.UUID]*entities.RFolder{
 			childID: {
 				ID:       childID,
 				ParentID: uuidPointer(grandchildID),
@@ -82,7 +81,7 @@ func TestValidateNoCycleAllowsUnrelatedParent(t *testing.T) {
 	parentID := uuid.New()
 
 	repository := &foldersRepositoryStub{
-		folders: map[uuid.UUID]*entities.Folder{
+		folders: map[uuid.UUID]*entities.RFolder{
 			parentID: {ID: parentID},
 		},
 	}
@@ -116,11 +115,11 @@ func TestUpdateRejectsSelfParent(t *testing.T) {
 	parentIdentity := "folder"
 
 	repository := &foldersRepositoryStub{
-		foldersByIdentity: map[string]*entities.Folder{
+		foldersByIdentity: map[string]*entities.RFolder{
 			"folder": {
 				ID:         folderID,
 				ProjectID:  uuidPointer(projectID),
-				EntityType: entities.FolderEntityTypeComponents,
+				EntityType: entities.FolderEntityTypeComponentsLegacy,
 				Identity:   "folder",
 			},
 		},
@@ -129,16 +128,16 @@ func TestUpdateRejectsSelfParent(t *testing.T) {
 	service := &Folder{
 		folderRepository: repository,
 		projectRepository: &projectsRepositoryStub{
-			project: &entities.Project{
+			project: &entities.RProject{
 				ID:       projectID,
 				Identity: "demo-project",
 			},
 		},
 	}
 
-	_, err := service.Update(context.Background(), adapters.UpdateFolderInput{
+	_, err := service.Update(context.Background(), UpdateFolderInput{
 		ProjectIdentity: "demo-project",
-		EntityType:      entities.FolderEntityTypeComponents,
+		EntityType:      entities.FolderEntityTypeComponentsLegacy,
 		Identity:        "folder",
 		DisplayName:     "Folder",
 		ParentIdentity:  &parentIdentity,
@@ -155,7 +154,7 @@ func TestValidateNoCycleRejectsExistingCycleInParentChain(t *testing.T) {
 	parentB := uuid.New()
 
 	repository := &foldersRepositoryStub{
-		folders: map[uuid.UUID]*entities.Folder{
+		folders: map[uuid.UUID]*entities.RFolder{
 			parentA: {
 				ID:       parentA,
 				ParentID: uuidPointer(parentB),
@@ -180,7 +179,7 @@ func TestValidateNoCycleRejectsExistingCycleInParentChain(t *testing.T) {
 }
 func TestResolveParentIDRejectsWrongProjectOrEntityType(t *testing.T) {
 	projectID := uuid.New()
-	parentIdentity := "root-components"
+	parentIdentity := "root-components-legacy"
 
 	repository := &foldersRepositoryStub{
 		getByIdentityErr: apperrors.NotFound("not_found", "folder not found"),
@@ -191,7 +190,7 @@ func TestResolveParentIDRejectsWrongProjectOrEntityType(t *testing.T) {
 	_, err := service.resolveParentID(
 		context.Background(),
 		projectID,
-		entities.FolderEntityTypeComponents,
+		entities.FolderEntityTypeComponentsLegacy,
 		&parentIdentity,
 	)
 	if err == nil {

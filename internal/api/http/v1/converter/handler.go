@@ -1,9 +1,8 @@
 package converter
 
 import (
-	transport "github.com/endge-lab/service-backend/internal/api/http/v1/transport"
-	"github.com/endge-lab/service-backend/internal/usecase"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	respond "github.com/endge-lab/service-backend/internal/api/http/respond"
+	"github.com/endge-lab/service-backend/internal/usecase/converters"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 	"go.opentelemetry.io/otel/trace"
@@ -11,14 +10,14 @@ import (
 )
 
 type Handler struct {
-	service   adapters.ConverterService
+	service   UseCase
 	validator appvalidator.Validator
 	logger    *zap.Logger
 	tracer    trace.Tracer
 }
 
-func NewHandler(s *usecase.Service, v appvalidator.Validator, l *zap.Logger, t trace.Tracer) *Handler {
-	return &Handler{service: s.Converters, validator: v, logger: l.With(zap.String("component", "converter_http_handler")), tracer: t}
+func NewHandler(s UseCase, v appvalidator.Validator, l *zap.Logger, t trace.Tracer) *Handler {
+	return &Handler{service: s, validator: v, logger: l.With(zap.String("component", "converter_http_handler")), tracer: t}
 }
 
 // Create godoc
@@ -31,23 +30,23 @@ func NewHandler(s *usecase.Service, v appvalidator.Validator, l *zap.Logger, t t
 // @Param project_identity path string true "Project identity" example(demo-project)
 // @Param request body CreateConverterRequest true "Параметры конвертера"
 // @Success 201 {object} ConverterResponse
-// @Failure 400 {object} transport.ErrorResponse
-// @Failure 404 {object} transport.ErrorResponse
-// @Failure 409 {object} transport.ErrorResponse
-// @Failure 500 {object} transport.ErrorResponse
+// @Failure 400 {object} respond.ErrorResponse
+// @Failure 404 {object} respond.ErrorResponse
+// @Failure 409 {object} respond.ErrorResponse
+// @Failure 500 {object} respond.ErrorResponse
 // @Router /api/v1/projects/{project_identity}/converters [post]
 func (h *Handler) Create(c *fiber.Ctx) error {
 	var request CreateConverterRequest
 	if err := c.BodyParser(&request); err != nil {
-		return transport.WriteErrorResponse(c, transport.ErrInvalidBody)
+		return respond.WriteErrorResponse(c, respond.ErrInvalidBody)
 	}
 	if err := h.validator.Validate(&request); err != nil {
-		return transport.WriteErrorResponse(c, transport.ErrValidationError)
+		return respond.WriteErrorResponse(c, respond.ErrValidationError)
 	}
 	project := c.Params("project_identity")
-	value, err := h.service.Create(c.UserContext(), adapters.CreateConverterInput{ProjectIdentity: project, FolderIdentity: request.FolderIdentity, Identity: request.Identity, DisplayName: request.DisplayName, Description: request.Description, ConverterType: request.ConverterType, Source: request.Source, IsSystem: request.IsSystem, Meta: request.Meta, Active: request.Active})
+	value, err := h.service.Create(c.UserContext(), converters.CreateConverterInput{ProjectIdentity: project, FolderIdentity: request.FolderIdentity, Identity: request.Identity, DisplayName: request.DisplayName, Description: request.Description, ConverterType: request.ConverterType, Source: request.Source, IsSystem: request.IsSystem, Meta: request.Meta, Active: request.Active})
 	if err != nil {
-		return transport.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.logger, err)
 	}
 	return c.Status(fiber.StatusCreated).JSON(h.response(value, project))
 }
@@ -61,9 +60,9 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 // @Param project_identity path string true "Project identity"
 // @Param folder_identity query string false "Folder identity"
 // @Success 200 {object} ConvertersListResponse
-// @Failure 400 {object} transport.ErrorResponse
-// @Failure 404 {object} transport.ErrorResponse
-// @Failure 500 {object} transport.ErrorResponse
+// @Failure 400 {object} respond.ErrorResponse
+// @Failure 404 {object} respond.ErrorResponse
+// @Failure 500 {object} respond.ErrorResponse
 // @Router /api/v1/projects/{project_identity}/converters [get]
 func (h *Handler) List(c *fiber.Ctx) error {
 	project := c.Params("project_identity")
@@ -71,9 +70,9 @@ func (h *Handler) List(c *fiber.Ctx) error {
 	if value := c.Query("folder_identity"); value != "" {
 		folder = &value
 	}
-	values, err := h.service.List(c.UserContext(), adapters.ListConvertersInput{ProjectIdentity: project, FolderIdentity: folder})
+	values, err := h.service.List(c.UserContext(), converters.ListConvertersInput{ProjectIdentity: project, FolderIdentity: folder})
 	if err != nil {
-		return transport.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.logger, err)
 	}
 	items := make([]*ConverterResponse, 0, len(values))
 	for _, value := range values {
@@ -91,15 +90,15 @@ func (h *Handler) List(c *fiber.Ctx) error {
 // @Param project_identity path string true "Project identity"
 // @Param converter_identity path string true "Converter identity"
 // @Success 200 {object} ConverterResponse
-// @Failure 400 {object} transport.ErrorResponse
-// @Failure 404 {object} transport.ErrorResponse
-// @Failure 500 {object} transport.ErrorResponse
+// @Failure 400 {object} respond.ErrorResponse
+// @Failure 404 {object} respond.ErrorResponse
+// @Failure 500 {object} respond.ErrorResponse
 // @Router /api/v1/projects/{project_identity}/converters/{converter_identity} [get]
 func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
 	project := c.Params("project_identity")
-	value, err := h.service.GetByIdentity(c.UserContext(), adapters.GetConverterInput{ProjectIdentity: project, ConverterIdentity: c.Params("converter_identity")})
+	value, err := h.service.GetByIdentity(c.UserContext(), converters.GetConverterInput{ProjectIdentity: project, ConverterIdentity: c.Params("converter_identity")})
 	if err != nil {
-		return transport.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.logger, err)
 	}
 	return c.JSON(h.response(value, project))
 }
@@ -115,22 +114,22 @@ func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
 // @Param converter_identity path string true "Converter identity"
 // @Param request body UpdateConverterRequest true "Параметры обновления конвертера"
 // @Success 200 {object} ConverterResponse
-// @Failure 400 {object} transport.ErrorResponse
-// @Failure 404 {object} transport.ErrorResponse
-// @Failure 500 {object} transport.ErrorResponse
+// @Failure 400 {object} respond.ErrorResponse
+// @Failure 404 {object} respond.ErrorResponse
+// @Failure 500 {object} respond.ErrorResponse
 // @Router /api/v1/projects/{project_identity}/converters/{converter_identity} [patch]
 func (h *Handler) Update(c *fiber.Ctx) error {
 	var request UpdateConverterRequest
 	if err := c.BodyParser(&request); err != nil {
-		return transport.WriteErrorResponse(c, transport.ErrInvalidBody)
+		return respond.WriteErrorResponse(c, respond.ErrInvalidBody)
 	}
 	if err := h.validator.Validate(&request); err != nil {
-		return transport.WriteErrorResponse(c, transport.ErrValidationError)
+		return respond.WriteErrorResponse(c, respond.ErrValidationError)
 	}
 	project := c.Params("project_identity")
-	value, err := h.service.Update(c.UserContext(), adapters.UpdateConverterInput{ProjectIdentity: project, ConverterIdentity: c.Params("converter_identity"), FolderIdentity: request.FolderIdentity, DisplayName: request.DisplayName, Description: request.Description, ConverterType: request.ConverterType, Source: request.Source, IsSystem: request.IsSystem, Meta: request.Meta, Active: request.Active})
+	value, err := h.service.Update(c.UserContext(), converters.UpdateConverterInput{ProjectIdentity: project, ConverterIdentity: c.Params("converter_identity"), FolderIdentity: request.FolderIdentity, DisplayName: request.DisplayName, Description: request.Description, ConverterType: request.ConverterType, Source: request.Source, IsSystem: request.IsSystem, Meta: request.Meta, Active: request.Active})
 	if err != nil {
-		return transport.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.logger, err)
 	}
 	return c.JSON(h.response(value, project))
 }
@@ -143,9 +142,9 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 // @Param project_identity path string true "Project identity"
 // @Param converter_identity path string true "Converter identity"
 // @Success 204
-// @Failure 400 {object} transport.ErrorResponse
-// @Failure 404 {object} transport.ErrorResponse
-// @Failure 500 {object} transport.ErrorResponse
+// @Failure 400 {object} respond.ErrorResponse
+// @Failure 404 {object} respond.ErrorResponse
+// @Failure 500 {object} respond.ErrorResponse
 // @Router /api/v1/projects/{project_identity}/converters/{converter_identity} [delete]
 func (h *Handler) SoftDelete(c *fiber.Ctx) error { return h.change(c, h.service.SoftDelete) }
 
@@ -157,9 +156,9 @@ func (h *Handler) SoftDelete(c *fiber.Ctx) error { return h.change(c, h.service.
 // @Param project_identity path string true "Project identity"
 // @Param converter_identity path string true "Converter identity"
 // @Success 204
-// @Failure 400 {object} transport.ErrorResponse
-// @Failure 404 {object} transport.ErrorResponse
-// @Failure 500 {object} transport.ErrorResponse
+// @Failure 400 {object} respond.ErrorResponse
+// @Failure 404 {object} respond.ErrorResponse
+// @Failure 500 {object} respond.ErrorResponse
 // @Router /api/v1/projects/{project_identity}/converters/{converter_identity}/restore [post]
 func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Restore) }
 
@@ -171,9 +170,9 @@ func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Res
 // @Param project_identity path string true "Project identity"
 // @Param converter_identity path string true "Converter identity"
 // @Success 204
-// @Failure 400 {object} transport.ErrorResponse
-// @Failure 404 {object} transport.ErrorResponse
-// @Failure 409 {object} transport.ErrorResponse
-// @Failure 500 {object} transport.ErrorResponse
+// @Failure 400 {object} respond.ErrorResponse
+// @Failure 404 {object} respond.ErrorResponse
+// @Failure 409 {object} respond.ErrorResponse
+// @Failure 500 {object} respond.ErrorResponse
 // @Router /api/v1/projects/{project_identity}/converters/{converter_identity}/hard [delete]
 func (h *Handler) HardDelete(c *fiber.Ctx) error { return h.change(c, h.service.HardDelete) }

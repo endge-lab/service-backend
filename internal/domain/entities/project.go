@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type Project struct {
+type RProject struct {
 	ID          uuid.UUID      `json:"id"`
 	Identity    string         `json:"identity"`
 	DisplayName string         `json:"display_name"`

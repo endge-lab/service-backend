@@ -5,8 +5,8 @@ import (
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
 )
 
-func DataView(value sqlc.DataView) *entities.DataView {
-	return &entities.DataView{
+func DataView(value sqlc.DataView) *entities.RDataView {
+	return &entities.RDataView{
 		ID:           value.ID,
 		ProjectID:    value.ProjectID,
 		FolderID:     value.FolderID,
@@ -26,7 +26,7 @@ func DataView(value sqlc.DataView) *entities.DataView {
 	}
 }
 
-func CreateDataViewParams(value *entities.DataView) sqlc.CreateDataViewParams {
+func CreateDataViewParams(value *entities.RDataView) sqlc.CreateDataViewParams {
 	if value == nil {
 		return sqlc.CreateDataViewParams{}
 	}
@@ -46,7 +46,7 @@ func CreateDataViewParams(value *entities.DataView) sqlc.CreateDataViewParams {
 	}
 }
 
-func UpdateDataViewParams(value *entities.DataView) sqlc.UpdateDataViewParams {
+func UpdateDataViewParams(value *entities.RDataView) sqlc.UpdateDataViewParams {
 	if value == nil {
 		return sqlc.UpdateDataViewParams{}
 	}

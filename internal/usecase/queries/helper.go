@@ -7,7 +7,6 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -21,19 +20,19 @@ func logOperationError(logger *zap.Logger, operation string, err error, fields .
 	logger.Warn(operation, fields...)
 }
 
-func normalizeCreateInput(input *adapters.CreateQueryInput) error {
+func normalizeCreateInput(input *CreateQueryInput) error {
 	normalizeQueryFields(&input.ProjectIdentity, &input.FolderIdentity, &input.Identity, &input.DisplayName, &input.QueryType, &input.Description)
 	normalizeQueryPayload(&input.Source, &input.Params, &input.Headers, &input.Meta)
 	return validateQuery(input.ProjectIdentity, input.FolderIdentity, input.Identity, input.DisplayName, input.QueryType, input.TimeoutMS)
 }
 
-func normalizeUpdateInput(input *adapters.UpdateQueryInput) error {
+func normalizeUpdateInput(input *UpdateQueryInput) error {
 	normalizeQueryFields(&input.ProjectIdentity, &input.FolderIdentity, &input.QueryIdentity, &input.DisplayName, &input.QueryType, &input.Description)
 	normalizeQueryPayload(&input.Source, &input.Params, &input.Headers, &input.Meta)
 	return validateQuery(input.ProjectIdentity, input.FolderIdentity, input.QueryIdentity, input.DisplayName, input.QueryType, input.TimeoutMS)
 }
 
-func normalizeListInput(input *adapters.ListQueriesInput) error {
+func normalizeListInput(input *ListQueriesInput) error {
 	input.ProjectIdentity = strings.TrimSpace(input.ProjectIdentity)
 	if input.FolderIdentity != nil {
 		value := strings.TrimSpace(*input.FolderIdentity)
@@ -112,7 +111,7 @@ func (s *Query) resolveFolderID(ctx context.Context, projectID uuid.UUID, identi
 	return &folder.ID, nil
 }
 
-func (s *Query) resolveFolder(ctx context.Context, projectID uuid.UUID, identity string) (*entities.Folder, error) {
+func (s *Query) resolveFolder(ctx context.Context, projectID uuid.UUID, identity string) (*entities.RFolder, error) {
 	folder, err := s.folderRepository.GetByIdentity(ctx, &projectID, entities.FolderEntityTypeQueries, identity)
 	if errors.Is(err, apperrors.ErrNotFound) {
 		return nil, apperrors.InvalidInput("folder_entity_type_mismatch", "folder must belong to the project and have queries entity type")
@@ -120,24 +119,24 @@ func (s *Query) resolveFolder(ctx context.Context, projectID uuid.UUID, identity
 	return folder, err
 }
 
-func queryFromCreate(projectID, folderID uuid.UUID, input adapters.CreateQueryInput) *entities.Query {
-	return &entities.Query{ProjectID: projectID, FolderID: folderID, Identity: input.Identity, DisplayName: input.DisplayName, Description: input.Description, QueryType: input.QueryType, Source: input.Source, Params: input.Params, Headers: input.Headers, Auth: input.Auth, TimeoutMS: input.TimeoutMS, MockData: input.MockData, MockDataEnabled: input.MockDataEnabled, Meta: input.Meta, Active: input.Active}
+func queryFromCreate(projectID, folderID uuid.UUID, input CreateQueryInput) *entities.RQuery {
+	return &entities.RQuery{ProjectID: projectID, FolderID: folderID, Identity: input.Identity, DisplayName: input.DisplayName, Description: input.Description, QueryType: input.QueryType, Source: input.Source, Params: input.Params, Headers: input.Headers, Auth: input.Auth, TimeoutMS: input.TimeoutMS, MockData: input.MockData, MockDataEnabled: input.MockDataEnabled, Meta: input.Meta, Active: input.Active}
 }
 
-func queryFromUpdate(current *entities.Query, folderID uuid.UUID, input adapters.UpdateQueryInput) *entities.Query {
-	return &entities.Query{ID: current.ID, ProjectID: current.ProjectID, FolderID: folderID, Identity: current.Identity, DisplayName: input.DisplayName, Description: input.Description, QueryType: input.QueryType, Source: input.Source, Params: input.Params, Headers: input.Headers, Auth: input.Auth, TimeoutMS: input.TimeoutMS, MockData: input.MockData, MockDataEnabled: input.MockDataEnabled, Meta: input.Meta, Active: input.Active, DeletedAt: current.DeletedAt, CreatedAt: current.CreatedAt, UpdatedAt: current.UpdatedAt}
+func queryFromUpdate(current *entities.RQuery, folderID uuid.UUID, input UpdateQueryInput) *entities.RQuery {
+	return &entities.RQuery{ID: current.ID, ProjectID: current.ProjectID, FolderID: folderID, Identity: current.Identity, DisplayName: input.DisplayName, Description: input.Description, QueryType: input.QueryType, Source: input.Source, Params: input.Params, Headers: input.Headers, Auth: input.Auth, TimeoutMS: input.TimeoutMS, MockData: input.MockData, MockDataEnabled: input.MockDataEnabled, Meta: input.Meta, Active: input.Active, DeletedAt: current.DeletedAt, CreatedAt: current.CreatedAt, UpdatedAt: current.UpdatedAt}
 }
 
-func queryWithFolder(query *entities.Query, folderIdentity string) *adapters.QueryWithFolder {
-	return &adapters.QueryWithFolder{Query: query, FolderIdentity: folderIdentity}
+func queryWithFolder(query *entities.RQuery, folderIdentity string) *QueryWithFolder {
+	return &QueryWithFolder{Query: query, FolderIdentity: folderIdentity}
 }
 
-func queriesWithFolders(queries []*entities.Query, folders []*entities.Folder) ([]*adapters.QueryWithFolder, error) {
+func queriesWithFolders(queries []*entities.RQuery, folders []*entities.RFolder) ([]*QueryWithFolder, error) {
 	identities := make(map[uuid.UUID]string, len(folders))
 	for _, folder := range folders {
 		identities[folder.ID] = folder.Identity
 	}
-	result := make([]*adapters.QueryWithFolder, 0, len(queries))
+	result := make([]*QueryWithFolder, 0, len(queries))
 	for _, query := range queries {
 		identity, ok := identities[query.FolderID]
 		if !ok {

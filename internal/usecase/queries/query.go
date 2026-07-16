@@ -6,8 +6,7 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/repo/ports"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -15,8 +14,6 @@ import (
 )
 
 const queryOperationTimeout = 15 * time.Second
-
-var _ adapters.QueryService = (*Query)(nil)
 
 type Query struct {
 	queryRepository   ports.QueriesRepository
@@ -52,9 +49,9 @@ func NewQueryService(params QueryParams) *Query {
 //
 // Возвращаемые значения:
 //
-//	*adapters.QueryWithFolder - созданная Query и identity ее папки
+//	*QueryWithFolder - созданная Query и identity ее папки
 //	error - ошибка валидации, разрешения зависимостей или хранения
-func (s *Query) Create(ctx context.Context, input adapters.CreateQueryInput) (result *adapters.QueryWithFolder, err error) {
+func (s *Query) Create(ctx context.Context, input CreateQueryInput) (result *QueryWithFolder, err error) {
 	const op = "query.create"
 
 	ctx, cancel := context.WithTimeout(ctx, queryOperationTimeout)
@@ -108,9 +105,9 @@ func (s *Query) Create(ctx context.Context, input adapters.CreateQueryInput) (re
 //
 // Возвращаемые значения:
 //
-//	*adapters.QueryWithFolder - обновленная Query и identity ее папки
+//	*QueryWithFolder - обновленная Query и identity ее папки
 //	error - ошибка валидации, разрешения зависимостей или хранения
-func (s *Query) Update(ctx context.Context, input adapters.UpdateQueryInput) (result *adapters.QueryWithFolder, err error) {
+func (s *Query) Update(ctx context.Context, input UpdateQueryInput) (result *QueryWithFolder, err error) {
 	const op = "query.update"
 	ctx, cancel := context.WithTimeout(ctx, queryOperationTimeout)
 	defer cancel()
@@ -145,7 +142,7 @@ func (s *Query) Update(ctx context.Context, input adapters.UpdateQueryInput) (re
 }
 
 // GetByIdentity возвращает активную Query по identity в пределах проекта.
-func (s *Query) GetByIdentity(ctx context.Context, input adapters.GetQueryInput) (result *adapters.QueryWithFolder, err error) {
+func (s *Query) GetByIdentity(ctx context.Context, input GetQueryInput) (result *QueryWithFolder, err error) {
 	const op = "query.get_by_identity"
 	ctx, cancel := context.WithTimeout(ctx, queryOperationTimeout)
 	defer cancel()
@@ -174,7 +171,7 @@ func (s *Query) GetByIdentity(ctx context.Context, input adapters.GetQueryInput)
 }
 
 // List возвращает активные Query проекта по optional фильтрам.
-func (s *Query) List(ctx context.Context, input adapters.ListQueriesInput) (result []*adapters.QueryWithFolder, err error) {
+func (s *Query) List(ctx context.Context, input ListQueriesInput) (result []*QueryWithFolder, err error) {
 	const op = "query.list"
 	ctx, cancel := context.WithTimeout(ctx, queryOperationTimeout)
 	defer cancel()
@@ -200,7 +197,7 @@ func (s *Query) List(ctx context.Context, input adapters.ListQueriesInput) (resu
 		return nil, err
 	}
 	if len(values) == 0 {
-		return []*adapters.QueryWithFolder{}, nil
+		return []*QueryWithFolder{}, nil
 	}
 	folders, err := s.folderRepository.List(ctx, &project.ID, entities.FolderEntityTypeQueries)
 	if err != nil {
@@ -211,22 +208,22 @@ func (s *Query) List(ctx context.Context, input adapters.ListQueriesInput) (resu
 }
 
 // SoftDelete помечает активную Query удаленной.
-func (s *Query) SoftDelete(ctx context.Context, input adapters.QueryIdentityInput) (err error) {
+func (s *Query) SoftDelete(ctx context.Context, input QueryIdentityInput) (err error) {
 	return s.change(ctx, "query.soft_delete", input, false, s.queryRepository.SoftDelete)
 }
 
 // Restore восстанавливает soft-deleted Query.
-func (s *Query) Restore(ctx context.Context, input adapters.QueryIdentityInput) (err error) {
+func (s *Query) Restore(ctx context.Context, input QueryIdentityInput) (err error) {
 	return s.change(ctx, "query.restore", input, true, s.queryRepository.Restore)
 }
 
 // HardDelete физически удаляет soft-deleted Query вместе со связанными DataView.
-func (s *Query) HardDelete(ctx context.Context, input adapters.QueryIdentityInput) (err error) {
+func (s *Query) HardDelete(ctx context.Context, input QueryIdentityInput) (err error) {
 	return s.change(ctx, "query.hard_delete", input, true, s.queryRepository.HardDelete)
 }
 
 // Count возвращает количество активных Query по optional фильтрам.
-func (s *Query) Count(ctx context.Context, input adapters.ListQueriesInput) (count int64, err error) {
+func (s *Query) Count(ctx context.Context, input ListQueriesInput) (count int64, err error) {
 	const op = "query.count"
 	ctx, cancel := context.WithTimeout(ctx, queryOperationTimeout)
 	defer cancel()
@@ -249,7 +246,7 @@ func (s *Query) Count(ctx context.Context, input adapters.ListQueriesInput) (cou
 	return s.queryRepository.Count(ctx, ports.QueriesFilter{ProjectID: project.ID, FolderID: folderID, QueryType: input.QueryType})
 }
 
-func (s *Query) change(ctx context.Context, op string, input adapters.QueryIdentityInput, includeDeleted bool, change func(context.Context, uuid.UUID) error) (err error) {
+func (s *Query) change(ctx context.Context, op string, input QueryIdentityInput, includeDeleted bool, change func(context.Context, uuid.UUID) error) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, queryOperationTimeout)
 	defer cancel()
 	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
@@ -263,7 +260,7 @@ func (s *Query) change(ctx context.Context, op string, input adapters.QueryIdent
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return err
 	}
-	var query *entities.Query
+	var query *entities.RQuery
 	if includeDeleted {
 		query, err = s.queryRepository.GetByIdentityIncludingDeleted(ctx, project.ID, input.QueryIdentity)
 	} else {

@@ -10,7 +10,7 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	"github.com/endge-lab/service-backend/internal/usecase/queries"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -18,7 +18,7 @@ import (
 )
 
 func TestQueryHandlers(t *testing.T) {
-	value := &adapters.QueryWithFolder{Query: &entities.Query{ID: uuid.New(), Identity: "users-list", QueryType: "http", Source: map[string]any{}}, FolderIdentity: "root-queries"}
+	value := &queries.QueryWithFolder{Query: &entities.RQuery{ID: uuid.New(), Identity: "users-list", QueryType: "http", Source: map[string]any{}}, FolderIdentity: "root-queries"}
 	service := &queryServiceStub{value: value}
 	handler := &Handler{service: service, validator: appvalidator.NewValidator(), logger: zap.NewNop()}
 	app := fiber.New()
@@ -74,7 +74,7 @@ func TestQueryHandlers(t *testing.T) {
 }
 
 func TestQueryHandlerValidationAndDomainErrors(t *testing.T) {
-	service := &queryServiceStub{value: &adapters.QueryWithFolder{Query: &entities.Query{}, FolderIdentity: "root-queries"}}
+	service := &queryServiceStub{value: &queries.QueryWithFolder{Query: &entities.RQuery{}, FolderIdentity: "root-queries"}}
 	handler := &Handler{service: service, validator: appvalidator.NewValidator(), logger: zap.NewNop()}
 	app := fiber.New()
 	app.Post("/queries", handler.Create)
@@ -111,36 +111,36 @@ func TestQueryHandlerValidationAndDomainErrors(t *testing.T) {
 }
 
 type queryServiceStub struct {
-	value       *adapters.QueryWithFolder
+	value       *queries.QueryWithFolder
 	err         error
-	createInput adapters.CreateQueryInput
-	listInput   adapters.ListQueriesInput
+	createInput queries.CreateQueryInput
+	listInput   queries.ListQueriesInput
 }
 
-func (s *queryServiceStub) Create(_ context.Context, input adapters.CreateQueryInput) (*adapters.QueryWithFolder, error) {
+func (s *queryServiceStub) Create(_ context.Context, input queries.CreateQueryInput) (*queries.QueryWithFolder, error) {
 	s.createInput = input
 	return s.value, s.err
 }
-func (s *queryServiceStub) Update(context.Context, adapters.UpdateQueryInput) (*adapters.QueryWithFolder, error) {
+func (s *queryServiceStub) Update(context.Context, queries.UpdateQueryInput) (*queries.QueryWithFolder, error) {
 	return s.value, s.err
 }
-func (s *queryServiceStub) GetByIdentity(context.Context, adapters.GetQueryInput) (*adapters.QueryWithFolder, error) {
+func (s *queryServiceStub) GetByIdentity(context.Context, queries.GetQueryInput) (*queries.QueryWithFolder, error) {
 	return s.value, s.err
 }
-func (s *queryServiceStub) List(_ context.Context, input adapters.ListQueriesInput) ([]*adapters.QueryWithFolder, error) {
+func (s *queryServiceStub) List(_ context.Context, input queries.ListQueriesInput) ([]*queries.QueryWithFolder, error) {
 	s.listInput = input
 	if s.err != nil {
 		return nil, s.err
 	}
-	return []*adapters.QueryWithFolder{s.value}, nil
+	return []*queries.QueryWithFolder{s.value}, nil
 }
-func (s *queryServiceStub) SoftDelete(context.Context, adapters.QueryIdentityInput) error {
+func (s *queryServiceStub) SoftDelete(context.Context, queries.QueryIdentityInput) error {
 	return s.err
 }
-func (s *queryServiceStub) Restore(context.Context, adapters.QueryIdentityInput) error { return s.err }
-func (s *queryServiceStub) HardDelete(context.Context, adapters.QueryIdentityInput) error {
+func (s *queryServiceStub) Restore(context.Context, queries.QueryIdentityInput) error { return s.err }
+func (s *queryServiceStub) HardDelete(context.Context, queries.QueryIdentityInput) error {
 	return s.err
 }
-func (s *queryServiceStub) Count(context.Context, adapters.ListQueriesInput) (int64, error) {
+func (s *queryServiceStub) Count(context.Context, queries.ListQueriesInput) (int64, error) {
 	return 0, s.err
 }

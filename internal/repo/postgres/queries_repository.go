@@ -6,9 +6,9 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/repo/ports"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/mappers"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-kit-go/pkg/telemetry"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -37,9 +37,9 @@ func NewQueriesRepository(queries *sqlc.Queries, tracer trace.Tracer, logger *za
 //
 // Возвращаемые значения:
 //
-//	*entities.Query - Query с полями, заполненными хранилищем
+//	*entities.RQuery - Query с полями, заполненными хранилищем
 //	error - storage error, преобразованная в domain error
-func (r *QueriesRepository) Create(ctx context.Context, query *entities.Query) (result *entities.Query, err error) {
+func (r *QueriesRepository) Create(ctx context.Context, query *entities.RQuery) (result *entities.RQuery, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.queries.Create")
 	defer func() { step.End(err) }()
 
@@ -64,9 +64,9 @@ func (r *QueriesRepository) Create(ctx context.Context, query *entities.Query) (
 //
 // Возвращаемые значения:
 //
-//	*entities.Query - найденная активная Query
+//	*entities.RQuery - найденная активная Query
 //	error - not_found или внутренняя ошибка хранения
-func (r *QueriesRepository) GetByID(ctx context.Context, id uuid.UUID) (result *entities.Query, err error) {
+func (r *QueriesRepository) GetByID(ctx context.Context, id uuid.UUID) (result *entities.RQuery, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.queries.GetByID")
 	defer func() { step.End(err) }()
 
@@ -91,9 +91,9 @@ func (r *QueriesRepository) GetByID(ctx context.Context, id uuid.UUID) (result *
 //
 // Возвращаемые значения:
 //
-//	*entities.Query - найденная Query, включая soft-deleted запись
+//	*entities.RQuery - найденная Query, включая soft-deleted запись
 //	error - not_found или внутренняя ошибка хранения
-func (r *QueriesRepository) GetByIDIncludingDeleted(ctx context.Context, id uuid.UUID) (result *entities.Query, err error) {
+func (r *QueriesRepository) GetByIDIncludingDeleted(ctx context.Context, id uuid.UUID) (result *entities.RQuery, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.queries.GetByIDIncludingDeleted")
 	defer func() { step.End(err) }()
 
@@ -119,9 +119,9 @@ func (r *QueriesRepository) GetByIDIncludingDeleted(ctx context.Context, id uuid
 //
 // Возвращаемые значения:
 //
-//	*entities.Query - найденная активная Query
+//	*entities.RQuery - найденная активная Query
 //	error - not_found или внутренняя ошибка хранения
-func (r *QueriesRepository) GetByIdentity(ctx context.Context, projectID uuid.UUID, identity string) (result *entities.Query, err error) {
+func (r *QueriesRepository) GetByIdentity(ctx context.Context, projectID uuid.UUID, identity string) (result *entities.RQuery, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.queries.GetByIdentity")
 	defer func() { step.End(err) }()
 
@@ -147,9 +147,9 @@ func (r *QueriesRepository) GetByIdentity(ctx context.Context, projectID uuid.UU
 //
 // Возвращаемые значения:
 //
-//	*entities.Query - найденная Query, включая soft-deleted запись
+//	*entities.RQuery - найденная Query, включая soft-deleted запись
 //	error - not_found или внутренняя ошибка хранения
-func (r *QueriesRepository) GetByIdentityIncludingDeleted(ctx context.Context, projectID uuid.UUID, identity string) (result *entities.Query, err error) {
+func (r *QueriesRepository) GetByIdentityIncludingDeleted(ctx context.Context, projectID uuid.UUID, identity string) (result *entities.RQuery, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.queries.GetByIdentityIncludingDeleted")
 	defer func() { step.End(err) }()
 
@@ -174,9 +174,9 @@ func (r *QueriesRepository) GetByIdentityIncludingDeleted(ctx context.Context, p
 //
 // Возвращаемые значения:
 //
-//	[]*entities.Query - список активных Query
+//	[]*entities.RQuery - список активных Query
 //	error - внутренняя ошибка хранения
-func (r *QueriesRepository) List(ctx context.Context, filter ports.QueriesFilter) (result []*entities.Query, err error) {
+func (r *QueriesRepository) List(ctx context.Context, filter ports.QueriesFilter) (result []*entities.RQuery, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.queries.List")
 	defer func() { step.End(err) }()
 
@@ -190,7 +190,7 @@ func (r *QueriesRepository) List(ctx context.Context, filter ports.QueriesFilter
 		return nil, apperrors.Internal("internal_error", "failed to list queries")
 	}
 
-	result = make([]*entities.Query, 0, len(values))
+	result = make([]*entities.RQuery, 0, len(values))
 	for _, value := range values {
 		result = append(result, mappers.Query(value))
 	}
@@ -211,9 +211,9 @@ func (r *QueriesRepository) List(ctx context.Context, filter ports.QueriesFilter
 //
 // Возвращаемые значения:
 //
-//	*entities.Query - обновленная активная Query
+//	*entities.RQuery - обновленная активная Query
 //	error - not_found, validation error или внутренняя ошибка хранения
-func (r *QueriesRepository) Update(ctx context.Context, query *entities.Query) (result *entities.Query, err error) {
+func (r *QueriesRepository) Update(ctx context.Context, query *entities.RQuery) (result *entities.RQuery, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.queries.Update")
 	defer func() { step.End(err) }()
 
@@ -388,7 +388,7 @@ func (r *QueriesRepository) changeRows(ctx context.Context, op, message string, 
 	return nil
 }
 
-func (r *QueriesRepository) mapGetError(err error, message string) (*entities.Query, error) {
+func (r *QueriesRepository) mapGetError(err error, message string) (*entities.RQuery, error) {
 	if stderrors.Is(err, pgx.ErrNoRows) {
 		return nil, apperrors.NotFound("not_found", "query not found")
 	}

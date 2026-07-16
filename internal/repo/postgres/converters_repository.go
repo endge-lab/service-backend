@@ -6,9 +6,9 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/repo/ports"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/mappers"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-kit-go/pkg/telemetry"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -37,7 +37,7 @@ func NewConvertersRepository(queries *sqlc.Queries, tracer trace.Tracer, logger 
 // Возвращаемые значения:
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
-func (r *ConvertersRepository) Create(ctx context.Context, converter *entities.Converter) (result *entities.Converter, err error) {
+func (r *ConvertersRepository) Create(ctx context.Context, converter *entities.RConverter) (result *entities.RConverter, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.converters.Create")
 	defer func() { step.End(err) }()
 	value, err := r.queries(ctx).CreateConverter(ctx, mappers.CreateConverterParams(converter))
@@ -60,7 +60,7 @@ func (r *ConvertersRepository) Create(ctx context.Context, converter *entities.C
 // Возвращаемые значения:
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
-func (r *ConvertersRepository) GetByID(ctx context.Context, id uuid.UUID) (result *entities.Converter, err error) {
+func (r *ConvertersRepository) GetByID(ctx context.Context, id uuid.UUID) (result *entities.RConverter, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.converters.GetByID")
 	defer func() { step.End(err) }()
 	value, err := r.queries(ctx).GetConverterByID(ctx, id)
@@ -83,7 +83,7 @@ func (r *ConvertersRepository) GetByID(ctx context.Context, id uuid.UUID) (resul
 // Возвращаемые значения:
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
-func (r *ConvertersRepository) GetByIdentity(ctx context.Context, projectID uuid.UUID, identity string) (result *entities.Converter, err error) {
+func (r *ConvertersRepository) GetByIdentity(ctx context.Context, projectID uuid.UUID, identity string) (result *entities.RConverter, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.converters.GetByIdentity")
 	defer func() { step.End(err) }()
 	value, err := r.queries(ctx).GetConverterByIdentity(ctx, sqlc.GetConverterByIdentityParams{ProjectID: projectID, Identity: identity})
@@ -106,7 +106,7 @@ func (r *ConvertersRepository) GetByIdentity(ctx context.Context, projectID uuid
 // Возвращаемые значения:
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
-func (r *ConvertersRepository) GetByIdentityIncludingDeleted(ctx context.Context, projectID uuid.UUID, identity string) (result *entities.Converter, err error) {
+func (r *ConvertersRepository) GetByIdentityIncludingDeleted(ctx context.Context, projectID uuid.UUID, identity string) (result *entities.RConverter, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.converters.GetByIdentityIncludingDeleted")
 	defer func() { step.End(err) }()
 	value, err := r.queries(ctx).GetConverterByIdentityIncludingDeleted(ctx, sqlc.GetConverterByIdentityIncludingDeletedParams{ProjectID: projectID, Identity: identity})
@@ -129,7 +129,7 @@ func (r *ConvertersRepository) GetByIdentityIncludingDeleted(ctx context.Context
 // Возвращаемые значения:
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
-func (r *ConvertersRepository) List(ctx context.Context, filter ports.ConvertersFilter) (result []*entities.Converter, err error) {
+func (r *ConvertersRepository) List(ctx context.Context, filter ports.ConvertersFilter) (result []*entities.RConverter, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.converters.List")
 	defer func() { step.End(err) }()
 	values, err := r.queries(ctx).ListConverters(ctx, sqlc.ListConvertersParams{ProjectID: filter.ProjectID, FolderID: mappers.NullableUUIDToSQLC(filter.FolderID)})
@@ -137,7 +137,7 @@ func (r *ConvertersRepository) List(ctx context.Context, filter ports.Converters
 		r.logger.Error("list converters failed", zap.Error(err))
 		return nil, apperrors.Internal("internal_error", "failed to list converters")
 	}
-	result = make([]*entities.Converter, 0, len(values))
+	result = make([]*entities.RConverter, 0, len(values))
 	for _, value := range values {
 		result = append(result, mappers.Converter(value))
 	}
@@ -157,7 +157,7 @@ func (r *ConvertersRepository) List(ctx context.Context, filter ports.Converters
 // Возвращаемые значения:
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
-func (r *ConvertersRepository) Update(ctx context.Context, converter *entities.Converter) (result *entities.Converter, err error) {
+func (r *ConvertersRepository) Update(ctx context.Context, converter *entities.RConverter) (result *entities.RConverter, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.converters.Update")
 	defer func() { step.End(err) }()
 	value, err := r.queries(ctx).UpdateConverter(ctx, mappers.UpdateConverterParams(converter))
@@ -278,7 +278,7 @@ func (r *ConvertersRepository) changeRows(ctx context.Context, op, message strin
 	}
 	return nil
 }
-func (r *ConvertersRepository) mapGetError(err error, message string) (*entities.Converter, error) {
+func (r *ConvertersRepository) mapGetError(err error, message string) (*entities.RConverter, error) {
 	if stderrors.Is(err, pgx.ErrNoRows) {
 		return nil, apperrors.NotFound("not_found", "converter not found")
 	}

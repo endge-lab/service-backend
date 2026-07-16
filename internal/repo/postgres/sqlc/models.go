@@ -11,27 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type Action struct {
-	ID          uuid.UUID          `json:"id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	Definition  []byte             `json:"definition"`
-	Input       []byte             `json:"input"`
-	Output      []byte             `json:"output"`
-	Active      bool               `json:"active"`
-	IsSystem    bool               `json:"is_system"`
-	FolderID    uuid.UUID          `json:"folder_id"`
-	ProjectID   pgtype.UUID        `json:"project_id"`
-	Inherited   bool               `json:"inherited"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	Author      pgtype.Text        `json:"author"`
-	Meta        []byte             `json:"meta"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
-}
-
-type Component struct {
+type ComponentLegacy struct {
 	ID            uuid.UUID          `json:"id"`
 	ProjectID     uuid.UUID          `json:"project_id"`
 	FolderID      uuid.UUID          `json:"folder_id"`
@@ -128,32 +108,6 @@ type Folder struct {
 	UpdatedAt   time.Time          `json:"updated_at"`
 }
 
-type I18nBundle struct {
-	ID          uuid.UUID          `json:"id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	Locales     []byte             `json:"locales"`
-	Active      bool               `json:"active"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
-}
-
-type Integration struct {
-	ID          uuid.UUID   `json:"id"`
-	Identity    string      `json:"identity"`
-	DisplayName string      `json:"display_name"`
-	Description pgtype.Text `json:"description"`
-	IsSystem    bool        `json:"is_system"`
-	FolderID    pgtype.UUID `json:"folder_id"`
-	ProjectID   pgtype.UUID `json:"project_id"`
-	Meta        []byte      `json:"meta"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
-}
-
 type Navigation struct {
 	ID          uuid.UUID   `json:"id"`
 	Identity    string      `json:"identity"`
@@ -164,68 +118,6 @@ type Navigation struct {
 	ProjectID   pgtype.UUID `json:"project_id"`
 	Tree        []byte      `json:"tree"`
 	Meta        []byte      `json:"meta"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
-}
-
-type Page struct {
-	ID           uuid.UUID   `json:"id"`
-	Identity     string      `json:"identity"`
-	DisplayName  string      `json:"display_name"`
-	Description  pgtype.Text `json:"description"`
-	IsSystem     bool        `json:"is_system"`
-	FolderID     pgtype.UUID `json:"folder_id"`
-	ProjectID    pgtype.UUID `json:"project_id"`
-	Inherited    bool        `json:"inherited"`
-	RouteName    pgtype.Text `json:"route_name"`
-	RoutePath    pgtype.Text `json:"route_path"`
-	TemplateID   pgtype.UUID `json:"template_id"`
-	ControllerID pgtype.UUID `json:"controller_id"`
-	Enabled      bool        `json:"enabled"`
-	Areas        []byte      `json:"areas"`
-	Meta         []byte      `json:"meta"`
-	CreatedAt    time.Time   `json:"created_at"`
-	UpdatedAt    time.Time   `json:"updated_at"`
-}
-
-type PageTemplate struct {
-	ID          uuid.UUID   `json:"id"`
-	Identity    string      `json:"identity"`
-	DisplayName string      `json:"display_name"`
-	Description pgtype.Text `json:"description"`
-	IsSystem    bool        `json:"is_system"`
-	FolderID    pgtype.UUID `json:"folder_id"`
-	ProjectID   pgtype.UUID `json:"project_id"`
-	Inherited   bool        `json:"inherited"`
-	Areas       []byte      `json:"areas"`
-	Preview     []byte      `json:"preview"`
-	Meta        []byte      `json:"meta"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
-}
-
-type Parameter struct {
-	ID          uuid.UUID          `json:"id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	Fields      []byte             `json:"fields"`
-	Active      bool               `json:"active"`
-	FolderID    uuid.UUID          `json:"folder_id"`
-	ProjectID   pgtype.UUID        `json:"project_id"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	Author      pgtype.Text        `json:"author"`
-	Meta        []byte             `json:"meta"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
-}
-
-type Policy struct {
-	ID          uuid.UUID   `json:"id"`
-	Identity    string      `json:"identity"`
-	DisplayName string      `json:"display_name"`
-	Description pgtype.Text `json:"description"`
-	FolderID    pgtype.UUID `json:"folder_id"`
 	CreatedAt   time.Time   `json:"created_at"`
 	UpdatedAt   time.Time   `json:"updated_at"`
 }
@@ -264,22 +156,6 @@ type Query struct {
 	UpdatedAt       time.Time          `json:"updated_at"`
 }
 
-type Scenario struct {
-	ID          uuid.UUID          `json:"id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Schema      []byte             `json:"schema"`
-	FolderID    uuid.UUID          `json:"folder_id"`
-	ProjectID   pgtype.UUID        `json:"project_id"`
-	Active      bool               `json:"active"`
-	Inherited   bool               `json:"inherited"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	Author      pgtype.Text        `json:"author"`
-	Meta        []byte             `json:"meta"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
-}
-
 type ServiceUser struct {
 	ID          uuid.UUID `json:"id"`
 	AuthUserID  string    `json:"auth_user_id"`
@@ -288,39 +164,6 @@ type ServiceUser struct {
 	Role        string    `json:"role"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
-}
-
-type Setting struct {
-	ID             uuid.UUID          `json:"id"`
-	Identity       string             `json:"identity"`
-	DisplayName    string             `json:"display_name"`
-	ProjectID      pgtype.UUID        `json:"project_id"`
-	Environment    pgtype.Text        `json:"environment"`
-	Vars           []byte             `json:"vars"`
-	Auth           []byte             `json:"auth"`
-	Vocabs         []byte             `json:"vocabs"`
-	Sse            []byte             `json:"sse"`
-	Updates        []byte             `json:"updates"`
-	CustomSections []byte             `json:"custom_sections"`
-	IsSystem       bool               `json:"is_system"`
-	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
-	Meta           []byte             `json:"meta"`
-	CreatedAt      time.Time          `json:"created_at"`
-	UpdatedAt      time.Time          `json:"updated_at"`
-}
-
-type Style struct {
-	ID          uuid.UUID   `json:"id"`
-	Identity    string      `json:"identity"`
-	DisplayName string      `json:"display_name"`
-	Styles      []byte      `json:"styles"`
-	IsSystem    bool        `json:"is_system"`
-	FolderID    pgtype.UUID `json:"folder_id"`
-	ProjectID   pgtype.UUID `json:"project_id"`
-	Inherited   bool        `json:"inherited"`
-	Meta        []byte      `json:"meta"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
 }
 
 type Tenant struct {

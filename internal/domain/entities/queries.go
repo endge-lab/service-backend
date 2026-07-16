@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type Query struct {
+type RQuery struct {
 	ID        uuid.UUID
 	ProjectID uuid.UUID
 	FolderID  uuid.UUID
@@ -31,6 +31,6 @@ type Query struct {
 	UpdatedAt       time.Time
 }
 
-func (Query) FolderEntityType() FolderEntityType {
+func (RQuery) FolderEntityType() FolderEntityType {
 	return FolderEntityTypeQueries
 }

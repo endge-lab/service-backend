@@ -81,18 +81,18 @@ func TestTemplateRequiredPathsExist(t *testing.T) {
 	root := repoRoot(t)
 
 	requiredPaths := []string{
-		"docs/architecture.md",
+		"docs/Архитектура.md",
 		"docs/openapi3.yaml",
 		"internal/api/http",
+		"internal/api/http/middleware",
 		"internal/bootstrap/usecase.go",
 		"internal/config",
 		"internal/domain/entities",
 		"internal/domain/errors",
 		"internal/domain/valueobjects",
-		"internal/middleware",
 		"internal/platform",
 		"internal/repo",
-		"internal/repo/ports",
+		"internal/usecase/ports",
 		"internal/repo/postgres",
 		"internal/usecase",
 		"test/contract",
@@ -107,40 +107,82 @@ func TestTemplateRequiredPathsExist(t *testing.T) {
 	}
 }
 
+func TestDomainMigrationOrder(t *testing.T) {
+	root := repoRoot(t)
+	expected := []string{
+		"000001_init_service_users.sql",
+		"000002_init_workspaces.sql",
+		"000003_init_tenants.sql",
+		"000004_init_projects.sql",
+		"000005_init_environments.sql",
+		"000006_init_folders.sql",
+		"000007_init_versions.sql",
+		"000008_init_types.sql",
+		"000009_init_stores.sql",
+		"000010_init_mocks.sql",
+		"000011_init_vocabs.sql",
+		"000012_init_queries.sql",
+		"000013_init_data_views.sql",
+		"000014_init_computations.sql",
+		"000015_init_compositions.sql",
+		"000016_init_components_legacy.sql",
+		"000017_init_components.sql",
+		"000018_init_filters.sql",
+		"000019_init_converters.sql",
+		"000020_init_auth_profiles.sql",
+		"000021_init_navigations.sql",
+	}
+
+	entries, err := os.ReadDir(filepath.Join(root, "migrations"))
+	if err != nil {
+		t.Fatalf("read migrations: %v", err)
+	}
+
+	actual := make([]string, 0, len(expected))
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".sql") {
+			actual = append(actual, entry.Name())
+		}
+	}
+
+	if strings.Join(actual, "\n") != strings.Join(expected, "\n") {
+		t.Fatalf("unexpected migration order:\n%s", strings.Join(actual, "\n"))
+	}
+}
+
 func TestTemplateLayerPackageNames(t *testing.T) {
 	root := repoRoot(t)
 
 	expectedPackages := map[string]string{
-		"internal/api/http":              "http",
-		"internal/api/http/v1":           "http",
-		"internal/api/http/v1/docs":      "docs",
-		"internal/api/http/v1/component": "component",
-		"internal/api/http/v1/converter": "converter",
-		"internal/api/http/v1/data_view": "data_view",
-		"internal/api/http/v1/folder":    "folder",
-		"internal/api/http/v1/health":    "http",
-		"internal/api/http/v1/project":   "project",
-		"internal/api/http/v1/query":     "query",
-		"internal/api/http/v1/session":   "http",
-		"internal/api/http/v1/transport": "http",
-		"internal/bootstrap":             "bootstrap",
-		"internal/domain/entities":       "entities",
-		"internal/domain/errors":         "errors",
-		"internal/middleware":            "middleware",
-		"internal/platform":              "platform",
-		"internal/repo/ports":            "ports",
-		"internal/repo/postgres":         "postgres",
-		"internal/repo/postgres/mappers": "mappers",
-		"internal/repo/postgres/sqlc":    "sqlc",
-		"internal/usecase":               "usecase",
-		"internal/usecase/adapters":      "adapters",
-		"internal/usecase/components":    "components",
-		"internal/usecase/converters":    "converters",
-		"internal/usecase/data_views":    "data_views",
-		"internal/usecase/folders":       "folders",
-		"internal/usecase/projects":      "projects",
-		"internal/usecase/queries":       "queries",
-		"internal/usecase/shared":        "shared",
+		"internal/api/http":                     "http",
+		"internal/api/http/health":              "health",
+		"internal/api/http/middleware":          "middleware",
+		"internal/api/http/openapi":             "openapi",
+		"internal/api/http/respond":             "respond",
+		"internal/api/http/session":             "session",
+		"internal/api/http/v1":                  "http",
+		"internal/api/http/v1/component_legacy": "component_legacy",
+		"internal/api/http/v1/converter":        "converter",
+		"internal/api/http/v1/data_view":        "data_view",
+		"internal/api/http/v1/folder":           "folder",
+		"internal/api/http/v1/project":          "project",
+		"internal/api/http/v1/query":            "query",
+		"internal/bootstrap":                    "bootstrap",
+		"internal/domain/entities":              "entities",
+		"internal/domain/errors":                "errors",
+		"internal/platform":                     "platform",
+		"internal/usecase/ports":                "ports",
+		"internal/repo/postgres":                "postgres",
+		"internal/repo/postgres/mappers":        "mappers",
+		"internal/repo/postgres/sqlc":           "sqlc",
+		"internal/usecase/components_legacy":    "components_legacy",
+		"internal/usecase/converters":           "converters",
+		"internal/usecase/data_views":           "data_views",
+		"internal/usecase/folders":              "folders",
+		"internal/usecase/projects":             "projects",
+		"internal/usecase/queries":              "queries",
+		"internal/usecase/session":              "session",
+		"internal/usecase/shared":               "shared",
 	}
 
 	for relativeDir, expectedPackage := range expectedPackages {
@@ -183,7 +225,6 @@ func TestTemplateDependencyBoundaries(t *testing.T) {
 			relativeDir: "internal/domain",
 			forbiddenImports: []string{
 				"/internal/api/http",
-				"/internal/middleware",
 				"/internal/repo/postgres",
 				"database/sql",
 				"github.com/gofiber/",
@@ -233,7 +274,7 @@ func TestBootstrapRepositoryModulesWireReferenceLayers(t *testing.T) {
 
 	requiredImports := []string{
 		"/internal/repo/postgres",
-		"/internal/repo/ports",
+		"/internal/usecase/ports",
 	}
 
 	for _, requiredImport := range requiredImports {
@@ -280,8 +321,8 @@ func TestBootstrapHandlerModulesWireReferenceLayers(t *testing.T) {
 
 	requiredImports := []string{
 		"/internal/api/http",
+		"/internal/api/http/middleware",
 		"/internal/auth",
-		"/internal/middleware",
 	}
 
 	for _, requiredImport := range requiredImports {

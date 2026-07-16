@@ -10,33 +10,33 @@ import (
 )
 
 type foldersRepositoryStub struct {
-	folders           map[uuid.UUID]*entities.Folder
-	foldersByIdentity map[string]*entities.Folder
+	folders           map[uuid.UUID]*entities.RFolder
+	foldersByIdentity map[string]*entities.RFolder
 	getByIdentityErr  error
 }
 
 func (s *foldersRepositoryStub) Create(
 	context.Context,
-	*entities.Folder,
-) (*entities.Folder, error) {
+	*entities.RFolder,
+) (*entities.RFolder, error) {
 	panic("not implemented")
 }
 
 func (s *foldersRepositoryStub) Update(
 	context.Context,
-	*entities.Folder,
-) (*entities.Folder, error) {
+	*entities.RFolder,
+) (*entities.RFolder, error) {
 	panic("not implemented")
 }
 
-func (s *foldersRepositoryStub) GetByID(context.Context, uuid.UUID) (*entities.Folder, error) {
+func (s *foldersRepositoryStub) GetByID(context.Context, uuid.UUID) (*entities.RFolder, error) {
 	panic("not implemented")
 }
 
 func (s *foldersRepositoryStub) GetByIDIncludingDeleted(
 	_ context.Context,
 	id uuid.UUID,
-) (*entities.Folder, error) {
+) (*entities.RFolder, error) {
 	folder, ok := s.folders[id]
 	if !ok {
 		return nil, fmt.Errorf("folder %s not found", id)
@@ -50,7 +50,7 @@ func (s *foldersRepositoryStub) GetByIdentity(
 	_ *uuid.UUID,
 	_ entities.FolderEntityType,
 	identity string,
-) (*entities.Folder, error) {
+) (*entities.RFolder, error) {
 	if s.getByIdentityErr != nil {
 		return nil, s.getByIdentityErr
 	}
@@ -68,7 +68,7 @@ func (s *foldersRepositoryStub) GetByIdentityIncludingDeleted(
 	*uuid.UUID,
 	entities.FolderEntityType,
 	string,
-) (*entities.Folder, error) {
+) (*entities.RFolder, error) {
 	panic("not implemented")
 }
 
@@ -76,7 +76,7 @@ func (s *foldersRepositoryStub) List(
 	context.Context,
 	*uuid.UUID,
 	entities.FolderEntityType,
-) ([]*entities.Folder, error) {
+) ([]*entities.RFolder, error) {
 	panic("not implemented")
 }
 
@@ -110,18 +110,18 @@ func (s *foldersRepositoryStub) Count(
 }
 
 type projectsRepositoryStub struct {
-	project *entities.Project
+	project *entities.RProject
 }
 
-func (s *projectsRepositoryStub) Create(context.Context, *entities.Project) (*entities.Project, error) {
+func (s *projectsRepositoryStub) Create(context.Context, *entities.RProject) (*entities.RProject, error) {
 	panic("not implemented")
 }
 
-func (s *projectsRepositoryStub) GetByID(context.Context, uuid.UUID) (*entities.Project, error) {
+func (s *projectsRepositoryStub) GetByID(context.Context, uuid.UUID) (*entities.RProject, error) {
 	panic("not implemented")
 }
 
-func (s *projectsRepositoryStub) GetByIdentity(_ context.Context, identity string) (*entities.Project, error) {
+func (s *projectsRepositoryStub) GetByIdentity(_ context.Context, identity string) (*entities.RProject, error) {
 	if s.project == nil || s.project.Identity != identity {
 		return nil, apperrors.NotFound("not_found", "project not found")
 	}
@@ -129,15 +129,15 @@ func (s *projectsRepositoryStub) GetByIdentity(_ context.Context, identity strin
 	return s.project, nil
 }
 
-func (s *projectsRepositoryStub) GetByIdentityIncludingDeleted(context.Context, string) (*entities.Project, error) {
+func (s *projectsRepositoryStub) GetByIdentityIncludingDeleted(context.Context, string) (*entities.RProject, error) {
 	panic("not implemented")
 }
 
-func (s *projectsRepositoryStub) List(context.Context) ([]*entities.Project, error) {
+func (s *projectsRepositoryStub) List(context.Context) ([]*entities.RProject, error) {
 	panic("not implemented")
 }
 
-func (s *projectsRepositoryStub) Update(context.Context, *entities.Project) (*entities.Project, error) {
+func (s *projectsRepositoryStub) Update(context.Context, *entities.RProject) (*entities.RProject, error) {
 	panic("not implemented")
 }
 

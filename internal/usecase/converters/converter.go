@@ -6,8 +6,7 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/repo/ports"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 
 	"go.opentelemetry.io/otel/trace"
@@ -54,7 +53,7 @@ func NewConverterService(params ConverterParams) *Converter {
 // Возвращаемые значения:
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
-func (c *Converter) Create(ctx context.Context, input adapters.CreateConverterInput) (result *adapters.ConverterWithFolder, err error) {
+func (c *Converter) Create(ctx context.Context, input CreateConverterInput) (result *ConverterWithFolder, err error) {
 	const op = "converter.create"
 	ctx, cancel := context.WithTimeout(ctx, converterOperationTimeout)
 	defer cancel()
@@ -95,7 +94,7 @@ func (c *Converter) Create(ctx context.Context, input adapters.CreateConverterIn
 		)
 		return nil, err
 	}
-	converterResult, err := c.converterRepository.Create(ctx, &entities.Converter{ProjectID: project.ID, FolderID: folder.ID, Identity: input.Identity, DisplayName: input.DisplayName, Description: input.Description, ConverterType: input.ConverterType, Source: input.Source, IsSystem: input.IsSystem, Meta: input.Meta, Active: input.Active})
+	converterResult, err := c.converterRepository.Create(ctx, &entities.RConverter{ProjectID: project.ID, FolderID: folder.ID, Identity: input.Identity, DisplayName: input.DisplayName, Description: input.Description, ConverterType: input.ConverterType, Source: input.Source, IsSystem: input.IsSystem, Meta: input.Meta, Active: input.Active})
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
@@ -127,7 +126,7 @@ func (c *Converter) Create(ctx context.Context, input adapters.CreateConverterIn
 // Возвращаемые значения:
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
-func (c *Converter) Update(ctx context.Context, input adapters.UpdateConverterInput) (result *adapters.ConverterWithFolder, err error) {
+func (c *Converter) Update(ctx context.Context, input UpdateConverterInput) (result *ConverterWithFolder, err error) {
 	const op = "converter.update"
 	ctx, cancel := context.WithTimeout(ctx, converterOperationTimeout)
 	defer cancel()
@@ -160,7 +159,7 @@ func (c *Converter) Update(ctx context.Context, input adapters.UpdateConverterIn
 		)
 		return nil, err
 	}
-	converterResult, err := c.converterRepository.Update(ctx, &entities.Converter{ID: current.ID, ProjectID: current.ProjectID, FolderID: folder.ID, Identity: current.Identity, DisplayName: input.DisplayName, Description: input.Description, ConverterType: input.ConverterType, Source: input.Source, IsSystem: input.IsSystem, Meta: input.Meta, Active: input.Active, DeletedAt: current.DeletedAt, CreatedAt: current.CreatedAt, UpdatedAt: current.UpdatedAt})
+	converterResult, err := c.converterRepository.Update(ctx, &entities.RConverter{ID: current.ID, ProjectID: current.ProjectID, FolderID: folder.ID, Identity: current.Identity, DisplayName: input.DisplayName, Description: input.Description, ConverterType: input.ConverterType, Source: input.Source, IsSystem: input.IsSystem, Meta: input.Meta, Active: input.Active, DeletedAt: current.DeletedAt, CreatedAt: current.CreatedAt, UpdatedAt: current.UpdatedAt})
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
@@ -192,7 +191,7 @@ func (c *Converter) Update(ctx context.Context, input adapters.UpdateConverterIn
 // Возвращаемые значения:
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
-func (c *Converter) GetByIdentity(ctx context.Context, input adapters.GetConverterInput) (result *adapters.ConverterWithFolder, err error) {
+func (c *Converter) GetByIdentity(ctx context.Context, input GetConverterInput) (result *ConverterWithFolder, err error) {
 	const op = "converter.get_by_identity"
 	ctx, cancel := context.WithTimeout(ctx, converterOperationTimeout)
 	defer cancel()
@@ -252,7 +251,7 @@ func (c *Converter) GetByIdentity(ctx context.Context, input adapters.GetConvert
 // Возвращаемые значения:
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
-func (c *Converter) List(ctx context.Context, input adapters.ListConvertersInput) (result []*adapters.ConverterWithFolder, err error) {
+func (c *Converter) List(ctx context.Context, input ListConvertersInput) (result []*ConverterWithFolder, err error) {
 	const op = "converter.list"
 	ctx, cancel := context.WithTimeout(ctx, converterOperationTimeout)
 	defer cancel()
@@ -293,7 +292,7 @@ func (c *Converter) List(ctx context.Context, input adapters.ListConvertersInput
 			zap.String("folder_identity", dereferenceString(input.FolderIdentity)),
 			zap.Int("count", 0),
 		)
-		return make([]*adapters.ConverterWithFolder, 0), nil
+		return make([]*ConverterWithFolder, 0), nil
 	}
 	folders, err := c.folderRepository.List(ctx, &project.ID, entities.FolderEntityTypeConverters)
 	if err != nil {
@@ -339,7 +338,7 @@ func (c *Converter) List(ctx context.Context, input adapters.ListConvertersInput
 // Возвращаемые значения:
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
-func (c *Converter) SoftDelete(ctx context.Context, input adapters.ConverterIdentityInput) (err error) {
+func (c *Converter) SoftDelete(ctx context.Context, input ConverterIdentityInput) (err error) {
 	const op = "converter.soft_delete"
 	ctx, cancel := context.WithTimeout(ctx, converterOperationTimeout)
 	defer cancel()
@@ -382,7 +381,7 @@ func (c *Converter) SoftDelete(ctx context.Context, input adapters.ConverterIden
 // Возвращаемые значения:
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
-func (c *Converter) Restore(ctx context.Context, input adapters.ConverterIdentityInput) (err error) {
+func (c *Converter) Restore(ctx context.Context, input ConverterIdentityInput) (err error) {
 	const op = "converter.restore"
 	ctx, cancel := context.WithTimeout(ctx, converterOperationTimeout)
 	defer cancel()
@@ -425,7 +424,7 @@ func (c *Converter) Restore(ctx context.Context, input adapters.ConverterIdentit
 // Возвращаемые значения:
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
-func (c *Converter) HardDelete(ctx context.Context, input adapters.ConverterIdentityInput) (err error) {
+func (c *Converter) HardDelete(ctx context.Context, input ConverterIdentityInput) (err error) {
 	const op = "converter.hard_delete"
 	ctx, cancel := context.WithTimeout(ctx, converterOperationTimeout)
 	defer cancel()
@@ -477,7 +476,7 @@ func (c *Converter) HardDelete(ctx context.Context, input adapters.ConverterIden
 // Возвращаемые значения:
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
-func (c *Converter) Count(ctx context.Context, input adapters.ListConvertersInput) (count int64, err error) {
+func (c *Converter) Count(ctx context.Context, input ListConvertersInput) (count int64, err error) {
 	const op = "converter.count"
 	ctx, cancel := context.WithTimeout(ctx, converterOperationTimeout)
 	defer cancel()

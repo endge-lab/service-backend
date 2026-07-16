@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	"github.com/endge-lab/service-backend/internal/usecase/folders"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -16,11 +16,11 @@ import (
 
 func TestFolderHandlers(t *testing.T) {
 	service := &folderServiceStub{
-		folder: &entities.Folder{
+		folder: &entities.RFolder{
 			ID:          uuid.New(),
-			EntityType:  entities.FolderEntityTypeComponents,
-			Identity:    "shared-components",
-			DisplayName: "Shared Components",
+			EntityType:  entities.FolderEntityTypeComponentsLegacy,
+			Identity:    "shared-components-legacy",
+			DisplayName: "Shared legacy components",
 			Meta:        map[string]any{},
 		},
 	}
@@ -49,38 +49,38 @@ func TestFolderHandlers(t *testing.T) {
 			name:       "create",
 			method:     http.MethodPost,
 			path:       "/api/v1/projects/demo-project/folders/",
-			body:       `{"entityType":"components","identity":"shared-components","displayName":"Shared Components","parentIdentity":"root-components","meta":{}}`,
+			body:       `{"entityType":"components-legacy","identity":"shared-components-legacy","displayName":"Shared legacy components","parentIdentity":"root-components-legacy","meta":{}}`,
 			wantStatus: http.StatusCreated,
 		},
 		{
 			name:       "list",
 			method:     http.MethodGet,
-			path:       "/api/v1/projects/demo-project/folders/?entity_type=components",
+			path:       "/api/v1/projects/demo-project/folders/?entity_type=components-legacy",
 			wantStatus: http.StatusOK,
 		},
 		{
 			name:       "get",
 			method:     http.MethodGet,
-			path:       "/api/v1/projects/demo-project/folders/shared-components?entity_type=components",
+			path:       "/api/v1/projects/demo-project/folders/shared-components-legacy?entity_type=components-legacy",
 			wantStatus: http.StatusOK,
 		},
 		{
 			name:       "update",
 			method:     http.MethodPatch,
-			path:       "/api/v1/projects/demo-project/folders/shared-components?entity_type=components",
-			body:       `{"displayName":"Updated Components","parentIdentity":"root-components","meta":{}}`,
+			path:       "/api/v1/projects/demo-project/folders/shared-components-legacy?entity_type=components-legacy",
+			body:       `{"displayName":"Updated legacy components","parentIdentity":"root-components-legacy","meta":{}}`,
 			wantStatus: http.StatusOK,
 		},
 		{
 			name:       "soft delete",
 			method:     http.MethodDelete,
-			path:       "/api/v1/projects/demo-project/folders/shared-components?entity_type=components",
+			path:       "/api/v1/projects/demo-project/folders/shared-components-legacy?entity_type=components-legacy",
 			wantStatus: http.StatusNoContent,
 		},
 		{
 			name:       "restore",
 			method:     http.MethodPost,
-			path:       "/api/v1/projects/demo-project/folders/shared-components/restore?entity_type=components",
+			path:       "/api/v1/projects/demo-project/folders/shared-components-legacy/restore?entity_type=components-legacy",
 			wantStatus: http.StatusNoContent,
 		},
 	}
@@ -108,47 +108,47 @@ func TestFolderHandlers(t *testing.T) {
 }
 
 type folderServiceStub struct {
-	folder *entities.Folder
+	folder *entities.RFolder
 }
 
-func (s *folderServiceStub) Create(context.Context, adapters.CreateFolderInput) (*entities.Folder, error) {
+func (s *folderServiceStub) Create(context.Context, folders.CreateFolderInput) (*entities.RFolder, error) {
 	return s.folder, nil
 }
 
-func (s *folderServiceStub) Update(context.Context, adapters.UpdateFolderInput) (*entities.Folder, error) {
+func (s *folderServiceStub) Update(context.Context, folders.UpdateFolderInput) (*entities.RFolder, error) {
 	return s.folder, nil
 }
 
-func (s *folderServiceStub) GetByID(context.Context, uuid.UUID) (*entities.Folder, error) {
+func (s *folderServiceStub) GetByID(context.Context, uuid.UUID) (*entities.RFolder, error) {
 	return s.folder, nil
 }
 
 func (s *folderServiceStub) GetByIdentity(
 	context.Context,
-	adapters.GetFolderInput,
-) (*entities.Folder, error) {
+	folders.GetFolderInput,
+) (*entities.RFolder, error) {
 	return s.folder, nil
 }
 
 func (s *folderServiceStub) List(
 	context.Context,
-	adapters.ListFoldersInput,
-) ([]*entities.Folder, error) {
-	return []*entities.Folder{s.folder}, nil
+	folders.ListFoldersInput,
+) ([]*entities.RFolder, error) {
+	return []*entities.RFolder{s.folder}, nil
 }
 
-func (s *folderServiceStub) SoftDelete(context.Context, adapters.FolderIdentityInput) error {
+func (s *folderServiceStub) SoftDelete(context.Context, folders.FolderIdentityInput) error {
 	return nil
 }
 
-func (s *folderServiceStub) Restore(context.Context, adapters.FolderIdentityInput) error {
+func (s *folderServiceStub) Restore(context.Context, folders.FolderIdentityInput) error {
 	return nil
 }
 
-func (s *folderServiceStub) HardDelete(context.Context, adapters.FolderIdentityInput) error {
+func (s *folderServiceStub) HardDelete(context.Context, folders.FolderIdentityInput) error {
 	return nil
 }
 
-func (s *folderServiceStub) Count(context.Context, adapters.ListFoldersInput) (int64, error) {
+func (s *folderServiceStub) Count(context.Context, folders.ListFoldersInput) (int64, error) {
 	return 1, nil
 }

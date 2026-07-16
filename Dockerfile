@@ -25,7 +25,6 @@ RUN addgroup -S app && adduser -S app -G app \
 
 COPY --from=builder /out/service-backend /app/service-backend
 COPY migrations /app/migrations
-COPY docs /app/docs
 
 USER app
 

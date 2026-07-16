@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -25,7 +24,7 @@ func TestCreateCreatesProjectAndRootFoldersInOneTransaction(t *testing.T) {
 		Logger:            zap.NewNop(),
 	})
 
-	result, err := service.Create(context.Background(), adapters.CreateProjectInput{
+	result, err := service.Create(context.Background(), CreateProjectInput{
 		Identity:    "demo-project",
 		DisplayName: "Demo Project",
 		Active:      true,
@@ -44,7 +43,7 @@ func TestCreateCreatesProjectAndRootFoldersInOneTransaction(t *testing.T) {
 	}
 
 	wantIdentities := []string{
-		"root-components",
+		"root-components-legacy",
 		"root-converters",
 		"root-queries",
 		"root-data-views",
@@ -76,7 +75,7 @@ func TestCreateRollsBackWhenRootFolderCreationFails(t *testing.T) {
 		Logger:    zap.NewNop(),
 	})
 
-	_, err := service.Create(context.Background(), adapters.CreateProjectInput{
+	_, err := service.Create(context.Background(), CreateProjectInput{
 		Identity:    "demo-project",
 		DisplayName: "Demo Project",
 		Active:      true,
@@ -109,36 +108,36 @@ type projectsRepositoryStub struct {
 
 func (s *projectsRepositoryStub) Create(
 	_ context.Context,
-	project *entities.Project,
-) (*entities.Project, error) {
+	project *entities.RProject,
+) (*entities.RProject, error) {
 	created := *project
 	created.ID = s.createdID
 	return &created, nil
 }
 
-func (s *projectsRepositoryStub) GetByID(context.Context, uuid.UUID) (*entities.Project, error) {
+func (s *projectsRepositoryStub) GetByID(context.Context, uuid.UUID) (*entities.RProject, error) {
 	panic("not implemented")
 }
 
-func (s *projectsRepositoryStub) GetByIdentity(context.Context, string) (*entities.Project, error) {
+func (s *projectsRepositoryStub) GetByIdentity(context.Context, string) (*entities.RProject, error) {
 	panic("not implemented")
 }
 
 func (s *projectsRepositoryStub) GetByIdentityIncludingDeleted(
 	context.Context,
 	string,
-) (*entities.Project, error) {
+) (*entities.RProject, error) {
 	panic("not implemented")
 }
 
-func (s *projectsRepositoryStub) List(context.Context) ([]*entities.Project, error) {
+func (s *projectsRepositoryStub) List(context.Context) ([]*entities.RProject, error) {
 	panic("not implemented")
 }
 
 func (s *projectsRepositoryStub) Update(
 	context.Context,
-	*entities.Project,
-) (*entities.Project, error) {
+	*entities.RProject,
+) (*entities.RProject, error) {
 	panic("not implemented")
 }
 
@@ -163,15 +162,15 @@ func (s *projectsRepositoryStub) Count(context.Context) (int64, error) {
 }
 
 type projectFoldersRepositoryStub struct {
-	created []*entities.Folder
+	created []*entities.RFolder
 	failAt  int
 	err     error
 }
 
 func (s *projectFoldersRepositoryStub) Create(
 	_ context.Context,
-	folder *entities.Folder,
-) (*entities.Folder, error) {
+	folder *entities.RFolder,
+) (*entities.RFolder, error) {
 	if s.err != nil && len(s.created) == s.failAt {
 		return nil, s.err
 	}
@@ -181,19 +180,19 @@ func (s *projectFoldersRepositoryStub) Create(
 
 func (s *projectFoldersRepositoryStub) Update(
 	context.Context,
-	*entities.Folder,
-) (*entities.Folder, error) {
+	*entities.RFolder,
+) (*entities.RFolder, error) {
 	panic("not implemented")
 }
 
-func (s *projectFoldersRepositoryStub) GetByID(context.Context, uuid.UUID) (*entities.Folder, error) {
+func (s *projectFoldersRepositoryStub) GetByID(context.Context, uuid.UUID) (*entities.RFolder, error) {
 	panic("not implemented")
 }
 
 func (s *projectFoldersRepositoryStub) GetByIDIncludingDeleted(
 	context.Context,
 	uuid.UUID,
-) (*entities.Folder, error) {
+) (*entities.RFolder, error) {
 	panic("not implemented")
 }
 
@@ -202,7 +201,7 @@ func (s *projectFoldersRepositoryStub) GetByIdentity(
 	*uuid.UUID,
 	entities.FolderEntityType,
 	string,
-) (*entities.Folder, error) {
+) (*entities.RFolder, error) {
 	panic("not implemented")
 }
 
@@ -211,7 +210,7 @@ func (s *projectFoldersRepositoryStub) GetByIdentityIncludingDeleted(
 	*uuid.UUID,
 	entities.FolderEntityType,
 	string,
-) (*entities.Folder, error) {
+) (*entities.RFolder, error) {
 	panic("not implemented")
 }
 
@@ -219,7 +218,7 @@ func (s *projectFoldersRepositoryStub) List(
 	context.Context,
 	*uuid.UUID,
 	entities.FolderEntityType,
-) ([]*entities.Folder, error) {
+) ([]*entities.RFolder, error) {
 	panic("not implemented")
 }
 

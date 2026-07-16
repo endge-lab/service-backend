@@ -20,25 +20,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_session.SessionResponse"
+                $ref: "#/components/schemas/internal_api_http_session.SessionResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_session.ErrorResponse"
+                $ref: "#/components/schemas/internal_api_http_session.ErrorResponse"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_session.ErrorResponse"
+                $ref: "#/components/schemas/internal_api_http_session.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_session.ErrorResponse"
+                $ref: "#/components/schemas/internal_api_http_session.ErrorResponse"
   /api/v1/projects:
     get:
       security:
@@ -60,7 +60,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     post:
       security:
         - BearerAuth: []
@@ -88,21 +88,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}":
     get:
       security:
@@ -132,21 +132,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     delete:
       security:
         - BearerAuth: []
@@ -171,21 +171,21 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     patch:
       security:
         - BearerAuth: []
@@ -221,29 +221,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
-  "/api/v1/projects/{project_identity}/components":
+                  ttp_respond.ErrorResponse"
+  "/api/v1/projects/{project_identity}/components-legacy":
     get:
       security:
         - BearerAuth: []
       description: Возвращает неудаленные компоненты проекта с optional фильтрами
         папки и типа.
       tags:
-        - components
+        - components-legacy
       summary: Список компонентов
       parameters:
         - example: demo-project
@@ -253,13 +253,13 @@ paths:
           required: true
           schema:
             type: string
-        - example: root-components
+        - example: root-components-legacy
           description: Folder identity
           name: folder_identity
           in: query
           schema:
             type: string
-        - description: Component type
+        - description: Legacy component type
           name: component_type
           in: query
           schema:
@@ -272,36 +272,36 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_component.ComponentsListRespon\
-                  se"
+                $ref: "#/components/schemas/internal_api_http_v1_component_legacy.ComponentsLeg\
+                  acyListResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     post:
       security:
         - BearerAuth: []
       description: Создает component-sfc в папке проекта. Source хранится как
         authoring source и не компилируется и не выполняется.
       tags:
-        - components
+        - components-legacy
       summary: Создать компонент
       parameters:
         - example: demo-project
@@ -315,8 +315,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/internal_api_http_v1_component.CreateComponentReque\
-                st"
+              $ref: "#/components/schemas/internal_api_http_v1_component_legacy.CreateCompone\
+                ntLegacyRequest"
         description: Параметры компонента
         required: true
       responses:
@@ -325,42 +325,43 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_component.ComponentResponse"
+                $ref: "#/components/schemas/internal_api_http_v1_component_legacy.ComponentLega\
+                  cyResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
-  "/api/v1/projects/{project_identity}/components/{component_identity}":
+                  ttp_respond.ErrorResponse"
+  "/api/v1/projects/{project_identity}/components-legacy/{component_identity}":
     get:
       security:
         - BearerAuth: []
       description: Возвращает активный компонент по identity в пределах проекта.
       tags:
-        - components
+        - components-legacy
       summary: Получить компонент
       parameters:
         - example: demo-project
@@ -371,7 +372,7 @@ paths:
           schema:
             type: string
         - example: user-card
-          description: Component identity
+          description: Legacy component identity
           name: component_identity
           in: path
           required: true
@@ -383,34 +384,35 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_component.ComponentResponse"
+                $ref: "#/components/schemas/internal_api_http_v1_component_legacy.ComponentLega\
+                  cyResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     delete:
       security:
         - BearerAuth: []
       description: Выполняет soft-delete компонента по identity.
       tags:
-        - components
+        - components-legacy
       summary: Удалить компонент
       parameters:
         - description: Project identity
@@ -419,7 +421,7 @@ paths:
           required: true
           schema:
             type: string
-        - description: Component identity
+        - description: Legacy component identity
           name: component_identity
           in: path
           required: true
@@ -434,28 +436,28 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     patch:
       security:
         - BearerAuth: []
       description: Заменяет editable payload компонента, сохраняя id, identity,
         createdAt и deletedAt.
       tags:
-        - components
+        - components-legacy
       summary: Обновить компонент
       parameters:
         - example: demo-project
@@ -466,7 +468,7 @@ paths:
           schema:
             type: string
         - example: user-card
-          description: Component identity
+          description: Legacy component identity
           name: component_identity
           in: path
           required: true
@@ -476,8 +478,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/internal_api_http_v1_component.UpdateComponentReque\
-                st"
+              $ref: "#/components/schemas/internal_api_http_v1_component_legacy.UpdateCompone\
+                ntLegacyRequest"
         description: Параметры обновления компонента
         required: true
       responses:
@@ -486,35 +488,36 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_component.ComponentResponse"
+                $ref: "#/components/schemas/internal_api_http_v1_component_legacy.ComponentLega\
+                  cyResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
-  "/api/v1/projects/{project_identity}/components/{component_identity}/hard":
+                  ttp_respond.ErrorResponse"
+  "/api/v1/projects/{project_identity}/components-legacy/{component_identity}/hard":
     delete:
       security:
         - BearerAuth: []
       description: Выполняет hard-delete компонента по identity.
       tags:
-        - components
+        - components-legacy
       summary: Физически удалить компонент
       parameters:
         - description: Project identity
@@ -523,7 +526,7 @@ paths:
           required: true
           schema:
             type: string
-        - description: Component identity
+        - description: Legacy component identity
           name: component_identity
           in: path
           required: true
@@ -538,28 +541,28 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
-  "/api/v1/projects/{project_identity}/components/{component_identity}/restore":
+                  ttp_respond.ErrorResponse"
+  "/api/v1/projects/{project_identity}/components-legacy/{component_identity}/restore":
     post:
       security:
         - BearerAuth: []
       description: Восстанавливает soft-deleted компонент по identity.
       tags:
-        - components
+        - components-legacy
       summary: Восстановить компонент
       parameters:
         - description: Project identity
@@ -568,7 +571,7 @@ paths:
           required: true
           schema:
             type: string
-        - description: Component identity
+        - description: Legacy component identity
           name: component_identity
           in: path
           required: true
@@ -583,21 +586,21 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/converters":
     get:
       security:
@@ -632,21 +635,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     post:
       security:
         - BearerAuth: []
@@ -683,28 +686,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/converters/{converter_identity}":
     get:
       security:
@@ -739,21 +742,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     delete:
       security:
         - BearerAuth: []
@@ -783,21 +786,21 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     patch:
       security:
         - BearerAuth: []
@@ -840,21 +843,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/converters/{converter_identity}/hard":
     delete:
       security:
@@ -885,28 +888,28 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/converters/{converter_identity}/restore":
     post:
       security:
@@ -937,21 +940,21 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/data-views":
     get:
       security:
@@ -995,21 +998,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     post:
       security:
         - BearerAuth: []
@@ -1048,28 +1051,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/data-views/{data_view_identity}":
     get:
       security:
@@ -1107,21 +1110,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     delete:
       security:
         - BearerAuth: []
@@ -1151,21 +1154,21 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     patch:
       security:
         - BearerAuth: []
@@ -1211,21 +1214,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/data-views/{data_view_identity}/hard":
     delete:
       security:
@@ -1257,21 +1260,21 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/data-views/{data_view_identity}/restore":
     post:
       security:
@@ -1302,21 +1305,21 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/folders":
     get:
       security:
@@ -1333,7 +1336,7 @@ paths:
           required: true
           schema:
             type: string
-        - example: components
+        - example: components-legacy
           description: Entity type
           name: entity_type
           in: query
@@ -1341,7 +1344,7 @@ paths:
           schema:
             type: string
             enum:
-              - components
+              - components-legacy
               - converters
               - queries
               - data-views
@@ -1358,21 +1361,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     post:
       security:
         - BearerAuth: []
@@ -1408,28 +1411,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/folders/{folder_identity}":
     get:
       security:
@@ -1446,14 +1449,14 @@ paths:
           required: true
           schema:
             type: string
-        - example: shared-components
+        - example: shared-components-legacy
           description: Folder identity
           name: folder_identity
           in: path
           required: true
           schema:
             type: string
-        - example: components
+        - example: components-legacy
           description: Entity type
           name: entity_type
           in: query
@@ -1461,7 +1464,7 @@ paths:
           schema:
             type: string
             enum:
-              - components
+              - components-legacy
               - converters
               - queries
               - data-views
@@ -1478,21 +1481,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     delete:
       security:
         - BearerAuth: []
@@ -1508,14 +1511,14 @@ paths:
           required: true
           schema:
             type: string
-        - example: shared-components
+        - example: shared-components-legacy
           description: Folder identity
           name: folder_identity
           in: path
           required: true
           schema:
             type: string
-        - example: components
+        - example: components-legacy
           description: Entity type
           name: entity_type
           in: query
@@ -1523,7 +1526,7 @@ paths:
           schema:
             type: string
             enum:
-              - components
+              - components-legacy
               - converters
               - queries
               - data-views
@@ -1536,21 +1539,21 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     patch:
       security:
         - BearerAuth: []
@@ -1566,14 +1569,14 @@ paths:
           required: true
           schema:
             type: string
-        - example: shared-components
+        - example: shared-components-legacy
           description: Folder identity
           name: folder_identity
           in: path
           required: true
           schema:
             type: string
-        - example: components
+        - example: components-legacy
           description: Entity type
           name: entity_type
           in: query
@@ -1581,7 +1584,7 @@ paths:
           schema:
             type: string
             enum:
-              - components
+              - components-legacy
               - converters
               - queries
               - data-views
@@ -1605,28 +1608,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/folders/{folder_identity}/hard":
     delete:
       security:
@@ -1643,14 +1646,14 @@ paths:
           required: true
           schema:
             type: string
-        - example: shared-components
+        - example: shared-components-legacy
           description: Folder identity
           name: folder_identity
           in: path
           required: true
           schema:
             type: string
-        - example: components
+        - example: components-legacy
           description: Entity type
           name: entity_type
           in: query
@@ -1658,7 +1661,7 @@ paths:
           schema:
             type: string
             enum:
-              - components
+              - components-legacy
               - converters
               - queries
               - data-views
@@ -1671,28 +1674,28 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/folders/{folder_identity}/restore":
     post:
       security:
@@ -1709,14 +1712,14 @@ paths:
           required: true
           schema:
             type: string
-        - example: shared-components
+        - example: shared-components-legacy
           description: Folder identity
           name: folder_identity
           in: path
           required: true
           schema:
             type: string
-        - example: components
+        - example: components-legacy
           description: Entity type
           name: entity_type
           in: query
@@ -1724,7 +1727,7 @@ paths:
           schema:
             type: string
             enum:
-              - components
+              - components-legacy
               - converters
               - queries
               - data-views
@@ -1737,21 +1740,21 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/hard":
     delete:
       security:
@@ -1777,21 +1780,21 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/queries":
     get:
       security:
@@ -1834,21 +1837,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     post:
       security:
         - BearerAuth: []
@@ -1885,28 +1888,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/queries/{query_identity}":
     get:
       security:
@@ -1944,21 +1947,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     delete:
       security:
         - BearerAuth: []
@@ -1989,21 +1992,21 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
     patch:
       security:
         - BearerAuth: []
@@ -2048,21 +2051,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/queries/{query_identity}/hard":
     delete:
       security:
@@ -2094,21 +2097,21 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/queries/{query_identity}/restore":
     post:
       security:
@@ -2139,21 +2142,21 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/restore":
     post:
       security:
@@ -2179,21 +2182,21 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_v1_transport.ErrorResponse"
+                  ttp_respond.ErrorResponse"
 servers:
   - url: /
 components:
@@ -2203,7 +2206,7 @@ components:
       name: Authorization
       in: header
   schemas:
-    github_com_endge-lab_service-backend_internal_api_http_v1_transport.ErrorResponse:
+    github_com_endge-lab_service-backend_internal_api_http_respond.ErrorResponse:
       type: object
       properties:
         code:
@@ -2213,31 +2216,82 @@ components:
           additionalProperties: {}
         message:
           type: string
-    github_com_endge-lab_service-backend_internal_domain_entities.ComponentSourceFormat:
-      type: string
-      enum:
-        - sfc
-      x-enum-varnames:
-        - ComponentSourceFormatSFC
-    github_com_endge-lab_service-backend_internal_domain_entities.ComponentType:
-      type: string
-      enum:
-        - component-sfc
-      x-enum-varnames:
-        - ComponentTypeSFC
     github_com_endge-lab_service-backend_internal_domain_entities.FolderEntityType:
       type: string
       enum:
-        - components
+        - components-legacy
         - converters
         - queries
         - data-views
       x-enum-varnames:
-        - FolderEntityTypeComponents
+        - FolderEntityTypeComponentsLegacy
         - FolderEntityTypeConverters
         - FolderEntityTypeQueries
         - FolderEntityTypeDataViews
-    internal_api_http_v1_component.ComponentResponse:
+    github_com_endge-lab_service-backend_internal_domain_entities.RComponentLegacySourceFormat:
+      type: string
+      enum:
+        - sfc
+      x-enum-varnames:
+        - RComponentLegacySourceFormatSFC
+    github_com_endge-lab_service-backend_internal_domain_entities.RComponentLegacyType:
+      type: string
+      enum:
+        - component-sfc
+      x-enum-varnames:
+        - RComponentLegacyTypeSFC
+    internal_api_http_session.ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        details:
+          type: object
+          additionalProperties: {}
+        message:
+          type: string
+    internal_api_http_session.SessionInfoResponse:
+      type: object
+      properties:
+        app:
+          type: string
+        expiresAt:
+          type: string
+        id:
+          type: string
+        platform:
+          type: string
+        scope:
+          type: array
+          items:
+            type: string
+        sessionId:
+          type: string
+    internal_api_http_session.SessionResponse:
+      type: object
+      properties:
+        session:
+          $ref: "#/components/schemas/internal_api_http_session.SessionInfoResponse"
+        user:
+          $ref: "#/components/schemas/internal_api_http_session.UserResponse"
+    internal_api_http_session.UserResponse:
+      type: object
+      properties:
+        authUserId:
+          type: string
+        createdAt:
+          type: string
+        displayName:
+          type: string
+        id:
+          type: string
+        role:
+          type: string
+        updatedAt:
+          type: string
+        username:
+          type: string
+    internal_api_http_v1_component_legacy.ComponentLegacyResponse:
       type: object
       properties:
         active:
@@ -2247,7 +2301,7 @@ components:
           additionalProperties: {}
         componentType:
           $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
-            n_entities.ComponentType"
+            n_entities.RComponentLegacyType"
         createdAt:
           type: string
         deletedAt:
@@ -2274,17 +2328,18 @@ components:
           type: string
         sourceFormat:
           $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
-            n_entities.ComponentSourceFormat"
+            n_entities.RComponentLegacySourceFormat"
         updatedAt:
           type: string
-    internal_api_http_v1_component.ComponentsListResponse:
+    internal_api_http_v1_component_legacy.ComponentsLegacyListResponse:
       type: object
       properties:
         items:
           type: array
           items:
-            $ref: "#/components/schemas/internal_api_http_v1_component.ComponentResponse"
-    internal_api_http_v1_component.CreateComponentRequest:
+            $ref: "#/components/schemas/internal_api_http_v1_component_legacy.ComponentLega\
+              cyResponse"
+    internal_api_http_v1_component_legacy.CreateComponentLegacyRequest:
       type: object
       required:
         - componentType
@@ -2300,7 +2355,7 @@ components:
           additionalProperties: {}
         componentType:
           $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
-            n_entities.ComponentType"
+            n_entities.RComponentLegacyType"
         description:
           type: string
         displayName:
@@ -2317,7 +2372,7 @@ components:
           additionalProperties: {}
         source:
           type: string
-    internal_api_http_v1_component.UpdateComponentRequest:
+    internal_api_http_v1_component_legacy.UpdateComponentLegacyRequest:
       type: object
       required:
         - componentType
@@ -2332,7 +2387,7 @@ components:
           additionalProperties: {}
         componentType:
           $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
-            n_entities.ComponentType"
+            n_entities.RComponentLegacyType"
         description:
           type: string
         displayName:
@@ -2569,27 +2624,27 @@ components:
           type: string
           maxLength: 255
           minLength: 1
-          example: Shared Components
+          example: Shared legacy components
         entityType:
           enum:
-            - components
+            - components-legacy
             - converters
             - queries
             - data-views
           allOf:
             - $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
                 n_entities.FolderEntityType"
-          example: components
+          example: components-legacy
         identity:
           type: string
           maxLength: 160
           minLength: 1
-          example: shared-components
+          example: shared-components-legacy
         meta:
           type: object
         parentIdentity:
           type: string
-          example: root-components
+          example: root-components-legacy
     internal_api_http_v1_folder.FolderResponse:
       type: object
       properties:
@@ -2604,23 +2659,23 @@ components:
           example: Reusable components
         displayName:
           type: string
-          example: Shared Components
+          example: Shared legacy components
         entityType:
           enum:
-            - components
+            - components-legacy
             - converters
             - queries
             - data-views
           allOf:
             - $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
                 n_entities.FolderEntityType"
-          example: components
+          example: components-legacy
         id:
           type: string
           example: 00000000-0000-4000-8000-000000000011
         identity:
           type: string
-          example: shared-components
+          example: shared-components-legacy
         isRoot:
           type: boolean
           example: false
@@ -2631,7 +2686,7 @@ components:
           type: object
         parentIdentity:
           type: string
-          example: root-components
+          example: root-components-legacy
         projectIdentity:
           type: string
           example: demo-project
@@ -2657,12 +2712,12 @@ components:
           type: string
           maxLength: 255
           minLength: 1
-          example: Shared Components
+          example: Shared legacy components
         meta:
           type: object
         parentIdentity:
           type: string
-          example: root-components
+          example: root-components-legacy
     internal_api_http_v1_project.CreateProjectRequest:
       type: object
       required:
@@ -2878,54 +2933,3 @@ components:
           additionalProperties: {}
         timeoutMs:
           type: integer
-    internal_api_http_v1_session.ErrorResponse:
-      type: object
-      properties:
-        code:
-          type: string
-        details:
-          type: object
-          additionalProperties: {}
-        message:
-          type: string
-    internal_api_http_v1_session.SessionInfoResponse:
-      type: object
-      properties:
-        app:
-          type: string
-        expiresAt:
-          type: string
-        id:
-          type: string
-        platform:
-          type: string
-        scope:
-          type: array
-          items:
-            type: string
-        sessionId:
-          type: string
-    internal_api_http_v1_session.SessionResponse:
-      type: object
-      properties:
-        session:
-          $ref: "#/components/schemas/internal_api_http_v1_session.SessionInfoResponse"
-        user:
-          $ref: "#/components/schemas/internal_api_http_v1_session.UserResponse"
-    internal_api_http_v1_session.UserResponse:
-      type: object
-      properties:
-        authUserId:
-          type: string
-        createdAt:
-          type: string
-        displayName:
-          type: string
-        id:
-          type: string
-        role:
-          type: string
-        updatedAt:
-          type: string
-        username:
-          type: string

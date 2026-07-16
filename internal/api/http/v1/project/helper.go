@@ -6,7 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func NewProjectResponse(project *entities.Project) *ProjectResponse {
+func NewProjectResponse(project *entities.RProject) *ProjectResponse {
 	if project == nil {
 		return nil
 	}
@@ -24,7 +24,7 @@ func NewProjectResponse(project *entities.Project) *ProjectResponse {
 	}
 }
 
-func NewProjectsListResponse(projects []*entities.Project) ProjectsListResponse {
+func NewProjectsListResponse(projects []*entities.RProject) ProjectsListResponse {
 	items := make([]*ProjectResponse, 0, len(projects))
 	for _, item := range projects {
 		items = append(items, NewProjectResponse(item))

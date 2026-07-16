@@ -6,20 +6,19 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/repo/ports"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
 
 func TestCreateNormalizesPayloadAndReturnsFolderIdentity(t *testing.T) {
-	project := &entities.Project{ID: uuid.New(), Identity: "demo"}
-	folder := &entities.Folder{ID: uuid.New(), Identity: "root-queries"}
-	repository := &queriesRepositoryStub{createResult: &entities.Query{ID: uuid.New(), Identity: "users-list", FolderID: folder.ID}}
+	project := &entities.RProject{ID: uuid.New(), Identity: "demo"}
+	folder := &entities.RFolder{ID: uuid.New(), Identity: "root-queries"}
+	repository := &queriesRepositoryStub{createResult: &entities.RQuery{ID: uuid.New(), Identity: "users-list", FolderID: folder.ID}}
 	service := newQueryServiceForTest(project, &queryFoldersRepositoryStub{folder: folder}, repository)
 
-	result, err := service.Create(context.Background(), adapters.CreateQueryInput{ProjectIdentity: " demo ", FolderIdentity: " root-queries ", Identity: " users-list ", DisplayName: " Users ", QueryType: " http "})
+	result, err := service.Create(context.Background(), CreateQueryInput{ProjectIdentity: " demo ", FolderIdentity: " root-queries ", Identity: " users-list ", DisplayName: " Users ", QueryType: " http "})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,9 +28,9 @@ func TestCreateNormalizesPayloadAndReturnsFolderIdentity(t *testing.T) {
 }
 
 func TestCreateRejectsConflictAndFolderEntityTypeMismatch(t *testing.T) {
-	project := &entities.Project{ID: uuid.New(), Identity: "demo"}
-	folder := &entities.Folder{ID: uuid.New(), Identity: "root-queries"}
-	input := adapters.CreateQueryInput{ProjectIdentity: "demo", FolderIdentity: folder.Identity, Identity: "users-list", DisplayName: "Users", QueryType: "http"}
+	project := &entities.RProject{ID: uuid.New(), Identity: "demo"}
+	folder := &entities.RFolder{ID: uuid.New(), Identity: "root-queries"}
+	input := CreateQueryInput{ProjectIdentity: "demo", FolderIdentity: folder.Identity, Identity: "users-list", DisplayName: "Users", QueryType: "http"}
 
 	service := newQueryServiceForTest(project, &queryFoldersRepositoryStub{folder: folder}, &queriesRepositoryStub{exists: true})
 	if got := apperrors.CodeOf(mustCreateError(t, service, input)); got != "identity_conflict" {
@@ -45,14 +44,14 @@ func TestCreateRejectsConflictAndFolderEntityTypeMismatch(t *testing.T) {
 }
 
 func TestListResolvesFoldersWithoutNPlusOne(t *testing.T) {
-	project := &entities.Project{ID: uuid.New(), Identity: "demo"}
-	first := &entities.Folder{ID: uuid.New(), Identity: "root-queries"}
-	second := &entities.Folder{ID: uuid.New(), Identity: "api"}
-	folders := &queryFoldersRepositoryStub{folders: []*entities.Folder{first, second}}
-	repository := &queriesRepositoryStub{listResult: []*entities.Query{{ID: uuid.New(), FolderID: first.ID, Identity: "one"}, {ID: uuid.New(), FolderID: second.ID, Identity: "two"}}}
+	project := &entities.RProject{ID: uuid.New(), Identity: "demo"}
+	first := &entities.RFolder{ID: uuid.New(), Identity: "root-queries"}
+	second := &entities.RFolder{ID: uuid.New(), Identity: "api"}
+	folders := &queryFoldersRepositoryStub{folders: []*entities.RFolder{first, second}}
+	repository := &queriesRepositoryStub{listResult: []*entities.RQuery{{ID: uuid.New(), FolderID: first.ID, Identity: "one"}, {ID: uuid.New(), FolderID: second.ID, Identity: "two"}}}
 	service := newQueryServiceForTest(project, folders, repository)
 
-	result, err := service.List(context.Background(), adapters.ListQueriesInput{ProjectIdentity: "demo"})
+	result, err := service.List(context.Background(), ListQueriesInput{ProjectIdentity: "demo"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,37 +60,37 @@ func TestListResolvesFoldersWithoutNPlusOne(t *testing.T) {
 	}
 }
 
-func mustCreateError(t *testing.T, service *Query, input adapters.CreateQueryInput) error {
+func mustCreateError(t *testing.T, service *Query, input CreateQueryInput) error {
 	t.Helper()
 	_, err := service.Create(context.Background(), input)
 	return err
 }
 
-func newQueryServiceForTest(project *entities.Project, folders *queryFoldersRepositoryStub, queries *queriesRepositoryStub) *Query {
+func newQueryServiceForTest(project *entities.RProject, folders *queryFoldersRepositoryStub, queries *queriesRepositoryStub) *Query {
 	return NewQueryService(QueryParams{ProjectRepository: &queryProjectsRepositoryStub{project: project}, FolderRepository: folders, QueryRepository: queries, Tracer: otel.Tracer("queries-test"), Logger: zap.NewNop()})
 }
 
 type queryProjectsRepositoryStub struct {
 	ports.ProjectsRepository
-	project *entities.Project
+	project *entities.RProject
 }
 
-func (s *queryProjectsRepositoryStub) GetByIdentity(context.Context, string) (*entities.Project, error) {
+func (s *queryProjectsRepositoryStub) GetByIdentity(context.Context, string) (*entities.RProject, error) {
 	return s.project, nil
 }
 
 type queryFoldersRepositoryStub struct {
 	ports.FoldersRepository
-	folder    *entities.Folder
+	folder    *entities.RFolder
 	getErr    error
-	folders   []*entities.Folder
+	folders   []*entities.RFolder
 	listCalls int
 }
 
-func (s *queryFoldersRepositoryStub) GetByIdentity(context.Context, *uuid.UUID, entities.FolderEntityType, string) (*entities.Folder, error) {
+func (s *queryFoldersRepositoryStub) GetByIdentity(context.Context, *uuid.UUID, entities.FolderEntityType, string) (*entities.RFolder, error) {
 	return s.folder, s.getErr
 }
-func (s *queryFoldersRepositoryStub) List(context.Context, *uuid.UUID, entities.FolderEntityType) ([]*entities.Folder, error) {
+func (s *queryFoldersRepositoryStub) List(context.Context, *uuid.UUID, entities.FolderEntityType) ([]*entities.RFolder, error) {
 	s.listCalls++
 	return s.folders, nil
 }
@@ -99,18 +98,18 @@ func (s *queryFoldersRepositoryStub) List(context.Context, *uuid.UUID, entities.
 type queriesRepositoryStub struct {
 	ports.QueriesRepository
 	exists       bool
-	created      *entities.Query
-	createResult *entities.Query
-	listResult   []*entities.Query
+	created      *entities.RQuery
+	createResult *entities.RQuery
+	listResult   []*entities.RQuery
 }
 
 func (s *queriesRepositoryStub) ExistsByIdentity(context.Context, uuid.UUID, string) (bool, error) {
 	return s.exists, nil
 }
-func (s *queriesRepositoryStub) Create(_ context.Context, query *entities.Query) (*entities.Query, error) {
+func (s *queriesRepositoryStub) Create(_ context.Context, query *entities.RQuery) (*entities.RQuery, error) {
 	s.created = query
 	return s.createResult, nil
 }
-func (s *queriesRepositoryStub) List(context.Context, ports.QueriesFilter) ([]*entities.Query, error) {
+func (s *queriesRepositoryStub) List(context.Context, ports.QueriesFilter) ([]*entities.RQuery, error) {
 	return s.listResult, nil
 }

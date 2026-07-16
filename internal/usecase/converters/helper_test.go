@@ -7,12 +7,11 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
 	"github.com/google/uuid"
 )
 
 func TestNormalizeAndValidateCreateInput(t *testing.T) {
-	input := adapters.CreateConverterInput{ProjectIdentity: " demo ", FolderIdentity: " root-converters ", Identity: " date-format ", DisplayName: " Date format ", ConverterType: " format "}
+	input := CreateConverterInput{ProjectIdentity: " demo ", FolderIdentity: " root-converters ", Identity: " date-format ", DisplayName: " Date format ", ConverterType: " format "}
 	if err := normalizeAndValidateCreateInput(&input); err != nil {
 		t.Fatal(err)
 	}
@@ -21,7 +20,7 @@ func TestNormalizeAndValidateCreateInput(t *testing.T) {
 	}
 }
 func TestNormalizeAndValidateUpdateInputRejectsMissingType(t *testing.T) {
-	input := adapters.UpdateConverterInput{ProjectIdentity: "demo", FolderIdentity: "root-converters", ConverterIdentity: "date-format", DisplayName: "Date format"}
+	input := UpdateConverterInput{ProjectIdentity: "demo", FolderIdentity: "root-converters", ConverterIdentity: "date-format", DisplayName: "Date format"}
 	if err := normalizeAndValidateUpdateInput(&input); err == nil {
 		t.Fatal("expected validation error")
 	}
@@ -33,7 +32,7 @@ func TestResolveFolderID(t *testing.T) {
 	identity := "root-converters"
 
 	t.Run("returns folder ID", func(t *testing.T) {
-		repository := &foldersRepositoryStub{folder: &entities.Folder{ID: folderID}}
+		repository := &foldersRepositoryStub{folder: &entities.RFolder{ID: folderID}}
 		service := &Converter{folderRepository: repository}
 
 		result, err := service.resolveFolderID(context.Background(), projectID, &identity)
@@ -75,11 +74,11 @@ func TestConverterWithFolders(t *testing.T) {
 	secondFolderID := uuid.New()
 
 	result, err := converterWithFolders(
-		[]*entities.Converter{
+		[]*entities.RConverter{
 			{ID: uuid.New(), FolderID: secondFolderID},
 			{ID: uuid.New(), FolderID: firstFolderID},
 		},
-		[]*entities.Folder{
+		[]*entities.RFolder{
 			{ID: firstFolderID, Identity: "root-converters"},
 			{ID: secondFolderID, Identity: "formatters"},
 		},
@@ -97,7 +96,7 @@ func TestConverterWithFolders(t *testing.T) {
 
 func TestConverterWithFoldersRejectsUnavailableFolder(t *testing.T) {
 	_, err := converterWithFolders(
-		[]*entities.Converter{{FolderID: uuid.New()}},
+		[]*entities.RConverter{{FolderID: uuid.New()}},
 		nil,
 	)
 	if got := apperrors.CodeOf(err); got != "converter_folder_not_found" {
@@ -106,11 +105,11 @@ func TestConverterWithFoldersRejectsUnavailableFolder(t *testing.T) {
 }
 
 type foldersRepositoryStub struct {
-	folder         *entities.Folder
+	folder         *entities.RFolder
 	err            error
-	getByIDFolder  *entities.Folder
+	getByIDFolder  *entities.RFolder
 	getByIDErr     error
-	folders        []*entities.Folder
+	folders        []*entities.RFolder
 	listErr        error
 	getByIDCalls   int
 	listCalls      int
@@ -118,20 +117,20 @@ type foldersRepositoryStub struct {
 	listEntityType entities.FolderEntityType
 }
 
-func (s *foldersRepositoryStub) Create(context.Context, *entities.Folder) (*entities.Folder, error) {
+func (s *foldersRepositoryStub) Create(context.Context, *entities.RFolder) (*entities.RFolder, error) {
 	return nil, nil
 }
 
-func (s *foldersRepositoryStub) Update(context.Context, *entities.Folder) (*entities.Folder, error) {
+func (s *foldersRepositoryStub) Update(context.Context, *entities.RFolder) (*entities.RFolder, error) {
 	return nil, nil
 }
 
-func (s *foldersRepositoryStub) GetByID(context.Context, uuid.UUID) (*entities.Folder, error) {
+func (s *foldersRepositoryStub) GetByID(context.Context, uuid.UUID) (*entities.RFolder, error) {
 	s.getByIDCalls++
 	return s.getByIDFolder, s.getByIDErr
 }
 
-func (s *foldersRepositoryStub) GetByIDIncludingDeleted(context.Context, uuid.UUID) (*entities.Folder, error) {
+func (s *foldersRepositoryStub) GetByIDIncludingDeleted(context.Context, uuid.UUID) (*entities.RFolder, error) {
 	return nil, nil
 }
 
@@ -140,7 +139,7 @@ func (s *foldersRepositoryStub) GetByIdentity(
 	_ *uuid.UUID,
 	entityType entities.FolderEntityType,
 	_ string,
-) (*entities.Folder, error) {
+) (*entities.RFolder, error) {
 	s.entityType = entityType
 	return s.folder, s.err
 }
@@ -150,7 +149,7 @@ func (s *foldersRepositoryStub) GetByIdentityIncludingDeleted(
 	*uuid.UUID,
 	entities.FolderEntityType,
 	string,
-) (*entities.Folder, error) {
+) (*entities.RFolder, error) {
 	return nil, nil
 }
 
@@ -158,7 +157,7 @@ func (s *foldersRepositoryStub) List(
 	_ context.Context,
 	_ *uuid.UUID,
 	entityType entities.FolderEntityType,
-) ([]*entities.Folder, error) {
+) ([]*entities.RFolder, error) {
 	s.listCalls++
 	s.listEntityType = entityType
 	return s.folders, s.listErr

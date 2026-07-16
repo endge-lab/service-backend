@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	"github.com/endge-lab/service-backend/internal/usecase/projects"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -16,7 +16,7 @@ import (
 
 func TestProjectHandlers(t *testing.T) {
 	service := &projectServiceStub{
-		project: &entities.Project{
+		project: &entities.RProject{
 			ID:          uuid.New(),
 			Identity:    "demo-project",
 			DisplayName: "Demo Project",
@@ -108,27 +108,27 @@ func TestProjectHandlers(t *testing.T) {
 }
 
 type projectServiceStub struct {
-	project *entities.Project
+	project *entities.RProject
 }
 
-func (s *projectServiceStub) Create(context.Context, adapters.CreateProjectInput) (*entities.Project, error) {
+func (s *projectServiceStub) Create(context.Context, projects.CreateProjectInput) (*entities.RProject, error) {
 	return s.project, nil
 }
 
-func (s *projectServiceStub) Update(context.Context, adapters.UpdateProjectInput) (*entities.Project, error) {
+func (s *projectServiceStub) Update(context.Context, projects.UpdateProjectInput) (*entities.RProject, error) {
 	return s.project, nil
 }
 
-func (s *projectServiceStub) GetByID(context.Context, uuid.UUID) (*entities.Project, error) {
+func (s *projectServiceStub) GetByID(context.Context, uuid.UUID) (*entities.RProject, error) {
 	return s.project, nil
 }
 
-func (s *projectServiceStub) GetByIdentity(context.Context, string) (*entities.Project, error) {
+func (s *projectServiceStub) GetByIdentity(context.Context, string) (*entities.RProject, error) {
 	return s.project, nil
 }
 
-func (s *projectServiceStub) List(context.Context) ([]*entities.Project, error) {
-	return []*entities.Project{s.project}, nil
+func (s *projectServiceStub) List(context.Context) ([]*entities.RProject, error) {
+	return []*entities.RProject{s.project}, nil
 }
 
 func (s *projectServiceStub) SoftDelete(context.Context, string) error {

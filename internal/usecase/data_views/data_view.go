@@ -6,8 +6,7 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/repo/ports"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -15,8 +14,6 @@ import (
 )
 
 const dataViewOperationTimeout = 15 * time.Second
-
-var _ adapters.DataViewService = (*DataView)(nil)
 
 type DataView struct {
 	dataViewRepository ports.DataViewsRepository
@@ -54,9 +51,9 @@ func NewDataViewService(params DataViewParams) *DataView {
 //
 // Возвращаемые значения:
 //
-//	*adapters.DataViewWithRelations - созданный DataView и identity связанных сущностей
+//	*DataViewWithRelations - созданный DataView и identity связанных сущностей
 //	error - ошибка валидации, разрешения зависимостей или хранения
-func (s *DataView) Create(ctx context.Context, input adapters.CreateDataViewInput) (result *adapters.DataViewWithRelations, err error) {
+func (s *DataView) Create(ctx context.Context, input CreateDataViewInput) (result *DataViewWithRelations, err error) {
 	const op = "data_view.create"
 	ctx, cancel := context.WithTimeout(ctx, dataViewOperationTimeout)
 	defer cancel()
@@ -114,9 +111,9 @@ func (s *DataView) Create(ctx context.Context, input adapters.CreateDataViewInpu
 //
 // Возвращаемые значения:
 //
-//	*adapters.DataViewWithRelations - обновленный DataView и identity связанных сущностей
+//	*DataViewWithRelations - обновленный DataView и identity связанных сущностей
 //	error - ошибка валидации, разрешения зависимостей или хранения
-func (s *DataView) Update(ctx context.Context, input adapters.UpdateDataViewInput) (result *adapters.DataViewWithRelations, err error) {
+func (s *DataView) Update(ctx context.Context, input UpdateDataViewInput) (result *DataViewWithRelations, err error) {
 	const op = "data_view.update"
 	ctx, cancel := context.WithTimeout(ctx, dataViewOperationTimeout)
 	defer cancel()
@@ -169,9 +166,9 @@ func (s *DataView) Update(ctx context.Context, input adapters.UpdateDataViewInpu
 //
 // Возвращаемые значения:
 //
-//	*adapters.DataViewWithRelations - активный DataView и identity связанных сущностей
+//	*DataViewWithRelations - активный DataView и identity связанных сущностей
 //	error - ошибка валидации, разрешения зависимостей или хранения
-func (s *DataView) GetByIdentity(ctx context.Context, input adapters.GetDataViewInput) (result *adapters.DataViewWithRelations, err error) {
+func (s *DataView) GetByIdentity(ctx context.Context, input GetDataViewInput) (result *DataViewWithRelations, err error) {
 	const op = "data_view.get_by_identity"
 	ctx, cancel := context.WithTimeout(ctx, dataViewOperationTimeout)
 	defer cancel()
@@ -218,9 +215,9 @@ func (s *DataView) GetByIdentity(ctx context.Context, input adapters.GetDataView
 //
 // Возвращаемые значения:
 //
-//	[]*adapters.DataViewWithRelations - список DataView и identity связанных сущностей
+//	[]*DataViewWithRelations - список DataView и identity связанных сущностей
 //	error - ошибка валидации, разрешения зависимостей или хранения
-func (s *DataView) List(ctx context.Context, input adapters.ListDataViewsInput) (result []*adapters.DataViewWithRelations, err error) {
+func (s *DataView) List(ctx context.Context, input ListDataViewsInput) (result []*DataViewWithRelations, err error) {
 	const op = "data_view.list"
 	ctx, cancel := context.WithTimeout(ctx, dataViewOperationTimeout)
 	defer cancel()
@@ -251,7 +248,7 @@ func (s *DataView) List(ctx context.Context, input adapters.ListDataViewsInput) 
 		return nil, err
 	}
 	if len(values) == 0 {
-		return []*adapters.DataViewWithRelations{}, nil
+		return []*DataViewWithRelations{}, nil
 	}
 	folders, err := s.folderRepository.List(ctx, &project.ID, entities.FolderEntityTypeDataViews)
 	if err != nil {
@@ -267,22 +264,22 @@ func (s *DataView) List(ctx context.Context, input adapters.ListDataViewsInput) 
 }
 
 // SoftDelete помечает активный DataView удаленным.
-func (s *DataView) SoftDelete(ctx context.Context, input adapters.DataViewIdentityInput) error {
+func (s *DataView) SoftDelete(ctx context.Context, input DataViewIdentityInput) error {
 	return s.change(ctx, "data_view.soft_delete", input, false, s.dataViewRepository.SoftDelete)
 }
 
 // Restore восстанавливает soft-deleted DataView.
-func (s *DataView) Restore(ctx context.Context, input adapters.DataViewIdentityInput) error {
+func (s *DataView) Restore(ctx context.Context, input DataViewIdentityInput) error {
 	return s.change(ctx, "data_view.restore", input, true, s.dataViewRepository.Restore)
 }
 
 // HardDelete физически удаляет soft-deleted DataView.
-func (s *DataView) HardDelete(ctx context.Context, input adapters.DataViewIdentityInput) error {
+func (s *DataView) HardDelete(ctx context.Context, input DataViewIdentityInput) error {
 	return s.change(ctx, "data_view.hard_delete", input, true, s.dataViewRepository.HardDelete)
 }
 
 // Count возвращает количество активных DataView по optional фильтрам.
-func (s *DataView) Count(ctx context.Context, input adapters.ListDataViewsInput) (count int64, err error) {
+func (s *DataView) Count(ctx context.Context, input ListDataViewsInput) (count int64, err error) {
 	const op = "data_view.count"
 	ctx, cancel := context.WithTimeout(ctx, dataViewOperationTimeout)
 	defer cancel()
@@ -310,7 +307,7 @@ func (s *DataView) Count(ctx context.Context, input adapters.ListDataViewsInput)
 	return s.dataViewRepository.Count(ctx, ports.DataViewsFilter{ProjectID: project.ID, FolderID: folderID, QueryID: queryID})
 }
 
-func (s *DataView) change(ctx context.Context, op string, input adapters.DataViewIdentityInput, includeDeleted bool, change func(context.Context, uuid.UUID) error) (err error) {
+func (s *DataView) change(ctx context.Context, op string, input DataViewIdentityInput, includeDeleted bool, change func(context.Context, uuid.UUID) error) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, dataViewOperationTimeout)
 	defer cancel()
 	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
@@ -324,7 +321,7 @@ func (s *DataView) change(ctx context.Context, op string, input adapters.DataVie
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return err
 	}
-	var dataView *entities.DataView
+	var dataView *entities.RDataView
 	if includeDeleted {
 		dataView, err = s.dataViewRepository.GetByIdentityIncludingDeleted(ctx, project.ID, input.DataViewIdentity)
 	} else {

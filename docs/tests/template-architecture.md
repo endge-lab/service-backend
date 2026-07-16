@@ -26,7 +26,7 @@
 | `api/http` не ходит напрямую в `repo/postgres`, а `repo/postgres` не зависит от transport | P1 | done | n/a | done | `test/architecture/architecture_test.go` | Контролирует boundary между transport и persistence |
 | `bootstrap/usecase.go` собирает reference-flow через `ports`, `services`, `usecase`, `repo/postgres`, `api/http` | P1 | done | n/a | done | `test/architecture/architecture_test.go` | Проверяет эталонную DI-сборку |
 | `RedPanda` runtime подключается через `internal/platform` и env-конфиг template | P1 | done | done | done | `internal/platform/redpanda.go`, `internal/config/config.go`, `internal/platform/redpanda_test.go` | Не даёт дублировать Kafka bootstrap в каждом новом сервисе |
-| README и docs/tests фиксируют архитектурные правила и тестовую стратегию | P2 | n/a | n/a | done | `README.md`, `docs/architecture.md`, `docs/tests/*` | Документация синхронизирована с автоматическими проверками |
+| README и docs/tests фиксируют архитектурные правила и тестовую стратегию | P2 | n/a | n/a | done | `README.md`, `docs/Архитектура.md`, `docs/tests/*` | Документация синхронизирована с автоматическими проверками |
 
 ## Пробелы
 - Архитектурные тесты сейчас проверяют статическую структуру и imports, но не валидируют все допустимые/недопустимые типовые зависимости на уровне `go list` graph.

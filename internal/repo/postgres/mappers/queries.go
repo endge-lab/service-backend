@@ -5,8 +5,8 @@ import (
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
 )
 
-func Query(value sqlc.Query) *entities.Query {
-	return &entities.Query{
+func Query(value sqlc.Query) *entities.RQuery {
+	return &entities.RQuery{
 		ID:              value.ID,
 		ProjectID:       value.ProjectID,
 		FolderID:        value.FolderID,
@@ -29,7 +29,7 @@ func Query(value sqlc.Query) *entities.Query {
 	}
 }
 
-func CreateQueryParams(value *entities.Query) sqlc.CreateQueryParams {
+func CreateQueryParams(value *entities.RQuery) sqlc.CreateQueryParams {
 	if value == nil {
 		return sqlc.CreateQueryParams{}
 	}
@@ -52,7 +52,7 @@ func CreateQueryParams(value *entities.Query) sqlc.CreateQueryParams {
 	}
 }
 
-func UpdateQueryParams(value *entities.Query) sqlc.UpdateQueryParams {
+func UpdateQueryParams(value *entities.RQuery) sqlc.UpdateQueryParams {
 	if value == nil {
 		return sqlc.UpdateQueryParams{}
 	}

@@ -7,7 +7,6 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -21,19 +20,19 @@ func logOperationError(logger *zap.Logger, operation string, err error, fields .
 	logger.Warn(operation, fields...)
 }
 
-func normalizeCreateInput(input *adapters.CreateDataViewInput) error {
+func normalizeCreateInput(input *CreateDataViewInput) error {
 	normalizeDataViewFields(&input.ProjectIdentity, &input.FolderIdentity, &input.QueryIdentity, &input.Identity, &input.DisplayName, &input.ViewType, &input.Description)
 	normalizeDataViewPayload(&input.Source, &input.InputSchema, &input.OutputSchema, &input.Meta)
 	return validateDataView(input.ProjectIdentity, input.FolderIdentity, input.QueryIdentity, input.Identity, input.DisplayName, input.ViewType)
 }
 
-func normalizeUpdateInput(input *adapters.UpdateDataViewInput) error {
+func normalizeUpdateInput(input *UpdateDataViewInput) error {
 	normalizeDataViewFields(&input.ProjectIdentity, &input.FolderIdentity, &input.QueryIdentity, &input.DataViewIdentity, &input.DisplayName, &input.ViewType, &input.Description)
 	normalizeDataViewPayload(&input.Source, &input.InputSchema, &input.OutputSchema, &input.Meta)
 	return validateDataView(input.ProjectIdentity, input.FolderIdentity, input.QueryIdentity, input.DataViewIdentity, input.DisplayName, input.ViewType)
 }
 
-func normalizeListInput(input *adapters.ListDataViewsInput) error {
+func normalizeListInput(input *ListDataViewsInput) error {
 	input.ProjectIdentity = strings.TrimSpace(input.ProjectIdentity)
 	if input.FolderIdentity != nil {
 		value := strings.TrimSpace(*input.FolderIdentity)
@@ -110,7 +109,7 @@ func (s *DataView) resolveFolderID(ctx context.Context, projectID uuid.UUID, ide
 	return &folder.ID, nil
 }
 
-func (s *DataView) resolveFolder(ctx context.Context, projectID uuid.UUID, identity string) (*entities.Folder, error) {
+func (s *DataView) resolveFolder(ctx context.Context, projectID uuid.UUID, identity string) (*entities.RFolder, error) {
 	folder, err := s.folderRepository.GetByIdentity(ctx, &projectID, entities.FolderEntityTypeDataViews, identity)
 	if errors.Is(err, apperrors.ErrNotFound) {
 		return nil, apperrors.InvalidInput("folder_entity_type_mismatch", "folder must belong to the project and have data_views entity type")
@@ -129,7 +128,7 @@ func (s *DataView) resolveQueryID(ctx context.Context, projectID uuid.UUID, iden
 	return &query.ID, nil
 }
 
-func (s *DataView) resolveActiveQuery(ctx context.Context, projectID uuid.UUID, identity string) (*entities.Query, error) {
+func (s *DataView) resolveActiveQuery(ctx context.Context, projectID uuid.UUID, identity string) (*entities.RQuery, error) {
 	query, err := s.queryRepository.GetByIdentity(ctx, projectID, identity)
 	if !errors.Is(err, apperrors.ErrNotFound) {
 		return query, err
@@ -144,19 +143,19 @@ func (s *DataView) resolveActiveQuery(ctx context.Context, projectID uuid.UUID, 
 	return nil, err
 }
 
-func dataViewFromCreate(projectID, folderID, queryID uuid.UUID, input adapters.CreateDataViewInput) *entities.DataView {
-	return &entities.DataView{ProjectID: projectID, FolderID: folderID, QueryID: queryID, Identity: input.Identity, DisplayName: input.DisplayName, Description: input.Description, ViewType: input.ViewType, Source: input.Source, InputSchema: input.InputSchema, OutputSchema: input.OutputSchema, Meta: input.Meta, Active: input.Active}
+func dataViewFromCreate(projectID, folderID, queryID uuid.UUID, input CreateDataViewInput) *entities.RDataView {
+	return &entities.RDataView{ProjectID: projectID, FolderID: folderID, QueryID: queryID, Identity: input.Identity, DisplayName: input.DisplayName, Description: input.Description, ViewType: input.ViewType, Source: input.Source, InputSchema: input.InputSchema, OutputSchema: input.OutputSchema, Meta: input.Meta, Active: input.Active}
 }
 
-func dataViewFromUpdate(current *entities.DataView, folderID, queryID uuid.UUID, input adapters.UpdateDataViewInput) *entities.DataView {
-	return &entities.DataView{ID: current.ID, ProjectID: current.ProjectID, FolderID: folderID, QueryID: queryID, Identity: current.Identity, DisplayName: input.DisplayName, Description: input.Description, ViewType: input.ViewType, Source: input.Source, InputSchema: input.InputSchema, OutputSchema: input.OutputSchema, Meta: input.Meta, Active: input.Active, DeletedAt: current.DeletedAt, CreatedAt: current.CreatedAt, UpdatedAt: current.UpdatedAt}
+func dataViewFromUpdate(current *entities.RDataView, folderID, queryID uuid.UUID, input UpdateDataViewInput) *entities.RDataView {
+	return &entities.RDataView{ID: current.ID, ProjectID: current.ProjectID, FolderID: folderID, QueryID: queryID, Identity: current.Identity, DisplayName: input.DisplayName, Description: input.Description, ViewType: input.ViewType, Source: input.Source, InputSchema: input.InputSchema, OutputSchema: input.OutputSchema, Meta: input.Meta, Active: input.Active, DeletedAt: current.DeletedAt, CreatedAt: current.CreatedAt, UpdatedAt: current.UpdatedAt}
 }
 
-func dataViewWithRelations(dataView *entities.DataView, folderIdentity, queryIdentity string) *adapters.DataViewWithRelations {
-	return &adapters.DataViewWithRelations{DataView: dataView, FolderIdentity: folderIdentity, QueryIdentity: queryIdentity}
+func dataViewWithRelations(dataView *entities.RDataView, folderIdentity, queryIdentity string) *DataViewWithRelations {
+	return &DataViewWithRelations{DataView: dataView, FolderIdentity: folderIdentity, QueryIdentity: queryIdentity}
 }
 
-func dataViewsWithRelations(dataViews []*entities.DataView, folders []*entities.Folder, queries []*entities.Query) ([]*adapters.DataViewWithRelations, error) {
+func dataViewsWithRelations(dataViews []*entities.RDataView, folders []*entities.RFolder, queries []*entities.RQuery) ([]*DataViewWithRelations, error) {
 	folderIdentities := make(map[uuid.UUID]string, len(folders))
 	for _, folder := range folders {
 		folderIdentities[folder.ID] = folder.Identity
@@ -165,7 +164,7 @@ func dataViewsWithRelations(dataViews []*entities.DataView, folders []*entities.
 	for _, query := range queries {
 		queryIdentities[query.ID] = query.Identity
 	}
-	result := make([]*adapters.DataViewWithRelations, 0, len(dataViews))
+	result := make([]*DataViewWithRelations, 0, len(dataViews))
 	for _, dataView := range dataViews {
 		folderIdentity, folderOK := folderIdentities[dataView.FolderID]
 		if !folderOK {

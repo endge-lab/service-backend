@@ -12,6 +12,8 @@ sql:
         emit_interface: false
         emit_exact_table_names: false
         sql_package: "pgx/v5"
+        rename:
+          components_legacy: ComponentLegacy
         overrides:
           - db_type: "uuid"
             go_type:

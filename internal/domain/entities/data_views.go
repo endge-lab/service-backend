@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type DataView struct {
+type RDataView struct {
 	ID        uuid.UUID
 	ProjectID uuid.UUID
 	FolderID  uuid.UUID
@@ -28,6 +28,6 @@ type DataView struct {
 	UpdatedAt time.Time
 }
 
-func (DataView) FolderEntityType() FolderEntityType {
+func (RDataView) FolderEntityType() FolderEntityType {
 	return FolderEntityTypeDataViews
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type Converter struct {
+type RConverter struct {
 	ID        uuid.UUID
 	ProjectID uuid.UUID
 	FolderID  uuid.UUID
@@ -27,6 +27,6 @@ type Converter struct {
 	UpdatedAt time.Time
 }
 
-func (Converter) FolderEntityType() FolderEntityType {
+func (RConverter) FolderEntityType() FolderEntityType {
 	return FolderEntityTypeConverters
 }

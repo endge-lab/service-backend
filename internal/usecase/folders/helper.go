@@ -5,16 +5,15 @@ import (
 	"strings"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
 	apperrors "github.com/endge-lab/service-kit-go/pkg/errors"
 	"github.com/google/uuid"
 )
 
 func (s *Folder) resolveFolder(
 	ctx context.Context,
-	input *adapters.FolderIdentityInput,
+	input *FolderIdentityInput,
 	includeDeleted bool,
-) (*entities.Folder, error) {
+) (*entities.RFolder, error) {
 	if err := normalizeAndValidateIdentityInput(
 		&input.ProjectIdentity,
 		&input.EntityType,
@@ -103,7 +102,7 @@ func (s *Folder) validateNoCycle(ctx context.Context, folderID uuid.UUID, parent
 	return nil
 }
 
-func normalizeAndValidateCreateInput(input *adapters.CreateFolderInput) error {
+func normalizeAndValidateCreateInput(input *CreateFolderInput) error {
 	input.ProjectIdentity = strings.TrimSpace(input.ProjectIdentity)
 	input.Identity = strings.TrimSpace(input.Identity)
 	input.DisplayName = strings.TrimSpace(input.DisplayName)
@@ -125,7 +124,7 @@ func normalizeAndValidateCreateInput(input *adapters.CreateFolderInput) error {
 	return nil
 }
 
-func normalizeAndValidateUpdateInput(input *adapters.UpdateFolderInput) error {
+func normalizeAndValidateUpdateInput(input *UpdateFolderInput) error {
 	input.ProjectIdentity = strings.TrimSpace(input.ProjectIdentity)
 	input.Identity = strings.TrimSpace(input.Identity)
 	input.DisplayName = strings.TrimSpace(input.DisplayName)
@@ -147,7 +146,7 @@ func normalizeAndValidateUpdateInput(input *adapters.UpdateFolderInput) error {
 	return nil
 }
 
-func normalizeAndValidateListInput(input *adapters.ListFoldersInput) error {
+func normalizeAndValidateListInput(input *ListFoldersInput) error {
 	input.ProjectIdentity = strings.TrimSpace(input.ProjectIdentity)
 	if input.ProjectIdentity == "" {
 		return apperrors.InvalidInput("validation_error", "project identity is required")
@@ -198,7 +197,7 @@ func validateFolderFields(
 
 func isSupportedEntityType(entityType entities.FolderEntityType) bool {
 	switch entityType {
-	case entities.FolderEntityTypeComponents,
+	case entities.FolderEntityTypeComponentsLegacy,
 		entities.FolderEntityTypeConverters,
 		entities.FolderEntityTypeQueries,
 		entities.FolderEntityTypeDataViews:

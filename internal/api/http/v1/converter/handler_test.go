@@ -10,7 +10,7 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	"github.com/endge-lab/service-backend/internal/usecase/converters"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -18,8 +18,8 @@ import (
 )
 
 func TestConverterHandlers(t *testing.T) {
-	value := &adapters.ConverterWithFolder{
-		Converter:      &entities.Converter{ID: uuid.New(), Identity: "date-format", ConverterType: "format"},
+	value := &converters.ConverterWithFolder{
+		Converter:      &entities.RConverter{ID: uuid.New(), Identity: "date-format", ConverterType: "format"},
 		FolderIdentity: "root-converters",
 	}
 	service := &converterServiceStub{value: value}
@@ -82,7 +82,7 @@ func TestConverterHandlers(t *testing.T) {
 }
 
 func TestConverterHandlerValidationAndDomainErrors(t *testing.T) {
-	service := &converterServiceStub{value: &adapters.ConverterWithFolder{Converter: &entities.Converter{ID: uuid.New()}, FolderIdentity: "root-converters"}}
+	service := &converterServiceStub{value: &converters.ConverterWithFolder{Converter: &entities.RConverter{ID: uuid.New()}, FolderIdentity: "root-converters"}}
 	handler := &Handler{service: service, validator: appvalidator.NewValidator(), logger: zap.NewNop()}
 	app := fiber.New()
 	app.Post("/converters", handler.Create)
@@ -126,45 +126,45 @@ func TestConverterHandlerValidationAndDomainErrors(t *testing.T) {
 }
 
 type converterServiceStub struct {
-	value       *adapters.ConverterWithFolder
+	value       *converters.ConverterWithFolder
 	err         error
-	createInput adapters.CreateConverterInput
-	listInput   adapters.ListConvertersInput
+	createInput converters.CreateConverterInput
+	listInput   converters.ListConvertersInput
 }
 
-func (s *converterServiceStub) Create(_ context.Context, input adapters.CreateConverterInput) (*adapters.ConverterWithFolder, error) {
+func (s *converterServiceStub) Create(_ context.Context, input converters.CreateConverterInput) (*converters.ConverterWithFolder, error) {
 	s.createInput = input
 	return s.value, s.err
 }
 
-func (s *converterServiceStub) Update(context.Context, adapters.UpdateConverterInput) (*adapters.ConverterWithFolder, error) {
+func (s *converterServiceStub) Update(context.Context, converters.UpdateConverterInput) (*converters.ConverterWithFolder, error) {
 	return s.value, s.err
 }
 
-func (s *converterServiceStub) GetByIdentity(context.Context, adapters.GetConverterInput) (*adapters.ConverterWithFolder, error) {
+func (s *converterServiceStub) GetByIdentity(context.Context, converters.GetConverterInput) (*converters.ConverterWithFolder, error) {
 	return s.value, s.err
 }
 
-func (s *converterServiceStub) List(_ context.Context, input adapters.ListConvertersInput) ([]*adapters.ConverterWithFolder, error) {
+func (s *converterServiceStub) List(_ context.Context, input converters.ListConvertersInput) ([]*converters.ConverterWithFolder, error) {
 	s.listInput = input
 	if s.err != nil {
 		return nil, s.err
 	}
-	return []*adapters.ConverterWithFolder{s.value}, nil
+	return []*converters.ConverterWithFolder{s.value}, nil
 }
 
-func (s *converterServiceStub) SoftDelete(context.Context, adapters.ConverterIdentityInput) error {
+func (s *converterServiceStub) SoftDelete(context.Context, converters.ConverterIdentityInput) error {
 	return s.err
 }
 
-func (s *converterServiceStub) Restore(context.Context, adapters.ConverterIdentityInput) error {
+func (s *converterServiceStub) Restore(context.Context, converters.ConverterIdentityInput) error {
 	return s.err
 }
 
-func (s *converterServiceStub) HardDelete(context.Context, adapters.ConverterIdentityInput) error {
+func (s *converterServiceStub) HardDelete(context.Context, converters.ConverterIdentityInput) error {
 	return s.err
 }
 
-func (s *converterServiceStub) Count(context.Context, adapters.ListConvertersInput) (int64, error) {
+func (s *converterServiceStub) Count(context.Context, converters.ListConvertersInput) (int64, error) {
 	return 0, s.err
 }

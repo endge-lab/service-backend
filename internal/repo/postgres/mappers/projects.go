@@ -5,16 +5,16 @@ import (
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
 )
 
-func Project(value sqlc.Project) *entities.Project {
-	return &entities.Project{ID: value.ID, Identity: value.Identity, DisplayName: value.DisplayName, Description: NullableTextToEntity(value.Description), Active: value.Active, DeletedAt: NullableTimeToEntity(value.DeletedAt), Meta: JSONBToEntity(value.Meta), CreatedAt: value.CreatedAt, UpdatedAt: value.UpdatedAt}
+func Project(value sqlc.Project) *entities.RProject {
+	return &entities.RProject{ID: value.ID, Identity: value.Identity, DisplayName: value.DisplayName, Description: NullableTextToEntity(value.Description), Active: value.Active, DeletedAt: NullableTimeToEntity(value.DeletedAt), Meta: JSONBToEntity(value.Meta), CreatedAt: value.CreatedAt, UpdatedAt: value.UpdatedAt}
 }
-func CreateProjectParams(value *entities.Project) sqlc.CreateProjectParams {
+func CreateProjectParams(value *entities.RProject) sqlc.CreateProjectParams {
 	if value == nil {
 		return sqlc.CreateProjectParams{}
 	}
 	return sqlc.CreateProjectParams{Identity: value.Identity, DisplayName: value.DisplayName, Description: NullableTextToSQLC(value.Description), Active: value.Active, Meta: JSONBToSQLC(value.Meta)}
 }
-func UpdateProjectParams(value *entities.Project) sqlc.UpdateProjectParams {
+func UpdateProjectParams(value *entities.RProject) sqlc.UpdateProjectParams {
 	if value == nil {
 		return sqlc.UpdateProjectParams{}
 	}

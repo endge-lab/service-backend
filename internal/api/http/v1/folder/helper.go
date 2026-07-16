@@ -2,13 +2,13 @@ package folder
 
 import (
 	"github.com/endge-lab/service-backend/internal/domain/entities"
-	"github.com/endge-lab/service-backend/internal/usecase/adapters"
+	"github.com/endge-lab/service-backend/internal/usecase/folders"
 	servicefiber "github.com/endge-lab/service-kit-go/pkg/httpkit/fiber"
 	"github.com/gofiber/fiber/v2"
 )
 
-func (h *Handler) folderIdentityInput(c *fiber.Ctx) adapters.FolderIdentityInput {
-	return adapters.FolderIdentityInput{
+func (h *Handler) folderIdentityInput(c *fiber.Ctx) folders.FolderIdentityInput {
+	return folders.FolderIdentityInput{
 		ProjectIdentity: c.Params("project_identity"),
 		EntityType:      entities.FolderEntityType(c.Query("entity_type")),
 		Identity:        c.Params("folder_identity"),
@@ -18,7 +18,7 @@ func (h *Handler) folderIdentityInput(c *fiber.Ctx) adapters.FolderIdentityInput
 func (h *Handler) newFolderResponse(
 	c *fiber.Ctx,
 	projectIdentity string,
-	folder *entities.Folder,
+	folder *entities.RFolder,
 ) (*FolderResponse, error) {
 	if folder == nil || folder.ParentID == nil {
 		return NewFolderResponse(folder, projectIdentity, nil), nil
@@ -34,7 +34,7 @@ func (h *Handler) newFolderResponse(
 }
 
 func NewFolderResponse(
-	folder *entities.Folder,
+	folder *entities.RFolder,
 	projectIdentity string,
 	parentIdentity *string,
 ) *FolderResponse {

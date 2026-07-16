@@ -9,13 +9,13 @@ import (
 type FolderEntityType string
 
 const (
-	FolderEntityTypeComponents FolderEntityType = "components"
-	FolderEntityTypeConverters FolderEntityType = "converters"
-	FolderEntityTypeQueries    FolderEntityType = "queries"
-	FolderEntityTypeDataViews  FolderEntityType = "data-views"
+	FolderEntityTypeComponentsLegacy FolderEntityType = "components-legacy"
+	FolderEntityTypeConverters       FolderEntityType = "converters"
+	FolderEntityTypeQueries          FolderEntityType = "queries"
+	FolderEntityTypeDataViews        FolderEntityType = "data-views"
 )
 
-type Folder struct {
+type RFolder struct {
 	ID          uuid.UUID        `json:"id"`
 	ProjectID   *uuid.UUID       `json:"project_id,omitempty"`
 	EntityType  FolderEntityType `json:"entity_type"`
