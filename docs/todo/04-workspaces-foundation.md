@@ -2,53 +2,72 @@
 
 ## Цель
 
-Реализовать `RWorkspace` как корневой scope домена: migration, entity, repository, usecase и HTTP API.
+Реализовать `RWorkspace` как корневой организационный scope домена: migration, entity, repository, usecase и HTTP API.
+
+Workspace хранит полную исходную `EndgeConfiguration`. Это единственный из четырёх configuration layers, который не является patch. Project, Environment и Tenant хранят собственные `EndgeConfigurationContribution` и уточняют либо полностью заменяют результат предыдущего слоя.
 
 На текущем этапе backend открытый: authentication, users, memberships и роли не реализовывать. Все клиенты имеют полный доступ ко всем workspace.
 
 ## Таблица `workspaces`
 
 ```sql
-id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-identity TEXT NOT NULL,
-display_name TEXT NOT NULL,
-vars JSONB NOT NULL DEFAULT '[]'::jsonb,
-sse JSONB NULL,
-sse_auth_profile_id UUID NULL,
-locales JSONB NOT NULL,
-default_locale TEXT NOT NULL,
-fallback_locale TEXT NOT NULL,
-default_auth_profile_id UUID NULL,
-sfc_adapter_ids JSONB NOT NULL DEFAULT '["native-vue"]'::jsonb,
-default_sfc_adapter_id TEXT NOT NULL DEFAULT 'native-vue',
-created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE workspaces (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  identity TEXT NOT NULL UNIQUE,
+  display_name TEXT NOT NULL,
+  configuration JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK (btrim(identity) <> ''),
+  CHECK (btrim(display_name) <> ''),
+  CHECK (jsonb_typeof(configuration) = 'object')
+);
 ```
 
-Ограничения:
+Не раскладывать `vars`, locales, themes, SSE и adapter settings по отдельным колонкам. Persisted contract и frontend contract должны иметь одну nested-структуру `configuration`.
 
-- `identity` уникален и не пуст после trim;
-- `display_name` не пуст после trim;
-- `vars`, `locales`, `sfc_adapter_ids` — JSON arrays;
-- `locales` и `sfc_adapter_ids` не могут быть пустыми;
-- `default_locale` и `fallback_locale` должны присутствовать в `locales[].code`;
-- `default_sfc_adapter_id` должен присутствовать в `sfc_adapter_ids`.
-
-Точные JSON-форматы:
+## Полная `EndgeConfiguration`
 
 ```json
 {
-  "vars": [{ "name": "ENDPOINT_API", "defaultValue": "https://example.test" }],
+  "vars": [],
+  "locales": [
+    {
+      "code": "ru",
+      "displayName": "Русский",
+      "shortLabel": "RU",
+      "direction": "ltr"
+    },
+    {
+      "code": "en",
+      "displayName": "English",
+      "shortLabel": "EN",
+      "direction": "ltr"
+    }
+  ],
+  "defaultLocale": "ru",
+  "fallbackLocale": "ru",
+  "themes": [
+    { "identity": "light", "displayName": "Светлая" },
+    { "identity": "dark", "displayName": "Тёмная" }
+  ],
+  "defaultTheme": "light",
+  "defaultAuthProfileIdentity": null,
+  "sfcAdapterIds": ["native-vue"],
+  "defaultSfcAdapterId": "native-vue"
+}
+```
+
+Это одновременно default для новой записи. Поле `sse` optional и при отсутствии настройки не включается в JSON:
+
+```json
+{
   "sse": {
     "url": "{ENDPOINT_SSE}",
     "authMode": "inherit",
     "authProfileIdentity": null,
     "manualToken": null
-  },
-  "locales": [
-    { "code": "ru", "displayName": "Русский", "shortLabel": "RU", "direction": "ltr" }
-  ],
-  "sfcAdapterIds": ["native-vue"]
+  }
 }
 ```
 
@@ -59,32 +78,55 @@ locales[].direction: ltr | rtl
 sse.authMode: inherit | profile | manual | none
 ```
 
-`vars[].name`, `locales[].code` и элементы `sfc_adapter_ids` должны быть непустыми и уникальными внутри своих массивов. `sse` целиком может быть `NULL`.
+Usecase обязан проверять:
 
-HTTP API принимает `defaultAuthProfileIdentity` и `sse.authProfileIdentity`, но usecase разрешает их по `(workspace_id, identity)` и сохраняет UUID в `default_auth_profile_id` и `sse_auth_profile_id`. В `sse JSONB` поле `authProfileIdentity` не дублировать. До выполнения задачи `18-auth-profiles-foundation` оба поля должны быть `NULL`; внешние ключи и conditional constraints добавляются migration из задачи №18 после создания `auth_profiles`.
+- `vars`, `locales`, `themes`, `sfcAdapterIds` являются arrays;
+- `locales`, `themes` и `sfcAdapterIds` не пустые;
+- `vars[].name`, `locales[].code`, `themes[].identity` и элементы `sfcAdapterIds` непустые и уникальные внутри массива;
+- `defaultLocale` и `fallbackLocale` входят в `locales[].code`;
+- `defaultTheme` входит в `themes[].identity`;
+- `defaultSfcAdapterId` входит в `sfcAdapterIds`;
+- `defaultAuthProfileIdentity` и `sse.authProfileIdentity` имеют значение `string | null`;
+- при `sse.authMode=profile` указан `sse.authProfileIdentity`;
+- при `sse.authMode=manual` значение `manualToken` обрабатывается как secret.
 
-Для `sse.authMode=profile` обязателен `sse_auth_profile_id`; при других режимах он должен быть `NULL`. `default_auth_profile_id` может быть `NULL`. Удаление используемого auth profile должно блокироваться через `ON DELETE RESTRICT` и domain error `auth_profile_in_use`.
+После задачи `18-auth-profiles-foundation` auth profile identities валидируются внутри текущего workspace. В portable configuration сохраняется стабильный identity, а не UUID relation из конкретной БД.
 
-`sse.manualToken` является sensitive value: не логировать, не добавлять в traces/errors и не включать в debug dump. Если в проекте уже есть механизм шифрования secrets, хранить значение через него.
+`sse.manualToken` нельзя логировать, добавлять в traces/errors или включать в portable/debug dump. Если backend поддерживает encryption at rest, сохранять secret через этот механизм.
+
+## Configuration cascade
+
+Backend должен использовать тот же порядок, что и frontend Core:
+
+```text
+Workspace.configuration
+  -> Project.configuration
+  -> Environment.configuration
+  -> Tenant.configuration
+  = effective EndgeConfiguration
+```
+
+Эффективная конфигурация зависит от полного execution context и вычисляется при boot/build. Её нельзя сохранять в отдельную таблицу или обратно в любую из четырёх сущностей.
+
+Workspace, Project, Environment и Tenant не образуют жёсткую parent chain через foreign keys друг на друга. Project и Environment могут использоваться в разных execution contexts. Все три дочерних слоя принадлежат Workspace, а конкретное сочетание выбирается при запуске.
 
 ## Связь с доменом
 
-- добавить `workspace_id UUID NOT NULL REFERENCES workspaces(id)` в `projects`;
-- уникальность проекта изменить на `(workspace_id, identity)`;
-- project usecase/repository всегда получает `workspaceID` и фильтрует по нему;
-- будущие workspace-scoped таблицы должны иметь `workspace_id` напрямую, если `project_id` у них optional;
-- нельзя доверять `workspaceId/workspaceIdentity` из body доменных документов: scope приходит из request context.
+- добавить `workspace_id UUID NOT NULL REFERENCES workspaces(id)` в `projects`, `environments`, `tenants`, `folders` и остальные workspace-scoped таблицы;
+- uniqueness стабильных identities задавать внутри workspace, если отдельная задача не требует глобальной уникальности;
+- нельзя доверять `workspaceId` или `workspaceIdentity` из body доменных документов: scope приходит из request context;
+- не добавлять `tenant_id`, `project_id` или `environment_id` в сущность только ради configuration resolution;
 - правила внешних ключей, dependency validation и portable import реализуются по задаче `07-domain-relations-and-portable-import`.
 
 ## Entity и usecase
 
-Создать `RWorkspace` с полями, перечисленными выше, и ports:
+Создать `RWorkspace` и port:
 
 ```text
 WorkspacesRepository
 ```
 
-Минимальные usecase operations:
+Минимальные operations:
 
 ```text
 Create(input) -> workspace
@@ -93,129 +135,97 @@ GetByIdentity(identity) -> workspace
 Update(identity, patch) -> workspace
 ```
 
-Update является partial update; `identity`, `id` и `createdAt` неизменяемы. Удаление workspace в этой задаче не реализовывать: сначала должна быть определена cascade/archive policy для всего домена.
+Update является partial update верхнего уровня. `identity`, `id` и `createdAt` неизменяемы. Если передано поле `configuration`, оно заменяет полную root configuration и проходит полную validation. Частичный JSON merge внутри `configuration` не выполнять.
+
+Удаление workspace в этой задаче не реализовывать: сначала должна быть определена cascade/archive policy для всего домена.
 
 ## HTTP API
 
-Эти endpoints не требуют `X-Endge-Workspace`, потому что они выбирают или создают сам workspace. API принимает и возвращает camelCase поля.
+Эти endpoints не требуют `X-Endge-Workspace`, потому что они выбирают или создают сам workspace.
 
-### `GET /api/v1/workspaces`
-
-Возвращает список всех workspace. Query и body parameters отсутствуют.
-
-Response `200 OK`:
-
-```json
-{
-  "items": [
-    {
-      "id": "00000000-0000-4000-8000-000000000001",
-      "identity": "default",
-      "displayName": "Default workspace",
-      "vars": [],
-      "sse": null,
-      "locales": [
-        { "code": "ru", "displayName": "Русский", "shortLabel": "RU", "direction": "ltr" }
-      ],
-      "defaultLocale": "ru",
-      "fallbackLocale": "ru",
-      "defaultAuthProfileIdentity": null,
-      "sfcAdapterIds": ["native-vue"],
-      "defaultSfcAdapterId": "native-vue",
-      "createdAt": "2026-07-16T10:00:00Z",
-      "updatedAt": "2026-07-16T10:00:00Z"
-    }
-  ]
-}
+```text
+GET   /api/v1/workspaces
+POST  /api/v1/workspaces
+GET   /api/v1/workspaces/:workspace_identity
+PATCH /api/v1/workspaces/:workspace_identity
 ```
 
-### `POST /api/v1/workspaces`
-
-Создаёт новый workspace. `identity` должен быть уникальным.
-
-Request body:
+Create request:
 
 ```json
 {
   "identity": "default",
   "displayName": "Default workspace",
-  "vars": [
-    { "name": "ENDPOINT_API", "defaultValue": "https://example.test" }
-  ],
-  "sse": {
-    "url": "{ENDPOINT_SSE}",
-    "authMode": "inherit",
-    "authProfileIdentity": null,
-    "manualToken": null
-  },
-  "locales": [
-    { "code": "ru", "displayName": "Русский", "shortLabel": "RU", "direction": "ltr" }
-  ],
-  "defaultLocale": "ru",
-  "fallbackLocale": "ru",
-  "defaultAuthProfileIdentity": null,
-  "sfcAdapterIds": ["native-vue"],
-  "defaultSfcAdapterId": "native-vue"
+  "configuration": {
+    "vars": [],
+    "locales": [
+      { "code": "ru", "displayName": "Русский", "shortLabel": "RU", "direction": "ltr" },
+      { "code": "en", "displayName": "English", "shortLabel": "EN", "direction": "ltr" }
+    ],
+    "defaultLocale": "ru",
+    "fallbackLocale": "ru",
+    "themes": [
+      { "identity": "light", "displayName": "Светлая" },
+      { "identity": "dark", "displayName": "Тёмная" }
+    ],
+    "defaultTheme": "light",
+    "defaultAuthProfileIdentity": null,
+    "sfcAdapterIds": ["native-vue"],
+    "defaultSfcAdapterId": "native-vue"
+  }
 }
 ```
 
-Response `201 Created`: созданный workspace, включая `id`, `createdAt` и `updatedAt`. Sensitive поле `sse.manualToken` в response не возвращать. Если `identity` уже занят — `409 Conflict`.
+Поле `configuration` можно не передавать при create: backend обязан поставить system default выше.
 
-При создании workspace ещё не существует auth profile в его scope, поэтому `defaultAuthProfileIdentity` и `sse.authProfileIdentity` в POST должны быть `null`. После создания профиля их можно назначить через PATCH; usecase разрешает identity в UUID transactionally.
-
-### `GET /api/v1/workspaces/:workspace_identity`
-
-Возвращает один workspace по его стабильному `identity`.
-
-Path parameter:
-
-```text
-workspace_identity = default
-```
-
-Пример запроса:
-
-```http
-GET /api/v1/workspaces/default
-```
-
-Response `200 OK`: workspace в том же формате, что элемент `items` в list response. Если запись не найдена — `404 Not Found`.
-
-### `PATCH /api/v1/workspaces/:workspace_identity`
-
-Частично обновляет существующий workspace. В body передаются только изменяемые поля; `id`, `identity`, `createdAt` и `updatedAt` клиент не передаёт.
-
-Path parameter:
-
-```text
-workspace_identity = default
-```
-
-Request body example:
+Response:
 
 ```json
 {
-  "displayName": "Main workspace",
-  "fallbackLocale": "en",
-  "locales": [
-    { "code": "ru", "displayName": "Русский", "shortLabel": "RU", "direction": "ltr" },
-    { "code": "en", "displayName": "English", "shortLabel": "EN", "direction": "ltr" }
-  ]
+  "id": "00000000-0000-4000-8000-000000000001",
+  "identity": "default",
+  "displayName": "Default workspace",
+  "configuration": {
+    "vars": [],
+    "locales": [
+      { "code": "ru", "displayName": "Русский", "shortLabel": "RU", "direction": "ltr" },
+      { "code": "en", "displayName": "English", "shortLabel": "EN", "direction": "ltr" }
+    ],
+    "defaultLocale": "ru",
+    "fallbackLocale": "ru",
+    "themes": [
+      { "identity": "light", "displayName": "Светлая" },
+      { "identity": "dark", "displayName": "Тёмная" }
+    ],
+    "defaultTheme": "light",
+    "defaultAuthProfileIdentity": null,
+    "sfcAdapterIds": ["native-vue"],
+    "defaultSfcAdapterId": "native-vue"
+  },
+  "createdAt": "2026-07-16T10:00:00Z",
+  "updatedAt": "2026-07-16T10:00:00Z"
 }
 ```
 
-Переданные массивы `vars`, `locales` и `sfcAdapterIds` заменяются целиком; значение `sse: null` удаляет SSE-конфигурацию.
+`PATCH` принимает `displayName` и/или полную `configuration`. `sse.manualToken` в обычных responses должен быть redacted согласно общей secret policy.
 
-Response `200 OK`: обновлённый workspace без `sse.manualToken`. Если запись не найдена — `404 Not Found`; если нарушены locale/SFC invariants — `400 Bad Request`.
+## Tests
 
-Поле `id` возвращается как UUID string; в URLs и workspace header используется стабильный `identity`. Не преобразовывать UUID в number и не генерировать отдельный numeric ID в этой задаче.
+Минимально проверить:
+
+- create без `configuration` использует `ru/en`, `light/dark` и `light` по умолчанию;
+- nested configuration проходит repository round-trip без раскладывания по legacy columns;
+- locale, theme и adapter invariants;
+- optional SSE и secret redaction;
+- partial workspace update не выполняет скрытый merge внутри configuration;
+- duplicate workspace identity;
+- list/get/create/update HTTP scenarios.
 
 ## Acceptance Criteria
 
-- migration `000002_init_workspaces.sql` больше не содержит TODO;
-- таблицы пользователей, memberships и ролей не создаются;
+- migration создаёт одну nested `configuration JSONB`, без legacy columns `vars`, `locales`, `themes` и подобных;
+- default configuration содержит locales `ru/en`, themes `light/dark`, default locale `ru` и default theme `light`;
 - list/get возвращают все workspaces без проверки пользователя;
-- locale и SFC adapter invariants валидируются в usecase;
-- auth profile identities из HTTP не сохраняются как relation strings: после задачи №18 они разрешаются в UUID foreign keys;
-- project identity изолирован внутри workspace;
+- configuration invariants валидируются в domain/usecase layer;
+- project, environment и tenant остаются отдельными workspace-scoped layers;
 - есть repository/usecase/HTTP tests и проходит `go test ./...`.
