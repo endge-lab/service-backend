@@ -9,10 +9,10 @@
 ## Persisted fields
 
 ```text
-id UUID, workspace_id UUID, project_id UUID NULL, folder_id UUID,
+id UUID, workspace_id UUID, folder_id UUID,
 identity TEXT, display_name TEXT, description TEXT NULL, tag TEXT NULL,
 source TEXT, supported_targets JSONB, model_version INTEGER,
-is_system BOOLEAN, meta JSONB, active BOOLEAN, inherited BOOLEAN,
+is_system BOOLEAN, meta JSONB, active BOOLEAN,
 deleted_at TIMESTAMPTZ NULL, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ
 ```
 
@@ -25,7 +25,7 @@ Rules:
 - `supportedTargets` — непустой unique array из `dom | canvas`, default `['dom','canvas']`;
 - `modelVersion >= 1`, default `1`;
 - `tag` optional; duplicate/reserved tag не блокирует сохранение, а становится compiler diagnostic;
-- folder/project принадлежат текущему workspace и согласованы;
+- folder принадлежит текущему workspace; component не содержит `project_id`;
 - system component нельзя изменить или удалить через public API.
 
 Добавить folder type `components` и root `root-components`.
@@ -36,7 +36,7 @@ Backend хранит canonical `source` verbatim. Не сохранять `sourc
 
 Все методы требуют `X-Endge-Workspace`.
 
-- `GET /api/v1/components?identity=...&project_identity=...&folder_identity=...&target=dom&include_deleted=false` — summaries без source.
+- `GET /api/v1/components?identity=...&folder_identity=...&target=dom&include_deleted=false` — summaries без source.
 - `POST /api/v1/components` — создать component.
 - `GET /api/v1/components/:component_ref` — detail по UUID или identity.
 - `PATCH /api/v1/components/:component_id` — metadata update только по UUID.
@@ -54,7 +54,6 @@ Create request:
   "displayName": "User Card",
   "description": "Карточка пользователя",
   "tag": "UserCard",
-  "projectIdentity": "demo-project",
   "folderIdentity": "root-components",
   "source": "<script>const props = defineProps({ name: String })</script>\n<template><div>{{ props.name }}</div></template>",
   "supportedTargets": ["dom"],
@@ -77,14 +76,13 @@ Duplicate request:
 {
   "identity": "user-card-copy",
   "displayName": "User Card Copy",
-  "projectIdentity": "demo-project",
   "folderIdentity": "root-components"
 }
 ```
 
 List response содержит UUID, identity, metadata, targets, state and timestamps. Detail дополнительно содержит `source`. Backend должен разрешать сохранять incomplete/invalid source для editor autosave; compile/preview endpoints не нужны.
 
-Errors: `component_not_found`, `component_identity_conflict`, `component_in_use`, `invalid_render_target`, `system_component_mutation_forbidden`, project/folder errors.
+Errors: `component_not_found`, `component_identity_conflict`, `component_in_use`, `invalid_render_target`, `system_component_mutation_forbidden`, folder errors.
 
 ## Acceptance Criteria
 

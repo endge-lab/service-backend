@@ -9,14 +9,14 @@
 ## Поля
 
 ```text
-id UUID, workspace_id UUID, project_id UUID NULL, folder_id UUID,
+id UUID, workspace_id UUID, folder_id UUID,
 identity TEXT, display_name TEXT, description TEXT NULL, source TEXT,
 source_version INTEGER, contract_version INTEGER,
 input_type_id UUID NULL, input_is_array BOOLEAN NOT NULL DEFAULT FALSE,
 input_optional BOOLEAN NOT NULL DEFAULT FALSE,
 output_type_id UUID NULL, output_is_array BOOLEAN NOT NULL DEFAULT FALSE,
 output_optional BOOLEAN NOT NULL DEFAULT FALSE,
-meta JSONB, active BOOLEAN, inherited BOOLEAN, deleted_at TIMESTAMPTZ,
+meta JSONB, active BOOLEAN, deleted_at TIMESTAMPTZ,
 created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ
 ```
 
@@ -38,7 +38,7 @@ Input/output contract:
 
 Все методы требуют `X-Endge-Workspace`.
 
-- `GET /api/v1/computations?project_identity=...&folder_identity=...&include_deleted=false` — summaries без source.
+- `GET /api/v1/computations?folder_identity=...&include_deleted=false` — summaries без source.
 - `POST /api/v1/computations` — создать specification.
 - `GET /api/v1/computations/:computation_ref` — detail по UUID или identity.
 - `PATCH /api/v1/computations/:computation_id` — metadata/contract update по UUID.
@@ -54,7 +54,6 @@ Create request:
   "identity": "orders-total",
   "displayName": "Orders Total",
   "description": "Calculates order total",
-  "projectIdentity": "demo-project",
   "folderIdentity": "root-computations",
   "source": "defineComputation(({ orders }) => orders.reduce((sum, x) => sum + x.total, 0))",
   "sourceVersion": 1,
@@ -70,7 +69,7 @@ PATCH changes metadata, relations, input/output, `contractVersion`, `active`; id
 
 Transport mapper собирает `input`/`output` response обратно в публичный contract с `typeIdentity`; foreign UUID наружу не возвращается.
 
-Errors: `computation_not_found`, `computation_identity_conflict`, `computation_in_use`, `type_not_found`, `invalid_contract`, project/folder errors.
+Computation не содержит `project_id`; контекстное использование формируется через source dependencies и typed bindings. Errors: `computation_not_found`, `computation_identity_conflict`, `computation_in_use`, `type_not_found`, `invalid_contract`, folder errors.
 
 ## Acceptance Criteria
 

@@ -9,10 +9,10 @@
 ## Поля
 
 ```text
-id UUID, workspace_id UUID, project_id UUID NULL, folder_id UUID,
+id UUID, workspace_id UUID, folder_id UUID,
 identity TEXT, display_name TEXT, description TEXT NULL,
 content_source TEXT, content_type TEXT, source TEXT NULL, code_ref TEXT NULL,
-meta JSONB, active BOOLEAN, inherited BOOLEAN, deleted_at TIMESTAMPTZ,
+meta JSONB, active BOOLEAN, deleted_at TIMESTAMPTZ,
 created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ
 ```
 
@@ -29,7 +29,7 @@ Rules:
 - `document`: `source` обязателен; при JSON он должен парситься;
 - `code-provider`: требуется namespaced `codeRef`, например `@app:mocks.orders`; inline source не используется;
 - maximum source size — 2 MB;
-- project/folder должны принадлежать текущему workspace и совпадать между собой.
+- folder должна принадлежать текущему workspace; mock не содержит `project_id`.
 
 Добавить folder type `mocks` и root `root-mocks`.
 
@@ -37,7 +37,7 @@ Rules:
 
 Все методы требуют `X-Endge-Workspace`.
 
-- `GET /api/v1/mocks?project_identity=...&folder_identity=...&content_source=document` — summaries без `source`.
+- `GET /api/v1/mocks?folder_identity=...&content_source=document` — summaries без `source`.
 - `POST /api/v1/mocks` — создать mock.
 - `GET /api/v1/mocks/:mock_ref` — получить полный mock по UUID или identity.
 - `PATCH /api/v1/mocks/:mock_id` — обновить metadata/config по UUID.
@@ -52,7 +52,6 @@ Create inline JSON:
 {
   "identity": "orders-list",
   "displayName": "Orders List",
-  "projectIdentity": "demo-project",
   "folderIdentity": "root-mocks",
   "contentSource": "document",
   "contentType": "application/json",
@@ -73,7 +72,7 @@ Create code provider:
 }
 ```
 
-PATCH может менять `displayName`, `description`, relations, content config, `meta`, `active`; identity immutable. Errors: `mock_not_found`, `mock_identity_conflict`, `invalid_mock_json`, `mock_source_too_large`, `code_ref_required`, folder/project errors.
+PATCH может менять `displayName`, `description`, folder relation, content config, `meta`, `active`; identity immutable. Errors: `mock_not_found`, `mock_identity_conflict`, `invalid_mock_json`, `mock_source_too_large`, `code_ref_required`, folder errors.
 
 ## Acceptance Criteria
 

@@ -2,14 +2,14 @@
 
 ## Цель
 
-Реализовать `RNavigation` — workspace-scoped navigation tree, optionally linked to project.
+Реализовать `RNavigation` — workspace-scoped navigation tree.
 
 Задача зависит от `07-domain-relations-and-portable-import`.
 
 ## Поля
 
 ```text
-id UUID, workspace_id UUID, project_id UUID NULL, folder_id UUID NULL,
+id UUID, workspace_id UUID, folder_id UUID NULL,
 identity TEXT, display_name TEXT, description TEXT NULL,
 is_system BOOLEAN DEFAULT false, tree JSONB DEFAULT [], meta JSONB,
 created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ
@@ -35,13 +35,13 @@ Navigation node:
 
 Allowed node types: `section | group | link`. `section/group` may contain children; `link` must not. Node IDs должны быть unique within tree. External link requires absolute URL in `path`; internal link may use `path` or `routeName`. Uniqueness `(workspace_id, identity)`.
 
-Добавить folder type `navigations` и root `root-navigations`; validate project/folder workspace. System navigation immutable through public API.
+Добавить folder type `navigations` и root `root-navigations`; folder должна принадлежать текущему workspace. Navigation не содержит `project_id`. System navigation immutable through public API.
 
 ## HTTP API
 
 Все методы требуют `X-Endge-Workspace`.
 
-- `GET /api/v1/navigations?project_identity=...&folder_identity=...` — summaries без tree.
+- `GET /api/v1/navigations?folder_identity=...` — summaries без tree.
 - `POST /api/v1/navigations` — создать navigation.
 - `GET /api/v1/navigations/:navigation_ref` — detail по UUID или identity с tree.
 - `PATCH /api/v1/navigations/:navigation_id` — metadata update по UUID.
@@ -55,7 +55,6 @@ Create request:
   "identity": "main",
   "displayName": "Main Navigation",
   "description": "Application navigation",
-  "projectIdentity": "demo-project",
   "folderIdentity": "root-navigations",
   "tree": [
     { "id": "orders", "type": "link", "title": "Orders", "path": "/orders", "external": false }
@@ -81,8 +80,8 @@ Tree request:
 }
 ```
 
-Errors: `navigation_not_found`, `navigation_identity_conflict`, `navigation_in_use`, `invalid_navigation_tree`, `system_navigation_mutation_forbidden`, project/folder errors.
+Errors: `navigation_not_found`, `navigation_identity_conflict`, `navigation_in_use`, `invalid_navigation_tree`, `system_navigation_mutation_forbidden`, folder errors.
 
 ## Acceptance Criteria
 
-Tree recursively validated and replaced atomically; list excludes tree; project references protected; OpenAPI/tests готовы; `go test ./...` проходит.
+Tree recursively validated and replaced atomically; list excludes tree; OpenAPI/tests готовы; `go test ./...` проходит.

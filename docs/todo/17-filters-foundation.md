@@ -9,10 +9,10 @@
 ## Поля
 
 ```text
-id UUID, workspace_id UUID, project_id UUID NULL, folder_id UUID NULL,
+id UUID, workspace_id UUID, folder_id UUID NULL,
 identity TEXT, display_name TEXT, fields JSONB DEFAULT [],
 source TEXT DEFAULT '', source_version INTEGER DEFAULT 1,
-active BOOLEAN, inherited BOOLEAN, deleted_at TIMESTAMPTZ NULL,
+active BOOLEAN, deleted_at TIMESTAMPTZ NULL,
 meta JSONB, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ
 ```
 
@@ -39,13 +39,13 @@ Allowed modes: `static | vocab | date | time | datetime | boolean | string | num
 
 `vocabIdentity` и `converterIdentities` остаются identities внутри portable authoring JSON, не заменяются UUID и попадают в derived dependency index из задачи №7. Backend использует index для usages и запрета hard-delete vocabulary/converter; если source parser ещё недоступен, состояние source dependencies помечается `unverified`. Uniqueness `(workspace_id, identity)`, `sourceVersion >= 1`.
 
-Добавить folder type `filters` и root `root-filters`; validate project/folder scope.
+Добавить folder type `filters` и root `root-filters`; folder должна принадлежать текущему workspace. Filter не содержит `project_id`.
 
 ## HTTP API
 
 Все методы требуют `X-Endge-Workspace`.
 
-- `GET /api/v1/filters?project_identity=...&folder_identity=...&include_deleted=false` — summaries без fields/source.
+- `GET /api/v1/filters?folder_identity=...&include_deleted=false` — summaries без fields/source.
 - `POST /api/v1/filters` — создать filter.
 - `GET /api/v1/filters/:filter_ref` — detail по UUID или identity.
 - `PATCH /api/v1/filters/:filter_id` — metadata и полный `fields` array update по UUID.
@@ -60,7 +60,6 @@ Create request:
 {
   "identity": "flight-filter",
   "displayName": "Flight Filter",
-  "projectIdentity": "demo-project",
   "folderIdentity": "root-filters",
   "fields": [
     {
@@ -81,7 +80,7 @@ Create request:
 
 Arrays in PATCH replace completely. Backend validates structural fields and references but does not compile source.
 
-Errors: `filter_not_found`, `filter_identity_conflict`, `filter_in_use`, `invalid_filter_field`, `vocab_not_found`, `converter_not_found`, project/folder errors.
+Errors: `filter_not_found`, `filter_identity_conflict`, `filter_in_use`, `invalid_filter_field`, `vocab_not_found`, `converter_not_found`, folder errors.
 
 ## Acceptance Criteria
 

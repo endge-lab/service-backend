@@ -11,11 +11,11 @@
 ```text
 id UUID, workspace_id UUID, identity TEXT, display_name TEXT,
 schema JSONB, folder_id UUID, active BOOLEAN, is_system BOOLEAN,
-is_primitive BOOLEAN, inherited BOOLEAN, deleted_at TIMESTAMPTZ,
+is_primitive BOOLEAN, deleted_at TIMESTAMPTZ,
 meta JSONB, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ
 ```
 
-Обязательные defaults: `schema={}`, `active=true`, `isSystem=false`, `isPrimitive=false`, `inherited=false`, `meta={}`. Уникальность: `(workspace_id, identity)`. `identity` и `displayName` не пустые.
+Обязательные defaults: `schema={}`, `active=true`, `isSystem=false`, `isPrimitive=false`, `meta={}`. Уникальность: `(workspace_id, identity)`. `identity` и `displayName` не пустые.
 
 Canonical `schema`:
 
