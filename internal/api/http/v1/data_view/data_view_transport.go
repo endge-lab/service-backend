@@ -7,12 +7,12 @@ import (
 )
 
 type CreateDataViewRequest struct {
-	FolderIdentity string         `json:"folderIdentity" validate:"required"`
-	QueryIdentity  string         `json:"queryIdentity" validate:"required"`
-	Identity       string         `json:"identity" validate:"required"`
-	DisplayName    string         `json:"displayName" validate:"required"`
+	FolderIdentity string         `json:"folderIdentity" validate:"required,min=1,max=160"`
+	QueryIdentity  string         `json:"queryIdentity" validate:"required,min=1,max=160"`
+	Identity       string         `json:"identity" validate:"required,min=1,max=160"`
+	DisplayName    string         `json:"displayName" validate:"required,min=1,max=255"`
 	Description    *string        `json:"description"`
-	ViewType       string         `json:"viewType" validate:"required"`
+	ViewType       string         `json:"viewType" validate:"required,min=1,max=160"`
 	Source         map[string]any `json:"source" validate:"required"`
 	InputSchema    map[string]any `json:"inputSchema"`
 	OutputSchema   map[string]any `json:"outputSchema"`
@@ -21,11 +21,11 @@ type CreateDataViewRequest struct {
 }
 
 type UpdateDataViewRequest struct {
-	FolderIdentity string         `json:"folderIdentity" validate:"required"`
-	QueryIdentity  string         `json:"queryIdentity" validate:"required"`
-	DisplayName    string         `json:"displayName" validate:"required"`
+	FolderIdentity string         `json:"folderIdentity" validate:"required,min=1,max=160"`
+	QueryIdentity  string         `json:"queryIdentity" validate:"required,min=1,max=160"`
+	DisplayName    string         `json:"displayName" validate:"required,min=1,max=255"`
 	Description    *string        `json:"description"`
-	ViewType       string         `json:"viewType" validate:"required"`
+	ViewType       string         `json:"viewType" validate:"required,min=1,max=160"`
 	Source         map[string]any `json:"source" validate:"required"`
 	InputSchema    map[string]any `json:"inputSchema"`
 	OutputSchema   map[string]any `json:"outputSchema"`

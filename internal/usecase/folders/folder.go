@@ -115,6 +115,7 @@ func (s *Folder) Create(
 	}
 
 	folder := &entities.RFolder{
+		WorkspaceID: project.WorkspaceID,
 		ProjectID:   new(project.ID),
 		EntityType:  input.EntityType,
 		Identity:    input.Identity,
@@ -223,6 +224,7 @@ func (s *Folder) Update(
 
 	updated := &entities.RFolder{
 		ID:          current.ID,
+		WorkspaceID: current.WorkspaceID,
 		ProjectID:   current.ProjectID,
 		EntityType:  current.EntityType,
 		Identity:    current.Identity,

@@ -1,6 +1,9 @@
 package data_view
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/endge-lab/service-backend/internal/api/http/middleware"
+	"github.com/gofiber/fiber/v2"
+)
 
 type DVHandler interface{ DataViewHandler }
 
@@ -12,16 +15,16 @@ type DataViewHandler interface {
 	SoftDelete(*fiber.Ctx) error
 	Restore(*fiber.Ctx) error
 	HardDelete(*fiber.Ctx) error
-	TraceMiddleware(string) fiber.Handler
 }
 
-func RegisterRoutes(api fiber.Router, h DataViewHandler) {
+func RegisterRoutes(api fiber.Router, h DataViewHandler, workspaceMiddleware *middleware.WorkspaceContextMiddleware) {
 	r := api.Group("/v1/projects/:project_identity/data-views")
-	r.Post("/", h.TraceMiddleware("handler.data_view.create"), h.Create)
-	r.Get("/", h.TraceMiddleware("handler.data_view.list"), h.List)
-	r.Get("/:data_view_identity", h.TraceMiddleware("handler.data_view.get"), h.GetByIdentity)
-	r.Patch("/:data_view_identity", h.TraceMiddleware("handler.data_view.update"), h.Update)
-	r.Delete("/:data_view_identity", h.TraceMiddleware("handler.data_view.delete"), h.SoftDelete)
-	r.Post("/:data_view_identity/restore", h.TraceMiddleware("handler.data_view.restore"), h.Restore)
-	r.Delete("/:data_view_identity/hard", h.TraceMiddleware("handler.data_view.hard_delete"), h.HardDelete)
+	r.Use(workspaceMiddleware.RequireWorkspace())
+	r.Post("/", middleware.TraceMiddleware("handler.data_view.create"), h.Create)
+	r.Get("/", middleware.TraceMiddleware("handler.data_view.list"), h.List)
+	r.Get("/:data_view_identity", middleware.TraceMiddleware("handler.data_view.get"), h.GetByIdentity)
+	r.Patch("/:data_view_identity", middleware.TraceMiddleware("handler.data_view.update"), h.Update)
+	r.Delete("/:data_view_identity", middleware.TraceMiddleware("handler.data_view.delete"), h.SoftDelete)
+	r.Post("/:data_view_identity/restore", middleware.TraceMiddleware("handler.data_view.restore"), h.Restore)
+	r.Delete("/:data_view_identity/hard", middleware.TraceMiddleware("handler.data_view.hard_delete"), h.HardDelete)
 }

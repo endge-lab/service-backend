@@ -15,32 +15,40 @@ import (
 const countDataViews = `-- name: CountDataViews :one
 SELECT COUNT(*)
 FROM data_views
-WHERE data_views.project_id = $1
+WHERE data_views.workspace_id = $1
+  AND data_views.project_id = $2
   AND data_views.deleted_at IS NULL
   AND (
-    $2::uuid IS NULL
-    OR data_views.folder_id = $2
+    $3::uuid IS NULL
+    OR data_views.folder_id = $3
   )
   AND (
-    $3::uuid IS NULL
-    OR data_views.query_id = $3
+    $4::uuid IS NULL
+    OR data_views.query_id = $4
   )
   AND EXISTS (
     SELECT 1
     FROM queries
     WHERE queries.id = data_views.query_id
+      AND queries.workspace_id = $1
       AND queries.deleted_at IS NULL
   )
 `
 
 type CountDataViewsParams struct {
-	ProjectID uuid.UUID   `json:"project_id"`
-	FolderID  pgtype.UUID `json:"folder_id"`
-	QueryID   pgtype.UUID `json:"query_id"`
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
+	ProjectID   uuid.UUID   `json:"project_id"`
+	FolderID    pgtype.UUID `json:"folder_id"`
+	QueryID     pgtype.UUID `json:"query_id"`
 }
 
 func (q *Queries) CountDataViews(ctx context.Context, arg CountDataViewsParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countDataViews, arg.ProjectID, arg.FolderID, arg.QueryID)
+	row := q.db.QueryRow(ctx, countDataViews,
+		arg.WorkspaceID,
+		arg.ProjectID,
+		arg.FolderID,
+		arg.QueryID,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -48,6 +56,7 @@ func (q *Queries) CountDataViews(ctx context.Context, arg CountDataViewsParams) 
 
 const createDataView = `-- name: CreateDataView :one
 INSERT INTO data_views (
+    workspace_id,
     project_id,
     folder_id,
     query_id,
@@ -73,12 +82,14 @@ VALUES (
     $9,
     $10,
     $11,
-    $12
+    $12,
+    $13
 )
-RETURNING id, project_id, folder_id, query_id, identity, display_name, description, view_type, source, input_schema, output_schema, meta, active, deleted_at, created_at, updated_at
+RETURNING id, workspace_id, project_id, folder_id, query_id, identity, display_name, description, view_type, source, input_schema, output_schema, meta, active, deleted_at, created_at, updated_at
 `
 
 type CreateDataViewParams struct {
+	WorkspaceID  uuid.UUID   `json:"workspace_id"`
 	ProjectID    uuid.UUID   `json:"project_id"`
 	FolderID     uuid.UUID   `json:"folder_id"`
 	QueryID      uuid.UUID   `json:"query_id"`
@@ -95,6 +106,7 @@ type CreateDataViewParams struct {
 
 func (q *Queries) CreateDataView(ctx context.Context, arg CreateDataViewParams) (DataView, error) {
 	row := q.db.QueryRow(ctx, createDataView,
+		arg.WorkspaceID,
 		arg.ProjectID,
 		arg.FolderID,
 		arg.QueryID,
@@ -111,6 +123,7 @@ func (q *Queries) CreateDataView(ctx context.Context, arg CreateDataViewParams) 
 	var i DataView
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.QueryID,
@@ -134,35 +147,44 @@ const existsDataViewByIdentity = `-- name: ExistsDataViewByIdentity :one
 SELECT EXISTS (
     SELECT 1
     FROM data_views
-    WHERE project_id = $1
-      AND identity = $2
+    WHERE workspace_id = $1
+      AND project_id = $2
+      AND identity = $3
 )
 `
 
 type ExistsDataViewByIdentityParams struct {
-	ProjectID uuid.UUID `json:"project_id"`
-	Identity  string    `json:"identity"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	Identity    string    `json:"identity"`
 }
 
 func (q *Queries) ExistsDataViewByIdentity(ctx context.Context, arg ExistsDataViewByIdentityParams) (bool, error) {
-	row := q.db.QueryRow(ctx, existsDataViewByIdentity, arg.ProjectID, arg.Identity)
+	row := q.db.QueryRow(ctx, existsDataViewByIdentity, arg.WorkspaceID, arg.ProjectID, arg.Identity)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
 }
 
 const getDataViewByID = `-- name: GetDataViewByID :one
-SELECT id, project_id, folder_id, query_id, identity, display_name, description, view_type, source, input_schema, output_schema, meta, active, deleted_at, created_at, updated_at
+SELECT id, workspace_id, project_id, folder_id, query_id, identity, display_name, description, view_type, source, input_schema, output_schema, meta, active, deleted_at, created_at, updated_at
 FROM data_views
 WHERE id = $1
+  AND workspace_id = $2
   AND deleted_at IS NULL
 `
 
-func (q *Queries) GetDataViewByID(ctx context.Context, id uuid.UUID) (DataView, error) {
-	row := q.db.QueryRow(ctx, getDataViewByID, id)
+type GetDataViewByIDParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) GetDataViewByID(ctx context.Context, arg GetDataViewByIDParams) (DataView, error) {
+	row := q.db.QueryRow(ctx, getDataViewByID, arg.ID, arg.WorkspaceID)
 	var i DataView
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.QueryID,
@@ -183,23 +205,26 @@ func (q *Queries) GetDataViewByID(ctx context.Context, id uuid.UUID) (DataView, 
 }
 
 const getDataViewByIdentity = `-- name: GetDataViewByIdentity :one
-SELECT id, project_id, folder_id, query_id, identity, display_name, description, view_type, source, input_schema, output_schema, meta, active, deleted_at, created_at, updated_at
+SELECT id, workspace_id, project_id, folder_id, query_id, identity, display_name, description, view_type, source, input_schema, output_schema, meta, active, deleted_at, created_at, updated_at
 FROM data_views
-WHERE project_id = $1
-  AND identity = $2
+WHERE workspace_id = $1
+  AND project_id = $2
+  AND identity = $3
   AND deleted_at IS NULL
 `
 
 type GetDataViewByIdentityParams struct {
-	ProjectID uuid.UUID `json:"project_id"`
-	Identity  string    `json:"identity"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	Identity    string    `json:"identity"`
 }
 
 func (q *Queries) GetDataViewByIdentity(ctx context.Context, arg GetDataViewByIdentityParams) (DataView, error) {
-	row := q.db.QueryRow(ctx, getDataViewByIdentity, arg.ProjectID, arg.Identity)
+	row := q.db.QueryRow(ctx, getDataViewByIdentity, arg.WorkspaceID, arg.ProjectID, arg.Identity)
 	var i DataView
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.QueryID,
@@ -220,22 +245,25 @@ func (q *Queries) GetDataViewByIdentity(ctx context.Context, arg GetDataViewById
 }
 
 const getDataViewByIdentityIncludingDeleted = `-- name: GetDataViewByIdentityIncludingDeleted :one
-SELECT id, project_id, folder_id, query_id, identity, display_name, description, view_type, source, input_schema, output_schema, meta, active, deleted_at, created_at, updated_at
+SELECT id, workspace_id, project_id, folder_id, query_id, identity, display_name, description, view_type, source, input_schema, output_schema, meta, active, deleted_at, created_at, updated_at
 FROM data_views
-WHERE project_id = $1
-  AND identity = $2
+WHERE workspace_id = $1
+  AND project_id = $2
+  AND identity = $3
 `
 
 type GetDataViewByIdentityIncludingDeletedParams struct {
-	ProjectID uuid.UUID `json:"project_id"`
-	Identity  string    `json:"identity"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	Identity    string    `json:"identity"`
 }
 
 func (q *Queries) GetDataViewByIdentityIncludingDeleted(ctx context.Context, arg GetDataViewByIdentityIncludingDeletedParams) (DataView, error) {
-	row := q.db.QueryRow(ctx, getDataViewByIdentityIncludingDeleted, arg.ProjectID, arg.Identity)
+	row := q.db.QueryRow(ctx, getDataViewByIdentityIncludingDeleted, arg.WorkspaceID, arg.ProjectID, arg.Identity)
 	var i DataView
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.QueryID,
@@ -258,10 +286,16 @@ func (q *Queries) GetDataViewByIdentityIncludingDeleted(ctx context.Context, arg
 const hardDeleteDataView = `-- name: HardDeleteDataView :execrows
 DELETE FROM data_views
 WHERE id = $1
+  AND workspace_id = $2
 `
 
-func (q *Queries) HardDeleteDataView(ctx context.Context, id uuid.UUID) (int64, error) {
-	result, err := q.db.Exec(ctx, hardDeleteDataView, id)
+type HardDeleteDataViewParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) HardDeleteDataView(ctx context.Context, arg HardDeleteDataViewParams) (int64, error) {
+	result, err := q.db.Exec(ctx, hardDeleteDataView, arg.ID, arg.WorkspaceID)
 	if err != nil {
 		return 0, err
 	}
@@ -269,35 +303,43 @@ func (q *Queries) HardDeleteDataView(ctx context.Context, id uuid.UUID) (int64, 
 }
 
 const listDataViews = `-- name: ListDataViews :many
-SELECT id, project_id, folder_id, query_id, identity, display_name, description, view_type, source, input_schema, output_schema, meta, active, deleted_at, created_at, updated_at
+SELECT id, workspace_id, project_id, folder_id, query_id, identity, display_name, description, view_type, source, input_schema, output_schema, meta, active, deleted_at, created_at, updated_at
 FROM data_views
-WHERE data_views.project_id = $1
+WHERE data_views.workspace_id = $1
+  AND data_views.project_id = $2
   AND data_views.deleted_at IS NULL
   AND (
-    $2::uuid IS NULL
-    OR data_views.folder_id = $2
+    $3::uuid IS NULL
+    OR data_views.folder_id = $3
   )
   AND (
-    $3::uuid IS NULL
-    OR data_views.query_id = $3
+    $4::uuid IS NULL
+    OR data_views.query_id = $4
   )
   AND EXISTS (
     SELECT 1
     FROM queries
     WHERE queries.id = data_views.query_id
+      AND queries.workspace_id = $1
       AND queries.deleted_at IS NULL
   )
 ORDER BY data_views.created_at DESC
 `
 
 type ListDataViewsParams struct {
-	ProjectID uuid.UUID   `json:"project_id"`
-	FolderID  pgtype.UUID `json:"folder_id"`
-	QueryID   pgtype.UUID `json:"query_id"`
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
+	ProjectID   uuid.UUID   `json:"project_id"`
+	FolderID    pgtype.UUID `json:"folder_id"`
+	QueryID     pgtype.UUID `json:"query_id"`
 }
 
 func (q *Queries) ListDataViews(ctx context.Context, arg ListDataViewsParams) ([]DataView, error) {
-	rows, err := q.db.Query(ctx, listDataViews, arg.ProjectID, arg.FolderID, arg.QueryID)
+	rows, err := q.db.Query(ctx, listDataViews,
+		arg.WorkspaceID,
+		arg.ProjectID,
+		arg.FolderID,
+		arg.QueryID,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -307,6 +349,7 @@ func (q *Queries) ListDataViews(ctx context.Context, arg ListDataViewsParams) ([
 		var i DataView
 		if err := rows.Scan(
 			&i.ID,
+			&i.WorkspaceID,
 			&i.ProjectID,
 			&i.FolderID,
 			&i.QueryID,
@@ -339,11 +382,17 @@ SET
     deleted_at = NULL,
     updated_at = NOW()
 WHERE id = $1
+  AND workspace_id = $2
   AND deleted_at IS NOT NULL
 `
 
-func (q *Queries) RestoreDataView(ctx context.Context, id uuid.UUID) (int64, error) {
-	result, err := q.db.Exec(ctx, restoreDataView, id)
+type RestoreDataViewParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) RestoreDataView(ctx context.Context, arg RestoreDataViewParams) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreDataView, arg.ID, arg.WorkspaceID)
 	if err != nil {
 		return 0, err
 	}
@@ -356,11 +405,17 @@ SET
     deleted_at = NOW(),
     updated_at = NOW()
 WHERE id = $1
+  AND workspace_id = $2
   AND deleted_at IS NULL
 `
 
-func (q *Queries) SoftDeleteDataView(ctx context.Context, id uuid.UUID) (int64, error) {
-	result, err := q.db.Exec(ctx, softDeleteDataView, id)
+type SoftDeleteDataViewParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) SoftDeleteDataView(ctx context.Context, arg SoftDeleteDataViewParams) (int64, error) {
+	result, err := q.db.Exec(ctx, softDeleteDataView, arg.ID, arg.WorkspaceID)
 	if err != nil {
 		return 0, err
 	}
@@ -382,8 +437,9 @@ SET
     active = $10,
     updated_at = NOW()
 WHERE id = $11
+  AND workspace_id = $12
   AND deleted_at IS NULL
-RETURNING id, project_id, folder_id, query_id, identity, display_name, description, view_type, source, input_schema, output_schema, meta, active, deleted_at, created_at, updated_at
+RETURNING id, workspace_id, project_id, folder_id, query_id, identity, display_name, description, view_type, source, input_schema, output_schema, meta, active, deleted_at, created_at, updated_at
 `
 
 type UpdateDataViewParams struct {
@@ -398,6 +454,7 @@ type UpdateDataViewParams struct {
 	Meta         []byte      `json:"meta"`
 	Active       bool        `json:"active"`
 	ID           uuid.UUID   `json:"id"`
+	WorkspaceID  uuid.UUID   `json:"workspace_id"`
 }
 
 func (q *Queries) UpdateDataView(ctx context.Context, arg UpdateDataViewParams) (DataView, error) {
@@ -413,10 +470,12 @@ func (q *Queries) UpdateDataView(ctx context.Context, arg UpdateDataViewParams) 
 		arg.Meta,
 		arg.Active,
 		arg.ID,
+		arg.WorkspaceID,
 	)
 	var i DataView
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.QueryID,

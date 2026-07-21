@@ -45,6 +45,7 @@ func NewHandler(
 // @Failure 409 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects [post]
 func (h *Handler) CreateProject(c *fiber.Ctx) error {
 	logger := logging.WithContext(c.UserContext(), h.logger).With(zap.String("handler", "create_project"))
@@ -80,6 +81,7 @@ func (h *Handler) CreateProject(c *fiber.Ctx) error {
 // @Success 200 {object} ProjectsListResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects [get]
 func (h *Handler) ListProjects(c *fiber.Ctx) error {
 	projects, err := h.projectService.List(c.UserContext())
@@ -101,6 +103,7 @@ func (h *Handler) ListProjects(c *fiber.Ctx) error {
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity} [get]
 func (h *Handler) GetProjectByIdentity(c *fiber.Ctx) error {
 	project, err := h.projectService.GetByIdentity(c.UserContext(), c.Params("project_identity"))
@@ -124,6 +127,7 @@ func (h *Handler) GetProjectByIdentity(c *fiber.Ctx) error {
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity} [patch]
 func (h *Handler) UpdateProject(c *fiber.Ctx) error {
 	var request UpdateProjectRequest
@@ -158,6 +162,7 @@ func (h *Handler) UpdateProject(c *fiber.Ctx) error {
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity} [delete]
 func (h *Handler) SoftDeleteProject(c *fiber.Ctx) error {
 	if err := h.projectService.SoftDelete(c.UserContext(), c.Params("project_identity")); err != nil {
@@ -177,6 +182,7 @@ func (h *Handler) SoftDeleteProject(c *fiber.Ctx) error {
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity}/restore [post]
 func (h *Handler) RestoreProject(c *fiber.Ctx) error {
 	if err := h.projectService.Restore(c.UserContext(), c.Params("project_identity")); err != nil {
@@ -196,6 +202,7 @@ func (h *Handler) RestoreProject(c *fiber.Ctx) error {
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity}/hard [delete]
 func (h *Handler) HardDeleteProject(c *fiber.Ctx) error {
 	if err := h.projectService.HardDelete(c.UserContext(), c.Params("project_identity")); err != nil {

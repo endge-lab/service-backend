@@ -42,6 +42,9 @@ func NewDataViewsRepository(queries *sqlc.Queries, tracer trace.Tracer, logger *
 func (r *DataViewsRepository) Create(ctx context.Context, dataView *entities.RDataView) (result *entities.RDataView, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.data_views.Create")
 	defer func() { step.End(err) }()
+	if _, err = requireEntityWorkspace(ctx, dataView.WorkspaceID); err != nil {
+		return nil, err
+	}
 
 	value, err := r.queries(ctx).CreateDataView(ctx, mappers.CreateDataViewParams(dataView))
 	if err != nil {
@@ -70,7 +73,11 @@ func (r *DataViewsRepository) GetByID(ctx context.Context, id uuid.UUID) (result
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.data_views.GetByID")
 	defer func() { step.End(err) }()
 
-	value, err := r.queries(ctx).GetDataViewByID(ctx, id)
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	value, err := r.queries(ctx).GetDataViewByID(ctx, sqlc.GetDataViewByIDParams{ID: id, WorkspaceID: workspaceID})
 	if err != nil {
 		return r.mapGetError(err, "get data view by id failed")
 	}
@@ -98,7 +105,11 @@ func (r *DataViewsRepository) GetByIdentity(ctx context.Context, projectID uuid.
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.data_views.GetByIdentity")
 	defer func() { step.End(err) }()
 
-	value, err := r.queries(ctx).GetDataViewByIdentity(ctx, sqlc.GetDataViewByIdentityParams{ProjectID: projectID, Identity: identity})
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	value, err := r.queries(ctx).GetDataViewByIdentity(ctx, sqlc.GetDataViewByIdentityParams{WorkspaceID: workspaceID, ProjectID: projectID, Identity: identity})
 	if err != nil {
 		return r.mapGetError(err, "get data view by identity failed")
 	}
@@ -126,7 +137,11 @@ func (r *DataViewsRepository) GetByIdentityIncludingDeleted(ctx context.Context,
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.data_views.GetByIdentityIncludingDeleted")
 	defer func() { step.End(err) }()
 
-	value, err := r.queries(ctx).GetDataViewByIdentityIncludingDeleted(ctx, sqlc.GetDataViewByIdentityIncludingDeletedParams{ProjectID: projectID, Identity: identity})
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	value, err := r.queries(ctx).GetDataViewByIdentityIncludingDeleted(ctx, sqlc.GetDataViewByIdentityIncludingDeletedParams{WorkspaceID: workspaceID, ProjectID: projectID, Identity: identity})
 	if err != nil {
 		return r.mapGetError(err, "get data view by identity including deleted failed")
 	}
@@ -152,11 +167,16 @@ func (r *DataViewsRepository) GetByIdentityIncludingDeleted(ctx context.Context,
 func (r *DataViewsRepository) List(ctx context.Context, filter ports.DataViewsFilter) (result []*entities.RDataView, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.data_views.List")
 	defer func() { step.End(err) }()
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	values, err := r.queries(ctx).ListDataViews(ctx, sqlc.ListDataViewsParams{
-		ProjectID: filter.ProjectID,
-		FolderID:  mappers.NullableUUIDToSQLC(filter.FolderID),
-		QueryID:   mappers.NullableUUIDToSQLC(filter.QueryID),
+		WorkspaceID: workspaceID,
+		ProjectID:   filter.ProjectID,
+		FolderID:    mappers.NullableUUIDToSQLC(filter.FolderID),
+		QueryID:     mappers.NullableUUIDToSQLC(filter.QueryID),
 	})
 	if err != nil {
 		r.logger.Error("list data views failed", zap.Error(err))
@@ -189,6 +209,9 @@ func (r *DataViewsRepository) List(ctx context.Context, filter ports.DataViewsFi
 func (r *DataViewsRepository) Update(ctx context.Context, dataView *entities.RDataView) (result *entities.RDataView, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.data_views.Update")
 	defer func() { step.End(err) }()
+	if _, err = requireEntityWorkspace(ctx, dataView.WorkspaceID); err != nil {
+		return nil, err
+	}
 
 	value, err := r.queries(ctx).UpdateDataView(ctx, mappers.UpdateDataViewParams(dataView))
 	if err != nil {
@@ -216,7 +239,9 @@ func (r *DataViewsRepository) Update(ctx context.Context, dataView *entities.RDa
 //
 //	error - not_found или внутренняя ошибка хранения
 func (r *DataViewsRepository) SoftDelete(ctx context.Context, id uuid.UUID) (err error) {
-	return r.changeRows(ctx, "repo.data_views.SoftDelete", "soft delete data view failed", id, r.queries(ctx).SoftDeleteDataView)
+	return r.changeRows(ctx, "repo.data_views.SoftDelete", "soft delete data view failed", func(ctx context.Context, workspaceID uuid.UUID) (int64, error) {
+		return r.queries(ctx).SoftDeleteDataView(ctx, sqlc.SoftDeleteDataViewParams{ID: id, WorkspaceID: workspaceID})
+	})
 }
 
 // Restore восстанавливает soft-deleted DataView по UUID.
@@ -234,7 +259,9 @@ func (r *DataViewsRepository) SoftDelete(ctx context.Context, id uuid.UUID) (err
 //
 //	error - not_found или внутренняя ошибка хранения
 func (r *DataViewsRepository) Restore(ctx context.Context, id uuid.UUID) (err error) {
-	return r.changeRows(ctx, "repo.data_views.Restore", "restore data view failed", id, r.queries(ctx).RestoreDataView)
+	return r.changeRows(ctx, "repo.data_views.Restore", "restore data view failed", func(ctx context.Context, workspaceID uuid.UUID) (int64, error) {
+		return r.queries(ctx).RestoreDataView(ctx, sqlc.RestoreDataViewParams{ID: id, WorkspaceID: workspaceID})
+	})
 }
 
 // HardDelete физически удаляет DataView по UUID.
@@ -252,7 +279,9 @@ func (r *DataViewsRepository) Restore(ctx context.Context, id uuid.UUID) (err er
 //
 //	error - not_found или внутренняя ошибка хранения
 func (r *DataViewsRepository) HardDelete(ctx context.Context, id uuid.UUID) (err error) {
-	return r.changeRows(ctx, "repo.data_views.HardDelete", "hard delete data view failed", id, r.queries(ctx).HardDeleteDataView)
+	return r.changeRows(ctx, "repo.data_views.HardDelete", "hard delete data view failed", func(ctx context.Context, workspaceID uuid.UUID) (int64, error) {
+		return r.queries(ctx).HardDeleteDataView(ctx, sqlc.HardDeleteDataViewParams{ID: id, WorkspaceID: workspaceID})
+	})
 }
 
 // ExistsByIdentity проверяет наличие DataView identity внутри проекта.
@@ -275,7 +304,11 @@ func (r *DataViewsRepository) ExistsByIdentity(ctx context.Context, projectID uu
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.data_views.ExistsByIdentity")
 	defer func() { step.End(err) }()
 
-	exists, err = r.queries(ctx).ExistsDataViewByIdentity(ctx, sqlc.ExistsDataViewByIdentityParams{ProjectID: projectID, Identity: identity})
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	exists, err = r.queries(ctx).ExistsDataViewByIdentity(ctx, sqlc.ExistsDataViewByIdentityParams{WorkspaceID: workspaceID, ProjectID: projectID, Identity: identity})
 	if err != nil {
 		r.logger.Error("exists data view by identity failed", zap.Error(err))
 		return false, apperrors.Internal("internal_error", "failed to check data view identity")
@@ -302,11 +335,16 @@ func (r *DataViewsRepository) ExistsByIdentity(ctx context.Context, projectID uu
 func (r *DataViewsRepository) Count(ctx context.Context, filter ports.DataViewsFilter) (count int64, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.data_views.Count")
 	defer func() { step.End(err) }()
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
 
 	count, err = r.queries(ctx).CountDataViews(ctx, sqlc.CountDataViewsParams{
-		ProjectID: filter.ProjectID,
-		FolderID:  mappers.NullableUUIDToSQLC(filter.FolderID),
-		QueryID:   mappers.NullableUUIDToSQLC(filter.QueryID),
+		WorkspaceID: workspaceID,
+		ProjectID:   filter.ProjectID,
+		FolderID:    mappers.NullableUUIDToSQLC(filter.FolderID),
+		QueryID:     mappers.NullableUUIDToSQLC(filter.QueryID),
 	})
 	if err != nil {
 		r.logger.Error("count data views failed", zap.Error(err))
@@ -316,11 +354,15 @@ func (r *DataViewsRepository) Count(ctx context.Context, filter ports.DataViewsF
 	return count, nil
 }
 
-func (r *DataViewsRepository) changeRows(ctx context.Context, op, message string, id uuid.UUID, change func(context.Context, uuid.UUID) (int64, error)) (err error) {
+func (r *DataViewsRepository) changeRows(ctx context.Context, op, message string, change func(context.Context, uuid.UUID) (int64, error)) (err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
 
-	affected, err := change(ctx, id)
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	affected, err := change(ctx, workspaceID)
 	if err != nil {
 		r.logger.Error(message, zap.Error(err))
 		return apperrors.Internal("internal_error", message)

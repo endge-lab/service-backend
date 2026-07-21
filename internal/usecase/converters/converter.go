@@ -94,7 +94,7 @@ func (c *Converter) Create(ctx context.Context, input CreateConverterInput) (res
 		)
 		return nil, err
 	}
-	converterResult, err := c.converterRepository.Create(ctx, &entities.RConverter{ProjectID: project.ID, FolderID: folder.ID, Identity: input.Identity, DisplayName: input.DisplayName, Description: input.Description, ConverterType: input.ConverterType, Source: input.Source, IsSystem: input.IsSystem, Meta: input.Meta, Active: input.Active})
+	converterResult, err := c.converterRepository.Create(ctx, &entities.RConverter{WorkspaceID: project.WorkspaceID, ProjectID: project.ID, FolderID: folder.ID, Identity: input.Identity, DisplayName: input.DisplayName, Description: input.Description, ConverterType: input.ConverterType, Source: input.Source, IsSystem: input.IsSystem, Meta: input.Meta, Active: input.Active})
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
@@ -159,7 +159,7 @@ func (c *Converter) Update(ctx context.Context, input UpdateConverterInput) (res
 		)
 		return nil, err
 	}
-	converterResult, err := c.converterRepository.Update(ctx, &entities.RConverter{ID: current.ID, ProjectID: current.ProjectID, FolderID: folder.ID, Identity: current.Identity, DisplayName: input.DisplayName, Description: input.Description, ConverterType: input.ConverterType, Source: input.Source, IsSystem: input.IsSystem, Meta: input.Meta, Active: input.Active, DeletedAt: current.DeletedAt, CreatedAt: current.CreatedAt, UpdatedAt: current.UpdatedAt})
+	converterResult, err := c.converterRepository.Update(ctx, &entities.RConverter{ID: current.ID, WorkspaceID: current.WorkspaceID, ProjectID: current.ProjectID, FolderID: folder.ID, Identity: current.Identity, DisplayName: input.DisplayName, Description: input.Description, ConverterType: input.ConverterType, Source: input.Source, IsSystem: input.IsSystem, Meta: input.Meta, Active: input.Active, DeletedAt: current.DeletedAt, CreatedAt: current.CreatedAt, UpdatedAt: current.UpdatedAt})
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),

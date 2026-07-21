@@ -1,7 +1,8 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS filters (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    identity TEXT NOT NULL UNIQUE,
+    workspace_id UUID NOT NULL REFERENCES workspaces(id),
+    identity TEXT NOT NULL,
     display_name TEXT NOT NULL,
     fields JSONB NOT NULL DEFAULT '[]'::jsonb,
     folder_id UUID NULL REFERENCES folders(id) ON DELETE SET NULL,
@@ -12,7 +13,8 @@ CREATE TABLE IF NOT EXISTS filters (
     author TEXT NULL,
     meta JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT filters_workspace_identity_unique UNIQUE (workspace_id, identity)
 );
 
 -- +goose Down

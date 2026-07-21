@@ -13,6 +13,7 @@ import (
 
 type ComponentLegacy struct {
 	ID            uuid.UUID          `json:"id"`
+	WorkspaceID   uuid.UUID          `json:"workspace_id"`
 	ProjectID     uuid.UUID          `json:"project_id"`
 	FolderID      uuid.UUID          `json:"folder_id"`
 	Identity      string             `json:"identity"`
@@ -32,6 +33,7 @@ type ComponentLegacy struct {
 
 type Converter struct {
 	ID            uuid.UUID          `json:"id"`
+	WorkspaceID   uuid.UUID          `json:"workspace_id"`
 	ProjectID     uuid.UUID          `json:"project_id"`
 	FolderID      uuid.UUID          `json:"folder_id"`
 	Identity      string             `json:"identity"`
@@ -49,6 +51,7 @@ type Converter struct {
 
 type DataView struct {
 	ID           uuid.UUID          `json:"id"`
+	WorkspaceID  uuid.UUID          `json:"workspace_id"`
 	ProjectID    uuid.UUID          `json:"project_id"`
 	FolderID     uuid.UUID          `json:"folder_id"`
 	QueryID      uuid.UUID          `json:"query_id"`
@@ -68,6 +71,7 @@ type DataView struct {
 
 type Environment struct {
 	ID          uuid.UUID   `json:"id"`
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
 	Identity    string      `json:"identity"`
 	DisplayName string      `json:"display_name"`
 	IsSystem    bool        `json:"is_system"`
@@ -78,6 +82,7 @@ type Environment struct {
 
 type Filter struct {
 	ID          uuid.UUID          `json:"id"`
+	WorkspaceID uuid.UUID          `json:"workspace_id"`
 	Identity    string             `json:"identity"`
 	DisplayName string             `json:"display_name"`
 	Fields      []byte             `json:"fields"`
@@ -94,6 +99,7 @@ type Filter struct {
 
 type Folder struct {
 	ID          uuid.UUID          `json:"id"`
+	WorkspaceID uuid.UUID          `json:"workspace_id"`
 	ProjectID   pgtype.UUID        `json:"project_id"`
 	EntityType  string             `json:"entity_type"`
 	Identity    string             `json:"identity"`
@@ -110,6 +116,7 @@ type Folder struct {
 
 type Navigation struct {
 	ID          uuid.UUID   `json:"id"`
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
 	Identity    string      `json:"identity"`
 	DisplayName string      `json:"display_name"`
 	Description pgtype.Text `json:"description"`
@@ -124,6 +131,7 @@ type Navigation struct {
 
 type Project struct {
 	ID          uuid.UUID          `json:"id"`
+	WorkspaceID uuid.UUID          `json:"workspace_id"`
 	Identity    string             `json:"identity"`
 	DisplayName string             `json:"display_name"`
 	Description pgtype.Text        `json:"description"`
@@ -136,6 +144,7 @@ type Project struct {
 
 type Query struct {
 	ID              uuid.UUID          `json:"id"`
+	WorkspaceID     uuid.UUID          `json:"workspace_id"`
 	ProjectID       uuid.UUID          `json:"project_id"`
 	FolderID        uuid.UUID          `json:"folder_id"`
 	Identity        string             `json:"identity"`
@@ -168,6 +177,7 @@ type ServiceUser struct {
 
 type Tenant struct {
 	ID          uuid.UUID   `json:"id"`
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
 	Identity    string      `json:"identity"`
 	DisplayName string      `json:"display_name"`
 	Code        string      `json:"code"`
@@ -179,6 +189,7 @@ type Tenant struct {
 
 type Type struct {
 	ID          uuid.UUID          `json:"id"`
+	WorkspaceID uuid.UUID          `json:"workspace_id"`
 	Identity    string             `json:"identity"`
 	DisplayName string             `json:"display_name"`
 	Schema      []byte             `json:"schema"`
@@ -196,6 +207,7 @@ type Type struct {
 
 type Version struct {
 	ID          uuid.UUID   `json:"id"`
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
 	Identity    string      `json:"identity"`
 	Description pgtype.Text `json:"description"`
 	Data        []byte      `json:"data"`
@@ -206,6 +218,7 @@ type Version struct {
 
 type Vocab struct {
 	ID             uuid.UUID          `json:"id"`
+	WorkspaceID    uuid.UUID          `json:"workspace_id"`
 	Identity       string             `json:"identity"`
 	DisplayName    string             `json:"display_name"`
 	Description    pgtype.Text        `json:"description"`
@@ -218,4 +231,13 @@ type Vocab struct {
 	Meta           []byte             `json:"meta"`
 	CreatedAt      time.Time          `json:"created_at"`
 	UpdatedAt      time.Time          `json:"updated_at"`
+}
+
+type Workspace struct {
+	ID            uuid.UUID `json:"id"`
+	Identity      string    `json:"identity"`
+	DisplayName   string    `json:"display_name"`
+	Configuration []byte    `json:"configuration"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }

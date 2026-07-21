@@ -1,6 +1,7 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS data_views (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id),
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     folder_id UUID NOT NULL REFERENCES folders(id) ON DELETE RESTRICT,
     query_id UUID NOT NULL REFERENCES queries(id) ON DELETE CASCADE,
@@ -18,7 +19,7 @@ CREATE TABLE IF NOT EXISTS data_views (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT data_views_project_identity_unique
-        UNIQUE (project_id, identity),
+        UNIQUE (workspace_id, project_id, identity),
 
     CONSTRAINT data_views_identity_not_empty_check
         CHECK (btrim(identity) <> ''),

@@ -1,5 +1,6 @@
 -- name: CreateDataView :one
 INSERT INTO data_views (
+    workspace_id,
     project_id,
     folder_id,
     query_id,
@@ -14,6 +15,7 @@ INSERT INTO data_views (
     active
 )
 VALUES (
+    sqlc.arg(workspace_id),
     sqlc.arg(project_id),
     sqlc.arg(folder_id),
     sqlc.arg(query_id),
@@ -33,25 +35,29 @@ RETURNING *;
 SELECT *
 FROM data_views
 WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NULL;
 
 -- name: GetDataViewByIdentity :one
 SELECT *
 FROM data_views
-WHERE project_id = sqlc.arg(project_id)
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id = sqlc.arg(project_id)
   AND identity = sqlc.arg(identity)
   AND deleted_at IS NULL;
 
 -- name: GetDataViewByIdentityIncludingDeleted :one
 SELECT *
 FROM data_views
-WHERE project_id = sqlc.arg(project_id)
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id = sqlc.arg(project_id)
   AND identity = sqlc.arg(identity);
 
 -- name: ListDataViews :many
 SELECT *
 FROM data_views
-WHERE data_views.project_id = sqlc.arg(project_id)
+WHERE data_views.workspace_id = sqlc.arg(workspace_id)
+  AND data_views.project_id = sqlc.arg(project_id)
   AND data_views.deleted_at IS NULL
   AND (
     sqlc.narg(folder_id)::uuid IS NULL
@@ -65,6 +71,7 @@ WHERE data_views.project_id = sqlc.arg(project_id)
     SELECT 1
     FROM queries
     WHERE queries.id = data_views.query_id
+      AND queries.workspace_id = sqlc.arg(workspace_id)
       AND queries.deleted_at IS NULL
   )
 ORDER BY data_views.created_at DESC;
@@ -84,6 +91,7 @@ SET
     active = sqlc.arg(active),
     updated_at = NOW()
 WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NULL
 RETURNING *;
 
@@ -93,6 +101,7 @@ SET
     deleted_at = NOW(),
     updated_at = NOW()
 WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NULL;
 
 -- name: RestoreDataView :execrows
@@ -101,24 +110,28 @@ SET
     deleted_at = NULL,
     updated_at = NOW()
 WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NOT NULL;
 
 -- name: HardDeleteDataView :execrows
 DELETE FROM data_views
-WHERE id = sqlc.arg(id);
+WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id);
 
 -- name: ExistsDataViewByIdentity :one
 SELECT EXISTS (
     SELECT 1
     FROM data_views
-    WHERE project_id = sqlc.arg(project_id)
+    WHERE workspace_id = sqlc.arg(workspace_id)
+      AND project_id = sqlc.arg(project_id)
       AND identity = sqlc.arg(identity)
 );
 
 -- name: CountDataViews :one
 SELECT COUNT(*)
 FROM data_views
-WHERE data_views.project_id = sqlc.arg(project_id)
+WHERE data_views.workspace_id = sqlc.arg(workspace_id)
+  AND data_views.project_id = sqlc.arg(project_id)
   AND data_views.deleted_at IS NULL
   AND (
     sqlc.narg(folder_id)::uuid IS NULL
@@ -132,5 +145,6 @@ WHERE data_views.project_id = sqlc.arg(project_id)
     SELECT 1
     FROM queries
     WHERE queries.id = data_views.query_id
+      AND queries.workspace_id = sqlc.arg(workspace_id)
       AND queries.deleted_at IS NULL
   );

@@ -86,6 +86,7 @@ func TestQueryHandlerValidationAndDomainErrors(t *testing.T) {
 	}{
 		{"invalid json", http.MethodPost, "/queries", `{`, nil, http.StatusBadRequest},
 		{"validation", http.MethodPost, "/queries", `{}`, nil, http.StatusBadRequest},
+		{"timeout must be positive", http.MethodPost, "/queries", `{"folderIdentity":"root-queries","identity":"users-list","displayName":"Users","queryType":"http","source":{},"timeoutMs":0}`, nil, http.StatusBadRequest},
 		{"not found", http.MethodGet, "/queries/users-list", "", apperrors.NotFound("not_found", "query not found"), http.StatusNotFound},
 		{"internal", http.MethodGet, "/queries/users-list", "", apperrors.Internal("internal_error", "failure"), http.StatusInternalServerError},
 	} {

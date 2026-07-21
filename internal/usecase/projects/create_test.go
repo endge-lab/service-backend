@@ -24,7 +24,8 @@ func TestCreateCreatesProjectAndRootFoldersInOneTransaction(t *testing.T) {
 		Logger:            zap.NewNop(),
 	})
 
-	result, err := service.Create(context.Background(), CreateProjectInput{
+	workspaceID := uuid.New()
+	result, err := service.Create(entities.WithWorkspaceID(context.Background(), workspaceID), CreateProjectInput{
 		Identity:    "demo-project",
 		DisplayName: "Demo Project",
 		Active:      true,
@@ -34,6 +35,9 @@ func TestCreateCreatesProjectAndRootFoldersInOneTransaction(t *testing.T) {
 	}
 	if result.ID != projectID {
 		t.Fatalf("project ID = %s, want %s", result.ID, projectID)
+	}
+	if result.WorkspaceID != workspaceID {
+		t.Fatalf("project workspace ID = %s, want %s", result.WorkspaceID, workspaceID)
 	}
 	if !tx.called || tx.rolledBack {
 		t.Fatalf("transaction state: called=%v rolledBack=%v", tx.called, tx.rolledBack)
@@ -55,6 +59,9 @@ func TestCreateCreatesProjectAndRootFoldersInOneTransaction(t *testing.T) {
 		if root.ProjectID == nil || *root.ProjectID != projectID {
 			t.Fatalf("root[%d] project ID = %v, want %s", index, root.ProjectID, projectID)
 		}
+		if root.WorkspaceID != workspaceID {
+			t.Fatalf("root[%d] workspace ID = %s, want %s", index, root.WorkspaceID, workspaceID)
+		}
 		if !root.IsRoot || !root.IsSystem || root.ParentID != nil {
 			t.Fatalf("root[%d] flags are invalid: %+v", index, root)
 		}
@@ -75,7 +82,7 @@ func TestCreateRollsBackWhenRootFolderCreationFails(t *testing.T) {
 		Logger:    zap.NewNop(),
 	})
 
-	_, err := service.Create(context.Background(), CreateProjectInput{
+	_, err := service.Create(entities.WithWorkspaceID(context.Background(), uuid.New()), CreateProjectInput{
 		Identity:    "demo-project",
 		DisplayName: "Demo Project",
 		Active:      true,

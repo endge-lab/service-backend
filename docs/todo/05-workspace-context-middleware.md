@@ -1,85 +1,111 @@
-# 05. Workspace Context Middleware
+# 05. Workspace Context Middleware — история изменений
 
-## Цель
+## Статус
 
-Создать middleware, который прозрачно разрешает активный workspace из HTTP header и передаёт проверенный scope в handlers/usecases. Задача зависит от `04-workspaces-foundation`.
+Выполнено. Исходная постановка задачи находится в
+`../task/05-workspace-context-middleware(DONE).md`.
 
-Backend открытый: middleware не выполняет authentication или authorization и не проверяет пользователей, memberships или роли.
+## Реализовано
 
-## Контракт
+### Context scope
 
-Frontend и другие клиенты передают:
-
-```http
-X-Endge-Workspace: default
-```
-
-Header содержит `workspace.identity`, не UUID. Поле `workspaceIdentity` в body доменных документов не использовать.
-
-## Логика middleware
-
-Для каждого workspace-scoped запроса:
-
-1. Прочитать и trim `X-Endge-Workspace`.
-2. Если header отсутствует — вернуть `400 workspace_required`.
-3. Вызвать `GetByIdentity(workspaceIdentity)` из workspace usecase.
-4. Если workspace не найден — вернуть `404 workspace_not_found`.
-5. Положить разрешённый scope в стандартный Go `context.Context` и вызвать следующий handler.
-
-Создать transport-independent context value и accessor, например:
+В `internal/domain/entities/workspace.go` добавлены transport-independent
+`WorkspaceScope`, `WithWorkspace` и `WorkspaceFromContext`. Для совместимости
+оставлены `WithWorkspaceID` и `WorkspaceIDFromContext`.
 
 ```go
 type WorkspaceScope struct {
     ID       uuid.UUID
     Identity string
 }
-
-func WithWorkspace(ctx context.Context, scope WorkspaceScope) context.Context
-func WorkspaceFromContext(ctx context.Context) (WorkspaceScope, bool)
 ```
 
-Accessor не должен находиться в package конкретного handler и не должен зависеть от Fiber. Handlers/usecases не читают header повторно и не резолвят workspace самостоятельно.
+### Middleware и Fx
 
-## Подключение
+- Создан `WorkspaceContextMiddleware` с конструктором
+  `NewWorkspaceContextMiddleware`.
+- Middleware trim'ит `X-Endge-Workspace`, вызывает injected `WorkspaceResolver`
+  и записывает разрешённые ID/identity в `c.UserContext()`.
+- Пустой header возвращает `400 workspace_required`.
+- Ошибка `not_found` от resolver преобразуется в `404 workspace_not_found`.
+- Глобальный resolver и mutex удалены.
+- Provider middleware вынесен в `internal/bootstrap/workspace_context.go` и
+  подключён через Fx; зависимость передаётся в HTTP handler constructor.
 
-Middleware применяется только к workspace-scoped domain routes. Зависимости от authentication middleware быть не должно.
+### Маршруты
 
-Не применять его к:
+Middleware включён только для scoped групп:
+
+- projects;
+- folders;
+- components-legacy;
+- converters;
+- queries;
+- data-views.
+
+`/health`, `/swagger`, `/swagger/openapi3.yaml` и `/api/v1/workspaces` остались
+без workspace header. Authentication, memberships и roles в рамках задачи не
+добавлялись.
+
+### Application и persistence boundary
+
+Handlers передают в use case обычный `c.UserContext()` и не прокидывают Fiber
+context. Header не читается повторно и не передаётся в body или SQL.
+
+- Project create читает workspace ID из context, поскольку он нужен новой
+  сущности.
+- Дочерние сущности получают `workspace_id` от разрешённого project.
+- Update сохраняет исходный `workspace_id`.
+- Repository boundary требует scope в context и отклоняет entity с workspace,
+  отличающимся от request scope.
+
+Все SQL-запросы projects, folders, components-legacy, converters, queries и
+data views получают фильтр/параметр `workspace_id`. Raw header в SQL не попадает.
+
+### HTTP contract и OpenAPI
+
+- `X-Endge-Workspace` добавлен в CORS `AllowHeaders`.
+- Во всех 42 scoped OpenAPI операциях header описан как обязательный.
+- Root workspace endpoints header не требуют.
+- Middleware не логирует workspace configuration, `sse.manualToken` или другие
+  secrets; в scope присутствуют только ID и identity.
+
+## Проверки
+
+Добавлены и проходят:
+
+- middleware tests: отсутствующий/пустой header, trim identity,
+  `workspace_not_found`, scope в следующем handler;
+- HTTP-level tests: unscoped routes без header и CORS preflight;
+- OpenAPI test: каждый scoped operation требует `X-Endge-Workspace`;
+- repository unit tests: scope обязателен, entity scope совпадает с request
+  scope;
+- PostgreSQL integration test: workspace B не читает и не обновляет project
+  workspace A.
+
+Выполненные проверки:
+
+```bash
+GOCACHE=/tmp/service-backend-go-build go test ./...
+go test -tags=integration ./internal/repo/postgres
+git diff --check
+```
+
+Интеграционный тест запускался на отдельной чистой PostgreSQL. Временная БД после
+проверки удалена.
+
+## Итоговый flow
 
 ```text
-/health
-/swagger
-/swagger/openapi3.yaml
-/api/v1/workspaces
+X-Endge-Workspace
+  -> WorkspaceContextMiddleware
+  -> context.Context (WorkspaceScope)
+  -> handler передаёт UserContext
+  -> use case
+  -> scoped repository / SQL workspace_id filter
 ```
 
-Добавить `X-Endge-Workspace` в CORS `AllowHeaders` и описать header в OpenAPI для scoped operations.
-
-Repository queries должны использовать только проверенный `WorkspaceScope.ID`. Raw header нельзя передавать напрямую в SQL.
-
-## Errors
-
-Использовать общий формат сервиса:
-
-```json
-{
-  "code": "workspace_required",
-  "message": "Workspace context is required",
-  "details": {}
-}
-```
-
-Коды:
-
-```text
-workspace_required
-workspace_not_found
-```
-
-Не логировать содержимое workspace config, `sse.manualToken` и другие secrets. В logs/traces допустим только проверенный `workspace.id` и `workspace.identity`.
-
-## Tests и Acceptance Criteria
-
-Проверить сценарии: header отсутствует; identity пустой; workspace не найден; workspace найден; scope доступен следующему handler; unscoped routes работают без header; CORS preflight разрешает header.
-
-Middleware считается готовым, когда feature handlers используют `WorkspaceFromContext`, а ни один workspace-scoped repository не выполняет запрос без `workspaceID`.
+Feature handlers не извлекают scope напрямую: они передают `c.UserContext()` в
+application layer. `WorkspaceFromContext` используется там, где scope нужен для
+создания сущности или repository-проверки. Это сохраняет handlers независимыми
+от domain context и не допускает повторного чтения header.

@@ -15,8 +15,9 @@ var projectRootEntityTypes = []entities.FolderEntityType{
 	entities.FolderEntityTypeDataViews,
 }
 
-func projectFromCreateInput(input CreateProjectInput) *entities.RProject {
+func projectFromCreateInput(input CreateProjectInput, workspaceID uuid.UUID) *entities.RProject {
 	return &entities.RProject{
+		WorkspaceID: workspaceID,
 		Identity:    input.Identity,
 		DisplayName: input.DisplayName,
 		Description: input.Description,
@@ -28,6 +29,7 @@ func projectFromCreateInput(input CreateProjectInput) *entities.RProject {
 func projectFromUpdateInput(current *entities.RProject, input UpdateProjectInput) *entities.RProject {
 	return &entities.RProject{
 		ID:          current.ID,
+		WorkspaceID: current.WorkspaceID,
 		Identity:    current.Identity,
 		DisplayName: input.DisplayName,
 		Description: input.Description,
@@ -39,12 +41,13 @@ func projectFromUpdateInput(current *entities.RProject, input UpdateProjectInput
 	}
 }
 
-func projectRootFolders(projectID uuid.UUID) []*entities.RFolder {
+func projectRootFolders(workspaceID, projectID uuid.UUID) []*entities.RFolder {
 	roots := make([]*entities.RFolder, 0, len(projectRootEntityTypes))
 	for _, entityType := range projectRootEntityTypes {
 		id := projectID
 		identity := "root-" + string(entityType)
 		roots = append(roots, &entities.RFolder{
+			WorkspaceID: workspaceID,
 			ProjectID:   &id,
 			EntityType:  entityType,
 			Identity:    identity,

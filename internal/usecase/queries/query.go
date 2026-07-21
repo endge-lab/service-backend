@@ -82,7 +82,7 @@ func (s *Query) Create(ctx context.Context, input CreateQueryInput) (result *Que
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", input.Identity))
 		return nil, err
 	}
-	query, err := s.queryRepository.Create(ctx, queryFromCreate(project.ID, folder.ID, input))
+	query, err := s.queryRepository.Create(ctx, queryFromCreate(project.WorkspaceID, project.ID, folder.ID, input))
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", input.Identity))
 		return nil, err

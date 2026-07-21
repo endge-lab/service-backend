@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
+	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
-	apperrors "github.com/endge-lab/service-kit-go/pkg/errors"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -75,6 +75,12 @@ func (s *Project) Create(ctx context.Context, input CreateProjectInput) (result 
 		observed.Logger().Error(op, zap.Error(err))
 		return nil, err
 	}
+	workspaceID, ok := entities.WorkspaceIDFromContext(ctx)
+	if !ok {
+		err = apperrors.InvalidInput("workspace_required", "workspace scope is required")
+		observed.Logger().Error(op, zap.Error(err))
+		return nil, err
+	}
 
 	exists, err := s.projectRepository.ExistsByIdentity(ctx, input.Identity)
 	if err != nil {
@@ -88,7 +94,7 @@ func (s *Project) Create(ctx context.Context, input CreateProjectInput) (result 
 		return nil, err
 	}
 
-	project := projectFromCreateInput(input)
+	project := projectFromCreateInput(input, workspaceID)
 
 	err = s.txManager.WithinTransaction(ctx, func(txCtx context.Context) error {
 		result, err = s.projectRepository.Create(txCtx, project)
@@ -96,7 +102,7 @@ func (s *Project) Create(ctx context.Context, input CreateProjectInput) (result 
 			return err
 		}
 
-		for _, root := range projectRootFolders(result.ID) {
+		for _, root := range projectRootFolders(workspaceID, result.ID) {
 			if _, err = s.folderRepository.Create(txCtx, root); err != nil {
 				observed.Logger().Error(op,
 					zap.Error(err),

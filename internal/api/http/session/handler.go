@@ -6,7 +6,6 @@ import (
 	httpmiddleware "github.com/endge-lab/service-backend/internal/api/http/middleware"
 	"github.com/endge-lab/service-backend/internal/api/http/respond"
 	usecasesession "github.com/endge-lab/service-backend/internal/usecase/session"
-	servicefiber "github.com/endge-lab/service-kit-go/pkg/httpkit/fiber"
 	"github.com/endge-lab/service-kit-go/pkg/logging"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 
@@ -75,8 +74,4 @@ func (h *Handler) LoadSession(c *fiber.Ctx) (err error) {
 
 	logger.Debug("load session handler completed", zap.String("service_user_id", response.User.ID))
 	return c.JSON(NewSessionResponse(response))
-}
-
-func (h *Handler) TraceMiddleware(spanName string) fiber.Handler {
-	return servicefiber.TraceMiddleware(h.tracer, h.logger, spanName)
 }

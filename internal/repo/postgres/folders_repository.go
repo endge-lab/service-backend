@@ -58,6 +58,9 @@ func (r *FoldersRepository) Create(
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	if _, err = requireEntityWorkspace(ctx, folder.WorkspaceID); err != nil {
+		return nil, err
+	}
 
 	created, err := r.queries(ctx).CreateFolder(ctx, mappers.CreateFolderParams(folder))
 	if err != nil {
@@ -91,6 +94,9 @@ func (r *FoldersRepository) Update(
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	if _, err = requireEntityWorkspace(ctx, folder.WorkspaceID); err != nil {
+		return nil, err
+	}
 
 	updated, err := r.queries(ctx).UpdateFolder(ctx, mappers.UpdateFolderParams(folder))
 	if err != nil {
@@ -128,8 +134,12 @@ func (r *FoldersRepository) GetByID(
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	folder, err := r.queries(ctx).GetFolderByID(ctx, id)
+	folder, err := r.queries(ctx).GetFolderByID(ctx, sqlc.GetFolderByIDParams{ID: id, WorkspaceID: workspaceID})
 	if err != nil {
 		return r.mapGetError(err, "get folder by id failed")
 	}
@@ -160,8 +170,12 @@ func (r *FoldersRepository) GetByIDIncludingDeleted(
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	folder, err := r.queries(ctx).GetFolderByIDIncludingDeleted(ctx, id)
+	folder, err := r.queries(ctx).GetFolderByIDIncludingDeleted(ctx, sqlc.GetFolderByIDIncludingDeletedParams{ID: id, WorkspaceID: workspaceID})
 	if err != nil {
 		return r.mapGetError(err, "get folder by id including deleted failed")
 	}
@@ -196,13 +210,18 @@ func (r *FoldersRepository) GetByIdentity(
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	folder, err := r.queries(ctx).GetFolderByProjectEntityIdentity(
 		ctx,
 		sqlc.GetFolderByProjectEntityIdentityParams{
-			ProjectID:  mappers.NullableUUIDToSQLC(projectID),
-			EntityType: string(entityType),
-			Identity:   identity,
+			WorkspaceID: workspaceID,
+			ProjectID:   mappers.NullableUUIDToSQLC(projectID),
+			EntityType:  string(entityType),
+			Identity:    identity,
 		},
 	)
 	if err != nil {
@@ -239,13 +258,18 @@ func (r *FoldersRepository) GetByIdentityIncludingDeleted(
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	folder, err := r.queries(ctx).GetFolderByProjectEntityIdentityIncludingDeleted(
 		ctx,
 		sqlc.GetFolderByProjectEntityIdentityIncludingDeletedParams{
-			ProjectID:  mappers.NullableUUIDToSQLC(projectID),
-			EntityType: string(entityType),
-			Identity:   identity,
+			WorkspaceID: workspaceID,
+			ProjectID:   mappers.NullableUUIDToSQLC(projectID),
+			EntityType:  string(entityType),
+			Identity:    identity,
 		},
 	)
 	if err != nil {
@@ -280,12 +304,17 @@ func (r *FoldersRepository) List(
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	folders, err := r.queries(ctx).ListFoldersByProjectAndEntityType(
 		ctx,
 		sqlc.ListFoldersByProjectAndEntityTypeParams{
-			ProjectID:  mappers.NullableUUIDToSQLC(projectID),
-			EntityType: string(entityType),
+			WorkspaceID: workspaceID,
+			ProjectID:   mappers.NullableUUIDToSQLC(projectID),
+			EntityType:  string(entityType),
 		},
 	)
 	if err != nil {
@@ -320,8 +349,12 @@ func (r *FoldersRepository) SoftDelete(ctx context.Context, id uuid.UUID) (err e
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return err
+	}
 
-	affected, err := r.queries(ctx).SoftDeleteFolder(ctx, id)
+	affected, err := r.queries(ctx).SoftDeleteFolder(ctx, sqlc.SoftDeleteFolderParams{ID: id, WorkspaceID: workspaceID})
 	if err != nil {
 		r.logger.Error("soft delete folder failed", zap.Error(err))
 		return mapFolderStorageError(err, "internal_error")
@@ -352,8 +385,12 @@ func (r *FoldersRepository) Restore(ctx context.Context, id uuid.UUID) (err erro
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return err
+	}
 
-	affected, err := r.queries(ctx).RestoreFolder(ctx, id)
+	affected, err := r.queries(ctx).RestoreFolder(ctx, sqlc.RestoreFolderParams{ID: id, WorkspaceID: workspaceID})
 	if err != nil {
 		r.logger.Error("restore folder failed", zap.Error(err))
 		return mapFolderStorageError(err, "internal_error")
@@ -384,8 +421,12 @@ func (r *FoldersRepository) HardDelete(ctx context.Context, id uuid.UUID) (err e
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return err
+	}
 
-	folder, err := r.queries(ctx).GetFolderByIDIncludingDeleted(ctx, id)
+	folder, err := r.queries(ctx).GetFolderByIDIncludingDeleted(ctx, sqlc.GetFolderByIDIncludingDeletedParams{ID: id, WorkspaceID: workspaceID})
 	if err != nil {
 		if stderrors.Is(err, pgx.ErrNoRows) {
 			return folderNotFoundError()
@@ -400,7 +441,7 @@ func (r *FoldersRepository) HardDelete(ctx context.Context, id uuid.UUID) (err e
 		)
 	}
 
-	affected, err := r.queries(ctx).HardDeleteFolder(ctx, id)
+	affected, err := r.queries(ctx).HardDeleteFolder(ctx, sqlc.HardDeleteFolderParams{ID: id, WorkspaceID: workspaceID})
 	if err != nil {
 		r.logger.Error("hard delete folder failed", zap.Error(err))
 		return mapFolderStorageError(err, "internal_error")
@@ -439,13 +480,18 @@ func (r *FoldersRepository) ExistsByIdentity(
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
 
 	exists, err := r.queries(ctx).ExistsFolderByProjectEntityIdentity(
 		ctx,
 		sqlc.ExistsFolderByProjectEntityIdentityParams{
-			ProjectID:  mappers.NullableUUIDToSQLC(projectID),
-			EntityType: string(entityType),
-			Identity:   identity,
+			WorkspaceID: workspaceID,
+			ProjectID:   mappers.NullableUUIDToSQLC(projectID),
+			EntityType:  string(entityType),
+			Identity:    identity,
 		},
 	)
 	if err != nil {
@@ -481,12 +527,17 @@ func (r *FoldersRepository) Count(
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
 
 	count, err := r.queries(ctx).CountFoldersByProjectAndEntityType(
 		ctx,
 		sqlc.CountFoldersByProjectAndEntityTypeParams{
-			ProjectID:  mappers.NullableUUIDToSQLC(projectID),
-			EntityType: string(entityType),
+			WorkspaceID: workspaceID,
+			ProjectID:   mappers.NullableUUIDToSQLC(projectID),
+			EntityType:  string(entityType),
 		},
 	)
 	if err != nil {

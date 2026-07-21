@@ -7,9 +7,10 @@ import (
 )
 
 type RConverter struct {
-	ID        uuid.UUID
-	ProjectID uuid.UUID
-	FolderID  uuid.UUID
+	ID          uuid.UUID
+	WorkspaceID uuid.UUID
+	ProjectID   uuid.UUID
+	FolderID    uuid.UUID
 
 	Identity    string
 	DisplayName string

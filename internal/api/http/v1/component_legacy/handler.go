@@ -35,6 +35,7 @@ func NewHandler(s UseCase, v appvalidator.Validator, l *zap.Logger, t trace.Trac
 // @Failure 409 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity}/components-legacy [post]
 func (h *Handler) Create(c *fiber.Ctx) error {
 	var r CreateComponentLegacyRequest
@@ -64,6 +65,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity}/components-legacy/{component_identity} [get]
 func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
 	p := c.Params("project_identity")
@@ -87,6 +89,7 @@ func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity}/components-legacy [get]
 func (h *Handler) List(c *fiber.Ctx) error {
 	p := c.Params("project_identity")
@@ -124,6 +127,7 @@ func (h *Handler) List(c *fiber.Ctx) error {
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity}/components-legacy/{component_identity} [patch]
 func (h *Handler) Update(c *fiber.Ctx) error {
 	var r UpdateComponentLegacyRequest
@@ -152,6 +156,7 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity}/components-legacy/{component_identity} [delete]
 func (h *Handler) SoftDelete(c *fiber.Ctx) error { return h.change(c, h.service.SoftDelete) }
 
@@ -166,6 +171,7 @@ func (h *Handler) SoftDelete(c *fiber.Ctx) error { return h.change(c, h.service.
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity}/components-legacy/{component_identity}/restore [post]
 func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Restore) }
 
@@ -180,5 +186,6 @@ func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Res
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity}/components-legacy/{component_identity}/hard [delete]
 func (h *Handler) HardDelete(c *fiber.Ctx) error { return h.change(c, h.service.HardDelete) }

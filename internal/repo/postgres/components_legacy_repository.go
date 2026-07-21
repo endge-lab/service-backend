@@ -40,6 +40,9 @@ func NewComponentsLegacyRepository(queries *sqlc.Queries, tracer trace.Tracer, l
 func (r *ComponentsLegacyRepository) Create(ctx context.Context, component *entities.RComponentLegacy) (result *entities.RComponentLegacy, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.components_legacy.Create")
 	defer func() { step.End(err) }()
+	if _, err = requireEntityWorkspace(ctx, component.WorkspaceID); err != nil {
+		return nil, err
+	}
 	value, err := r.queries(ctx).CreateComponentLegacy(ctx, mappers.CreateComponentLegacyParams(component))
 	if err != nil {
 		return nil, r.mapWriteError(err, "create component failed")
@@ -63,7 +66,11 @@ func (r *ComponentsLegacyRepository) Create(ctx context.Context, component *enti
 func (r *ComponentsLegacyRepository) GetByID(ctx context.Context, id uuid.UUID) (result *entities.RComponentLegacy, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.components_legacy.GetByID")
 	defer func() { step.End(err) }()
-	value, err := r.queries(ctx).GetComponentLegacyByID(ctx, id)
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	value, err := r.queries(ctx).GetComponentLegacyByID(ctx, sqlc.GetComponentLegacyByIDParams{ID: id, WorkspaceID: workspaceID})
 	if err != nil {
 		return r.mapGetError(err, "get component by id failed")
 	}
@@ -86,7 +93,11 @@ func (r *ComponentsLegacyRepository) GetByID(ctx context.Context, id uuid.UUID) 
 func (r *ComponentsLegacyRepository) GetByIdentity(ctx context.Context, projectID uuid.UUID, identity string) (result *entities.RComponentLegacy, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.components_legacy.GetByIdentity")
 	defer func() { step.End(err) }()
-	value, err := r.queries(ctx).GetComponentLegacyByIdentity(ctx, sqlc.GetComponentLegacyByIdentityParams{ProjectID: projectID, Identity: identity})
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	value, err := r.queries(ctx).GetComponentLegacyByIdentity(ctx, sqlc.GetComponentLegacyByIdentityParams{WorkspaceID: workspaceID, ProjectID: projectID, Identity: identity})
 	if err != nil {
 		return r.mapGetError(err, "get component by identity failed")
 	}
@@ -109,7 +120,11 @@ func (r *ComponentsLegacyRepository) GetByIdentity(ctx context.Context, projectI
 func (r *ComponentsLegacyRepository) GetByIdentityIncludingDeleted(ctx context.Context, projectID uuid.UUID, identity string) (result *entities.RComponentLegacy, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.components_legacy.GetByIdentityIncludingDeleted")
 	defer func() { step.End(err) }()
-	value, err := r.queries(ctx).GetComponentLegacyByIdentityIncludingDeleted(ctx, sqlc.GetComponentLegacyByIdentityIncludingDeletedParams{ProjectID: projectID, Identity: identity})
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	value, err := r.queries(ctx).GetComponentLegacyByIdentityIncludingDeleted(ctx, sqlc.GetComponentLegacyByIdentityIncludingDeletedParams{WorkspaceID: workspaceID, ProjectID: projectID, Identity: identity})
 	if err != nil {
 		return r.mapGetError(err, "get component by identity including deleted failed")
 	}
@@ -132,7 +147,11 @@ func (r *ComponentsLegacyRepository) GetByIdentityIncludingDeleted(ctx context.C
 func (r *ComponentsLegacyRepository) List(ctx context.Context, filter ports.ComponentsLegacyFilter) (result []*entities.RComponentLegacy, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.components_legacy.List")
 	defer func() { step.End(err) }()
-	values, err := r.queries(ctx).ListComponentsLegacy(ctx, sqlc.ListComponentsLegacyParams{ProjectID: filter.ProjectID, FolderID: mappers.NullableUUIDToSQLC(filter.FolderID), ComponentType: mappers.NullableTextToSQLC(componentTypeString(filter.ComponentType))})
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	values, err := r.queries(ctx).ListComponentsLegacy(ctx, sqlc.ListComponentsLegacyParams{WorkspaceID: workspaceID, ProjectID: filter.ProjectID, FolderID: mappers.NullableUUIDToSQLC(filter.FolderID), ComponentType: mappers.NullableTextToSQLC(componentTypeString(filter.ComponentType))})
 	if err != nil {
 		r.logger.Error("list legacy components failed", zap.Error(err))
 		return nil, apperrors.Internal("internal_error", "failed to list legacy components")
@@ -160,6 +179,9 @@ func (r *ComponentsLegacyRepository) List(ctx context.Context, filter ports.Comp
 func (r *ComponentsLegacyRepository) Update(ctx context.Context, component *entities.RComponentLegacy) (result *entities.RComponentLegacy, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.components_legacy.Update")
 	defer func() { step.End(err) }()
+	if _, err = requireEntityWorkspace(ctx, component.WorkspaceID); err != nil {
+		return nil, err
+	}
 	value, err := r.queries(ctx).UpdateComponentLegacy(ctx, mappers.UpdateComponentLegacyParams(component))
 	if err != nil {
 		return r.mapGetError(err, "update component failed")
@@ -181,7 +203,9 @@ func (r *ComponentsLegacyRepository) Update(ctx context.Context, component *enti
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
 func (r *ComponentsLegacyRepository) SoftDelete(ctx context.Context, id uuid.UUID) (err error) {
-	return r.changeRows(ctx, "repo.components_legacy.SoftDelete", "soft delete component failed", id, r.queries(ctx).SoftDeleteComponentLegacy)
+	return r.changeRows(ctx, "repo.components_legacy.SoftDelete", "soft delete component failed", func(ctx context.Context, workspaceID uuid.UUID) (int64, error) {
+		return r.queries(ctx).SoftDeleteComponentLegacy(ctx, sqlc.SoftDeleteComponentLegacyParams{ID: id, WorkspaceID: workspaceID})
+	})
 }
 
 // Restore восстанавливает мягко удаленный компонент.
@@ -198,7 +222,9 @@ func (r *ComponentsLegacyRepository) SoftDelete(ctx context.Context, id uuid.UUI
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
 func (r *ComponentsLegacyRepository) Restore(ctx context.Context, id uuid.UUID) (err error) {
-	return r.changeRows(ctx, "repo.components_legacy.Restore", "restore component failed", id, r.queries(ctx).RestoreComponentLegacy)
+	return r.changeRows(ctx, "repo.components_legacy.Restore", "restore component failed", func(ctx context.Context, workspaceID uuid.UUID) (int64, error) {
+		return r.queries(ctx).RestoreComponentLegacy(ctx, sqlc.RestoreComponentLegacyParams{ID: id, WorkspaceID: workspaceID})
+	})
 }
 
 // HardDelete физически удаляет компонент.
@@ -215,7 +241,9 @@ func (r *ComponentsLegacyRepository) Restore(ctx context.Context, id uuid.UUID) 
 //
 //	Результат операции или ошибка, возникшая при ее выполнении.
 func (r *ComponentsLegacyRepository) HardDelete(ctx context.Context, id uuid.UUID) (err error) {
-	return r.changeRows(ctx, "repo.components_legacy.HardDelete", "hard delete component failed", id, r.queries(ctx).HardDeleteComponentLegacy)
+	return r.changeRows(ctx, "repo.components_legacy.HardDelete", "hard delete component failed", func(ctx context.Context, workspaceID uuid.UUID) (int64, error) {
+		return r.queries(ctx).HardDeleteComponentLegacy(ctx, sqlc.HardDeleteComponentLegacyParams{ID: id, WorkspaceID: workspaceID})
+	})
 }
 
 // ExistsByIdentity проверяет существование component identity в проекте.
@@ -234,7 +262,11 @@ func (r *ComponentsLegacyRepository) HardDelete(ctx context.Context, id uuid.UUI
 func (r *ComponentsLegacyRepository) ExistsByIdentity(ctx context.Context, projectID uuid.UUID, identity string) (exists bool, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.components_legacy.ExistsByIdentity")
 	defer func() { step.End(err) }()
-	exists, err = r.queries(ctx).ExistsComponentLegacyByIdentity(ctx, sqlc.ExistsComponentLegacyByIdentityParams{ProjectID: projectID, Identity: identity})
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	exists, err = r.queries(ctx).ExistsComponentLegacyByIdentity(ctx, sqlc.ExistsComponentLegacyByIdentityParams{WorkspaceID: workspaceID, ProjectID: projectID, Identity: identity})
 	if err != nil {
 		r.logger.Error("exists component by identity failed", zap.Error(err))
 		return false, apperrors.Internal("internal_error", "failed to check component identity")
@@ -258,7 +290,11 @@ func (r *ComponentsLegacyRepository) ExistsByIdentity(ctx context.Context, proje
 func (r *ComponentsLegacyRepository) Count(ctx context.Context, filter ports.ComponentsLegacyFilter) (count int64, err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.components_legacy.Count")
 	defer func() { step.End(err) }()
-	count, err = r.queries(ctx).CountComponentsLegacy(ctx, sqlc.CountComponentsLegacyParams{ProjectID: filter.ProjectID, FolderID: mappers.NullableUUIDToSQLC(filter.FolderID), ComponentType: mappers.NullableTextToSQLC(componentTypeString(filter.ComponentType))})
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	count, err = r.queries(ctx).CountComponentsLegacy(ctx, sqlc.CountComponentsLegacyParams{WorkspaceID: workspaceID, ProjectID: filter.ProjectID, FolderID: mappers.NullableUUIDToSQLC(filter.FolderID), ComponentType: mappers.NullableTextToSQLC(componentTypeString(filter.ComponentType))})
 	if err != nil {
 		r.logger.Error("count legacy components failed", zap.Error(err))
 		return 0, apperrors.Internal("internal_error", "failed to count legacy components")
@@ -266,10 +302,14 @@ func (r *ComponentsLegacyRepository) Count(ctx context.Context, filter ports.Com
 	return count, nil
 }
 
-func (r *ComponentsLegacyRepository) changeRows(ctx context.Context, op, message string, id uuid.UUID, change func(context.Context, uuid.UUID) (int64, error)) (err error) {
+func (r *ComponentsLegacyRepository) changeRows(ctx context.Context, op, message string, change func(context.Context, uuid.UUID) (int64, error)) (err error) {
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
-	affected, err := change(ctx, id)
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	affected, err := change(ctx, workspaceID)
 	if err != nil {
 		r.logger.Error(message, zap.Error(err))
 		return apperrors.Internal("internal_error", message)

@@ -15,26 +15,33 @@ import (
 const countQueries = `-- name: CountQueries :one
 SELECT COUNT(*)
 FROM queries
-WHERE project_id = $1
+WHERE workspace_id = $1
+  AND project_id = $2
   AND deleted_at IS NULL
   AND (
-    $2::uuid IS NULL
-    OR folder_id = $2
+    $3::uuid IS NULL
+    OR folder_id = $3
   )
   AND (
-    $3::text IS NULL
-    OR query_type = $3
+    $4::text IS NULL
+    OR query_type = $4
   )
 `
 
 type CountQueriesParams struct {
-	ProjectID uuid.UUID   `json:"project_id"`
-	FolderID  pgtype.UUID `json:"folder_id"`
-	QueryType pgtype.Text `json:"query_type"`
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
+	ProjectID   uuid.UUID   `json:"project_id"`
+	FolderID    pgtype.UUID `json:"folder_id"`
+	QueryType   pgtype.Text `json:"query_type"`
 }
 
 func (q *Queries) CountQueries(ctx context.Context, arg CountQueriesParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countQueries, arg.ProjectID, arg.FolderID, arg.QueryType)
+	row := q.db.QueryRow(ctx, countQueries,
+		arg.WorkspaceID,
+		arg.ProjectID,
+		arg.FolderID,
+		arg.QueryType,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -42,6 +49,7 @@ func (q *Queries) CountQueries(ctx context.Context, arg CountQueriesParams) (int
 
 const createQuery = `-- name: CreateQuery :one
 INSERT INTO queries (
+    workspace_id,
     project_id,
     folder_id,
     identity,
@@ -73,12 +81,14 @@ VALUES (
     $12,
     $13,
     $14,
-    $15
+    $15,
+    $16
 )
-RETURNING id, project_id, folder_id, identity, display_name, description, query_type, source, params, headers, auth, timeout_ms, mock_data, mock_data_enabled, active, deleted_at, meta, created_at, updated_at
+RETURNING id, workspace_id, project_id, folder_id, identity, display_name, description, query_type, source, params, headers, auth, timeout_ms, mock_data, mock_data_enabled, active, deleted_at, meta, created_at, updated_at
 `
 
 type CreateQueryParams struct {
+	WorkspaceID     uuid.UUID   `json:"workspace_id"`
 	ProjectID       uuid.UUID   `json:"project_id"`
 	FolderID        uuid.UUID   `json:"folder_id"`
 	Identity        string      `json:"identity"`
@@ -98,6 +108,7 @@ type CreateQueryParams struct {
 
 func (q *Queries) CreateQuery(ctx context.Context, arg CreateQueryParams) (Query, error) {
 	row := q.db.QueryRow(ctx, createQuery,
+		arg.WorkspaceID,
 		arg.ProjectID,
 		arg.FolderID,
 		arg.Identity,
@@ -117,6 +128,7 @@ func (q *Queries) CreateQuery(ctx context.Context, arg CreateQueryParams) (Query
 	var i Query
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.Identity,
@@ -143,19 +155,21 @@ const existsActiveQueryByIdentityOutsideProject = `-- name: ExistsActiveQueryByI
 SELECT EXISTS (
     SELECT 1
     FROM queries
-    WHERE project_id <> $1
-      AND identity = $2
+    WHERE workspace_id = $1
+      AND project_id <> $2
+      AND identity = $3
       AND deleted_at IS NULL
 )
 `
 
 type ExistsActiveQueryByIdentityOutsideProjectParams struct {
-	ProjectID uuid.UUID `json:"project_id"`
-	Identity  string    `json:"identity"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	Identity    string    `json:"identity"`
 }
 
 func (q *Queries) ExistsActiveQueryByIdentityOutsideProject(ctx context.Context, arg ExistsActiveQueryByIdentityOutsideProjectParams) (bool, error) {
-	row := q.db.QueryRow(ctx, existsActiveQueryByIdentityOutsideProject, arg.ProjectID, arg.Identity)
+	row := q.db.QueryRow(ctx, existsActiveQueryByIdentityOutsideProject, arg.WorkspaceID, arg.ProjectID, arg.Identity)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
@@ -165,35 +179,44 @@ const existsQueryByIdentity = `-- name: ExistsQueryByIdentity :one
 SELECT EXISTS (
     SELECT 1
     FROM queries
-    WHERE project_id = $1
-      AND identity = $2
+    WHERE workspace_id = $1
+      AND project_id = $2
+      AND identity = $3
 )
 `
 
 type ExistsQueryByIdentityParams struct {
-	ProjectID uuid.UUID `json:"project_id"`
-	Identity  string    `json:"identity"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	Identity    string    `json:"identity"`
 }
 
 func (q *Queries) ExistsQueryByIdentity(ctx context.Context, arg ExistsQueryByIdentityParams) (bool, error) {
-	row := q.db.QueryRow(ctx, existsQueryByIdentity, arg.ProjectID, arg.Identity)
+	row := q.db.QueryRow(ctx, existsQueryByIdentity, arg.WorkspaceID, arg.ProjectID, arg.Identity)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
 }
 
 const getQueryByID = `-- name: GetQueryByID :one
-SELECT id, project_id, folder_id, identity, display_name, description, query_type, source, params, headers, auth, timeout_ms, mock_data, mock_data_enabled, active, deleted_at, meta, created_at, updated_at
+SELECT id, workspace_id, project_id, folder_id, identity, display_name, description, query_type, source, params, headers, auth, timeout_ms, mock_data, mock_data_enabled, active, deleted_at, meta, created_at, updated_at
 FROM queries
 WHERE id = $1
+  AND workspace_id = $2
   AND deleted_at IS NULL
 `
 
-func (q *Queries) GetQueryByID(ctx context.Context, id uuid.UUID) (Query, error) {
-	row := q.db.QueryRow(ctx, getQueryByID, id)
+type GetQueryByIDParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) GetQueryByID(ctx context.Context, arg GetQueryByIDParams) (Query, error) {
+	row := q.db.QueryRow(ctx, getQueryByID, arg.ID, arg.WorkspaceID)
 	var i Query
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.Identity,
@@ -217,16 +240,23 @@ func (q *Queries) GetQueryByID(ctx context.Context, id uuid.UUID) (Query, error)
 }
 
 const getQueryByIDIncludingDeleted = `-- name: GetQueryByIDIncludingDeleted :one
-SELECT id, project_id, folder_id, identity, display_name, description, query_type, source, params, headers, auth, timeout_ms, mock_data, mock_data_enabled, active, deleted_at, meta, created_at, updated_at
+SELECT id, workspace_id, project_id, folder_id, identity, display_name, description, query_type, source, params, headers, auth, timeout_ms, mock_data, mock_data_enabled, active, deleted_at, meta, created_at, updated_at
 FROM queries
 WHERE id = $1
+  AND workspace_id = $2
 `
 
-func (q *Queries) GetQueryByIDIncludingDeleted(ctx context.Context, id uuid.UUID) (Query, error) {
-	row := q.db.QueryRow(ctx, getQueryByIDIncludingDeleted, id)
+type GetQueryByIDIncludingDeletedParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) GetQueryByIDIncludingDeleted(ctx context.Context, arg GetQueryByIDIncludingDeletedParams) (Query, error) {
+	row := q.db.QueryRow(ctx, getQueryByIDIncludingDeleted, arg.ID, arg.WorkspaceID)
 	var i Query
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.Identity,
@@ -250,23 +280,26 @@ func (q *Queries) GetQueryByIDIncludingDeleted(ctx context.Context, id uuid.UUID
 }
 
 const getQueryByIdentity = `-- name: GetQueryByIdentity :one
-SELECT id, project_id, folder_id, identity, display_name, description, query_type, source, params, headers, auth, timeout_ms, mock_data, mock_data_enabled, active, deleted_at, meta, created_at, updated_at
+SELECT id, workspace_id, project_id, folder_id, identity, display_name, description, query_type, source, params, headers, auth, timeout_ms, mock_data, mock_data_enabled, active, deleted_at, meta, created_at, updated_at
 FROM queries
-WHERE project_id = $1
-  AND identity = $2
+WHERE workspace_id = $1
+  AND project_id = $2
+  AND identity = $3
   AND deleted_at IS NULL
 `
 
 type GetQueryByIdentityParams struct {
-	ProjectID uuid.UUID `json:"project_id"`
-	Identity  string    `json:"identity"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	Identity    string    `json:"identity"`
 }
 
 func (q *Queries) GetQueryByIdentity(ctx context.Context, arg GetQueryByIdentityParams) (Query, error) {
-	row := q.db.QueryRow(ctx, getQueryByIdentity, arg.ProjectID, arg.Identity)
+	row := q.db.QueryRow(ctx, getQueryByIdentity, arg.WorkspaceID, arg.ProjectID, arg.Identity)
 	var i Query
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.Identity,
@@ -290,22 +323,25 @@ func (q *Queries) GetQueryByIdentity(ctx context.Context, arg GetQueryByIdentity
 }
 
 const getQueryByIdentityIncludingDeleted = `-- name: GetQueryByIdentityIncludingDeleted :one
-SELECT id, project_id, folder_id, identity, display_name, description, query_type, source, params, headers, auth, timeout_ms, mock_data, mock_data_enabled, active, deleted_at, meta, created_at, updated_at
+SELECT id, workspace_id, project_id, folder_id, identity, display_name, description, query_type, source, params, headers, auth, timeout_ms, mock_data, mock_data_enabled, active, deleted_at, meta, created_at, updated_at
 FROM queries
-WHERE project_id = $1
-  AND identity = $2
+WHERE workspace_id = $1
+  AND project_id = $2
+  AND identity = $3
 `
 
 type GetQueryByIdentityIncludingDeletedParams struct {
-	ProjectID uuid.UUID `json:"project_id"`
-	Identity  string    `json:"identity"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	Identity    string    `json:"identity"`
 }
 
 func (q *Queries) GetQueryByIdentityIncludingDeleted(ctx context.Context, arg GetQueryByIdentityIncludingDeletedParams) (Query, error) {
-	row := q.db.QueryRow(ctx, getQueryByIdentityIncludingDeleted, arg.ProjectID, arg.Identity)
+	row := q.db.QueryRow(ctx, getQueryByIdentityIncludingDeleted, arg.WorkspaceID, arg.ProjectID, arg.Identity)
 	var i Query
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.Identity,
@@ -331,10 +367,16 @@ func (q *Queries) GetQueryByIdentityIncludingDeleted(ctx context.Context, arg Ge
 const hardDeleteQuery = `-- name: HardDeleteQuery :execrows
 DELETE FROM queries
 WHERE id = $1
+  AND workspace_id = $2
 `
 
-func (q *Queries) HardDeleteQuery(ctx context.Context, id uuid.UUID) (int64, error) {
-	result, err := q.db.Exec(ctx, hardDeleteQuery, id)
+type HardDeleteQueryParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) HardDeleteQuery(ctx context.Context, arg HardDeleteQueryParams) (int64, error) {
+	result, err := q.db.Exec(ctx, hardDeleteQuery, arg.ID, arg.WorkspaceID)
 	if err != nil {
 		return 0, err
 	}
@@ -342,29 +384,36 @@ func (q *Queries) HardDeleteQuery(ctx context.Context, id uuid.UUID) (int64, err
 }
 
 const listQueries = `-- name: ListQueries :many
-SELECT id, project_id, folder_id, identity, display_name, description, query_type, source, params, headers, auth, timeout_ms, mock_data, mock_data_enabled, active, deleted_at, meta, created_at, updated_at
+SELECT id, workspace_id, project_id, folder_id, identity, display_name, description, query_type, source, params, headers, auth, timeout_ms, mock_data, mock_data_enabled, active, deleted_at, meta, created_at, updated_at
 FROM queries
-WHERE project_id = $1
+WHERE workspace_id = $1
+  AND project_id = $2
   AND deleted_at IS NULL
   AND (
-    $2::uuid IS NULL
-    OR folder_id = $2
+    $3::uuid IS NULL
+    OR folder_id = $3
   )
   AND (
-    $3::text IS NULL
-    OR query_type = $3
+    $4::text IS NULL
+    OR query_type = $4
   )
 ORDER BY created_at DESC
 `
 
 type ListQueriesParams struct {
-	ProjectID uuid.UUID   `json:"project_id"`
-	FolderID  pgtype.UUID `json:"folder_id"`
-	QueryType pgtype.Text `json:"query_type"`
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
+	ProjectID   uuid.UUID   `json:"project_id"`
+	FolderID    pgtype.UUID `json:"folder_id"`
+	QueryType   pgtype.Text `json:"query_type"`
 }
 
 func (q *Queries) ListQueries(ctx context.Context, arg ListQueriesParams) ([]Query, error) {
-	rows, err := q.db.Query(ctx, listQueries, arg.ProjectID, arg.FolderID, arg.QueryType)
+	rows, err := q.db.Query(ctx, listQueries,
+		arg.WorkspaceID,
+		arg.ProjectID,
+		arg.FolderID,
+		arg.QueryType,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -374,6 +423,7 @@ func (q *Queries) ListQueries(ctx context.Context, arg ListQueriesParams) ([]Que
 		var i Query
 		if err := rows.Scan(
 			&i.ID,
+			&i.WorkspaceID,
 			&i.ProjectID,
 			&i.FolderID,
 			&i.Identity,
@@ -409,11 +459,17 @@ SET
     deleted_at = NULL,
     updated_at = NOW()
 WHERE id = $1
+  AND workspace_id = $2
   AND deleted_at IS NOT NULL
 `
 
-func (q *Queries) RestoreQuery(ctx context.Context, id uuid.UUID) (int64, error) {
-	result, err := q.db.Exec(ctx, restoreQuery, id)
+type RestoreQueryParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) RestoreQuery(ctx context.Context, arg RestoreQueryParams) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreQuery, arg.ID, arg.WorkspaceID)
 	if err != nil {
 		return 0, err
 	}
@@ -426,11 +482,17 @@ SET
     deleted_at = NOW(),
     updated_at = NOW()
 WHERE id = $1
+  AND workspace_id = $2
   AND deleted_at IS NULL
 `
 
-func (q *Queries) SoftDeleteQuery(ctx context.Context, id uuid.UUID) (int64, error) {
-	result, err := q.db.Exec(ctx, softDeleteQuery, id)
+type SoftDeleteQueryParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) SoftDeleteQuery(ctx context.Context, arg SoftDeleteQueryParams) (int64, error) {
+	result, err := q.db.Exec(ctx, softDeleteQuery, arg.ID, arg.WorkspaceID)
 	if err != nil {
 		return 0, err
 	}
@@ -455,8 +517,9 @@ SET
     active = $13,
     updated_at = NOW()
 WHERE id = $14
+  AND workspace_id = $15
   AND deleted_at IS NULL
-RETURNING id, project_id, folder_id, identity, display_name, description, query_type, source, params, headers, auth, timeout_ms, mock_data, mock_data_enabled, active, deleted_at, meta, created_at, updated_at
+RETURNING id, workspace_id, project_id, folder_id, identity, display_name, description, query_type, source, params, headers, auth, timeout_ms, mock_data, mock_data_enabled, active, deleted_at, meta, created_at, updated_at
 `
 
 type UpdateQueryParams struct {
@@ -474,6 +537,7 @@ type UpdateQueryParams struct {
 	Meta            []byte      `json:"meta"`
 	Active          bool        `json:"active"`
 	ID              uuid.UUID   `json:"id"`
+	WorkspaceID     uuid.UUID   `json:"workspace_id"`
 }
 
 func (q *Queries) UpdateQuery(ctx context.Context, arg UpdateQueryParams) (Query, error) {
@@ -492,10 +556,12 @@ func (q *Queries) UpdateQuery(ctx context.Context, arg UpdateQueryParams) (Query
 		arg.Meta,
 		arg.Active,
 		arg.ID,
+		arg.WorkspaceID,
 	)
 	var i Query
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.Identity,

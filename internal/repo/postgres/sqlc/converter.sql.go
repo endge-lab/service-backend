@@ -15,21 +15,23 @@ import (
 const countConverters = `-- name: CountConverters :one
 SELECT COUNT(*)
 FROM converters
-WHERE project_id = $1
+WHERE workspace_id = $1
+  AND project_id = $2
   AND deleted_at IS NULL
   AND (
-    $2::uuid IS NULL
-      OR folder_id = $2
+    $3::uuid IS NULL
+      OR folder_id = $3
     )
 `
 
 type CountConvertersParams struct {
-	ProjectID uuid.UUID   `json:"project_id"`
-	FolderID  pgtype.UUID `json:"folder_id"`
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
+	ProjectID   uuid.UUID   `json:"project_id"`
+	FolderID    pgtype.UUID `json:"folder_id"`
 }
 
 func (q *Queries) CountConverters(ctx context.Context, arg CountConvertersParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countConverters, arg.ProjectID, arg.FolderID)
+	row := q.db.QueryRow(ctx, countConverters, arg.WorkspaceID, arg.ProjectID, arg.FolderID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -37,6 +39,7 @@ func (q *Queries) CountConverters(ctx context.Context, arg CountConvertersParams
 
 const createConverter = `-- name: CreateConverter :one
 INSERT INTO converters (
+    workspace_id,
     project_id,
     folder_id,
     identity,
@@ -58,12 +61,14 @@ VALUES (
            $7,
            $8,
            $9,
-           $10
+           $10,
+           $11
        )
-    RETURNING id, project_id, folder_id, identity, display_name, description, converter_type, source, is_system, meta, active, deleted_at, created_at, updated_at
+    RETURNING id, workspace_id, project_id, folder_id, identity, display_name, description, converter_type, source, is_system, meta, active, deleted_at, created_at, updated_at
 `
 
 type CreateConverterParams struct {
+	WorkspaceID   uuid.UUID   `json:"workspace_id"`
 	ProjectID     uuid.UUID   `json:"project_id"`
 	FolderID      uuid.UUID   `json:"folder_id"`
 	Identity      string      `json:"identity"`
@@ -78,6 +83,7 @@ type CreateConverterParams struct {
 
 func (q *Queries) CreateConverter(ctx context.Context, arg CreateConverterParams) (Converter, error) {
 	row := q.db.QueryRow(ctx, createConverter,
+		arg.WorkspaceID,
 		arg.ProjectID,
 		arg.FolderID,
 		arg.Identity,
@@ -92,6 +98,7 @@ func (q *Queries) CreateConverter(ctx context.Context, arg CreateConverterParams
 	var i Converter
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.Identity,
@@ -113,35 +120,44 @@ const existsConverterByIdentity = `-- name: ExistsConverterByIdentity :one
 SELECT EXISTS (
     SELECT 1
     FROM converters
-    WHERE project_id = $1
-      AND identity = $2
+    WHERE workspace_id = $1
+      AND project_id = $2
+      AND identity = $3
 )
 `
 
 type ExistsConverterByIdentityParams struct {
-	ProjectID uuid.UUID `json:"project_id"`
-	Identity  string    `json:"identity"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	Identity    string    `json:"identity"`
 }
 
 func (q *Queries) ExistsConverterByIdentity(ctx context.Context, arg ExistsConverterByIdentityParams) (bool, error) {
-	row := q.db.QueryRow(ctx, existsConverterByIdentity, arg.ProjectID, arg.Identity)
+	row := q.db.QueryRow(ctx, existsConverterByIdentity, arg.WorkspaceID, arg.ProjectID, arg.Identity)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
 }
 
 const getConverterByID = `-- name: GetConverterByID :one
-SELECT id, project_id, folder_id, identity, display_name, description, converter_type, source, is_system, meta, active, deleted_at, created_at, updated_at
+SELECT id, workspace_id, project_id, folder_id, identity, display_name, description, converter_type, source, is_system, meta, active, deleted_at, created_at, updated_at
 FROM converters
 WHERE id = $1
+  AND workspace_id = $2
   AND deleted_at IS NULL
 `
 
-func (q *Queries) GetConverterByID(ctx context.Context, id uuid.UUID) (Converter, error) {
-	row := q.db.QueryRow(ctx, getConverterByID, id)
+type GetConverterByIDParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) GetConverterByID(ctx context.Context, arg GetConverterByIDParams) (Converter, error) {
+	row := q.db.QueryRow(ctx, getConverterByID, arg.ID, arg.WorkspaceID)
 	var i Converter
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.Identity,
@@ -160,23 +176,26 @@ func (q *Queries) GetConverterByID(ctx context.Context, id uuid.UUID) (Converter
 }
 
 const getConverterByIdentity = `-- name: GetConverterByIdentity :one
-SELECT id, project_id, folder_id, identity, display_name, description, converter_type, source, is_system, meta, active, deleted_at, created_at, updated_at
+SELECT id, workspace_id, project_id, folder_id, identity, display_name, description, converter_type, source, is_system, meta, active, deleted_at, created_at, updated_at
 FROM converters
-WHERE project_id = $1
-  AND identity = $2
+WHERE workspace_id = $1
+  AND project_id = $2
+  AND identity = $3
   AND deleted_at IS NULL
 `
 
 type GetConverterByIdentityParams struct {
-	ProjectID uuid.UUID `json:"project_id"`
-	Identity  string    `json:"identity"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	Identity    string    `json:"identity"`
 }
 
 func (q *Queries) GetConverterByIdentity(ctx context.Context, arg GetConverterByIdentityParams) (Converter, error) {
-	row := q.db.QueryRow(ctx, getConverterByIdentity, arg.ProjectID, arg.Identity)
+	row := q.db.QueryRow(ctx, getConverterByIdentity, arg.WorkspaceID, arg.ProjectID, arg.Identity)
 	var i Converter
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.Identity,
@@ -195,22 +214,25 @@ func (q *Queries) GetConverterByIdentity(ctx context.Context, arg GetConverterBy
 }
 
 const getConverterByIdentityIncludingDeleted = `-- name: GetConverterByIdentityIncludingDeleted :one
-SELECT id, project_id, folder_id, identity, display_name, description, converter_type, source, is_system, meta, active, deleted_at, created_at, updated_at
+SELECT id, workspace_id, project_id, folder_id, identity, display_name, description, converter_type, source, is_system, meta, active, deleted_at, created_at, updated_at
 FROM converters
-WHERE project_id = $1
-  AND identity = $2
+WHERE workspace_id = $1
+  AND project_id = $2
+  AND identity = $3
 `
 
 type GetConverterByIdentityIncludingDeletedParams struct {
-	ProjectID uuid.UUID `json:"project_id"`
-	Identity  string    `json:"identity"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	Identity    string    `json:"identity"`
 }
 
 func (q *Queries) GetConverterByIdentityIncludingDeleted(ctx context.Context, arg GetConverterByIdentityIncludingDeletedParams) (Converter, error) {
-	row := q.db.QueryRow(ctx, getConverterByIdentityIncludingDeleted, arg.ProjectID, arg.Identity)
+	row := q.db.QueryRow(ctx, getConverterByIdentityIncludingDeleted, arg.WorkspaceID, arg.ProjectID, arg.Identity)
 	var i Converter
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.Identity,
@@ -231,10 +253,16 @@ func (q *Queries) GetConverterByIdentityIncludingDeleted(ctx context.Context, ar
 const hardDeleteConverter = `-- name: HardDeleteConverter :execrows
 DELETE FROM converters
 WHERE id = $1
+  AND workspace_id = $2
 `
 
-func (q *Queries) HardDeleteConverter(ctx context.Context, id uuid.UUID) (int64, error) {
-	result, err := q.db.Exec(ctx, hardDeleteConverter, id)
+type HardDeleteConverterParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) HardDeleteConverter(ctx context.Context, arg HardDeleteConverterParams) (int64, error) {
+	result, err := q.db.Exec(ctx, hardDeleteConverter, arg.ID, arg.WorkspaceID)
 	if err != nil {
 		return 0, err
 	}
@@ -242,24 +270,26 @@ func (q *Queries) HardDeleteConverter(ctx context.Context, id uuid.UUID) (int64,
 }
 
 const listConverters = `-- name: ListConverters :many
-SELECT id, project_id, folder_id, identity, display_name, description, converter_type, source, is_system, meta, active, deleted_at, created_at, updated_at
+SELECT id, workspace_id, project_id, folder_id, identity, display_name, description, converter_type, source, is_system, meta, active, deleted_at, created_at, updated_at
 FROM converters
-WHERE project_id = $1
+WHERE workspace_id = $1
+  AND project_id = $2
   AND deleted_at IS NULL
   AND (
-    $2::uuid IS NULL
-      OR folder_id = $2
+    $3::uuid IS NULL
+      OR folder_id = $3
     )
 ORDER BY created_at DESC
 `
 
 type ListConvertersParams struct {
-	ProjectID uuid.UUID   `json:"project_id"`
-	FolderID  pgtype.UUID `json:"folder_id"`
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
+	ProjectID   uuid.UUID   `json:"project_id"`
+	FolderID    pgtype.UUID `json:"folder_id"`
 }
 
 func (q *Queries) ListConverters(ctx context.Context, arg ListConvertersParams) ([]Converter, error) {
-	rows, err := q.db.Query(ctx, listConverters, arg.ProjectID, arg.FolderID)
+	rows, err := q.db.Query(ctx, listConverters, arg.WorkspaceID, arg.ProjectID, arg.FolderID)
 	if err != nil {
 		return nil, err
 	}
@@ -269,6 +299,7 @@ func (q *Queries) ListConverters(ctx context.Context, arg ListConvertersParams) 
 		var i Converter
 		if err := rows.Scan(
 			&i.ID,
+			&i.WorkspaceID,
 			&i.ProjectID,
 			&i.FolderID,
 			&i.Identity,
@@ -299,11 +330,17 @@ SET
     deleted_at = NULL,
     updated_at = NOW()
 WHERE id = $1
+  AND workspace_id = $2
   AND deleted_at IS NOT NULL
 `
 
-func (q *Queries) RestoreConverter(ctx context.Context, id uuid.UUID) (int64, error) {
-	result, err := q.db.Exec(ctx, restoreConverter, id)
+type RestoreConverterParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) RestoreConverter(ctx context.Context, arg RestoreConverterParams) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreConverter, arg.ID, arg.WorkspaceID)
 	if err != nil {
 		return 0, err
 	}
@@ -316,11 +353,17 @@ SET
     deleted_at = NOW(),
     updated_at = NOW()
 WHERE id = $1
+  AND workspace_id = $2
   AND deleted_at IS NULL
 `
 
-func (q *Queries) SoftDeleteConverter(ctx context.Context, id uuid.UUID) (int64, error) {
-	result, err := q.db.Exec(ctx, softDeleteConverter, id)
+type SoftDeleteConverterParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) SoftDeleteConverter(ctx context.Context, arg SoftDeleteConverterParams) (int64, error) {
+	result, err := q.db.Exec(ctx, softDeleteConverter, arg.ID, arg.WorkspaceID)
 	if err != nil {
 		return 0, err
 	}
@@ -340,8 +383,9 @@ SET
     active = $8,
     updated_at = NOW()
 WHERE id = $9
+  AND workspace_id = $10
   AND deleted_at IS NULL
-    RETURNING id, project_id, folder_id, identity, display_name, description, converter_type, source, is_system, meta, active, deleted_at, created_at, updated_at
+    RETURNING id, workspace_id, project_id, folder_id, identity, display_name, description, converter_type, source, is_system, meta, active, deleted_at, created_at, updated_at
 `
 
 type UpdateConverterParams struct {
@@ -354,6 +398,7 @@ type UpdateConverterParams struct {
 	Meta          []byte      `json:"meta"`
 	Active        bool        `json:"active"`
 	ID            uuid.UUID   `json:"id"`
+	WorkspaceID   uuid.UUID   `json:"workspace_id"`
 }
 
 func (q *Queries) UpdateConverter(ctx context.Context, arg UpdateConverterParams) (Converter, error) {
@@ -367,10 +412,12 @@ func (q *Queries) UpdateConverter(ctx context.Context, arg UpdateConverterParams
 		arg.Meta,
 		arg.Active,
 		arg.ID,
+		arg.WorkspaceID,
 	)
 	var i Converter
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.Identity,

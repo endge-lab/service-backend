@@ -8,6 +8,7 @@ import (
 	httpfolder "github.com/endge-lab/service-backend/internal/api/http/v1/folder"
 	httpproject "github.com/endge-lab/service-backend/internal/api/http/v1/project"
 	httpquery "github.com/endge-lab/service-backend/internal/api/http/v1/query"
+	httpworkspace "github.com/endge-lab/service-backend/internal/api/http/v1/workspace"
 	"github.com/endge-lab/service-backend/internal/usecase/components_legacy"
 	"github.com/endge-lab/service-backend/internal/usecase/converters"
 	"github.com/endge-lab/service-backend/internal/usecase/data_views"
@@ -17,6 +18,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/queries"
 	usecasesession "github.com/endge-lab/service-backend/internal/usecase/session"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
+	"github.com/endge-lab/service-backend/internal/usecase/workspaces"
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/fx"
@@ -34,8 +36,13 @@ func UseCaseModules() fx.Option {
 			fx.Annotate(newConverterUseCase, fx.As(new(httpconverter.UseCase))),
 			fx.Annotate(newQueryUseCase, fx.As(new(httpquery.UseCase))),
 			fx.Annotate(newDataViewUseCase, fx.As(new(httpdataview.UseCase))),
+			fx.Annotate(newWorkspaceUseCase, fx.As(new(httpworkspace.UseCase))),
 		),
 	)
+}
+
+func newWorkspaceUseCase(repository ports.WorkspacesRepository, tracer trace.Tracer, logger *zap.Logger, metrics *shared.UseCaseMetrics) *workspaces.Workspace {
+	return workspaces.NewWorkspaceService(workspaces.WorkspaceParams{Repository: repository, Tracer: tracer, Logger: logger, Metrics: metrics})
 }
 
 func newProjectUseCase(

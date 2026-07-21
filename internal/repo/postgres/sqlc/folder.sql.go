@@ -15,18 +15,20 @@ import (
 const countFoldersByProjectAndEntityType = `-- name: CountFoldersByProjectAndEntityType :one
 SELECT COUNT(*)
 FROM folders
-WHERE project_id IS NOT DISTINCT FROM $1
-  AND entity_type = $2
+WHERE workspace_id = $1
+  AND project_id IS NOT DISTINCT FROM $2
+  AND entity_type = $3
   AND deleted_at IS NULL
 `
 
 type CountFoldersByProjectAndEntityTypeParams struct {
-	ProjectID  pgtype.UUID `json:"project_id"`
-	EntityType string      `json:"entity_type"`
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
+	ProjectID   pgtype.UUID `json:"project_id"`
+	EntityType  string      `json:"entity_type"`
 }
 
 func (q *Queries) CountFoldersByProjectAndEntityType(ctx context.Context, arg CountFoldersByProjectAndEntityTypeParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countFoldersByProjectAndEntityType, arg.ProjectID, arg.EntityType)
+	row := q.db.QueryRow(ctx, countFoldersByProjectAndEntityType, arg.WorkspaceID, arg.ProjectID, arg.EntityType)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -34,6 +36,7 @@ func (q *Queries) CountFoldersByProjectAndEntityType(ctx context.Context, arg Co
 
 const createFolder = `-- name: CreateFolder :one
 INSERT INTO folders (
+    workspace_id,
     project_id,
     entity_type,
     identity,
@@ -53,12 +56,14 @@ VALUES (
     $6,
     $7,
     $8,
-    $9
+    $9,
+    $10
 )
-RETURNING id, project_id, entity_type, identity, display_name, description, parent_id, is_root, is_system, deleted_at, meta, created_at, updated_at
+RETURNING id, workspace_id, project_id, entity_type, identity, display_name, description, parent_id, is_root, is_system, deleted_at, meta, created_at, updated_at
 `
 
 type CreateFolderParams struct {
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
 	ProjectID   pgtype.UUID `json:"project_id"`
 	EntityType  string      `json:"entity_type"`
 	Identity    string      `json:"identity"`
@@ -72,6 +77,7 @@ type CreateFolderParams struct {
 
 func (q *Queries) CreateFolder(ctx context.Context, arg CreateFolderParams) (Folder, error) {
 	row := q.db.QueryRow(ctx, createFolder,
+		arg.WorkspaceID,
 		arg.ProjectID,
 		arg.EntityType,
 		arg.Identity,
@@ -85,6 +91,7 @@ func (q *Queries) CreateFolder(ctx context.Context, arg CreateFolderParams) (Fol
 	var i Folder
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.EntityType,
 		&i.Identity,
@@ -105,37 +112,51 @@ const existsFolderByProjectEntityIdentity = `-- name: ExistsFolderByProjectEntit
 SELECT EXISTS(
     SELECT 1
     FROM folders
-    WHERE project_id IS NOT DISTINCT FROM $1
-      AND entity_type = $2
-      AND identity = $3
+    WHERE workspace_id = $1
+      AND project_id IS NOT DISTINCT FROM $2
+      AND entity_type = $3
+      AND identity = $4
 )
 `
 
 type ExistsFolderByProjectEntityIdentityParams struct {
-	ProjectID  pgtype.UUID `json:"project_id"`
-	EntityType string      `json:"entity_type"`
-	Identity   string      `json:"identity"`
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
+	ProjectID   pgtype.UUID `json:"project_id"`
+	EntityType  string      `json:"entity_type"`
+	Identity    string      `json:"identity"`
 }
 
 func (q *Queries) ExistsFolderByProjectEntityIdentity(ctx context.Context, arg ExistsFolderByProjectEntityIdentityParams) (bool, error) {
-	row := q.db.QueryRow(ctx, existsFolderByProjectEntityIdentity, arg.ProjectID, arg.EntityType, arg.Identity)
+	row := q.db.QueryRow(ctx, existsFolderByProjectEntityIdentity,
+		arg.WorkspaceID,
+		arg.ProjectID,
+		arg.EntityType,
+		arg.Identity,
+	)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
 }
 
 const getFolderByID = `-- name: GetFolderByID :one
-SELECT id, project_id, entity_type, identity, display_name, description, parent_id, is_root, is_system, deleted_at, meta, created_at, updated_at
+SELECT id, workspace_id, project_id, entity_type, identity, display_name, description, parent_id, is_root, is_system, deleted_at, meta, created_at, updated_at
 FROM folders
 WHERE id = $1
+  AND workspace_id = $2
   AND deleted_at IS NULL
 `
 
-func (q *Queries) GetFolderByID(ctx context.Context, id uuid.UUID) (Folder, error) {
-	row := q.db.QueryRow(ctx, getFolderByID, id)
+type GetFolderByIDParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) GetFolderByID(ctx context.Context, arg GetFolderByIDParams) (Folder, error) {
+	row := q.db.QueryRow(ctx, getFolderByID, arg.ID, arg.WorkspaceID)
 	var i Folder
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.EntityType,
 		&i.Identity,
@@ -153,16 +174,23 @@ func (q *Queries) GetFolderByID(ctx context.Context, id uuid.UUID) (Folder, erro
 }
 
 const getFolderByIDIncludingDeleted = `-- name: GetFolderByIDIncludingDeleted :one
-SELECT id, project_id, entity_type, identity, display_name, description, parent_id, is_root, is_system, deleted_at, meta, created_at, updated_at
+SELECT id, workspace_id, project_id, entity_type, identity, display_name, description, parent_id, is_root, is_system, deleted_at, meta, created_at, updated_at
 FROM folders
 WHERE id = $1
+  AND workspace_id = $2
 `
 
-func (q *Queries) GetFolderByIDIncludingDeleted(ctx context.Context, id uuid.UUID) (Folder, error) {
-	row := q.db.QueryRow(ctx, getFolderByIDIncludingDeleted, id)
+type GetFolderByIDIncludingDeletedParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) GetFolderByIDIncludingDeleted(ctx context.Context, arg GetFolderByIDIncludingDeletedParams) (Folder, error) {
+	row := q.db.QueryRow(ctx, getFolderByIDIncludingDeleted, arg.ID, arg.WorkspaceID)
 	var i Folder
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.EntityType,
 		&i.Identity,
@@ -180,25 +208,33 @@ func (q *Queries) GetFolderByIDIncludingDeleted(ctx context.Context, id uuid.UUI
 }
 
 const getFolderByProjectEntityIdentity = `-- name: GetFolderByProjectEntityIdentity :one
-SELECT id, project_id, entity_type, identity, display_name, description, parent_id, is_root, is_system, deleted_at, meta, created_at, updated_at
+SELECT id, workspace_id, project_id, entity_type, identity, display_name, description, parent_id, is_root, is_system, deleted_at, meta, created_at, updated_at
 FROM folders
-WHERE project_id IS NOT DISTINCT FROM $1
-  AND entity_type = $2
-  AND identity = $3
+WHERE workspace_id = $1
+  AND project_id IS NOT DISTINCT FROM $2
+  AND entity_type = $3
+  AND identity = $4
   AND deleted_at IS NULL
 `
 
 type GetFolderByProjectEntityIdentityParams struct {
-	ProjectID  pgtype.UUID `json:"project_id"`
-	EntityType string      `json:"entity_type"`
-	Identity   string      `json:"identity"`
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
+	ProjectID   pgtype.UUID `json:"project_id"`
+	EntityType  string      `json:"entity_type"`
+	Identity    string      `json:"identity"`
 }
 
 func (q *Queries) GetFolderByProjectEntityIdentity(ctx context.Context, arg GetFolderByProjectEntityIdentityParams) (Folder, error) {
-	row := q.db.QueryRow(ctx, getFolderByProjectEntityIdentity, arg.ProjectID, arg.EntityType, arg.Identity)
+	row := q.db.QueryRow(ctx, getFolderByProjectEntityIdentity,
+		arg.WorkspaceID,
+		arg.ProjectID,
+		arg.EntityType,
+		arg.Identity,
+	)
 	var i Folder
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.EntityType,
 		&i.Identity,
@@ -216,24 +252,32 @@ func (q *Queries) GetFolderByProjectEntityIdentity(ctx context.Context, arg GetF
 }
 
 const getFolderByProjectEntityIdentityIncludingDeleted = `-- name: GetFolderByProjectEntityIdentityIncludingDeleted :one
-SELECT id, project_id, entity_type, identity, display_name, description, parent_id, is_root, is_system, deleted_at, meta, created_at, updated_at
+SELECT id, workspace_id, project_id, entity_type, identity, display_name, description, parent_id, is_root, is_system, deleted_at, meta, created_at, updated_at
 FROM folders
-WHERE project_id IS NOT DISTINCT FROM $1
-  AND entity_type = $2
-  AND identity = $3
+WHERE workspace_id = $1
+  AND project_id IS NOT DISTINCT FROM $2
+  AND entity_type = $3
+  AND identity = $4
 `
 
 type GetFolderByProjectEntityIdentityIncludingDeletedParams struct {
-	ProjectID  pgtype.UUID `json:"project_id"`
-	EntityType string      `json:"entity_type"`
-	Identity   string      `json:"identity"`
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
+	ProjectID   pgtype.UUID `json:"project_id"`
+	EntityType  string      `json:"entity_type"`
+	Identity    string      `json:"identity"`
 }
 
 func (q *Queries) GetFolderByProjectEntityIdentityIncludingDeleted(ctx context.Context, arg GetFolderByProjectEntityIdentityIncludingDeletedParams) (Folder, error) {
-	row := q.db.QueryRow(ctx, getFolderByProjectEntityIdentityIncludingDeleted, arg.ProjectID, arg.EntityType, arg.Identity)
+	row := q.db.QueryRow(ctx, getFolderByProjectEntityIdentityIncludingDeleted,
+		arg.WorkspaceID,
+		arg.ProjectID,
+		arg.EntityType,
+		arg.Identity,
+	)
 	var i Folder
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.EntityType,
 		&i.Identity,
@@ -253,10 +297,16 @@ func (q *Queries) GetFolderByProjectEntityIdentityIncludingDeleted(ctx context.C
 const hardDeleteFolder = `-- name: HardDeleteFolder :execrows
 DELETE FROM folders
 WHERE id = $1
+  AND workspace_id = $2
 `
 
-func (q *Queries) HardDeleteFolder(ctx context.Context, id uuid.UUID) (int64, error) {
-	result, err := q.db.Exec(ctx, hardDeleteFolder, id)
+type HardDeleteFolderParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) HardDeleteFolder(ctx context.Context, arg HardDeleteFolderParams) (int64, error) {
+	result, err := q.db.Exec(ctx, hardDeleteFolder, arg.ID, arg.WorkspaceID)
 	if err != nil {
 		return 0, err
 	}
@@ -264,21 +314,23 @@ func (q *Queries) HardDeleteFolder(ctx context.Context, id uuid.UUID) (int64, er
 }
 
 const listFoldersByProjectAndEntityType = `-- name: ListFoldersByProjectAndEntityType :many
-SELECT id, project_id, entity_type, identity, display_name, description, parent_id, is_root, is_system, deleted_at, meta, created_at, updated_at
+SELECT id, workspace_id, project_id, entity_type, identity, display_name, description, parent_id, is_root, is_system, deleted_at, meta, created_at, updated_at
 FROM folders
-WHERE project_id IS NOT DISTINCT FROM $1
-  AND entity_type = $2
+WHERE workspace_id = $1
+  AND project_id IS NOT DISTINCT FROM $2
+  AND entity_type = $3
   AND deleted_at IS NULL
 ORDER BY is_root DESC, display_name ASC, created_at ASC
 `
 
 type ListFoldersByProjectAndEntityTypeParams struct {
-	ProjectID  pgtype.UUID `json:"project_id"`
-	EntityType string      `json:"entity_type"`
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
+	ProjectID   pgtype.UUID `json:"project_id"`
+	EntityType  string      `json:"entity_type"`
 }
 
 func (q *Queries) ListFoldersByProjectAndEntityType(ctx context.Context, arg ListFoldersByProjectAndEntityTypeParams) ([]Folder, error) {
-	rows, err := q.db.Query(ctx, listFoldersByProjectAndEntityType, arg.ProjectID, arg.EntityType)
+	rows, err := q.db.Query(ctx, listFoldersByProjectAndEntityType, arg.WorkspaceID, arg.ProjectID, arg.EntityType)
 	if err != nil {
 		return nil, err
 	}
@@ -288,6 +340,7 @@ func (q *Queries) ListFoldersByProjectAndEntityType(ctx context.Context, arg Lis
 		var i Folder
 		if err := rows.Scan(
 			&i.ID,
+			&i.WorkspaceID,
 			&i.ProjectID,
 			&i.EntityType,
 			&i.Identity,
@@ -317,11 +370,17 @@ SET
     deleted_at = NULL,
     updated_at = NOW()
 WHERE id = $1
+  AND workspace_id = $2
   AND deleted_at IS NOT NULL
 `
 
-func (q *Queries) RestoreFolder(ctx context.Context, id uuid.UUID) (int64, error) {
-	result, err := q.db.Exec(ctx, restoreFolder, id)
+type RestoreFolderParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) RestoreFolder(ctx context.Context, arg RestoreFolderParams) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreFolder, arg.ID, arg.WorkspaceID)
 	if err != nil {
 		return 0, err
 	}
@@ -334,11 +393,17 @@ SET
     deleted_at = NOW(),
     updated_at = NOW()
 WHERE id = $1
+  AND workspace_id = $2
   AND deleted_at IS NULL
 `
 
-func (q *Queries) SoftDeleteFolder(ctx context.Context, id uuid.UUID) (int64, error) {
-	result, err := q.db.Exec(ctx, softDeleteFolder, id)
+type SoftDeleteFolderParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) SoftDeleteFolder(ctx context.Context, arg SoftDeleteFolderParams) (int64, error) {
+	result, err := q.db.Exec(ctx, softDeleteFolder, arg.ID, arg.WorkspaceID)
 	if err != nil {
 		return 0, err
 	}
@@ -348,35 +413,39 @@ func (q *Queries) SoftDeleteFolder(ctx context.Context, id uuid.UUID) (int64, er
 const updateFolder = `-- name: UpdateFolder :one
 UPDATE folders
 SET
-    display_name = $2,
-    description = $3,
-    parent_id = $4,
-    meta = $5,
+    display_name = $1,
+    description = $2,
+    parent_id = $3,
+    meta = $4,
     updated_at = NOW()
-WHERE id = $1
+WHERE id = $5
+  AND workspace_id = $6
   AND deleted_at IS NULL
-RETURNING id, project_id, entity_type, identity, display_name, description, parent_id, is_root, is_system, deleted_at, meta, created_at, updated_at
+RETURNING id, workspace_id, project_id, entity_type, identity, display_name, description, parent_id, is_root, is_system, deleted_at, meta, created_at, updated_at
 `
 
 type UpdateFolderParams struct {
-	ID          uuid.UUID   `json:"id"`
 	DisplayName string      `json:"display_name"`
 	Description pgtype.Text `json:"description"`
 	ParentID    pgtype.UUID `json:"parent_id"`
 	Meta        []byte      `json:"meta"`
+	ID          uuid.UUID   `json:"id"`
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
 }
 
 func (q *Queries) UpdateFolder(ctx context.Context, arg UpdateFolderParams) (Folder, error) {
 	row := q.db.QueryRow(ctx, updateFolder,
-		arg.ID,
 		arg.DisplayName,
 		arg.Description,
 		arg.ParentID,
 		arg.Meta,
+		arg.ID,
+		arg.WorkspaceID,
 	)
 	var i Folder
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.EntityType,
 		&i.Identity,

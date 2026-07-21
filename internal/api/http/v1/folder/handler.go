@@ -47,6 +47,7 @@ func NewHandler(
 // @Failure 409 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity}/folders [post]
 func (h *Handler) CreateFolder(c *fiber.Ctx) error {
 	var request CreateFolderRequest
@@ -88,6 +89,7 @@ func (h *Handler) CreateFolder(c *fiber.Ctx) error {
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity}/folders [get]
 func (h *Handler) ListFolders(c *fiber.Ctx) error {
 	projectIdentity := c.Params("project_identity")
@@ -126,6 +128,7 @@ func (h *Handler) ListFolders(c *fiber.Ctx) error {
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity}/folders/{folder_identity} [get]
 func (h *Handler) GetFolderByIdentity(c *fiber.Ctx) error {
 	input := h.folderIdentityInput(c)
@@ -158,6 +161,7 @@ func (h *Handler) GetFolderByIdentity(c *fiber.Ctx) error {
 // @Failure 409 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity}/folders/{folder_identity} [patch]
 func (h *Handler) UpdateFolder(c *fiber.Ctx) error {
 	var request UpdateFolderRequest
@@ -199,6 +203,7 @@ func (h *Handler) UpdateFolder(c *fiber.Ctx) error {
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity}/folders/{folder_identity} [delete]
 func (h *Handler) SoftDeleteFolder(c *fiber.Ctx) error {
 	if err := h.folderService.SoftDelete(c.UserContext(), h.folderIdentityInput(c)); err != nil {
@@ -220,6 +225,7 @@ func (h *Handler) SoftDeleteFolder(c *fiber.Ctx) error {
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity}/folders/{folder_identity}/restore [post]
 func (h *Handler) RestoreFolder(c *fiber.Ctx) error {
 	if err := h.folderService.Restore(c.UserContext(), h.folderIdentityInput(c)); err != nil {
@@ -242,6 +248,7 @@ func (h *Handler) RestoreFolder(c *fiber.Ctx) error {
 // @Failure 409 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
 // @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity"
 // @Router /api/v1/projects/{project_identity}/folders/{folder_identity}/hard [delete]
 func (h *Handler) HardDeleteFolder(c *fiber.Ctx) error {
 	if err := h.folderService.HardDelete(c.UserContext(), h.folderIdentityInput(c)); err != nil {

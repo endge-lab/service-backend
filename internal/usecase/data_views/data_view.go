@@ -88,7 +88,7 @@ func (s *DataView) Create(ctx context.Context, input CreateDataViewInput) (resul
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity), zap.String("data_view_identity", input.Identity))
 		return nil, err
 	}
-	dataView, err := s.dataViewRepository.Create(ctx, dataViewFromCreate(project.ID, folder.ID, query.ID, input))
+	dataView, err := s.dataViewRepository.Create(ctx, dataViewFromCreate(project.WorkspaceID, project.ID, folder.ID, query.ID, input))
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity), zap.String("data_view_identity", input.Identity))
 		return nil, err

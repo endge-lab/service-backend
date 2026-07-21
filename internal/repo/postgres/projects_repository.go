@@ -50,6 +50,9 @@ func (r *ProjectsRepository) Create(ctx context.Context, project *entities.RProj
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	if _, err = requireEntityWorkspace(ctx, project.WorkspaceID); err != nil {
+		return nil, err
+	}
 
 	created, err := r.queries(ctx).CreateProject(ctx, mappers.CreateProjectParams(project))
 	if err != nil {
@@ -80,8 +83,12 @@ func (r *ProjectsRepository) GetByID(ctx context.Context, id uuid.UUID) (result 
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	project, err := r.queries(ctx).GetProjectByID(ctx, id)
+	project, err := r.queries(ctx).GetProjectByID(ctx, sqlc.GetProjectByIDParams{ID: id, WorkspaceID: workspaceID})
 	if err != nil {
 		if stderrors.Is(err, pgx.ErrNoRows) {
 			return nil, apperrors.NotFound("not_found", "project not found")
@@ -115,7 +122,12 @@ func (r *ProjectsRepository) GetByIdentity(ctx context.Context, identity string)
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
 
-	project, err := r.queries(ctx).GetProjectByIdentity(ctx, identity)
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	project, err := r.queries(ctx).GetProjectByIdentity(ctx, sqlc.GetProjectByIdentityParams{WorkspaceID: workspaceID, Identity: identity})
 	if err != nil {
 		if stderrors.Is(err, pgx.ErrNoRows) {
 			return nil, apperrors.NotFound("not_found", "project not found")
@@ -152,7 +164,12 @@ func (r *ProjectsRepository) GetByIdentityIncludingDeleted(
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
 
-	project, err := r.queries(ctx).GetProjectByIdentityIncludingDeleted(ctx, identity)
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	project, err := r.queries(ctx).GetProjectByIdentityIncludingDeleted(ctx, sqlc.GetProjectByIdentityIncludingDeletedParams{WorkspaceID: workspaceID, Identity: identity})
 	if err != nil {
 		if stderrors.Is(err, pgx.ErrNoRows) {
 			return nil, apperrors.NotFound("not_found", "project not found")
@@ -185,7 +202,12 @@ func (r *ProjectsRepository) List(ctx context.Context) (result []*entities.RProj
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
 
-	projects, err := r.queries(ctx).ListProjects(ctx)
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	projects, err := r.queries(ctx).ListProjects(ctx, workspaceID)
 	if err != nil {
 		r.logger.Error("list projects failed", zap.Error(err))
 		return nil, apperrors.Internal("internal_error", "failed to list projects")
@@ -219,6 +241,9 @@ func (r *ProjectsRepository) Update(ctx context.Context, project *entities.RProj
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	if _, err = requireEntityWorkspace(ctx, project.WorkspaceID); err != nil {
+		return nil, err
+	}
 
 	updated, err := r.queries(ctx).UpdateProject(ctx, mappers.UpdateProjectParams(project))
 	if err != nil {
@@ -252,8 +277,12 @@ func (r *ProjectsRepository) SoftDelete(ctx context.Context, id uuid.UUID) (err 
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return err
+	}
 
-	affected, err := r.queries(ctx).SoftDeleteProject(ctx, id)
+	affected, err := r.queries(ctx).SoftDeleteProject(ctx, sqlc.SoftDeleteProjectParams{ID: id, WorkspaceID: workspaceID})
 	if err != nil {
 		r.logger.Error("soft delete project failed", zap.Error(err))
 		return apperrors.Internal("internal_error", "failed to delete project")
@@ -284,8 +313,12 @@ func (r *ProjectsRepository) Restore(ctx context.Context, id uuid.UUID) (err err
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return err
+	}
 
-	affected, err := r.queries(ctx).RestoreProject(ctx, id)
+	affected, err := r.queries(ctx).RestoreProject(ctx, sqlc.RestoreProjectParams{ID: id, WorkspaceID: workspaceID})
 	if err != nil {
 		r.logger.Error("restore project failed", zap.Error(err))
 		return apperrors.Internal("internal_error", "failed to restore project")
@@ -316,8 +349,12 @@ func (r *ProjectsRepository) HardDelete(ctx context.Context, id uuid.UUID) (err 
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return err
+	}
 
-	affected, err := r.queries(ctx).HardDeleteProject(ctx, id)
+	affected, err := r.queries(ctx).HardDeleteProject(ctx, sqlc.HardDeleteProjectParams{ID: id, WorkspaceID: workspaceID})
 	if err != nil {
 		r.logger.Error("hard delete project failed", zap.Error(err))
 		return apperrors.Internal("internal_error", "failed to delete project")
@@ -350,7 +387,12 @@ func (r *ProjectsRepository) ExistsByIdentity(ctx context.Context, identity stri
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
 
-	exists, err := r.queries(ctx).ExistsProjectByIdentity(ctx, identity)
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	exists, err := r.queries(ctx).ExistsProjectByIdentity(ctx, sqlc.ExistsProjectByIdentityParams{WorkspaceID: workspaceID, Identity: identity})
 	if err != nil {
 		r.logger.Error("exists project by identity failed", zap.Error(err))
 		return false, apperrors.Internal("internal_error", "failed to check project identity")
@@ -378,8 +420,12 @@ func (r *ProjectsRepository) Count(ctx context.Context) (result int64, err error
 
 	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
 	defer func() { step.End(err) }()
+	workspaceID, err := workspaceIDFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
 
-	count, err := r.queries(ctx).CountProject(ctx)
+	count, err := r.queries(ctx).CountProject(ctx, workspaceID)
 	if err != nil {
 		r.logger.Error("count projects failed", zap.Error(err))
 		return 0, apperrors.Internal("internal_error", "failed to count projects")

@@ -8,6 +8,7 @@ import (
 func DataView(value sqlc.DataView) *entities.RDataView {
 	return &entities.RDataView{
 		ID:           value.ID,
+		WorkspaceID:  value.WorkspaceID,
 		ProjectID:    value.ProjectID,
 		FolderID:     value.FolderID,
 		QueryID:      value.QueryID,
@@ -31,6 +32,7 @@ func CreateDataViewParams(value *entities.RDataView) sqlc.CreateDataViewParams {
 		return sqlc.CreateDataViewParams{}
 	}
 	return sqlc.CreateDataViewParams{
+		WorkspaceID:  value.WorkspaceID,
 		ProjectID:    value.ProjectID,
 		FolderID:     value.FolderID,
 		QueryID:      value.QueryID,
@@ -52,6 +54,7 @@ func UpdateDataViewParams(value *entities.RDataView) sqlc.UpdateDataViewParams {
 	}
 	return sqlc.UpdateDataViewParams{
 		ID:           value.ID,
+		WorkspaceID:  value.WorkspaceID,
 		FolderID:     value.FolderID,
 		QueryID:      value.QueryID,
 		DisplayName:  value.DisplayName,

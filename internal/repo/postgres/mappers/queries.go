@@ -8,6 +8,7 @@ import (
 func Query(value sqlc.Query) *entities.RQuery {
 	return &entities.RQuery{
 		ID:              value.ID,
+		WorkspaceID:     value.WorkspaceID,
 		ProjectID:       value.ProjectID,
 		FolderID:        value.FolderID,
 		Identity:        value.Identity,
@@ -34,6 +35,7 @@ func CreateQueryParams(value *entities.RQuery) sqlc.CreateQueryParams {
 		return sqlc.CreateQueryParams{}
 	}
 	return sqlc.CreateQueryParams{
+		WorkspaceID:     value.WorkspaceID,
 		ProjectID:       value.ProjectID,
 		FolderID:        value.FolderID,
 		Identity:        value.Identity,
@@ -58,6 +60,7 @@ func UpdateQueryParams(value *entities.RQuery) sqlc.UpdateQueryParams {
 	}
 	return sqlc.UpdateQueryParams{
 		ID:              value.ID,
+		WorkspaceID:     value.WorkspaceID,
 		FolderID:        value.FolderID,
 		DisplayName:     value.DisplayName,
 		Description:     NullableTextToSQLC(value.Description),

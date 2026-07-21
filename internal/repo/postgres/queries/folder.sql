@@ -1,5 +1,6 @@
 -- name: CreateFolder :one
 INSERT INTO folders (
+    workspace_id,
     project_id,
     entity_type,
     identity,
@@ -11,61 +12,68 @@ INSERT INTO folders (
     meta
 )
 VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7,
-    $8,
-    $9
+    sqlc.arg(workspace_id),
+    sqlc.narg(project_id),
+    sqlc.arg(entity_type),
+    sqlc.arg(identity),
+    sqlc.arg(display_name),
+    sqlc.narg(description),
+    sqlc.narg(parent_id),
+    sqlc.arg(is_root),
+    sqlc.arg(is_system),
+    sqlc.arg(meta)
 )
 RETURNING *;
 
 -- name: GetFolderByID :one
 SELECT *
 FROM folders
-WHERE id = $1
+WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NULL;
 
 -- name: GetFolderByIDIncludingDeleted :one
 SELECT *
 FROM folders
-WHERE id = $1;
+WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id);
 
 -- name: GetFolderByProjectEntityIdentity :one
 SELECT *
 FROM folders
-WHERE project_id IS NOT DISTINCT FROM $1
-  AND entity_type = $2
-  AND identity = $3
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id IS NOT DISTINCT FROM sqlc.narg(project_id)
+  AND entity_type = sqlc.arg(entity_type)
+  AND identity = sqlc.arg(identity)
   AND deleted_at IS NULL;
 
 -- name: GetFolderByProjectEntityIdentityIncludingDeleted :one
 SELECT *
 FROM folders
-WHERE project_id IS NOT DISTINCT FROM $1
-  AND entity_type = $2
-  AND identity = $3;
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id IS NOT DISTINCT FROM sqlc.narg(project_id)
+  AND entity_type = sqlc.arg(entity_type)
+  AND identity = sqlc.arg(identity);
 
 -- name: ListFoldersByProjectAndEntityType :many
 SELECT *
 FROM folders
-WHERE project_id IS NOT DISTINCT FROM $1
-  AND entity_type = $2
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id IS NOT DISTINCT FROM sqlc.narg(project_id)
+  AND entity_type = sqlc.arg(entity_type)
   AND deleted_at IS NULL
 ORDER BY is_root DESC, display_name ASC, created_at ASC;
 
 -- name: UpdateFolder :one
 UPDATE folders
 SET
-    display_name = $2,
-    description = $3,
-    parent_id = $4,
-    meta = $5,
+    display_name = sqlc.arg(display_name),
+    description = sqlc.narg(description),
+    parent_id = sqlc.narg(parent_id),
+    meta = sqlc.arg(meta),
     updated_at = NOW()
-WHERE id = $1
+WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NULL
 RETURNING *;
 
@@ -74,7 +82,8 @@ UPDATE folders
 SET
     deleted_at = NOW(),
     updated_at = NOW()
-WHERE id = $1
+WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NULL;
 
 -- name: RestoreFolder :execrows
@@ -82,25 +91,29 @@ UPDATE folders
 SET
     deleted_at = NULL,
     updated_at = NOW()
-WHERE id = $1
+WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NOT NULL;
 
 -- name: HardDeleteFolder :execrows
 DELETE FROM folders
-WHERE id = $1;
+WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id);
 
 -- name: ExistsFolderByProjectEntityIdentity :one
 SELECT EXISTS(
     SELECT 1
     FROM folders
-    WHERE project_id IS NOT DISTINCT FROM $1
-      AND entity_type = $2
-      AND identity = $3
+    WHERE workspace_id = sqlc.arg(workspace_id)
+      AND project_id IS NOT DISTINCT FROM sqlc.narg(project_id)
+      AND entity_type = sqlc.arg(entity_type)
+      AND identity = sqlc.arg(identity)
 );
 
 -- name: CountFoldersByProjectAndEntityType :one
 SELECT COUNT(*)
 FROM folders
-WHERE project_id IS NOT DISTINCT FROM $1
-  AND entity_type = $2
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id IS NOT DISTINCT FROM sqlc.narg(project_id)
+  AND entity_type = sqlc.arg(entity_type)
   AND deleted_at IS NULL;

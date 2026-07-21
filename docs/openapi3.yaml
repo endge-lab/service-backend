@@ -47,6 +47,13 @@ paths:
       tags:
         - projects
       summary: Список проектов
+      parameters:
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -68,6 +75,13 @@ paths:
       tags:
         - projects
       summary: Создать проект
+      parameters:
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
@@ -119,6 +133,12 @@ paths:
           required: true
           schema:
             type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -162,6 +182,12 @@ paths:
           required: true
           schema:
             type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: No Content
@@ -198,6 +224,12 @@ paths:
           description: Project identity
           name: project_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -266,6 +298,12 @@ paths:
             type: string
             enum:
               - component-sfc
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -308,6 +346,12 @@ paths:
           description: Project identity
           name: project_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -378,6 +422,12 @@ paths:
           required: true
           schema:
             type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -427,6 +477,12 @@ paths:
           required: true
           schema:
             type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: No Content
@@ -471,6 +527,12 @@ paths:
           description: Legacy component identity
           name: component_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -532,6 +594,12 @@ paths:
           required: true
           schema:
             type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: No Content
@@ -577,6 +645,12 @@ paths:
           required: true
           schema:
             type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: No Content
@@ -610,6 +684,12 @@ paths:
         - converters
       summary: Список конвертеров
       parameters:
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
         - description: Project identity
           name: project_identity
           in: path
@@ -658,6 +738,12 @@ paths:
         - converters
       summary: Создать конвертер
       parameters:
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
         - example: demo-project
           description: Project identity
           name: project_identity
@@ -717,6 +803,12 @@ paths:
         - converters
       summary: Получить конвертер
       parameters:
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
         - description: Project identity
           name: project_identity
           in: path
@@ -765,6 +857,12 @@ paths:
         - converters
       summary: Удалить конвертер
       parameters:
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
         - description: Project identity
           name: project_identity
           in: path
@@ -810,6 +908,12 @@ paths:
         - converters
       summary: Обновить конвертер
       parameters:
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
         - description: Project identity
           name: project_identity
           in: path
@@ -867,6 +971,12 @@ paths:
         - converters
       summary: Физически удалить конвертер
       parameters:
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
         - description: Project identity
           name: project_identity
           in: path
@@ -919,6 +1029,12 @@ paths:
         - converters
       summary: Восстановить конвертер
       parameters:
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
         - description: Project identity
           name: project_identity
           in: path
@@ -984,6 +1100,12 @@ paths:
           in: query
           schema:
             type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -1027,6 +1149,12 @@ paths:
           description: Project identity
           name: project_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -1097,6 +1225,12 @@ paths:
           required: true
           schema:
             type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -1145,6 +1279,12 @@ paths:
           required: true
           schema:
             type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: No Content
@@ -1190,6 +1330,12 @@ paths:
           description: DataView identity
           name: data_view_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -1251,6 +1397,12 @@ paths:
           required: true
           schema:
             type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: No Content
@@ -1293,6 +1445,12 @@ paths:
         - description: DataView identity
           name: data_view_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -1348,6 +1506,12 @@ paths:
               - converters
               - queries
               - data-views
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -1388,6 +1552,12 @@ paths:
           description: Project identity
           name: project_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -1468,6 +1638,12 @@ paths:
               - converters
               - queries
               - data-views
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -1530,6 +1706,12 @@ paths:
               - converters
               - queries
               - data-views
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: No Content
@@ -1588,6 +1770,12 @@ paths:
               - converters
               - queries
               - data-views
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
@@ -1665,6 +1853,12 @@ paths:
               - converters
               - queries
               - data-views
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: No Content
@@ -1731,6 +1925,12 @@ paths:
               - converters
               - queries
               - data-views
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: No Content
@@ -1768,6 +1968,12 @@ paths:
           description: Project identity
           name: project_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -1824,6 +2030,12 @@ paths:
           in: query
           schema:
             type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -1865,6 +2077,12 @@ paths:
           description: Project identity
           name: project_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -1934,6 +2152,12 @@ paths:
           required: true
           schema:
             type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -1983,6 +2207,12 @@ paths:
           required: true
           schema:
             type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: No Content
@@ -2028,6 +2258,12 @@ paths:
           description: Query identity
           name: query_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -2088,6 +2324,12 @@ paths:
           required: true
           schema:
             type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: No Content
@@ -2133,6 +2375,12 @@ paths:
           required: true
           schema:
             type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: No Content
@@ -2173,6 +2421,12 @@ paths:
           required: true
           schema:
             type: string
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: No Content
@@ -2197,6 +2451,166 @@ paths:
               schema:
                 $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
                   ttp_respond.ErrorResponse"
+  /api/v1/workspaces:
+    get:
+      description: Возвращает все workspaces без user/membership filtering. Endpoint
+        не требует X-Endge-Workspace; sse.manualToken redacted.
+      tags:
+        - workspaces
+      summary: Список workspaces
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/internal_api_http_v1_workspace.Response"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_respond.ErrorResponse"
+    post:
+      description: "Создаёт корневой workspace. Configuration необязательна: при
+        отсутствии backend применяет system default. Endpoint не требует
+        X-Endge-Workspace."
+      tags:
+        - workspaces
+      summary: Создать workspace
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/internal_api_http_v1_workspace.CreateRequest"
+        description: Данные workspace
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_workspace.Response"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_respond.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_respond.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_respond.ErrorResponse"
+  "/api/v1/workspaces/{workspace_identity}":
+    get:
+      description: Возвращает workspace по identity с полной root configuration.
+        sse.manualToken не возвращается.
+      tags:
+        - workspaces
+      summary: Получить workspace
+      parameters:
+        - example: default
+          description: Workspace identity
+          name: workspace_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_workspace.Response"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_respond.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_respond.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_respond.ErrorResponse"
+    patch:
+      description: Частично обновляет верхнеуровневые поля. Переданная configuration
+        полностью заменяет root configuration; JSON merge не выполняется.
+        sse.manualToken redacted в response.
+      tags:
+        - workspaces
+      summary: Обновить workspace
+      parameters:
+        - example: default
+          description: Workspace identity
+          name: workspace_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/internal_api_http_v1_workspace.UpdateRequest"
+        description: Изменяемые поля workspace
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internal_api_http_v1_workspace.Response"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_respond.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_respond.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
+                  ttp_respond.ErrorResponse"
 servers:
   - url: /
 components:
@@ -2215,6 +2629,70 @@ components:
           type: object
           additionalProperties: {}
         message:
+          type: string
+    github_com_endge-lab_service-backend_internal_domain_entities.EndgeConfiguration:
+      type: object
+      properties:
+        defaultAuthProfileIdentity:
+          type: string
+        defaultLocale:
+          type: string
+        defaultSfcAdapterId:
+          type: string
+        defaultTheme:
+          type: string
+        fallbackLocale:
+          type: string
+        locales:
+          type: array
+          items:
+            $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
+              n_entities.EndgeLocale"
+        sfcAdapterIds:
+          type: array
+          items:
+            type: string
+        sse:
+          $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
+            n_entities.EndgeSSEConfiguration"
+        themes:
+          type: array
+          items:
+            $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
+              n_entities.EndgeTheme"
+        vars:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+    github_com_endge-lab_service-backend_internal_domain_entities.EndgeLocale:
+      type: object
+      properties:
+        code:
+          type: string
+        direction:
+          type: string
+        displayName:
+          type: string
+        shortLabel:
+          type: string
+    github_com_endge-lab_service-backend_internal_domain_entities.EndgeSSEConfiguration:
+      type: object
+      properties:
+        authMode:
+          type: string
+        authProfileIdentity:
+          type: string
+        manualToken:
+          type: string
+        url:
+          type: string
+    github_com_endge-lab_service-backend_internal_domain_entities.EndgeTheme:
+      type: object
+      properties:
+        displayName:
+          type: string
+        identity:
           type: string
     github_com_endge-lab_service-backend_internal_domain_entities.FolderEntityType:
       type: string
@@ -2300,8 +2778,11 @@ components:
           type: object
           additionalProperties: {}
         componentType:
-          $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
-            n_entities.RComponentLegacyType"
+          enum:
+            - component-sfc
+          allOf:
+            - $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
+                n_entities.RComponentLegacyType"
         createdAt:
           type: string
         deletedAt:
@@ -2354,16 +2835,25 @@ components:
           type: object
           additionalProperties: {}
         componentType:
-          $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
-            n_entities.RComponentLegacyType"
+          enum:
+            - component-sfc
+          allOf:
+            - $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
+                n_entities.RComponentLegacyType"
         description:
           type: string
         displayName:
           type: string
+          maxLength: 255
+          minLength: 1
         folderIdentity:
           type: string
+          maxLength: 160
+          minLength: 1
         identity:
           type: string
+          maxLength: 160
+          minLength: 1
         meta:
           type: object
           additionalProperties: {}
@@ -2372,6 +2862,7 @@ components:
           additionalProperties: {}
         source:
           type: string
+          minLength: 1
     internal_api_http_v1_component_legacy.UpdateComponentLegacyRequest:
       type: object
       required:
@@ -2386,14 +2877,21 @@ components:
           type: object
           additionalProperties: {}
         componentType:
-          $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
-            n_entities.RComponentLegacyType"
+          enum:
+            - component-sfc
+          allOf:
+            - $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
+                n_entities.RComponentLegacyType"
         description:
           type: string
         displayName:
           type: string
+          maxLength: 255
+          minLength: 1
         folderIdentity:
           type: string
+          maxLength: 160
+          minLength: 1
         meta:
           type: object
           additionalProperties: {}
@@ -2402,6 +2900,7 @@ components:
           additionalProperties: {}
         source:
           type: string
+          minLength: 1
     internal_api_http_v1_converter.ConverterResponse:
       type: object
       properties:
@@ -2454,14 +2953,22 @@ components:
           type: boolean
         converterType:
           type: string
+          maxLength: 160
+          minLength: 1
         description:
           type: string
         displayName:
           type: string
+          maxLength: 255
+          minLength: 1
         folderIdentity:
           type: string
+          maxLength: 160
+          minLength: 1
         identity:
           type: string
+          maxLength: 160
+          minLength: 1
         isSystem:
           type: boolean
         meta:
@@ -2481,12 +2988,18 @@ components:
           type: boolean
         converterType:
           type: string
+          maxLength: 160
+          minLength: 1
         description:
           type: string
         displayName:
           type: string
+          maxLength: 255
+          minLength: 1
         folderIdentity:
           type: string
+          maxLength: 160
+          minLength: 1
         isSystem:
           type: boolean
         meta:
@@ -2511,10 +3024,16 @@ components:
           type: string
         displayName:
           type: string
+          maxLength: 255
+          minLength: 1
         folderIdentity:
           type: string
+          maxLength: 160
+          minLength: 1
         identity:
           type: string
+          maxLength: 160
+          minLength: 1
         inputSchema:
           type: object
           additionalProperties: {}
@@ -2526,11 +3045,15 @@ components:
           additionalProperties: {}
         queryIdentity:
           type: string
+          maxLength: 160
+          minLength: 1
         source:
           type: object
           additionalProperties: {}
         viewType:
           type: string
+          maxLength: 160
+          minLength: 1
     internal_api_http_v1_data_view.DataViewResponse:
       type: object
       properties:
@@ -2592,8 +3115,12 @@ components:
           type: string
         displayName:
           type: string
+          maxLength: 255
+          minLength: 1
         folderIdentity:
           type: string
+          maxLength: 160
+          minLength: 1
         inputSchema:
           type: object
           additionalProperties: {}
@@ -2605,11 +3132,15 @@ components:
           additionalProperties: {}
         queryIdentity:
           type: string
+          maxLength: 160
+          minLength: 1
         source:
           type: object
           additionalProperties: {}
         viewType:
           type: string
+          maxLength: 160
+          minLength: 1
     internal_api_http_v1_folder.CreateFolderRequest:
       type: object
       required:
@@ -2644,6 +3175,8 @@ components:
           type: object
         parentIdentity:
           type: string
+          maxLength: 160
+          minLength: 1
           example: root-components-legacy
     internal_api_http_v1_folder.FolderResponse:
       type: object
@@ -2717,6 +3250,8 @@ components:
           type: object
         parentIdentity:
           type: string
+          maxLength: 160
+          minLength: 1
           example: root-components-legacy
     internal_api_http_v1_project.CreateProjectRequest:
       type: object
@@ -2814,13 +3349,19 @@ components:
           type: string
         displayName:
           type: string
+          maxLength: 255
+          minLength: 1
         folderIdentity:
           type: string
+          maxLength: 160
+          minLength: 1
         headers:
           type: object
           additionalProperties: {}
         identity:
           type: string
+          maxLength: 160
+          minLength: 1
         meta:
           type: object
           additionalProperties: {}
@@ -2834,11 +3375,14 @@ components:
           items: {}
         queryType:
           type: string
+          maxLength: 160
+          minLength: 1
         source:
           type: object
           additionalProperties: {}
         timeoutMs:
           type: integer
+          minimum: 1
     internal_api_http_v1_query.QueriesListResponse:
       type: object
       properties:
@@ -2910,8 +3454,12 @@ components:
           type: string
         displayName:
           type: string
+          maxLength: 255
+          minLength: 1
         folderIdentity:
           type: string
+          maxLength: 160
+          minLength: 1
         headers:
           type: object
           additionalProperties: {}
@@ -2928,8 +3476,52 @@ components:
           items: {}
         queryType:
           type: string
+          maxLength: 160
+          minLength: 1
         source:
           type: object
           additionalProperties: {}
         timeoutMs:
           type: integer
+          minimum: 1
+    internal_api_http_v1_workspace.CreateRequest:
+      type: object
+      required:
+        - displayName
+        - identity
+      properties:
+        configuration:
+          $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
+            n_entities.EndgeConfiguration"
+        displayName:
+          type: string
+          maxLength: 255
+          minLength: 1
+        identity:
+          type: string
+          maxLength: 160
+          minLength: 1
+    internal_api_http_v1_workspace.Response:
+      type: object
+      properties:
+        configuration:
+          $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
+            n_entities.EndgeConfiguration"
+        createdAt:
+          type: string
+        displayName:
+          type: string
+        id:
+          type: string
+        identity:
+          type: string
+        updatedAt:
+          type: string
+    internal_api_http_v1_workspace.UpdateRequest:
+      type: object
+      properties:
+        configuration:
+          $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
+            n_entities.EndgeConfiguration"
+        displayName:
+          type: string

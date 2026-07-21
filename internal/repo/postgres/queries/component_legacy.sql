@@ -1,5 +1,6 @@
 -- name: CreateComponentLegacy :one
 INSERT INTO components_legacy (
+    workspace_id,
     project_id,
     folder_id,
     identity,
@@ -14,6 +15,7 @@ INSERT INTO components_legacy (
     active
 )
 VALUES (
+           sqlc.arg(workspace_id),
            sqlc.arg(project_id),
            sqlc.arg(folder_id),
            sqlc.arg(identity),
@@ -34,13 +36,15 @@ VALUES (
 SELECT *
 FROM components_legacy
 WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NULL;
 
 
 -- name: GetComponentLegacyByIdentity :one
 SELECT *
 FROM components_legacy
-WHERE project_id = sqlc.arg(project_id)
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id = sqlc.arg(project_id)
   AND identity = sqlc.arg(identity)
   AND deleted_at IS NULL;
 
@@ -48,14 +52,16 @@ WHERE project_id = sqlc.arg(project_id)
 -- name: GetComponentLegacyByIdentityIncludingDeleted :one
 SELECT *
 FROM components_legacy
-WHERE project_id = sqlc.arg(project_id)
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id = sqlc.arg(project_id)
   AND identity = sqlc.arg(identity);
 
 
 -- name: ListComponentsLegacy :many
 SELECT *
 FROM components_legacy
-WHERE project_id = sqlc.arg(project_id)
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id = sqlc.arg(project_id)
   AND deleted_at IS NULL
   AND (
     sqlc.narg(folder_id)::uuid IS NULL
@@ -83,6 +89,7 @@ SET
     active = sqlc.arg(active),
     updated_at = NOW()
 WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NULL
     RETURNING *;
 
@@ -93,6 +100,7 @@ SET
     deleted_at = NOW(),
     updated_at = NOW()
 WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NULL;
 
 
@@ -102,19 +110,22 @@ SET
     deleted_at = NULL,
     updated_at = NOW()
 WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NOT NULL;
 
 
 -- name: HardDeleteComponentLegacy :execrows
 DELETE FROM components_legacy
-WHERE id = sqlc.arg(id);
+WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id);
 
 
 -- name: ExistsComponentLegacyByIdentity :one
 SELECT EXISTS (
     SELECT 1
     FROM components_legacy
-    WHERE project_id = sqlc.arg(project_id)
+    WHERE workspace_id = sqlc.arg(workspace_id)
+      AND project_id = sqlc.arg(project_id)
       AND identity = sqlc.arg(identity)
 );
 
@@ -122,7 +133,8 @@ SELECT EXISTS (
 -- name: CountComponentsLegacy :one
 SELECT COUNT(*)
 FROM components_legacy
-WHERE project_id = sqlc.arg(project_id)
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id = sqlc.arg(project_id)
   AND deleted_at IS NULL
   AND (
     sqlc.narg(folder_id)::uuid IS NULL

@@ -1,6 +1,7 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS queries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id),
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     folder_id UUID NOT NULL REFERENCES folders(id) ON DELETE RESTRICT,
     identity TEXT NOT NULL,
@@ -21,7 +22,7 @@ CREATE TABLE IF NOT EXISTS queries (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT queries_project_identity_unique
-        UNIQUE (project_id, identity),
+        UNIQUE (workspace_id, project_id, identity),
 
     CONSTRAINT queries_identity_not_empty_check
         CHECK (btrim(identity) <> ''),

@@ -1,5 +1,6 @@
 -- name: CreateQuery :one
 INSERT INTO queries (
+    workspace_id,
     project_id,
     folder_id,
     identity,
@@ -17,6 +18,7 @@ INSERT INTO queries (
     active
 )
 VALUES (
+    sqlc.arg(workspace_id),
     sqlc.arg(project_id),
     sqlc.arg(folder_id),
     sqlc.arg(identity),
@@ -39,30 +41,35 @@ RETURNING *;
 SELECT *
 FROM queries
 WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NULL;
 
 -- name: GetQueryByIDIncludingDeleted :one
 SELECT *
 FROM queries
-WHERE id = sqlc.arg(id);
+WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id);
 
 -- name: GetQueryByIdentity :one
 SELECT *
 FROM queries
-WHERE project_id = sqlc.arg(project_id)
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id = sqlc.arg(project_id)
   AND identity = sqlc.arg(identity)
   AND deleted_at IS NULL;
 
 -- name: GetQueryByIdentityIncludingDeleted :one
 SELECT *
 FROM queries
-WHERE project_id = sqlc.arg(project_id)
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id = sqlc.arg(project_id)
   AND identity = sqlc.arg(identity);
 
 -- name: ListQueries :many
 SELECT *
 FROM queries
-WHERE project_id = sqlc.arg(project_id)
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id = sqlc.arg(project_id)
   AND deleted_at IS NULL
   AND (
     sqlc.narg(folder_id)::uuid IS NULL
@@ -92,6 +99,7 @@ SET
     active = sqlc.arg(active),
     updated_at = NOW()
 WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NULL
 RETURNING *;
 
@@ -101,6 +109,7 @@ SET
     deleted_at = NOW(),
     updated_at = NOW()
 WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NULL;
 
 -- name: RestoreQuery :execrows
@@ -109,17 +118,20 @@ SET
     deleted_at = NULL,
     updated_at = NOW()
 WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NOT NULL;
 
 -- name: HardDeleteQuery :execrows
 DELETE FROM queries
-WHERE id = sqlc.arg(id);
+WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id);
 
 -- name: ExistsQueryByIdentity :one
 SELECT EXISTS (
     SELECT 1
     FROM queries
-    WHERE project_id = sqlc.arg(project_id)
+    WHERE workspace_id = sqlc.arg(workspace_id)
+      AND project_id = sqlc.arg(project_id)
       AND identity = sqlc.arg(identity)
 );
 
@@ -127,7 +139,8 @@ SELECT EXISTS (
 SELECT EXISTS (
     SELECT 1
     FROM queries
-    WHERE project_id <> sqlc.arg(project_id)
+    WHERE workspace_id = sqlc.arg(workspace_id)
+      AND project_id <> sqlc.arg(project_id)
       AND identity = sqlc.arg(identity)
       AND deleted_at IS NULL
 );
@@ -135,7 +148,8 @@ SELECT EXISTS (
 -- name: CountQueries :one
 SELECT COUNT(*)
 FROM queries
-WHERE project_id = sqlc.arg(project_id)
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id = sqlc.arg(project_id)
   AND deleted_at IS NULL
   AND (
     sqlc.narg(folder_id)::uuid IS NULL

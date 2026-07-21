@@ -108,6 +108,7 @@ func (c *ComponentLegacy) Create(ctx context.Context, input CreateComponentLegac
 	}
 
 	component := &entities.RComponentLegacy{
+		WorkspaceID:   project.WorkspaceID,
 		ProjectID:     project.ID,
 		FolderID:      folder.ID,
 		Identity:      input.Identity,
@@ -198,6 +199,7 @@ func (c *ComponentLegacy) Update(ctx context.Context, input UpdateComponentLegac
 
 	updated := &entities.RComponentLegacy{
 		ID:            current.ID,
+		WorkspaceID:   current.WorkspaceID,
 		ProjectID:     current.ProjectID,
 		FolderID:      folder.ID,
 		Identity:      current.Identity,

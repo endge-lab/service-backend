@@ -7,23 +7,23 @@ import (
 )
 
 type CreateComponentLegacyRequest struct {
-	FolderIdentity string                        `json:"folderIdentity" validate:"required"`
-	Identity       string                        `json:"identity" validate:"required"`
-	DisplayName    string                        `json:"displayName" validate:"required"`
+	FolderIdentity string                        `json:"folderIdentity" validate:"required,min=1,max=160"`
+	Identity       string                        `json:"identity" validate:"required,min=1,max=160"`
+	DisplayName    string                        `json:"displayName" validate:"required,min=1,max=255"`
 	Description    *string                       `json:"description"`
-	ComponentType  entities.RComponentLegacyType `json:"componentType" validate:"required"`
-	Source         string                        `json:"source" validate:"required"`
+	ComponentType  entities.RComponentLegacyType `json:"componentType" validate:"required,oneof=component-sfc" enums:"component-sfc"`
+	Source         string                        `json:"source" validate:"required,min=1"`
 	PropsSchema    map[string]any                `json:"propsSchema"`
 	Bindings       map[string]any                `json:"bindings"`
 	Meta           map[string]any                `json:"meta"`
 	Active         bool                          `json:"active"`
 }
 type UpdateComponentLegacyRequest struct {
-	FolderIdentity string                        `json:"folderIdentity" validate:"required"`
-	DisplayName    string                        `json:"displayName" validate:"required"`
+	FolderIdentity string                        `json:"folderIdentity" validate:"required,min=1,max=160"`
+	DisplayName    string                        `json:"displayName" validate:"required,min=1,max=255"`
 	Description    *string                       `json:"description"`
-	ComponentType  entities.RComponentLegacyType `json:"componentType" validate:"required"`
-	Source         string                        `json:"source" validate:"required"`
+	ComponentType  entities.RComponentLegacyType `json:"componentType" validate:"required,oneof=component-sfc" enums:"component-sfc"`
+	Source         string                        `json:"source" validate:"required,min=1"`
 	PropsSchema    map[string]any                `json:"propsSchema"`
 	Bindings       map[string]any                `json:"bindings"`
 	Meta           map[string]any                `json:"meta"`
@@ -36,7 +36,7 @@ type ComponentLegacyResponse struct {
 	Identity        string                                `json:"identity"`
 	DisplayName     string                                `json:"displayName"`
 	Description     *string                               `json:"description,omitempty"`
-	ComponentType   entities.RComponentLegacyType         `json:"componentType"`
+	ComponentType   entities.RComponentLegacyType         `json:"componentType" enums:"component-sfc"`
 	Source          string                                `json:"source"`
 	SourceFormat    entities.RComponentLegacySourceFormat `json:"sourceFormat"`
 	PropsSchema     map[string]any                        `json:"propsSchema"`

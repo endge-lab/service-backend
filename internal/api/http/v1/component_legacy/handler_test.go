@@ -98,6 +98,7 @@ func TestComponentLegacyHandlerValidationAndDomainErrors(t *testing.T) {
 	}{
 		{"invalid json", http.MethodPost, "/components-legacy", `{`, nil, http.StatusBadRequest},
 		{"validation", http.MethodPost, "/components-legacy", `{}`, nil, http.StatusBadRequest},
+		{"unsupported component type", http.MethodPost, "/components-legacy", `{"folderIdentity":"root-components-legacy","identity":"user-card","displayName":"User card","componentType":"legacy-html","source":"<template />"}`, nil, http.StatusBadRequest},
 		{"not found", http.MethodGet, "/components-legacy/user-card", "", apperrors.NotFound("component_not_found", "component not found"), http.StatusNotFound},
 		{"internal", http.MethodGet, "/components-legacy/user-card", "", apperrors.Internal("internal_error", "internal error"), http.StatusInternalServerError},
 	}

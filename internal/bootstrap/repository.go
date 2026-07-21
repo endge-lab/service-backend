@@ -24,6 +24,10 @@ func RepositoryModules() fx.Option {
 				fx.As(new(ports.ProjectsRepository)),
 			),
 			fx.Annotate(
+				postgres.NewWorkspacesRepository,
+				fx.As(new(ports.WorkspacesRepository)),
+			),
+			fx.Annotate(
 				postgres.NewFoldersRepository,
 				fx.As(new(ports.FoldersRepository)),
 			),

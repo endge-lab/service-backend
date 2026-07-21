@@ -52,6 +52,13 @@ var openAPI3YAML = []byte(
 		"      tags:\n" +
 		"        - projects\n" +
 		"      summary: Список проектов\n" +
+		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
 		"          description: OK\n" +
@@ -73,6 +80,13 @@ var openAPI3YAML = []byte(
 		"      tags:\n" +
 		"        - projects\n" +
 		"      summary: Создать проект\n" +
+		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      requestBody:\n" +
 		"        content:\n" +
 		"          application/json:\n" +
@@ -124,6 +138,12 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
 		"          description: OK\n" +
@@ -167,6 +187,12 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"204\":\n" +
 		"          description: No Content\n" +
@@ -203,6 +229,12 @@ var openAPI3YAML = []byte(
 		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
@@ -271,6 +303,12 @@ var openAPI3YAML = []byte(
 		"            type: string\n" +
 		"            enum:\n" +
 		"              - component-sfc\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
 		"          description: OK\n" +
@@ -313,6 +351,12 @@ var openAPI3YAML = []byte(
 		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
@@ -383,6 +427,12 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
 		"          description: OK\n" +
@@ -432,6 +482,12 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"204\":\n" +
 		"          description: No Content\n" +
@@ -476,6 +532,12 @@ var openAPI3YAML = []byte(
 		"          description: Legacy component identity\n" +
 		"          name: component_identity\n" +
 		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
@@ -537,6 +599,12 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"204\":\n" +
 		"          description: No Content\n" +
@@ -582,6 +650,12 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"204\":\n" +
 		"          description: No Content\n" +
@@ -615,6 +689,12 @@ var openAPI3YAML = []byte(
 		"        - converters\n" +
 		"      summary: Список конвертеров\n" +
 		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"        - description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
@@ -663,6 +743,12 @@ var openAPI3YAML = []byte(
 		"        - converters\n" +
 		"      summary: Создать конвертер\n" +
 		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"        - example: demo-project\n" +
 		"          description: Project identity\n" +
 		"          name: project_identity\n" +
@@ -722,6 +808,12 @@ var openAPI3YAML = []byte(
 		"        - converters\n" +
 		"      summary: Получить конвертер\n" +
 		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"        - description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
@@ -770,6 +862,12 @@ var openAPI3YAML = []byte(
 		"        - converters\n" +
 		"      summary: Удалить конвертер\n" +
 		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"        - description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
@@ -815,6 +913,12 @@ var openAPI3YAML = []byte(
 		"        - converters\n" +
 		"      summary: Обновить конвертер\n" +
 		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"        - description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
@@ -872,6 +976,12 @@ var openAPI3YAML = []byte(
 		"        - converters\n" +
 		"      summary: Физически удалить конвертер\n" +
 		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"        - description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
@@ -924,6 +1034,12 @@ var openAPI3YAML = []byte(
 		"        - converters\n" +
 		"      summary: Восстановить конвертер\n" +
 		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"        - description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
@@ -989,6 +1105,12 @@ var openAPI3YAML = []byte(
 		"          in: query\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
 		"          description: OK\n" +
@@ -1032,6 +1154,12 @@ var openAPI3YAML = []byte(
 		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
@@ -1102,6 +1230,12 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
 		"          description: OK\n" +
@@ -1150,6 +1284,12 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"204\":\n" +
 		"          description: No Content\n" +
@@ -1195,6 +1335,12 @@ var openAPI3YAML = []byte(
 		"          description: DataView identity\n" +
 		"          name: data_view_identity\n" +
 		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
@@ -1256,6 +1402,12 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"204\":\n" +
 		"          description: No Content\n" +
@@ -1298,6 +1450,12 @@ var openAPI3YAML = []byte(
 		"        - description: DataView identity\n" +
 		"          name: data_view_identity\n" +
 		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
@@ -1353,6 +1511,12 @@ var openAPI3YAML = []byte(
 		"              - converters\n" +
 		"              - queries\n" +
 		"              - data-views\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
 		"          description: OK\n" +
@@ -1393,6 +1557,12 @@ var openAPI3YAML = []byte(
 		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
@@ -1473,6 +1643,12 @@ var openAPI3YAML = []byte(
 		"              - converters\n" +
 		"              - queries\n" +
 		"              - data-views\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
 		"          description: OK\n" +
@@ -1535,6 +1711,12 @@ var openAPI3YAML = []byte(
 		"              - converters\n" +
 		"              - queries\n" +
 		"              - data-views\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"204\":\n" +
 		"          description: No Content\n" +
@@ -1593,6 +1775,12 @@ var openAPI3YAML = []byte(
 		"              - converters\n" +
 		"              - queries\n" +
 		"              - data-views\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      requestBody:\n" +
 		"        content:\n" +
 		"          application/json:\n" +
@@ -1670,6 +1858,12 @@ var openAPI3YAML = []byte(
 		"              - converters\n" +
 		"              - queries\n" +
 		"              - data-views\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"204\":\n" +
 		"          description: No Content\n" +
@@ -1736,6 +1930,12 @@ var openAPI3YAML = []byte(
 		"              - converters\n" +
 		"              - queries\n" +
 		"              - data-views\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"204\":\n" +
 		"          description: No Content\n" +
@@ -1773,6 +1973,12 @@ var openAPI3YAML = []byte(
 		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
@@ -1829,6 +2035,12 @@ var openAPI3YAML = []byte(
 		"          in: query\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
 		"          description: OK\n" +
@@ -1870,6 +2082,12 @@ var openAPI3YAML = []byte(
 		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
@@ -1939,6 +2157,12 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
 		"          description: OK\n" +
@@ -1988,6 +2212,12 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"204\":\n" +
 		"          description: No Content\n" +
@@ -2033,6 +2263,12 @@ var openAPI3YAML = []byte(
 		"          description: Query identity\n" +
 		"          name: query_identity\n" +
 		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
@@ -2093,6 +2329,12 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"204\":\n" +
 		"          description: No Content\n" +
@@ -2138,6 +2380,12 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"204\":\n" +
 		"          description: No Content\n" +
@@ -2178,6 +2426,12 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"204\":\n" +
 		"          description: No Content\n" +
@@ -2202,6 +2456,166 @@ var openAPI3YAML = []byte(
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
 		"                  ttp_respond.ErrorResponse\"\n" +
+		"  /api/v1/workspaces:\n" +
+		"    get:\n" +
+		"      description: Возвращает все workspaces без user/membership filtering. Endpoint\n" +
+		"        не требует X-Endge-Workspace; sse.manualToken redacted.\n" +
+		"      tags:\n" +
+		"        - workspaces\n" +
+		"      summary: Список workspaces\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                type: object\n" +
+		"                additionalProperties:\n" +
+		"                  type: array\n" +
+		"                  items:\n" +
+		"                    $ref: \"#/components/schemas/internal_api_http_v1_workspace.Response\"\n" +
+		"        \"500\":\n" +
+		"          description: Internal Server Error\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
+		"                  ttp_respond.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      description: \"Создаёт корневой workspace. Configuration необязательна: при\n" +
+		"        отсутствии backend применяет system default. Endpoint не требует\n" +
+		"        X-Endge-Workspace.\"\n" +
+		"      tags:\n" +
+		"        - workspaces\n" +
+		"      summary: Создать workspace\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/internal_api_http_v1_workspace.CreateRequest\"\n" +
+		"        description: Данные workspace\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Created\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/internal_api_http_v1_workspace.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
+		"                  ttp_respond.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Conflict\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
+		"                  ttp_respond.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Internal Server Error\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
+		"                  ttp_respond.ErrorResponse\"\n" +
+		"  \"/api/v1/workspaces/{workspace_identity}\":\n" +
+		"    get:\n" +
+		"      description: Возвращает workspace по identity с полной root configuration.\n" +
+		"        sse.manualToken не возвращается.\n" +
+		"      tags:\n" +
+		"        - workspaces\n" +
+		"      summary: Получить workspace\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Workspace identity\n" +
+		"          name: workspace_identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/internal_api_http_v1_workspace.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
+		"                  ttp_respond.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
+		"                  ttp_respond.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Internal Server Error\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
+		"                  ttp_respond.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      description: Частично обновляет верхнеуровневые поля. Переданная configuration\n" +
+		"        полностью заменяет root configuration; JSON merge не выполняется.\n" +
+		"        sse.manualToken redacted в response.\n" +
+		"      tags:\n" +
+		"        - workspaces\n" +
+		"      summary: Обновить workspace\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Workspace identity\n" +
+		"          name: workspace_identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/internal_api_http_v1_workspace.UpdateRequest\"\n" +
+		"        description: Изменяемые поля workspace\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/internal_api_http_v1_workspace.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
+		"                  ttp_respond.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
+		"                  ttp_respond.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Internal Server Error\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
+		"                  ttp_respond.ErrorResponse\"\n" +
 		"servers:\n" +
 		"  - url: /\n" +
 		"components:\n" +
@@ -2220,6 +2634,70 @@ var openAPI3YAML = []byte(
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        message:\n" +
+		"          type: string\n" +
+		"    github_com_endge-lab_service-backend_internal_domain_entities.EndgeConfiguration:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        defaultAuthProfileIdentity:\n" +
+		"          type: string\n" +
+		"        defaultLocale:\n" +
+		"          type: string\n" +
+		"        defaultSfcAdapterId:\n" +
+		"          type: string\n" +
+		"        defaultTheme:\n" +
+		"          type: string\n" +
+		"        fallbackLocale:\n" +
+		"          type: string\n" +
+		"        locales:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
+		"              n_entities.EndgeLocale\"\n" +
+		"        sfcAdapterIds:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        sse:\n" +
+		"          $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
+		"            n_entities.EndgeSSEConfiguration\"\n" +
+		"        themes:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
+		"              n_entities.EndgeTheme\"\n" +
+		"        vars:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: object\n" +
+		"            additionalProperties: {}\n" +
+		"    github_com_endge-lab_service-backend_internal_domain_entities.EndgeLocale:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        code:\n" +
+		"          type: string\n" +
+		"        direction:\n" +
+		"          type: string\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"        shortLabel:\n" +
+		"          type: string\n" +
+		"    github_com_endge-lab_service-backend_internal_domain_entities.EndgeSSEConfiguration:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        authMode:\n" +
+		"          type: string\n" +
+		"        authProfileIdentity:\n" +
+		"          type: string\n" +
+		"        manualToken:\n" +
+		"          type: string\n" +
+		"        url:\n" +
+		"          type: string\n" +
+		"    github_com_endge-lab_service-backend_internal_domain_entities.EndgeTheme:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"        identity:\n" +
 		"          type: string\n" +
 		"    github_com_endge-lab_service-backend_internal_domain_entities.FolderEntityType:\n" +
 		"      type: string\n" +
@@ -2305,8 +2783,11 @@ var openAPI3YAML = []byte(
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        componentType:\n" +
-		"          $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
-		"            n_entities.RComponentLegacyType\"\n" +
+		"          enum:\n" +
+		"            - component-sfc\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
+		"                n_entities.RComponentLegacyType\"\n" +
 		"        createdAt:\n" +
 		"          type: string\n" +
 		"        deletedAt:\n" +
@@ -2359,16 +2840,25 @@ var openAPI3YAML = []byte(
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        componentType:\n" +
-		"          $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
-		"            n_entities.RComponentLegacyType\"\n" +
+		"          enum:\n" +
+		"            - component-sfc\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
+		"                n_entities.RComponentLegacyType\"\n" +
 		"        description:\n" +
 		"          type: string\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        identity:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
@@ -2377,6 +2867,7 @@ var openAPI3YAML = []byte(
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
 		"          type: string\n" +
+		"          minLength: 1\n" +
 		"    internal_api_http_v1_component_legacy.UpdateComponentLegacyRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -2391,14 +2882,21 @@ var openAPI3YAML = []byte(
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        componentType:\n" +
-		"          $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
-		"            n_entities.RComponentLegacyType\"\n" +
+		"          enum:\n" +
+		"            - component-sfc\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
+		"                n_entities.RComponentLegacyType\"\n" +
 		"        description:\n" +
 		"          type: string\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
@@ -2407,6 +2905,7 @@ var openAPI3YAML = []byte(
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
 		"          type: string\n" +
+		"          minLength: 1\n" +
 		"    internal_api_http_v1_converter.ConverterResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -2459,14 +2958,22 @@ var openAPI3YAML = []byte(
 		"          type: boolean\n" +
 		"        converterType:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        description:\n" +
 		"          type: string\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        identity:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        isSystem:\n" +
 		"          type: boolean\n" +
 		"        meta:\n" +
@@ -2486,12 +2993,18 @@ var openAPI3YAML = []byte(
 		"          type: boolean\n" +
 		"        converterType:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        description:\n" +
 		"          type: string\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        isSystem:\n" +
 		"          type: boolean\n" +
 		"        meta:\n" +
@@ -2516,10 +3029,16 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        identity:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        inputSchema:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
@@ -2531,11 +3050,15 @@ var openAPI3YAML = []byte(
 		"          additionalProperties: {}\n" +
 		"        queryIdentity:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        source:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        viewType:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"    internal_api_http_v1_data_view.DataViewResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -2597,8 +3120,12 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        inputSchema:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
@@ -2610,11 +3137,15 @@ var openAPI3YAML = []byte(
 		"          additionalProperties: {}\n" +
 		"        queryIdentity:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        source:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        viewType:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"    internal_api_http_v1_folder.CreateFolderRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -2649,6 +3180,8 @@ var openAPI3YAML = []byte(
 		"          type: object\n" +
 		"        parentIdentity:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"          example: root-components-legacy\n" +
 		"    internal_api_http_v1_folder.FolderResponse:\n" +
 		"      type: object\n" +
@@ -2722,6 +3255,8 @@ var openAPI3YAML = []byte(
 		"          type: object\n" +
 		"        parentIdentity:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"          example: root-components-legacy\n" +
 		"    internal_api_http_v1_project.CreateProjectRequest:\n" +
 		"      type: object\n" +
@@ -2819,13 +3354,19 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        headers:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        identity:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
@@ -2839,11 +3380,14 @@ var openAPI3YAML = []byte(
 		"          items: {}\n" +
 		"        queryType:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        source:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        timeoutMs:\n" +
 		"          type: integer\n" +
+		"          minimum: 1\n" +
 		"    internal_api_http_v1_query.QueriesListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -2915,8 +3459,12 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        headers:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
@@ -2933,9 +3481,53 @@ var openAPI3YAML = []byte(
 		"          items: {}\n" +
 		"        queryType:\n" +
 		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
 		"        source:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        timeoutMs:\n" +
-		"          type: integer\n",
+		"          type: integer\n" +
+		"          minimum: 1\n" +
+		"    internal_api_http_v1_workspace.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        configuration:\n" +
+		"          $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
+		"            n_entities.EndgeConfiguration\"\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"    internal_api_http_v1_workspace.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        configuration:\n" +
+		"          $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
+		"            n_entities.EndgeConfiguration\"\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"    internal_api_http_v1_workspace.UpdateRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        configuration:\n" +
+		"          $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
+		"            n_entities.EndgeConfiguration\"\n" +
+		"        displayName:\n" +
+		"          type: string\n",
 )

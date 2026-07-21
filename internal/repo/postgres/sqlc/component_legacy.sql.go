@@ -15,26 +15,33 @@ import (
 const countComponentsLegacy = `-- name: CountComponentsLegacy :one
 SELECT COUNT(*)
 FROM components_legacy
-WHERE project_id = $1
+WHERE workspace_id = $1
+  AND project_id = $2
   AND deleted_at IS NULL
   AND (
-    $2::uuid IS NULL
-      OR folder_id = $2
+    $3::uuid IS NULL
+      OR folder_id = $3
     )
   AND (
-    $3::text IS NULL
-      OR component_type = $3
+    $4::text IS NULL
+      OR component_type = $4
     )
 `
 
 type CountComponentsLegacyParams struct {
+	WorkspaceID   uuid.UUID   `json:"workspace_id"`
 	ProjectID     uuid.UUID   `json:"project_id"`
 	FolderID      pgtype.UUID `json:"folder_id"`
 	ComponentType pgtype.Text `json:"component_type"`
 }
 
 func (q *Queries) CountComponentsLegacy(ctx context.Context, arg CountComponentsLegacyParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countComponentsLegacy, arg.ProjectID, arg.FolderID, arg.ComponentType)
+	row := q.db.QueryRow(ctx, countComponentsLegacy,
+		arg.WorkspaceID,
+		arg.ProjectID,
+		arg.FolderID,
+		arg.ComponentType,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -42,6 +49,7 @@ func (q *Queries) CountComponentsLegacy(ctx context.Context, arg CountComponents
 
 const createComponentLegacy = `-- name: CreateComponentLegacy :one
 INSERT INTO components_legacy (
+    workspace_id,
     project_id,
     folder_id,
     identity,
@@ -67,12 +75,14 @@ VALUES (
            $9,
            $10,
            $11,
-           $12
+           $12,
+           $13
        )
-    RETURNING id, project_id, folder_id, identity, display_name, description, component_type, source, source_format, props_schema, bindings, meta, active, deleted_at, created_at, updated_at
+    RETURNING id, workspace_id, project_id, folder_id, identity, display_name, description, component_type, source, source_format, props_schema, bindings, meta, active, deleted_at, created_at, updated_at
 `
 
 type CreateComponentLegacyParams struct {
+	WorkspaceID   uuid.UUID   `json:"workspace_id"`
 	ProjectID     uuid.UUID   `json:"project_id"`
 	FolderID      uuid.UUID   `json:"folder_id"`
 	Identity      string      `json:"identity"`
@@ -89,6 +99,7 @@ type CreateComponentLegacyParams struct {
 
 func (q *Queries) CreateComponentLegacy(ctx context.Context, arg CreateComponentLegacyParams) (ComponentLegacy, error) {
 	row := q.db.QueryRow(ctx, createComponentLegacy,
+		arg.WorkspaceID,
 		arg.ProjectID,
 		arg.FolderID,
 		arg.Identity,
@@ -105,6 +116,7 @@ func (q *Queries) CreateComponentLegacy(ctx context.Context, arg CreateComponent
 	var i ComponentLegacy
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.Identity,
@@ -128,35 +140,44 @@ const existsComponentLegacyByIdentity = `-- name: ExistsComponentLegacyByIdentit
 SELECT EXISTS (
     SELECT 1
     FROM components_legacy
-    WHERE project_id = $1
-      AND identity = $2
+    WHERE workspace_id = $1
+      AND project_id = $2
+      AND identity = $3
 )
 `
 
 type ExistsComponentLegacyByIdentityParams struct {
-	ProjectID uuid.UUID `json:"project_id"`
-	Identity  string    `json:"identity"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	Identity    string    `json:"identity"`
 }
 
 func (q *Queries) ExistsComponentLegacyByIdentity(ctx context.Context, arg ExistsComponentLegacyByIdentityParams) (bool, error) {
-	row := q.db.QueryRow(ctx, existsComponentLegacyByIdentity, arg.ProjectID, arg.Identity)
+	row := q.db.QueryRow(ctx, existsComponentLegacyByIdentity, arg.WorkspaceID, arg.ProjectID, arg.Identity)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
 }
 
 const getComponentLegacyByID = `-- name: GetComponentLegacyByID :one
-SELECT id, project_id, folder_id, identity, display_name, description, component_type, source, source_format, props_schema, bindings, meta, active, deleted_at, created_at, updated_at
+SELECT id, workspace_id, project_id, folder_id, identity, display_name, description, component_type, source, source_format, props_schema, bindings, meta, active, deleted_at, created_at, updated_at
 FROM components_legacy
 WHERE id = $1
+  AND workspace_id = $2
   AND deleted_at IS NULL
 `
 
-func (q *Queries) GetComponentLegacyByID(ctx context.Context, id uuid.UUID) (ComponentLegacy, error) {
-	row := q.db.QueryRow(ctx, getComponentLegacyByID, id)
+type GetComponentLegacyByIDParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) GetComponentLegacyByID(ctx context.Context, arg GetComponentLegacyByIDParams) (ComponentLegacy, error) {
+	row := q.db.QueryRow(ctx, getComponentLegacyByID, arg.ID, arg.WorkspaceID)
 	var i ComponentLegacy
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.Identity,
@@ -177,23 +198,26 @@ func (q *Queries) GetComponentLegacyByID(ctx context.Context, id uuid.UUID) (Com
 }
 
 const getComponentLegacyByIdentity = `-- name: GetComponentLegacyByIdentity :one
-SELECT id, project_id, folder_id, identity, display_name, description, component_type, source, source_format, props_schema, bindings, meta, active, deleted_at, created_at, updated_at
+SELECT id, workspace_id, project_id, folder_id, identity, display_name, description, component_type, source, source_format, props_schema, bindings, meta, active, deleted_at, created_at, updated_at
 FROM components_legacy
-WHERE project_id = $1
-  AND identity = $2
+WHERE workspace_id = $1
+  AND project_id = $2
+  AND identity = $3
   AND deleted_at IS NULL
 `
 
 type GetComponentLegacyByIdentityParams struct {
-	ProjectID uuid.UUID `json:"project_id"`
-	Identity  string    `json:"identity"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	Identity    string    `json:"identity"`
 }
 
 func (q *Queries) GetComponentLegacyByIdentity(ctx context.Context, arg GetComponentLegacyByIdentityParams) (ComponentLegacy, error) {
-	row := q.db.QueryRow(ctx, getComponentLegacyByIdentity, arg.ProjectID, arg.Identity)
+	row := q.db.QueryRow(ctx, getComponentLegacyByIdentity, arg.WorkspaceID, arg.ProjectID, arg.Identity)
 	var i ComponentLegacy
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.Identity,
@@ -214,22 +238,25 @@ func (q *Queries) GetComponentLegacyByIdentity(ctx context.Context, arg GetCompo
 }
 
 const getComponentLegacyByIdentityIncludingDeleted = `-- name: GetComponentLegacyByIdentityIncludingDeleted :one
-SELECT id, project_id, folder_id, identity, display_name, description, component_type, source, source_format, props_schema, bindings, meta, active, deleted_at, created_at, updated_at
+SELECT id, workspace_id, project_id, folder_id, identity, display_name, description, component_type, source, source_format, props_schema, bindings, meta, active, deleted_at, created_at, updated_at
 FROM components_legacy
-WHERE project_id = $1
-  AND identity = $2
+WHERE workspace_id = $1
+  AND project_id = $2
+  AND identity = $3
 `
 
 type GetComponentLegacyByIdentityIncludingDeletedParams struct {
-	ProjectID uuid.UUID `json:"project_id"`
-	Identity  string    `json:"identity"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	Identity    string    `json:"identity"`
 }
 
 func (q *Queries) GetComponentLegacyByIdentityIncludingDeleted(ctx context.Context, arg GetComponentLegacyByIdentityIncludingDeletedParams) (ComponentLegacy, error) {
-	row := q.db.QueryRow(ctx, getComponentLegacyByIdentityIncludingDeleted, arg.ProjectID, arg.Identity)
+	row := q.db.QueryRow(ctx, getComponentLegacyByIdentityIncludingDeleted, arg.WorkspaceID, arg.ProjectID, arg.Identity)
 	var i ComponentLegacy
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.Identity,
@@ -252,10 +279,16 @@ func (q *Queries) GetComponentLegacyByIdentityIncludingDeleted(ctx context.Conte
 const hardDeleteComponentLegacy = `-- name: HardDeleteComponentLegacy :execrows
 DELETE FROM components_legacy
 WHERE id = $1
+  AND workspace_id = $2
 `
 
-func (q *Queries) HardDeleteComponentLegacy(ctx context.Context, id uuid.UUID) (int64, error) {
-	result, err := q.db.Exec(ctx, hardDeleteComponentLegacy, id)
+type HardDeleteComponentLegacyParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) HardDeleteComponentLegacy(ctx context.Context, arg HardDeleteComponentLegacyParams) (int64, error) {
+	result, err := q.db.Exec(ctx, hardDeleteComponentLegacy, arg.ID, arg.WorkspaceID)
 	if err != nil {
 		return 0, err
 	}
@@ -263,29 +296,36 @@ func (q *Queries) HardDeleteComponentLegacy(ctx context.Context, id uuid.UUID) (
 }
 
 const listComponentsLegacy = `-- name: ListComponentsLegacy :many
-SELECT id, project_id, folder_id, identity, display_name, description, component_type, source, source_format, props_schema, bindings, meta, active, deleted_at, created_at, updated_at
+SELECT id, workspace_id, project_id, folder_id, identity, display_name, description, component_type, source, source_format, props_schema, bindings, meta, active, deleted_at, created_at, updated_at
 FROM components_legacy
-WHERE project_id = $1
+WHERE workspace_id = $1
+  AND project_id = $2
   AND deleted_at IS NULL
   AND (
-    $2::uuid IS NULL
-      OR folder_id = $2
+    $3::uuid IS NULL
+      OR folder_id = $3
     )
   AND (
-    $3::text IS NULL
-      OR component_type = $3
+    $4::text IS NULL
+      OR component_type = $4
     )
 ORDER BY created_at DESC
 `
 
 type ListComponentsLegacyParams struct {
+	WorkspaceID   uuid.UUID   `json:"workspace_id"`
 	ProjectID     uuid.UUID   `json:"project_id"`
 	FolderID      pgtype.UUID `json:"folder_id"`
 	ComponentType pgtype.Text `json:"component_type"`
 }
 
 func (q *Queries) ListComponentsLegacy(ctx context.Context, arg ListComponentsLegacyParams) ([]ComponentLegacy, error) {
-	rows, err := q.db.Query(ctx, listComponentsLegacy, arg.ProjectID, arg.FolderID, arg.ComponentType)
+	rows, err := q.db.Query(ctx, listComponentsLegacy,
+		arg.WorkspaceID,
+		arg.ProjectID,
+		arg.FolderID,
+		arg.ComponentType,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -295,6 +335,7 @@ func (q *Queries) ListComponentsLegacy(ctx context.Context, arg ListComponentsLe
 		var i ComponentLegacy
 		if err := rows.Scan(
 			&i.ID,
+			&i.WorkspaceID,
 			&i.ProjectID,
 			&i.FolderID,
 			&i.Identity,
@@ -327,11 +368,17 @@ SET
     deleted_at = NULL,
     updated_at = NOW()
 WHERE id = $1
+  AND workspace_id = $2
   AND deleted_at IS NOT NULL
 `
 
-func (q *Queries) RestoreComponentLegacy(ctx context.Context, id uuid.UUID) (int64, error) {
-	result, err := q.db.Exec(ctx, restoreComponentLegacy, id)
+type RestoreComponentLegacyParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) RestoreComponentLegacy(ctx context.Context, arg RestoreComponentLegacyParams) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreComponentLegacy, arg.ID, arg.WorkspaceID)
 	if err != nil {
 		return 0, err
 	}
@@ -344,11 +391,17 @@ SET
     deleted_at = NOW(),
     updated_at = NOW()
 WHERE id = $1
+  AND workspace_id = $2
   AND deleted_at IS NULL
 `
 
-func (q *Queries) SoftDeleteComponentLegacy(ctx context.Context, id uuid.UUID) (int64, error) {
-	result, err := q.db.Exec(ctx, softDeleteComponentLegacy, id)
+type SoftDeleteComponentLegacyParams struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) SoftDeleteComponentLegacy(ctx context.Context, arg SoftDeleteComponentLegacyParams) (int64, error) {
+	result, err := q.db.Exec(ctx, softDeleteComponentLegacy, arg.ID, arg.WorkspaceID)
 	if err != nil {
 		return 0, err
 	}
@@ -370,8 +423,9 @@ SET
     active = $10,
     updated_at = NOW()
 WHERE id = $11
+  AND workspace_id = $12
   AND deleted_at IS NULL
-    RETURNING id, project_id, folder_id, identity, display_name, description, component_type, source, source_format, props_schema, bindings, meta, active, deleted_at, created_at, updated_at
+    RETURNING id, workspace_id, project_id, folder_id, identity, display_name, description, component_type, source, source_format, props_schema, bindings, meta, active, deleted_at, created_at, updated_at
 `
 
 type UpdateComponentLegacyParams struct {
@@ -386,6 +440,7 @@ type UpdateComponentLegacyParams struct {
 	Meta          []byte      `json:"meta"`
 	Active        bool        `json:"active"`
 	ID            uuid.UUID   `json:"id"`
+	WorkspaceID   uuid.UUID   `json:"workspace_id"`
 }
 
 func (q *Queries) UpdateComponentLegacy(ctx context.Context, arg UpdateComponentLegacyParams) (ComponentLegacy, error) {
@@ -401,10 +456,12 @@ func (q *Queries) UpdateComponentLegacy(ctx context.Context, arg UpdateComponent
 		arg.Meta,
 		arg.Active,
 		arg.ID,
+		arg.WorkspaceID,
 	)
 	var i ComponentLegacy
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.ProjectID,
 		&i.FolderID,
 		&i.Identity,

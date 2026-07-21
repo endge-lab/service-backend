@@ -1,5 +1,6 @@
 -- name: CreateConverter :one
 INSERT INTO converters (
+    workspace_id,
     project_id,
     folder_id,
     identity,
@@ -12,6 +13,7 @@ INSERT INTO converters (
     active
 )
 VALUES (
+           sqlc.arg(workspace_id),
            sqlc.arg(project_id),
            sqlc.arg(folder_id),
            sqlc.arg(identity),
@@ -30,13 +32,15 @@ VALUES (
 SELECT *
 FROM converters
 WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NULL;
 
 
 -- name: GetConverterByIdentity :one
 SELECT *
 FROM converters
-WHERE project_id = sqlc.arg(project_id)
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id = sqlc.arg(project_id)
   AND identity = sqlc.arg(identity)
   AND deleted_at IS NULL;
 
@@ -44,14 +48,16 @@ WHERE project_id = sqlc.arg(project_id)
 -- name: GetConverterByIdentityIncludingDeleted :one
 SELECT *
 FROM converters
-WHERE project_id = sqlc.arg(project_id)
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id = sqlc.arg(project_id)
   AND identity = sqlc.arg(identity);
 
 
 -- name: ListConverters :many
 SELECT *
 FROM converters
-WHERE project_id = sqlc.arg(project_id)
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id = sqlc.arg(project_id)
   AND deleted_at IS NULL
   AND (
     sqlc.narg(folder_id)::uuid IS NULL
@@ -73,6 +79,7 @@ SET
     active = sqlc.arg(active),
     updated_at = NOW()
 WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NULL
     RETURNING *;
 
@@ -83,6 +90,7 @@ SET
     deleted_at = NOW(),
     updated_at = NOW()
 WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NULL;
 
 
@@ -92,19 +100,22 @@ SET
     deleted_at = NULL,
     updated_at = NOW()
 WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id)
   AND deleted_at IS NOT NULL;
 
 
 -- name: HardDeleteConverter :execrows
 DELETE FROM converters
-WHERE id = sqlc.arg(id);
+WHERE id = sqlc.arg(id)
+  AND workspace_id = sqlc.arg(workspace_id);
 
 
 -- name: ExistsConverterByIdentity :one
 SELECT EXISTS (
     SELECT 1
     FROM converters
-    WHERE project_id = sqlc.arg(project_id)
+    WHERE workspace_id = sqlc.arg(workspace_id)
+      AND project_id = sqlc.arg(project_id)
       AND identity = sqlc.arg(identity)
 );
 
@@ -112,7 +123,8 @@ SELECT EXISTS (
 -- name: CountConverters :one
 SELECT COUNT(*)
 FROM converters
-WHERE project_id = sqlc.arg(project_id)
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND project_id = sqlc.arg(project_id)
   AND deleted_at IS NULL
   AND (
     sqlc.narg(folder_id)::uuid IS NULL
