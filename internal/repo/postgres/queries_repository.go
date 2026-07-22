@@ -6,13 +6,13 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/mappers"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-kit-go/pkg/telemetry"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -20,8 +20,8 @@ var _ ports.QueriesRepository = (*QueriesRepository)(nil)
 
 type QueriesRepository struct{ *baseRepository }
 
-func NewQueriesRepository(queries *sqlc.Queries, tracer trace.Tracer, logger *zap.Logger) *QueriesRepository {
-	return &QueriesRepository{baseRepository: newBaseRepository(queries, tracer, logger, "queries")}
+func NewQueriesRepository(queries *sqlc.Queries, core *observability.Core, metrics *RepositoryMetrics) *QueriesRepository {
+	return &QueriesRepository{baseRepository: newBaseRepository(queries, core, metrics, "queries")}
 }
 
 // Create сохраняет новую Query в базе данных.
@@ -40,7 +40,7 @@ func NewQueriesRepository(queries *sqlc.Queries, tracer trace.Tracer, logger *za
 //	*entities.RQuery - Query с полями, заполненными хранилищем
 //	error - storage error, преобразованная в domain error
 func (r *QueriesRepository) Create(ctx context.Context, query *entities.RQuery) (result *entities.RQuery, err error) {
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.queries.Create")
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), "repo.queries.Create")
 	defer func() { step.End(err) }()
 	if _, err = requireEntityWorkspace(ctx, query.WorkspaceID); err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (r *QueriesRepository) Create(ctx context.Context, query *entities.RQuery) 
 //	*entities.RQuery - найденная активная Query
 //	error - not_found или внутренняя ошибка хранения
 func (r *QueriesRepository) GetByID(ctx context.Context, id uuid.UUID) (result *entities.RQuery, err error) {
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.queries.GetByID")
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), "repo.queries.GetByID")
 	defer func() { step.End(err) }()
 
 	workspaceID, err := workspaceIDFromContext(ctx)
@@ -101,7 +101,7 @@ func (r *QueriesRepository) GetByID(ctx context.Context, id uuid.UUID) (result *
 //	*entities.RQuery - найденная Query, включая soft-deleted запись
 //	error - not_found или внутренняя ошибка хранения
 func (r *QueriesRepository) GetByIDIncludingDeleted(ctx context.Context, id uuid.UUID) (result *entities.RQuery, err error) {
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.queries.GetByIDIncludingDeleted")
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), "repo.queries.GetByIDIncludingDeleted")
 	defer func() { step.End(err) }()
 
 	workspaceID, err := workspaceIDFromContext(ctx)
@@ -133,7 +133,7 @@ func (r *QueriesRepository) GetByIDIncludingDeleted(ctx context.Context, id uuid
 //	*entities.RQuery - найденная активная Query
 //	error - not_found или внутренняя ошибка хранения
 func (r *QueriesRepository) GetByIdentity(ctx context.Context, projectID uuid.UUID, identity string) (result *entities.RQuery, err error) {
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.queries.GetByIdentity")
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), "repo.queries.GetByIdentity")
 	defer func() { step.End(err) }()
 
 	workspaceID, err := workspaceIDFromContext(ctx)
@@ -165,7 +165,7 @@ func (r *QueriesRepository) GetByIdentity(ctx context.Context, projectID uuid.UU
 //	*entities.RQuery - найденная Query, включая soft-deleted запись
 //	error - not_found или внутренняя ошибка хранения
 func (r *QueriesRepository) GetByIdentityIncludingDeleted(ctx context.Context, projectID uuid.UUID, identity string) (result *entities.RQuery, err error) {
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.queries.GetByIdentityIncludingDeleted")
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), "repo.queries.GetByIdentityIncludingDeleted")
 	defer func() { step.End(err) }()
 
 	workspaceID, err := workspaceIDFromContext(ctx)
@@ -196,7 +196,7 @@ func (r *QueriesRepository) GetByIdentityIncludingDeleted(ctx context.Context, p
 //	[]*entities.RQuery - список активных Query
 //	error - внутренняя ошибка хранения
 func (r *QueriesRepository) List(ctx context.Context, filter ports.QueriesFilter) (result []*entities.RQuery, err error) {
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.queries.List")
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), "repo.queries.List")
 	defer func() { step.End(err) }()
 	workspaceID, err := workspaceIDFromContext(ctx)
 	if err != nil {
@@ -210,7 +210,7 @@ func (r *QueriesRepository) List(ctx context.Context, filter ports.QueriesFilter
 		QueryType:   mappers.NullableTextToSQLC(filter.QueryType),
 	})
 	if err != nil {
-		r.logger.Error("list queries failed", zap.Error(err))
+		r.observer.Logger().Error("list queries failed", zap.Error(err))
 		return nil, apperrors.Internal("internal_error", "failed to list queries")
 	}
 
@@ -238,7 +238,7 @@ func (r *QueriesRepository) List(ctx context.Context, filter ports.QueriesFilter
 //	*entities.RQuery - обновленная активная Query
 //	error - not_found, validation error или внутренняя ошибка хранения
 func (r *QueriesRepository) Update(ctx context.Context, query *entities.RQuery) (result *entities.RQuery, err error) {
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.queries.Update")
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), "repo.queries.Update")
 	defer func() { step.End(err) }()
 	if _, err = requireEntityWorkspace(ctx, query.WorkspaceID); err != nil {
 		return nil, err
@@ -332,7 +332,7 @@ func (r *QueriesRepository) HardDelete(ctx context.Context, id uuid.UUID) (err e
 //	bool - признак существования Query
 //	error - внутренняя ошибка хранения
 func (r *QueriesRepository) ExistsByIdentity(ctx context.Context, projectID uuid.UUID, identity string) (exists bool, err error) {
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.queries.ExistsByIdentity")
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), "repo.queries.ExistsByIdentity")
 	defer func() { step.End(err) }()
 
 	workspaceID, err := workspaceIDFromContext(ctx)
@@ -341,7 +341,7 @@ func (r *QueriesRepository) ExistsByIdentity(ctx context.Context, projectID uuid
 	}
 	exists, err = r.queries(ctx).ExistsQueryByIdentity(ctx, sqlc.ExistsQueryByIdentityParams{WorkspaceID: workspaceID, ProjectID: projectID, Identity: identity})
 	if err != nil {
-		r.logger.Error("exists query by identity failed", zap.Error(err))
+		r.observer.Logger().Error("exists query by identity failed", zap.Error(err))
 		return false, apperrors.Internal("internal_error", "failed to check query identity")
 	}
 
@@ -365,7 +365,7 @@ func (r *QueriesRepository) ExistsByIdentity(ctx context.Context, projectID uuid
 //	bool - признак активной Query с identity в другом проекте
 //	error - внутренняя ошибка хранения
 func (r *QueriesRepository) ExistsActiveByIdentityOutsideProject(ctx context.Context, projectID uuid.UUID, identity string) (exists bool, err error) {
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.queries.ExistsActiveByIdentityOutsideProject")
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), "repo.queries.ExistsActiveByIdentityOutsideProject")
 	defer func() { step.End(err) }()
 
 	workspaceID, err := workspaceIDFromContext(ctx)
@@ -374,7 +374,7 @@ func (r *QueriesRepository) ExistsActiveByIdentityOutsideProject(ctx context.Con
 	}
 	exists, err = r.queries(ctx).ExistsActiveQueryByIdentityOutsideProject(ctx, sqlc.ExistsActiveQueryByIdentityOutsideProjectParams{WorkspaceID: workspaceID, ProjectID: projectID, Identity: identity})
 	if err != nil {
-		r.logger.Error("exists active query by identity outside project failed", zap.Error(err))
+		r.observer.Logger().Error("exists active query by identity outside project failed", zap.Error(err))
 		return false, apperrors.Internal("internal_error", "failed to check query project")
 	}
 
@@ -397,7 +397,7 @@ func (r *QueriesRepository) ExistsActiveByIdentityOutsideProject(ctx context.Con
 //	int64 - количество активных Query
 //	error - внутренняя ошибка хранения
 func (r *QueriesRepository) Count(ctx context.Context, filter ports.QueriesFilter) (count int64, err error) {
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, "repo.queries.Count")
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), "repo.queries.Count")
 	defer func() { step.End(err) }()
 	workspaceID, err := workspaceIDFromContext(ctx)
 	if err != nil {
@@ -411,7 +411,7 @@ func (r *QueriesRepository) Count(ctx context.Context, filter ports.QueriesFilte
 		QueryType:   mappers.NullableTextToSQLC(filter.QueryType),
 	})
 	if err != nil {
-		r.logger.Error("count queries failed", zap.Error(err))
+		r.observer.Logger().Error("count queries failed", zap.Error(err))
 		return 0, apperrors.Internal("internal_error", "failed to count queries")
 	}
 
@@ -419,7 +419,7 @@ func (r *QueriesRepository) Count(ctx context.Context, filter ports.QueriesFilte
 }
 
 func (r *QueriesRepository) changeRows(ctx context.Context, op, message string, change func(context.Context, uuid.UUID) (int64, error)) (err error) {
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), op)
 	defer func() { step.End(err) }()
 
 	workspaceID, err := workspaceIDFromContext(ctx)
@@ -428,7 +428,7 @@ func (r *QueriesRepository) changeRows(ctx context.Context, op, message string, 
 	}
 	affected, err := change(ctx, workspaceID)
 	if err != nil {
-		r.logger.Error(message, zap.Error(err))
+		r.observer.Logger().Error(message, zap.Error(err))
 		return apperrors.Internal("internal_error", message)
 	}
 	if affected == 0 {
@@ -442,11 +442,11 @@ func (r *QueriesRepository) mapGetError(err error, message string) (*entities.RQ
 	if stderrors.Is(err, pgx.ErrNoRows) {
 		return nil, apperrors.NotFound("not_found", "query not found")
 	}
-	r.logger.Error(message, zap.Error(err))
+	r.observer.Logger().Error(message, zap.Error(err))
 	return nil, apperrors.Internal("internal_error", "failed to get query")
 }
 
 func (r *QueriesRepository) mapWriteError(err error, message string) error {
-	r.logger.Error(message, zap.Error(err))
+	r.observer.Logger().Error(message, zap.Error(err))
 	return mapStorageError(err, queryStorageErrorMapping)
 }

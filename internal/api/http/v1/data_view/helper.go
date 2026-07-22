@@ -25,7 +25,7 @@ func newDataViewResponse(value *entities.RDataView, projectIdentity, folderIdent
 
 func (h *Handler) change(c *fiber.Ctx, fn func(context.Context, data_views.DataViewIdentityInput) error) error {
 	if err := fn(c.UserContext(), data_views.DataViewIdentityInput{ProjectIdentity: c.Params("project_identity"), DataViewIdentity: c.Params("data_view_identity")}); err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 	return c.SendStatus(fiber.StatusNoContent)
 }

@@ -25,7 +25,7 @@ func newQueryResponse(value *entities.RQuery, projectIdentity, folderIdentity st
 
 func (h *Handler) change(c *fiber.Ctx, fn func(context.Context, queries.QueryIdentityInput) error) error {
 	if err := fn(c.UserContext(), queries.QueryIdentityInput{ProjectIdentity: c.Params("project_identity"), QueryIdentity: c.Params("query_identity")}); err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 	return c.SendStatus(fiber.StatusNoContent)
 }

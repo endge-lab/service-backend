@@ -45,7 +45,7 @@ func (h *Handler) change(c *fiber.Ctx, fn func(context.Context, converters.Conve
 		ProjectIdentity:   c.Params("project_identity"),
 		ConverterIdentity: c.Params("converter_identity"),
 	}); err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)

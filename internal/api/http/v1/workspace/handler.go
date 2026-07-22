@@ -1,23 +1,23 @@
 package http
 
 import (
+	httpobservability "github.com/endge-lab/service-backend/internal/api/http/observability"
 	respond "github.com/endge-lab/service-backend/internal/api/http/respond"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/workspaces"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type Handler struct {
 	service   UseCase
 	validator appvalidator.Validator
-	logger    *zap.Logger
-	tracer    trace.Tracer
+	observer  observability.Observer
 }
 
-func NewHandler(s UseCase, v appvalidator.Validator, l *zap.Logger, t trace.Tracer) *Handler {
-	return &Handler{service: s, validator: v, logger: l.With(zap.String("component", "workspace_http_handler")), tracer: t}
+func NewHandler(s UseCase, v appvalidator.Validator, core *observability.Core, metrics *httpobservability.HandlerMetrics) *Handler {
+	observer := core.For(observability.LayerHandler, "workspace_http_handler").WithRecorder(metrics)
+	return &Handler{service: s, validator: v, observer: observer}
 }
 
 // Create godoc
@@ -42,7 +42,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 	}
 	v, err := h.service.Create(c.UserContext(), workspaces.CreateWorkspaceInput{Identity: r.Identity, DisplayName: r.DisplayName, Configuration: r.Configuration})
 	if err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 	return c.Status(201).JSON(response(v))
 }
@@ -58,7 +58,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 func (h *Handler) List(c *fiber.Ctx) error {
 	v, err := h.service.List(c.UserContext())
 	if err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 	items := make([]*Response, 0, len(v))
 	for _, x := range v {
@@ -81,7 +81,7 @@ func (h *Handler) List(c *fiber.Ctx) error {
 func (h *Handler) Get(c *fiber.Ctx) error {
 	v, err := h.service.GetByIdentity(c.UserContext(), c.Params("workspace_identity"))
 	if err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 	return c.JSON(response(v))
 }
@@ -106,7 +106,7 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 	}
 	v, err := h.service.Update(c.UserContext(), workspaces.UpdateWorkspaceInput{Identity: c.Params("workspace_identity"), DisplayName: r.DisplayName, Configuration: r.Configuration})
 	if err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 	return c.JSON(response(v))
 }

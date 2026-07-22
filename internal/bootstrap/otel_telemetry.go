@@ -9,7 +9,6 @@ import (
 
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
 
@@ -18,7 +17,7 @@ const (
 	traceSampleModeNever  = "never"
 )
 
-func newTelemetryProviders(lc fx.Lifecycle, cfg *config.Config, logger *zap.Logger) (*servicetelemetry.Providers, error) {
+func newTelemetryProviders(cfg *config.Config, logger *zap.Logger) (*servicetelemetry.Providers, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -30,33 +29,28 @@ func newTelemetryProviders(lc fx.Lifecycle, cfg *config.Config, logger *zap.Logg
 	}
 
 	providers, err := servicetelemetry.NewProviders(ctx, servicetelemetry.Config{
-		ServiceName:     cfg.App.Name,
-		ServiceVersion:  cfg.App.Version,
-		Environment:     cfg.App.Env,
-		OTLPEndpoint:    endpoint,
-		OTLPInsecure:    cfg.Telemetry.OTLPInsecure,
-		MetricsInterval: 15 * time.Second,
-		TraceSampleMode: traceSampleMode,
+		ServiceName:       cfg.App.Name,
+		ServiceVersion:    cfg.App.Version,
+		Environment:       cfg.App.Env,
+		OTLPEndpoint:      endpoint,
+		OTLPInsecure:      cfg.Telemetry.OTLPInsecure,
+		MetricsInterval:   15 * time.Second,
+		PrometheusEnabled: cfg.Metrics.Enabled,
+		TraceSampleMode:   traceSampleMode,
 	}, logger)
 	if err != nil {
 		logger.Warn("telemetry exporter disabled", zap.Error(err), zap.String("endpoint", endpoint))
 		providers, err = servicetelemetry.NewProviders(ctx, servicetelemetry.Config{
-			ServiceName:     cfg.App.Name,
-			ServiceVersion:  cfg.App.Version,
-			Environment:     cfg.App.Env,
-			TraceSampleMode: traceSampleModeNever,
+			ServiceName:       cfg.App.Name,
+			ServiceVersion:    cfg.App.Version,
+			Environment:       cfg.App.Env,
+			PrometheusEnabled: cfg.Metrics.Enabled,
+			TraceSampleMode:   traceSampleModeNever,
 		}, logger)
 		if err != nil {
 			return nil, err
 		}
 	}
-
-	lc.Append(fx.Hook{
-		OnStop: func(ctx context.Context) error {
-			logger.Info("shutting down telemetry providers")
-			return providers.Shutdown(ctx)
-		},
-	})
 
 	return providers, nil
 }

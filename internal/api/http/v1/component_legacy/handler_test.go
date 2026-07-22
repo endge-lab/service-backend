@@ -14,7 +14,6 @@ import (
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
 )
 
 func TestComponentLegacyHandlers(t *testing.T) {
@@ -23,7 +22,7 @@ func TestComponentLegacyHandlers(t *testing.T) {
 		FolderIdentity:  "root-components-legacy",
 	}
 	service := &componentServiceStub{value: value}
-	handler := &Handler{service: service, validator: appvalidator.NewValidator(), logger: zap.NewNop()}
+	handler := &Handler{service: service, validator: appvalidator.NewValidator()}
 	app := fiber.New()
 	routes := app.Group("/api/v1/projects/:project_identity/components-legacy")
 	routes.Post("/", handler.Create)
@@ -83,7 +82,7 @@ func TestComponentLegacyHandlers(t *testing.T) {
 
 func TestComponentLegacyHandlerValidationAndDomainErrors(t *testing.T) {
 	service := &componentServiceStub{value: &components_legacy.ComponentLegacyWithFolder{ComponentLegacy: &entities.RComponentLegacy{ID: uuid.New()}, FolderIdentity: "root-components-legacy"}}
-	handler := &Handler{service: service, validator: appvalidator.NewValidator(), logger: zap.NewNop()}
+	handler := &Handler{service: service, validator: appvalidator.NewValidator()}
 	app := fiber.New()
 	app.Post("/components-legacy", handler.Create)
 	app.Get("/components-legacy/:component_identity", handler.GetByIdentity)

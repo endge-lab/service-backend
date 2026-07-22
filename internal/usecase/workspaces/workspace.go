@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 	apperrors "github.com/endge-lab/service-kit-go/pkg/errors"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -17,17 +17,16 @@ const operationTimeout = 15 * time.Second
 
 type Workspace struct {
 	repository ports.WorkspacesRepository
-	observed   shared.ObservedUseCase
+	observer   observability.Observer
 }
 type WorkspaceParams struct {
-	Repository ports.WorkspacesRepository
-	Tracer     trace.Tracer
-	Logger     *zap.Logger
-	Metrics    *shared.UseCaseMetrics
+	Repository    ports.WorkspacesRepository
+	Observability *observability.Core
+	Metrics       *shared.UseCaseMetrics
 }
 
 func NewWorkspaceService(params WorkspaceParams) *Workspace {
-	return &Workspace{repository: params.Repository, observed: shared.NewObservedUseCase(params.Tracer, params.Logger, params.Metrics)}
+	return &Workspace{repository: params.Repository, observer: params.Observability.For(observability.LayerUseCase, "workspaces_usecase").WithRecorder(params.Metrics)}
 }
 
 // Create валидирует вход и создаёт корневой workspace.
@@ -56,7 +55,7 @@ func NewWorkspaceService(params WorkspaceParams) *Workspace {
 func (s *Workspace) Create(ctx context.Context, input CreateWorkspaceInput) (result *entities.RWorkspace, err error) {
 	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
 	defer cancel()
-	ctx, observed := s.observed.StartObservedOperation(ctx, "workspace.create", nil, nil)
+	ctx, observed := s.observer.Start(ctx, "workspace.create", nil, nil)
 	defer observed.End(&err)
 	if err = normalizeCreateInput(&input); err != nil {
 		observed.Logger().Warn("workspace create validation failed", zap.Error(err))
@@ -98,7 +97,7 @@ func (s *Workspace) Create(ctx context.Context, input CreateWorkspaceInput) (res
 func (s *Workspace) List(ctx context.Context) (result []*entities.RWorkspace, err error) {
 	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
 	defer cancel()
-	ctx, observed := s.observed.StartObservedOperation(ctx, "workspace.list", nil, nil)
+	ctx, observed := s.observer.Start(ctx, "workspace.list", nil, nil)
 	defer observed.End(&err)
 	result, err = s.repository.List(ctx)
 	if err != nil {
@@ -131,7 +130,7 @@ func (s *Workspace) GetByIdentity(ctx context.Context, identity string) (result 
 	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
 	defer cancel()
 	identity = strings.TrimSpace(identity)
-	ctx, observed := s.observed.StartObservedOperation(ctx, "workspace.get_by_identity", nil, nil)
+	ctx, observed := s.observer.Start(ctx, "workspace.get_by_identity", nil, nil)
 	defer observed.End(&err)
 	if identity == "" {
 		return nil, apperrors.InvalidInput("validation_error", "workspace identity is required")
@@ -169,7 +168,7 @@ func (s *Workspace) GetByIdentity(ctx context.Context, identity string) (result 
 func (s *Workspace) Update(ctx context.Context, input UpdateWorkspaceInput) (result *entities.RWorkspace, err error) {
 	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
 	defer cancel()
-	ctx, observed := s.observed.StartObservedOperation(ctx, "workspace.update", nil, nil)
+	ctx, observed := s.observer.Start(ctx, "workspace.update", nil, nil)
 	defer observed.End(&err)
 	if err = normalizeUpdateInput(&input); err != nil {
 		observed.Logger().Warn("workspace update validation failed", zap.Error(err))

@@ -7,11 +7,12 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
@@ -21,15 +22,14 @@ type Project struct {
 	projectRepository ports.ProjectsRepository
 	folderRepository  ports.FoldersRepository
 	txManager         ports.TxManager
-	observed          shared.ObservedUseCase
+	observer          observability.Observer
 }
 
 type ProjectParams struct {
 	ProjectRepository ports.ProjectsRepository
 	FolderRepository  ports.FoldersRepository
 	TxManager         ports.TxManager
-	Tracer            trace.Tracer
-	Logger            *zap.Logger
+	Observability     *observability.Core
 	Metrics           *shared.UseCaseMetrics
 }
 
@@ -38,11 +38,7 @@ func NewProjectService(params ProjectParams) *Project {
 		projectRepository: params.ProjectRepository,
 		folderRepository:  params.FolderRepository,
 		txManager:         params.TxManager,
-		observed: shared.NewObservedUseCase(
-			params.Tracer,
-			params.Logger,
-			params.Metrics,
-		),
+		observer:          params.Observability.For(observability.LayerUseCase, "projects_usecase").WithRecorder(params.Metrics),
 	}
 }
 
@@ -68,7 +64,7 @@ func (s *Project) Create(ctx context.Context, input CreateProjectInput) (result 
 	ctx, cancel := context.WithTimeout(ctx, projectOperationTimeout)
 	defer cancel()
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if err := normalizeAndValidateCreateProjectInput(&input); err != nil {
@@ -121,7 +117,12 @@ func (s *Project) Create(ctx context.Context, input CreateProjectInput) (result 
 		return nil, err
 	}
 
-	observed.Logger().Debug("project created with root folders",
+	observed.AddEvent("project.created",
+		attribute.String("project.id", result.ID.String()),
+		attribute.String("workspace.id", workspaceID.String()),
+		attribute.Int("project.root_count", len(projectRootEntityTypes)),
+	)
+	observed.Logger().Info("project created with root folders",
 		zap.String("project_id", result.ID.String()),
 		zap.String("identity", result.Identity),
 		zap.Int("root_count", len(projectRootEntityTypes)),
@@ -151,7 +152,7 @@ func (s *Project) GetByID(ctx context.Context, id uuid.UUID) (result *entities.R
 	ctx, cancel := context.WithTimeout(ctx, projectOperationTimeout)
 	defer cancel()
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if id == uuid.Nil {
@@ -193,7 +194,7 @@ func (s *Project) GetByIdentity(ctx context.Context, identity string) (result *e
 
 	identity = strings.TrimSpace(identity)
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if identity == "" {
@@ -232,7 +233,7 @@ func (s *Project) List(ctx context.Context) (result []*entities.RProject, err er
 	ctx, cancel := context.WithTimeout(ctx, projectOperationTimeout)
 	defer cancel()
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	result, err = s.projectRepository.List(ctx)
@@ -267,7 +268,7 @@ func (s *Project) Update(ctx context.Context, input UpdateProjectInput) (result 
 	ctx, cancel := context.WithTimeout(ctx, projectOperationTimeout)
 	defer cancel()
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if err := normalizeAndValidateUpdateProjectInput(&input); err != nil {
@@ -317,7 +318,7 @@ func (s *Project) SoftDelete(ctx context.Context, identity string) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, projectOperationTimeout)
 	defer cancel()
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	identity = strings.TrimSpace(identity)
@@ -367,7 +368,7 @@ func (s *Project) Restore(ctx context.Context, identity string) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, projectOperationTimeout)
 	defer cancel()
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	identity = strings.TrimSpace(identity)
@@ -417,7 +418,7 @@ func (s *Project) HardDelete(ctx context.Context, identity string) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, projectOperationTimeout)
 	defer cancel()
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	identity = strings.TrimSpace(identity)
@@ -466,7 +467,7 @@ func (s *Project) Count(ctx context.Context) (result int64, err error) {
 	ctx, cancel := context.WithTimeout(ctx, projectOperationTimeout)
 	defer cancel()
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	result, err = s.projectRepository.Count(ctx)

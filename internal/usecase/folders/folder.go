@@ -5,12 +5,12 @@ import (
 	"time"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 	apperrors "github.com/endge-lab/service-kit-go/pkg/errors"
 
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -19,14 +19,13 @@ const folderOperationTimeout = 15 * time.Second
 type Folder struct {
 	folderRepository  ports.FoldersRepository
 	projectRepository ports.ProjectsRepository
-	observed          shared.ObservedUseCase
+	observer          observability.Observer
 }
 
 type FolderParams struct {
 	FolderRepository  ports.FoldersRepository
 	ProjectRepository ports.ProjectsRepository
-	Tracer            trace.Tracer
-	Logger            *zap.Logger
+	Observability     *observability.Core
 	Metrics           *shared.UseCaseMetrics
 }
 
@@ -34,11 +33,7 @@ func NewFolderService(params FolderParams) *Folder {
 	return &Folder{
 		folderRepository:  params.FolderRepository,
 		projectRepository: params.ProjectRepository,
-		observed: shared.NewObservedUseCase(
-			params.Tracer,
-			params.Logger,
-			params.Metrics,
-		),
+		observer:          params.Observability.For(observability.LayerUseCase, "folders_usecase").WithRecorder(params.Metrics),
 	}
 }
 
@@ -67,7 +62,7 @@ func (s *Folder) Create(
 	ctx, cancel := context.WithTimeout(ctx, folderOperationTimeout)
 	defer cancel()
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateCreateInput(&input); err != nil {
@@ -169,7 +164,7 @@ func (s *Folder) Update(
 	ctx, cancel := context.WithTimeout(ctx, folderOperationTimeout)
 	defer cancel()
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateUpdateInput(&input); err != nil {
@@ -278,7 +273,7 @@ func (s *Folder) GetByID(ctx context.Context, id uuid.UUID) (result *entities.RF
 	ctx, cancel := context.WithTimeout(ctx, folderOperationTimeout)
 	defer cancel()
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if id == uuid.Nil {
@@ -321,7 +316,7 @@ func (s *Folder) GetByIdentity(
 	ctx, cancel := context.WithTimeout(ctx, folderOperationTimeout)
 	defer cancel()
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateIdentityInput(&input.ProjectIdentity, &input.EntityType, &input.Identity); err != nil {
@@ -376,7 +371,7 @@ func (s *Folder) List(
 	ctx, cancel := context.WithTimeout(ctx, folderOperationTimeout)
 	defer cancel()
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateListInput(&input); err != nil {
@@ -432,7 +427,7 @@ func (s *Folder) SoftDelete(ctx context.Context, input FolderIdentityInput) (err
 	ctx, cancel := context.WithTimeout(ctx, folderOperationTimeout)
 	defer cancel()
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	folder, err := s.resolveFolder(ctx, &input, false)
@@ -476,7 +471,7 @@ func (s *Folder) Restore(ctx context.Context, input FolderIdentityInput) (err er
 	ctx, cancel := context.WithTimeout(ctx, folderOperationTimeout)
 	defer cancel()
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	folder, err := s.resolveFolder(ctx, &input, true)
@@ -520,7 +515,7 @@ func (s *Folder) HardDelete(ctx context.Context, input FolderIdentityInput) (err
 	ctx, cancel := context.WithTimeout(ctx, folderOperationTimeout)
 	defer cancel()
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	folder, err := s.resolveFolder(ctx, &input, true)
@@ -576,7 +571,7 @@ func (s *Folder) Count(
 	ctx, cancel := context.WithTimeout(ctx, folderOperationTimeout)
 	defer cancel()
 
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateListInput(&input); err != nil {

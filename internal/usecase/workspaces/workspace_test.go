@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
@@ -31,7 +32,7 @@ func (s *repositoryStub) Update(_ context.Context, v *entities.RWorkspace) (*ent
 	return &copy, nil
 }
 func newService(r *repositoryStub) *Workspace {
-	return NewWorkspaceService(WorkspaceParams{Repository: r, Tracer: otel.Tracer("test"), Logger: zap.NewNop()})
+	return NewWorkspaceService(WorkspaceParams{Repository: r, Observability: observability.NewCore(otel.Tracer("test"), zap.NewNop())})
 }
 
 func TestCreateUsesSystemDefaultConfiguration(t *testing.T) {

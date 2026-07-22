@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"testing"
+
+	"github.com/endge-lab/service-backend/internal/observability"
 	"time"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
@@ -56,7 +58,7 @@ func TestWorkspaceHandlersCRUD(t *testing.T) {
 		CreatedAt: time.Date(2026, 7, 20, 12, 0, 0, 0, time.UTC),
 		UpdatedAt: time.Date(2026, 7, 20, 12, 0, 0, 0, time.UTC),
 	}}
-	handler := NewHandler(service, appvalidator.NewValidator(), zap.NewNop(), otel.Tracer("test"))
+	handler := NewHandler(service, appvalidator.NewValidator(), observability.NewCore(otel.Tracer("test"), zap.NewNop()), nil)
 	app := fiber.New()
 	routes := app.Group("/api/v1/workspaces")
 	routes.Post("/", handler.Create)
@@ -115,7 +117,7 @@ func TestWorkspaceHandlersCRUD(t *testing.T) {
 
 func TestWorkspaceCreateRejectsInvalidRequest(t *testing.T) {
 	service := &workspaceServiceStub{value: &entities.RWorkspace{}}
-	handler := NewHandler(service, appvalidator.NewValidator(), zap.NewNop(), otel.Tracer("test"))
+	handler := NewHandler(service, appvalidator.NewValidator(), observability.NewCore(otel.Tracer("test"), zap.NewNop()), nil)
 	app := fiber.New()
 	app.Post("/api/v1/workspaces", handler.Create)
 

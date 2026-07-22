@@ -6,9 +6,9 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -18,15 +18,14 @@ type ComponentLegacy struct {
 	componentRepository ports.ComponentsLegacyRepository
 	folderRepository    ports.FoldersRepository
 	projectRepository   ports.ProjectsRepository
-	observed            shared.ObservedUseCase
+	observer            observability.Observer
 }
 
 type ComponentLegacyParams struct {
 	ComponentLegacyRepository ports.ComponentsLegacyRepository
 	FolderRepository          ports.FoldersRepository
 	ProjectRepository         ports.ProjectsRepository
-	Tracer                    trace.Tracer
-	Logger                    *zap.Logger
+	Observability             *observability.Core
 	Metrics                   *shared.UseCaseMetrics
 }
 
@@ -35,7 +34,7 @@ func NewComponentLegacyService(params ComponentLegacyParams) *ComponentLegacy {
 		componentRepository: params.ComponentLegacyRepository,
 		folderRepository:    params.FolderRepository,
 		projectRepository:   params.ProjectRepository,
-		observed:            shared.NewObservedUseCase(params.Tracer, params.Logger, params.Metrics),
+		observer:            params.Observability.For(observability.LayerUseCase, "components_legacy_usecase").WithRecorder(params.Metrics),
 	}
 }
 
@@ -59,7 +58,7 @@ func (c *ComponentLegacy) Create(ctx context.Context, input CreateComponentLegac
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
 
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateCreateInput(&input); err != nil {
@@ -163,7 +162,7 @@ func (c *ComponentLegacy) Update(ctx context.Context, input UpdateComponentLegac
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
 
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateUpdateInput(&input); err != nil {
@@ -260,7 +259,7 @@ func (c *ComponentLegacy) GetByIdentity(
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
 
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateIdentityInput(
@@ -340,7 +339,7 @@ func (c *ComponentLegacy) List(ctx context.Context, input ListComponentsLegacyIn
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
 
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateListInput(
@@ -440,7 +439,7 @@ func (c *ComponentLegacy) SoftDelete(ctx context.Context, input ComponentLegacyI
 	const op = "component.soft_delete"
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	component, err := c.resolveComponentLegacy(ctx, input, false)
@@ -484,7 +483,7 @@ func (c *ComponentLegacy) Restore(ctx context.Context, input ComponentLegacyIden
 	const op = "component.restore"
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	component, err := c.resolveComponentLegacy(ctx, input, true)
@@ -528,7 +527,7 @@ func (c *ComponentLegacy) HardDelete(ctx context.Context, input ComponentLegacyI
 	const op = "component.hard_delete"
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	component, err := c.resolveComponentLegacy(ctx, input, true)
@@ -572,7 +571,7 @@ func (c *ComponentLegacy) Count(ctx context.Context, input ListComponentsLegacyI
 	const op = "component.count"
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateListInput(&input.ProjectIdentity, input.FolderIdentity, input.ComponentType); err != nil {

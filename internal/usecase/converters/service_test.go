@@ -6,6 +6,7 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
@@ -148,8 +149,7 @@ func newConverterServiceForTest(
 		ProjectRepository:   &converterProjectRepositoryStub{project: project},
 		FolderRepository:    folders,
 		ConverterRepository: converters,
-		Tracer:              otel.Tracer("converters-test"),
-		Logger:              zap.NewNop(),
+		Observability:       observability.NewCore(otel.Tracer("converters-test"), zap.NewNop()),
 	})
 }
 

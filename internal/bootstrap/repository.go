@@ -12,6 +12,7 @@ import (
 func RepositoryModules() fx.Option {
 	return fx.Options(
 		fx.Provide(
+			postgres.NewRepositoryMetrics,
 			func(db *pgxpool.Pool) *sqlc.Queries {
 				return sqlc.New(db)
 			},

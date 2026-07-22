@@ -1,13 +1,13 @@
 package folder
 
 import (
+	httpobservability "github.com/endge-lab/service-backend/internal/api/http/observability"
 	respond "github.com/endge-lab/service-backend/internal/api/http/respond"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/folders"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type ErrorResponse = respond.ErrorResponse
@@ -15,21 +15,20 @@ type ErrorResponse = respond.ErrorResponse
 type Handler struct {
 	folderService UseCase
 	validator     appvalidator.Validator
-	logger        *zap.Logger
-	tracer        trace.Tracer
+	observer      observability.Observer
 }
 
 func NewHandler(
 	service UseCase,
 	validator appvalidator.Validator,
-	logger *zap.Logger,
-	tracer trace.Tracer,
+	core *observability.Core,
+	metrics *httpobservability.HandlerMetrics,
 ) *Handler {
+	observer := core.For(observability.LayerHandler, "folder_http_handler").WithRecorder(metrics)
 	return &Handler{
 		folderService: service,
 		validator:     validator,
-		logger:        logger.With(zap.String("component", "folder_http_handler")),
-		tracer:        tracer,
+		observer:      observer,
 	}
 }
 
@@ -69,7 +68,7 @@ func (h *Handler) CreateFolder(c *fiber.Ctx) error {
 		Meta:            request.Meta,
 	})
 	if err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(
@@ -100,14 +99,14 @@ func (h *Handler) ListFolders(c *fiber.Ctx) error {
 		EntityType:      entityType,
 	})
 	if err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	items := make([]*FolderResponse, 0, len(folders))
 	for _, item := range folders {
 		response, err := h.newFolderResponse(c, projectIdentity, item)
 		if err != nil {
-			return respond.RespondDomainError(c, h.logger, err)
+			return respond.RespondDomainError(c, h.observer.Logger(), err)
 		}
 		items = append(items, response)
 	}
@@ -134,12 +133,12 @@ func (h *Handler) GetFolderByIdentity(c *fiber.Ctx) error {
 	input := h.folderIdentityInput(c)
 	folder, err := h.folderService.GetByIdentity(c.UserContext(), folders.GetFolderInput(input))
 	if err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	response, err := h.newFolderResponse(c, input.ProjectIdentity, folder)
 	if err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(response)
@@ -183,7 +182,7 @@ func (h *Handler) UpdateFolder(c *fiber.Ctx) error {
 		Meta:            request.Meta,
 	})
 	if err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(
@@ -207,7 +206,7 @@ func (h *Handler) UpdateFolder(c *fiber.Ctx) error {
 // @Router /api/v1/projects/{project_identity}/folders/{folder_identity} [delete]
 func (h *Handler) SoftDeleteFolder(c *fiber.Ctx) error {
 	if err := h.folderService.SoftDelete(c.UserContext(), h.folderIdentityInput(c)); err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
@@ -229,7 +228,7 @@ func (h *Handler) SoftDeleteFolder(c *fiber.Ctx) error {
 // @Router /api/v1/projects/{project_identity}/folders/{folder_identity}/restore [post]
 func (h *Handler) RestoreFolder(c *fiber.Ctx) error {
 	if err := h.folderService.Restore(c.UserContext(), h.folderIdentityInput(c)); err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
@@ -252,7 +251,7 @@ func (h *Handler) RestoreFolder(c *fiber.Ctx) error {
 // @Router /api/v1/projects/{project_identity}/folders/{folder_identity}/hard [delete]
 func (h *Handler) HardDeleteFolder(c *fiber.Ctx) error {
 	if err := h.folderService.HardDelete(c.UserContext(), h.folderIdentityInput(c)); err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)

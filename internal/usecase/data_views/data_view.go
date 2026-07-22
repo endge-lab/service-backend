@@ -6,10 +6,10 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -20,7 +20,7 @@ type DataView struct {
 	queryRepository    ports.QueriesRepository
 	folderRepository   ports.FoldersRepository
 	projectRepository  ports.ProjectsRepository
-	observed           shared.ObservedUseCase
+	observer           observability.Observer
 }
 
 type DataViewParams struct {
@@ -28,13 +28,12 @@ type DataViewParams struct {
 	QueryRepository    ports.QueriesRepository
 	FolderRepository   ports.FoldersRepository
 	ProjectRepository  ports.ProjectsRepository
-	Tracer             trace.Tracer
-	Logger             *zap.Logger
+	Observability      *observability.Core
 	Metrics            *shared.UseCaseMetrics
 }
 
 func NewDataViewService(params DataViewParams) *DataView {
-	return &DataView{dataViewRepository: params.DataViewRepository, queryRepository: params.QueryRepository, folderRepository: params.FolderRepository, projectRepository: params.ProjectRepository, observed: shared.NewObservedUseCase(params.Tracer, params.Logger, params.Metrics)}
+	return &DataView{dataViewRepository: params.DataViewRepository, queryRepository: params.QueryRepository, folderRepository: params.FolderRepository, projectRepository: params.ProjectRepository, observer: params.Observability.For(observability.LayerUseCase, "data_views_usecase").WithRecorder(params.Metrics)}
 }
 
 // Create создает DataView в указанной папке проекта.
@@ -57,7 +56,7 @@ func (s *DataView) Create(ctx context.Context, input CreateDataViewInput) (resul
 	const op = "data_view.create"
 	ctx, cancel := context.WithTimeout(ctx, dataViewOperationTimeout)
 	defer cancel()
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	if err = normalizeCreateInput(&input); err != nil {
 		logOperationError(observed.Logger(), op, err)
@@ -117,7 +116,7 @@ func (s *DataView) Update(ctx context.Context, input UpdateDataViewInput) (resul
 	const op = "data_view.update"
 	ctx, cancel := context.WithTimeout(ctx, dataViewOperationTimeout)
 	defer cancel()
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	if err = normalizeUpdateInput(&input); err != nil {
 		logOperationError(observed.Logger(), op, err)
@@ -172,7 +171,7 @@ func (s *DataView) GetByIdentity(ctx context.Context, input GetDataViewInput) (r
 	const op = "data_view.get_by_identity"
 	ctx, cancel := context.WithTimeout(ctx, dataViewOperationTimeout)
 	defer cancel()
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	if err = normalizeIdentities(&input.ProjectIdentity, &input.DataViewIdentity); err != nil {
 		logOperationError(observed.Logger(), op, err)
@@ -221,7 +220,7 @@ func (s *DataView) List(ctx context.Context, input ListDataViewsInput) (result [
 	const op = "data_view.list"
 	ctx, cancel := context.WithTimeout(ctx, dataViewOperationTimeout)
 	defer cancel()
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	if err = normalizeListInput(&input); err != nil {
 		logOperationError(observed.Logger(), op, err)
@@ -283,7 +282,7 @@ func (s *DataView) Count(ctx context.Context, input ListDataViewsInput) (count i
 	const op = "data_view.count"
 	ctx, cancel := context.WithTimeout(ctx, dataViewOperationTimeout)
 	defer cancel()
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	if err = normalizeListInput(&input); err != nil {
 		logOperationError(observed.Logger(), op, err)
@@ -310,7 +309,7 @@ func (s *DataView) Count(ctx context.Context, input ListDataViewsInput) (count i
 func (s *DataView) change(ctx context.Context, op string, input DataViewIdentityInput, includeDeleted bool, change func(context.Context, uuid.UUID) error) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, dataViewOperationTimeout)
 	defer cancel()
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	if err = normalizeIdentities(&input.ProjectIdentity, &input.DataViewIdentity); err != nil {
 		logOperationError(observed.Logger(), op, err)

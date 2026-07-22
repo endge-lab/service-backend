@@ -47,7 +47,7 @@ func (h *Handler) change(c *fiber.Ctx, fn func(context.Context, components_legac
 		ProjectIdentity:         c.Params("project_identity"),
 		ComponentLegacyIdentity: c.Params("component_identity"),
 	}); err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)

@@ -1,23 +1,23 @@
 package converter
 
 import (
+	httpobservability "github.com/endge-lab/service-backend/internal/api/http/observability"
 	respond "github.com/endge-lab/service-backend/internal/api/http/respond"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/converters"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type Handler struct {
 	service   UseCase
 	validator appvalidator.Validator
-	logger    *zap.Logger
-	tracer    trace.Tracer
+	observer  observability.Observer
 }
 
-func NewHandler(s UseCase, v appvalidator.Validator, l *zap.Logger, t trace.Tracer) *Handler {
-	return &Handler{service: s, validator: v, logger: l.With(zap.String("component", "converter_http_handler")), tracer: t}
+func NewHandler(s UseCase, v appvalidator.Validator, core *observability.Core, metrics *httpobservability.HandlerMetrics) *Handler {
+	observer := core.For(observability.LayerHandler, "converter_http_handler").WithRecorder(metrics)
+	return &Handler{service: s, validator: v, observer: observer}
 }
 
 // Create godoc
@@ -47,7 +47,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 	project := c.Params("project_identity")
 	value, err := h.service.Create(c.UserContext(), converters.CreateConverterInput{ProjectIdentity: project, FolderIdentity: request.FolderIdentity, Identity: request.Identity, DisplayName: request.DisplayName, Description: request.Description, ConverterType: request.ConverterType, Source: request.Source, IsSystem: request.IsSystem, Meta: request.Meta, Active: request.Active})
 	if err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 	return c.Status(fiber.StatusCreated).JSON(h.response(value, project))
 }
@@ -74,7 +74,7 @@ func (h *Handler) List(c *fiber.Ctx) error {
 	}
 	values, err := h.service.List(c.UserContext(), converters.ListConvertersInput{ProjectIdentity: project, FolderIdentity: folder})
 	if err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 	items := make([]*ConverterResponse, 0, len(values))
 	for _, value := range values {
@@ -101,7 +101,7 @@ func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
 	project := c.Params("project_identity")
 	value, err := h.service.GetByIdentity(c.UserContext(), converters.GetConverterInput{ProjectIdentity: project, ConverterIdentity: c.Params("converter_identity")})
 	if err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 	return c.JSON(h.response(value, project))
 }
@@ -133,7 +133,7 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 	project := c.Params("project_identity")
 	value, err := h.service.Update(c.UserContext(), converters.UpdateConverterInput{ProjectIdentity: project, ConverterIdentity: c.Params("converter_identity"), FolderIdentity: request.FolderIdentity, DisplayName: request.DisplayName, Description: request.Description, ConverterType: request.ConverterType, Source: request.Source, IsSystem: request.IsSystem, Meta: request.Meta, Active: request.Active})
 	if err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 	return c.JSON(h.response(value, project))
 }

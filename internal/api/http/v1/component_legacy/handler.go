@@ -1,24 +1,24 @@
 package component_legacy
 
 import (
+	httpobservability "github.com/endge-lab/service-backend/internal/api/http/observability"
 	respond "github.com/endge-lab/service-backend/internal/api/http/respond"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/components_legacy"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type Handler struct {
 	service   UseCase
 	validator appvalidator.Validator
-	logger    *zap.Logger
-	tracer    trace.Tracer
+	observer  observability.Observer
 }
 
-func NewHandler(s UseCase, v appvalidator.Validator, l *zap.Logger, t trace.Tracer) *Handler {
-	return &Handler{service: s, validator: v, logger: l.With(zap.String("component", "component_legacy_http_handler")), tracer: t}
+func NewHandler(s UseCase, v appvalidator.Validator, core *observability.Core, metrics *httpobservability.HandlerMetrics) *Handler {
+	observer := core.For(observability.LayerHandler, "component_legacy_http_handler").WithRecorder(metrics)
+	return &Handler{service: s, validator: v, observer: observer}
 }
 
 // Create godoc
@@ -48,7 +48,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 	p := c.Params("project_identity")
 	v, e := h.service.Create(c.UserContext(), components_legacy.CreateComponentLegacyInput{ProjectIdentity: p, FolderIdentity: r.FolderIdentity, Identity: r.Identity, DisplayName: r.DisplayName, Description: r.Description, ComponentType: r.ComponentType, Source: r.Source, PropsSchema: r.PropsSchema, Bindings: r.Bindings, Meta: r.Meta, Active: r.Active})
 	if e != nil {
-		return respond.RespondDomainError(c, h.logger, e)
+		return respond.RespondDomainError(c, h.observer.Logger(), e)
 	}
 	return c.Status(201).JSON(h.response(v, p))
 }
@@ -71,7 +71,7 @@ func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
 	p := c.Params("project_identity")
 	v, e := h.service.GetByIdentity(c.UserContext(), components_legacy.GetComponentLegacyInput{ProjectIdentity: p, ComponentLegacyIdentity: c.Params("component_identity")})
 	if e != nil {
-		return respond.RespondDomainError(c, h.logger, e)
+		return respond.RespondDomainError(c, h.observer.Logger(), e)
 	}
 	return c.JSON(h.response(v, p))
 }
@@ -104,7 +104,7 @@ func (h *Handler) List(c *fiber.Ctx) error {
 	}
 	values, e := h.service.List(c.UserContext(), components_legacy.ListComponentsLegacyInput{ProjectIdentity: p, FolderIdentity: folder, ComponentType: typ})
 	if e != nil {
-		return respond.RespondDomainError(c, h.logger, e)
+		return respond.RespondDomainError(c, h.observer.Logger(), e)
 	}
 	items := make([]*ComponentLegacyResponse, 0, len(values))
 	for _, value := range values {
@@ -140,7 +140,7 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 	p := c.Params("project_identity")
 	v, e := h.service.Update(c.UserContext(), components_legacy.UpdateComponentLegacyInput{ProjectIdentity: p, ComponentLegacyIdentity: c.Params("component_identity"), FolderIdentity: r.FolderIdentity, DisplayName: r.DisplayName, Description: r.Description, ComponentType: r.ComponentType, Source: r.Source, PropsSchema: r.PropsSchema, Bindings: r.Bindings, Meta: r.Meta, Active: r.Active})
 	if e != nil {
-		return respond.RespondDomainError(c, h.logger, e)
+		return respond.RespondDomainError(c, h.observer.Logger(), e)
 	}
 	return c.JSON(h.response(v, p))
 }

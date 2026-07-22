@@ -6,10 +6,10 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -19,20 +19,19 @@ type Query struct {
 	queryRepository   ports.QueriesRepository
 	folderRepository  ports.FoldersRepository
 	projectRepository ports.ProjectsRepository
-	observed          shared.ObservedUseCase
+	observer          observability.Observer
 }
 
 type QueryParams struct {
 	QueryRepository   ports.QueriesRepository
 	FolderRepository  ports.FoldersRepository
 	ProjectRepository ports.ProjectsRepository
-	Tracer            trace.Tracer
-	Logger            *zap.Logger
+	Observability     *observability.Core
 	Metrics           *shared.UseCaseMetrics
 }
 
 func NewQueryService(params QueryParams) *Query {
-	return &Query{queryRepository: params.QueryRepository, folderRepository: params.FolderRepository, projectRepository: params.ProjectRepository, observed: shared.NewObservedUseCase(params.Tracer, params.Logger, params.Metrics)}
+	return &Query{queryRepository: params.QueryRepository, folderRepository: params.FolderRepository, projectRepository: params.ProjectRepository, observer: params.Observability.For(observability.LayerUseCase, "queries_usecase").WithRecorder(params.Metrics)}
 }
 
 // Create создает Query в указанной папке проекта.
@@ -56,7 +55,7 @@ func (s *Query) Create(ctx context.Context, input CreateQueryInput) (result *Que
 
 	ctx, cancel := context.WithTimeout(ctx, queryOperationTimeout)
 	defer cancel()
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	if err = normalizeCreateInput(&input); err != nil {
 		logOperationError(observed.Logger(), op, err)
@@ -111,7 +110,7 @@ func (s *Query) Update(ctx context.Context, input UpdateQueryInput) (result *Que
 	const op = "query.update"
 	ctx, cancel := context.WithTimeout(ctx, queryOperationTimeout)
 	defer cancel()
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	if err = normalizeUpdateInput(&input); err != nil {
 		logOperationError(observed.Logger(), op, err)
@@ -146,7 +145,7 @@ func (s *Query) GetByIdentity(ctx context.Context, input GetQueryInput) (result 
 	const op = "query.get_by_identity"
 	ctx, cancel := context.WithTimeout(ctx, queryOperationTimeout)
 	defer cancel()
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	if err = normalizeIdentities(&input.ProjectIdentity, &input.QueryIdentity); err != nil {
 		logOperationError(observed.Logger(), op, err)
@@ -175,7 +174,7 @@ func (s *Query) List(ctx context.Context, input ListQueriesInput) (result []*Que
 	const op = "query.list"
 	ctx, cancel := context.WithTimeout(ctx, queryOperationTimeout)
 	defer cancel()
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	if err = normalizeListInput(&input); err != nil {
 		logOperationError(observed.Logger(), op, err)
@@ -227,7 +226,7 @@ func (s *Query) Count(ctx context.Context, input ListQueriesInput) (count int64,
 	const op = "query.count"
 	ctx, cancel := context.WithTimeout(ctx, queryOperationTimeout)
 	defer cancel()
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	if err = normalizeListInput(&input); err != nil {
 		logOperationError(observed.Logger(), op, err)
@@ -249,7 +248,7 @@ func (s *Query) Count(ctx context.Context, input ListQueriesInput) (count int64,
 func (s *Query) change(ctx context.Context, op string, input QueryIdentityInput, includeDeleted bool, change func(context.Context, uuid.UUID) error) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, queryOperationTimeout)
 	defer cancel()
-	ctx, observed := s.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	if err = normalizeIdentities(&input.ProjectIdentity, &input.QueryIdentity); err != nil {
 		logOperationError(observed.Logger(), op, err)

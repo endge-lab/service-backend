@@ -3,6 +3,7 @@ package bootstrap
 import (
 	httpapi "github.com/endge-lab/service-backend/internal/api/http"
 	httpmiddleware "github.com/endge-lab/service-backend/internal/api/http/middleware"
+	httpobservability "github.com/endge-lab/service-backend/internal/api/http/observability"
 	"github.com/endge-lab/service-backend/internal/api/http/session"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/component_legacy"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/converter"
@@ -20,6 +21,7 @@ func HandlerModules() fx.Option {
 	return fx.Options(
 		fx.Invoke(httpmiddleware.ConfigureTraceMiddleware),
 		fx.Provide(
+			httpobservability.NewHandlerMetrics,
 			auth.NewResolver,
 			fx.Annotate(httpmiddleware.NewAuthMiddleware, fx.As(new(httpmiddleware.AuthMiddleware))),
 			fx.Annotate(session.NewHandler, fx.As(new(session.SHandler))),

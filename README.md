@@ -130,6 +130,32 @@ OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
 OTEL_EXPORTER_OTLP_INSECURE=true
 ```
 
+## Prometheus metrics
+
+Prometheus включается отдельно от основного HTTP API и отдаёт все OTel-метрики
+на выделенном listener. По умолчанию listener выключен; после включения
+Prometheus забирает один endpoint, а не отдельные endpoint для handler, use
+case и repository.
+
+```env
+METRICS_ENABLED=true
+METRICS_BIND_ADDRESS=:9090
+METRICS_HANDLER_PATH=/metrics
+```
+
+При `METRICS_ENABLED=true` traces продолжают уходить в OTLP при включённой
+telemetry, а метрики отдаются Prometheus pull exporter’ом. Не публикуйте порт
+metrics в интернет: ограничьте доступ сетью кластера или reverse proxy.
+
+Минимальный scrape-конфиг Prometheus:
+
+```yaml
+scrape_configs:
+  - job_name: service-backend
+    static_configs:
+      - targets: ["service-backend:9090"]
+```
+
 ## Logging
 
 Шаблон использует `service-kit-go/logging`, но это не обязательное правило для всех сервисов. В собственном сервисе можно:
@@ -137,6 +163,24 @@ OTEL_EXPORTER_OTLP_INSECURE=true
 - оставить kit-логгер для JSON logs;
 - заменить на стандартный `log/slog`;
 - передавать noop logger там, где логи не нужны.
+
+По умолчанию логи пишутся только в stdout. Для прямой пакетной отправки JSON-логов
+в OpenSearch Bulk API включите exporter:
+
+```env
+LOGGER_OPENSEARCH_ENABLED=true
+LOGGER_OPENSEARCH_ENDPOINT=https://opensearch.example
+LOGGER_OPENSEARCH_INDEX=service-logs
+LOGGER_OPENSEARCH_USERNAME=writer
+LOGGER_OPENSEARCH_PASSWORD=change-me
+LOGGER_OPENSEARCH_FLUSH_INTERVAL=1s
+LOGGER_OPENSEARCH_BATCH_SIZE=100
+LOGGER_OPENSEARCH_QUEUE_SIZE=1000
+LOGGER_OPENSEARCH_REQUEST_TIMEOUT=5s
+```
+
+При остановке сервис сначала flush-ит Zap logger, затем завершает OpenSearch
+exporter и только после этого закрывает trace/meter providers.
 
 ## Публикация
 

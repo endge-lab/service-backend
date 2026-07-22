@@ -6,10 +6,10 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -19,15 +19,14 @@ type Converter struct {
 	converterRepository ports.ConvertersRepository
 	folderRepository    ports.FoldersRepository
 	projectRepository   ports.ProjectsRepository
-	observed            shared.ObservedUseCase
+	observer            observability.Observer
 }
 
 type ConverterParams struct {
 	ConverterRepository ports.ConvertersRepository
 	FolderRepository    ports.FoldersRepository
 	ProjectRepository   ports.ProjectsRepository
-	Tracer              trace.Tracer
-	Logger              *zap.Logger
+	Observability       *observability.Core
 	Metrics             *shared.UseCaseMetrics
 }
 
@@ -36,7 +35,7 @@ func NewConverterService(params ConverterParams) *Converter {
 		converterRepository: params.ConverterRepository,
 		folderRepository:    params.FolderRepository,
 		projectRepository:   params.ProjectRepository,
-		observed:            shared.NewObservedUseCase(params.Tracer, params.Logger, params.Metrics),
+		observer:            params.Observability.For(observability.LayerUseCase, "converters_usecase").WithRecorder(params.Metrics),
 	}
 }
 
@@ -57,7 +56,7 @@ func (c *Converter) Create(ctx context.Context, input CreateConverterInput) (res
 	const op = "converter.create"
 	ctx, cancel := context.WithTimeout(ctx, converterOperationTimeout)
 	defer cancel()
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	if err = normalizeAndValidateCreateInput(&input); err != nil {
 		logOperationError(observed.Logger(), op, err)
@@ -130,7 +129,7 @@ func (c *Converter) Update(ctx context.Context, input UpdateConverterInput) (res
 	const op = "converter.update"
 	ctx, cancel := context.WithTimeout(ctx, converterOperationTimeout)
 	defer cancel()
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	if err = normalizeAndValidateUpdateInput(&input); err != nil {
 		logOperationError(observed.Logger(), op, err)
@@ -195,7 +194,7 @@ func (c *Converter) GetByIdentity(ctx context.Context, input GetConverterInput) 
 	const op = "converter.get_by_identity"
 	ctx, cancel := context.WithTimeout(ctx, converterOperationTimeout)
 	defer cancel()
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	if err = normalizeAndValidateIdentityInput(&input.ProjectIdentity, &input.ConverterIdentity); err != nil {
 		logOperationError(observed.Logger(), op, err)
@@ -255,7 +254,7 @@ func (c *Converter) List(ctx context.Context, input ListConvertersInput) (result
 	const op = "converter.list"
 	ctx, cancel := context.WithTimeout(ctx, converterOperationTimeout)
 	defer cancel()
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	if err = normalizeAndValidateListInput(&input.ProjectIdentity, input.FolderIdentity); err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -342,7 +341,7 @@ func (c *Converter) SoftDelete(ctx context.Context, input ConverterIdentityInput
 	const op = "converter.soft_delete"
 	ctx, cancel := context.WithTimeout(ctx, converterOperationTimeout)
 	defer cancel()
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	converter, err := c.resolveConverter(ctx, input, false)
 	if err != nil {
@@ -385,7 +384,7 @@ func (c *Converter) Restore(ctx context.Context, input ConverterIdentityInput) (
 	const op = "converter.restore"
 	ctx, cancel := context.WithTimeout(ctx, converterOperationTimeout)
 	defer cancel()
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	converter, err := c.resolveConverter(ctx, input, true)
 	if err != nil {
@@ -428,7 +427,7 @@ func (c *Converter) HardDelete(ctx context.Context, input ConverterIdentityInput
 	const op = "converter.hard_delete"
 	ctx, cancel := context.WithTimeout(ctx, converterOperationTimeout)
 	defer cancel()
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	converter, err := c.resolveConverter(ctx, input, true)
 	if err != nil {
@@ -480,7 +479,7 @@ func (c *Converter) Count(ctx context.Context, input ListConvertersInput) (count
 	const op = "converter.count"
 	ctx, cancel := context.WithTimeout(ctx, converterOperationTimeout)
 	defer cancel()
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 	if err = normalizeAndValidateListInput(&input.ProjectIdentity, input.FolderIdentity); err != nil {
 		logOperationError(observed.Logger(), op, err,

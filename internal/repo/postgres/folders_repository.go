@@ -7,6 +7,7 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/mappers"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
@@ -15,7 +16,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -27,11 +27,11 @@ type FoldersRepository struct {
 
 func NewFoldersRepository(
 	queries *sqlc.Queries,
-	tracer trace.Tracer,
-	logger *zap.Logger,
+	core *observability.Core,
+	metrics *RepositoryMetrics,
 ) *FoldersRepository {
 	return &FoldersRepository{
-		baseRepository: newBaseRepository(queries, tracer, logger, "folders"),
+		baseRepository: newBaseRepository(queries, core, metrics, "folders"),
 	}
 }
 
@@ -56,7 +56,7 @@ func (r *FoldersRepository) Create(
 ) (result *entities.RFolder, err error) {
 	const op = "repo.folders.Create"
 
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), op)
 	defer func() { step.End(err) }()
 	if _, err = requireEntityWorkspace(ctx, folder.WorkspaceID); err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (r *FoldersRepository) Create(
 
 	created, err := r.queries(ctx).CreateFolder(ctx, mappers.CreateFolderParams(folder))
 	if err != nil {
-		r.logger.Error("create folder failed", zap.Error(err))
+		r.observer.Logger().Error("create folder failed", zap.Error(err))
 		return nil, mapFolderStorageError(err, "internal_error")
 	}
 
@@ -92,7 +92,7 @@ func (r *FoldersRepository) Update(
 ) (result *entities.RFolder, err error) {
 	const op = "repo.folders.Update"
 
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), op)
 	defer func() { step.End(err) }()
 	if _, err = requireEntityWorkspace(ctx, folder.WorkspaceID); err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func (r *FoldersRepository) Update(
 			return nil, folderNotFoundError()
 		}
 
-		r.logger.Error("update folder failed", zap.Error(err))
+		r.observer.Logger().Error("update folder failed", zap.Error(err))
 		return nil, mapFolderStorageError(err, "internal_error")
 	}
 
@@ -132,7 +132,7 @@ func (r *FoldersRepository) GetByID(
 ) (result *entities.RFolder, err error) {
 	const op = "repo.folders.GetByID"
 
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), op)
 	defer func() { step.End(err) }()
 	workspaceID, err := workspaceIDFromContext(ctx)
 	if err != nil {
@@ -168,7 +168,7 @@ func (r *FoldersRepository) GetByIDIncludingDeleted(
 ) (result *entities.RFolder, err error) {
 	const op = "repo.folders.GetByIDIncludingDeleted"
 
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), op)
 	defer func() { step.End(err) }()
 	workspaceID, err := workspaceIDFromContext(ctx)
 	if err != nil {
@@ -208,7 +208,7 @@ func (r *FoldersRepository) GetByIdentity(
 ) (result *entities.RFolder, err error) {
 	const op = "repo.folders.GetByIdentity"
 
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), op)
 	defer func() { step.End(err) }()
 	workspaceID, err := workspaceIDFromContext(ctx)
 	if err != nil {
@@ -256,7 +256,7 @@ func (r *FoldersRepository) GetByIdentityIncludingDeleted(
 ) (result *entities.RFolder, err error) {
 	const op = "repo.folders.GetByIdentityIncludingDeleted"
 
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), op)
 	defer func() { step.End(err) }()
 	workspaceID, err := workspaceIDFromContext(ctx)
 	if err != nil {
@@ -302,7 +302,7 @@ func (r *FoldersRepository) List(
 ) (result []*entities.RFolder, err error) {
 	const op = "repo.folders.List"
 
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), op)
 	defer func() { step.End(err) }()
 	workspaceID, err := workspaceIDFromContext(ctx)
 	if err != nil {
@@ -318,7 +318,7 @@ func (r *FoldersRepository) List(
 		},
 	)
 	if err != nil {
-		r.logger.Error("list folders failed", zap.Error(err))
+		r.observer.Logger().Error("list folders failed", zap.Error(err))
 		return nil, apperrors.Internal("internal_error", "failed to list folders")
 	}
 
@@ -347,7 +347,7 @@ func (r *FoldersRepository) List(
 func (r *FoldersRepository) SoftDelete(ctx context.Context, id uuid.UUID) (err error) {
 	const op = "repo.folders.SoftDelete"
 
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), op)
 	defer func() { step.End(err) }()
 	workspaceID, err := workspaceIDFromContext(ctx)
 	if err != nil {
@@ -356,7 +356,7 @@ func (r *FoldersRepository) SoftDelete(ctx context.Context, id uuid.UUID) (err e
 
 	affected, err := r.queries(ctx).SoftDeleteFolder(ctx, sqlc.SoftDeleteFolderParams{ID: id, WorkspaceID: workspaceID})
 	if err != nil {
-		r.logger.Error("soft delete folder failed", zap.Error(err))
+		r.observer.Logger().Error("soft delete folder failed", zap.Error(err))
 		return mapFolderStorageError(err, "internal_error")
 	}
 	if affected == 0 {
@@ -383,7 +383,7 @@ func (r *FoldersRepository) SoftDelete(ctx context.Context, id uuid.UUID) (err e
 func (r *FoldersRepository) Restore(ctx context.Context, id uuid.UUID) (err error) {
 	const op = "repo.folders.Restore"
 
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), op)
 	defer func() { step.End(err) }()
 	workspaceID, err := workspaceIDFromContext(ctx)
 	if err != nil {
@@ -392,7 +392,7 @@ func (r *FoldersRepository) Restore(ctx context.Context, id uuid.UUID) (err erro
 
 	affected, err := r.queries(ctx).RestoreFolder(ctx, sqlc.RestoreFolderParams{ID: id, WorkspaceID: workspaceID})
 	if err != nil {
-		r.logger.Error("restore folder failed", zap.Error(err))
+		r.observer.Logger().Error("restore folder failed", zap.Error(err))
 		return mapFolderStorageError(err, "internal_error")
 	}
 	if affected == 0 {
@@ -419,7 +419,7 @@ func (r *FoldersRepository) Restore(ctx context.Context, id uuid.UUID) (err erro
 func (r *FoldersRepository) HardDelete(ctx context.Context, id uuid.UUID) (err error) {
 	const op = "repo.folders.HardDelete"
 
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), op)
 	defer func() { step.End(err) }()
 	workspaceID, err := workspaceIDFromContext(ctx)
 	if err != nil {
@@ -431,7 +431,7 @@ func (r *FoldersRepository) HardDelete(ctx context.Context, id uuid.UUID) (err e
 		if stderrors.Is(err, pgx.ErrNoRows) {
 			return folderNotFoundError()
 		}
-		r.logger.Error("get folder before hard delete failed", zap.Error(err))
+		r.observer.Logger().Error("get folder before hard delete failed", zap.Error(err))
 		return apperrors.Internal("internal_error", "failed to get folder")
 	}
 	if folder.IsRoot && folder.IsSystem {
@@ -443,7 +443,7 @@ func (r *FoldersRepository) HardDelete(ctx context.Context, id uuid.UUID) (err e
 
 	affected, err := r.queries(ctx).HardDeleteFolder(ctx, sqlc.HardDeleteFolderParams{ID: id, WorkspaceID: workspaceID})
 	if err != nil {
-		r.logger.Error("hard delete folder failed", zap.Error(err))
+		r.observer.Logger().Error("hard delete folder failed", zap.Error(err))
 		return mapFolderStorageError(err, "internal_error")
 	}
 	if affected == 0 {
@@ -478,7 +478,7 @@ func (r *FoldersRepository) ExistsByIdentity(
 ) (result bool, err error) {
 	const op = "repo.folders.ExistsByIdentity"
 
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), op)
 	defer func() { step.End(err) }()
 	workspaceID, err := workspaceIDFromContext(ctx)
 	if err != nil {
@@ -495,7 +495,7 @@ func (r *FoldersRepository) ExistsByIdentity(
 		},
 	)
 	if err != nil {
-		r.logger.Error("exists folder by identity failed", zap.Error(err))
+		r.observer.Logger().Error("exists folder by identity failed", zap.Error(err))
 		return false, apperrors.Internal("internal_error", "failed to check folder identity")
 	}
 
@@ -525,7 +525,7 @@ func (r *FoldersRepository) Count(
 ) (result int64, err error) {
 	const op = "repo.folders.Count"
 
-	ctx, step := telemetry.StartTrace(ctx, r.tracer, r.logger, op)
+	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), op)
 	defer func() { step.End(err) }()
 	workspaceID, err := workspaceIDFromContext(ctx)
 	if err != nil {
@@ -541,7 +541,7 @@ func (r *FoldersRepository) Count(
 		},
 	)
 	if err != nil {
-		r.logger.Error("count folders failed", zap.Error(err))
+		r.observer.Logger().Error("count folders failed", zap.Error(err))
 		return 0, apperrors.Internal("internal_error", "failed to count folders")
 	}
 
@@ -553,7 +553,7 @@ func (r *FoldersRepository) mapGetError(err error, message string) (*entities.RF
 		return nil, folderNotFoundError()
 	}
 
-	r.logger.Error(message, zap.Error(err))
+	r.observer.Logger().Error(message, zap.Error(err))
 	return nil, apperrors.Internal("internal_error", "failed to get folder")
 }
 

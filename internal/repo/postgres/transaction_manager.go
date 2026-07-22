@@ -5,29 +5,28 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-kit-go/pkg/logging"
 	"github.com/endge-lab/service-kit-go/pkg/telemetry"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 type txContextKey struct{}
 
 type TxManager struct {
-	pool   *pgxpool.Pool
-	tracer trace.Tracer
-	logger *zap.Logger
+	pool     *pgxpool.Pool
+	observer observability.Observer
 }
 
-func NewTxManager(pool *pgxpool.Pool, tracer trace.Tracer, logger *zap.Logger) *TxManager {
+func NewTxManager(pool *pgxpool.Pool, core *observability.Core, metrics *RepositoryMetrics) *TxManager {
+	observer := core.For(observability.LayerRepository, "postgres_transaction_manager").WithRecorder(metrics).WithFields(zap.String("repository", "transaction_manager"))
 	return &TxManager{
-		pool:   pool,
-		tracer: tracer,
-		logger: logger.With(zap.String("component", "repo"), zap.String("repository", "transaction_manager")),
+		pool:     pool,
+		observer: observer,
 	}
 }
 
@@ -49,8 +48,8 @@ func NewTxManager(pool *pgxpool.Pool, tracer trace.Tracer, logger *zap.Logger) *
 func (m *TxManager) WithinTransaction(ctx context.Context, fn func(ctx context.Context) error) (err error) {
 	ctx, step := telemetry.StartTrace(
 		ctx,
-		m.tracer,
-		m.logger,
+		m.observer.Tracer(),
+		m.observer.Logger(),
 		"repo.transaction.begin",
 		attribute.String("repository", "transaction_manager"),
 	)
@@ -58,7 +57,7 @@ func (m *TxManager) WithinTransaction(ctx context.Context, fn func(ctx context.C
 		step.End(err)
 	}()
 
-	logger := logging.WithContext(ctx, m.logger)
+	logger := logging.WithContext(ctx, m.observer.Logger())
 	logger.Debug("opening postgres transaction")
 
 	tx, err := m.pool.BeginTx(ctx, pgx.TxOptions{})

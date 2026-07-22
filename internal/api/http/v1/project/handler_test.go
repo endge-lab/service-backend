@@ -11,7 +11,6 @@ import (
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
 )
 
 func TestProjectHandlers(t *testing.T) {
@@ -27,7 +26,6 @@ func TestProjectHandlers(t *testing.T) {
 	handler := &Handler{
 		projectService: service,
 		validator:      appvalidator.NewValidator(),
-		logger:         zap.NewNop(),
 	}
 	app := fiber.New()
 	projects := app.Group("/api/v1/projects")

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -20,8 +21,7 @@ func TestCreateCreatesProjectAndRootFoldersInOneTransaction(t *testing.T) {
 		ProjectRepository: projects,
 		FolderRepository:  folders,
 		TxManager:         tx,
-		Tracer:            otel.Tracer("test"),
-		Logger:            zap.NewNop(),
+		Observability:     observability.NewCore(otel.Tracer("test"), zap.NewNop()),
 	})
 
 	workspaceID := uuid.New()
@@ -77,9 +77,8 @@ func TestCreateRollsBackWhenRootFolderCreationFails(t *testing.T) {
 			failAt: 2,
 			err:    expectedErr,
 		},
-		TxManager: tx,
-		Tracer:    otel.Tracer("test"),
-		Logger:    zap.NewNop(),
+		TxManager:     tx,
+		Observability: observability.NewCore(otel.Tracer("test"), zap.NewNop()),
 	})
 
 	_, err := service.Create(entities.WithWorkspaceID(context.Background(), uuid.New()), CreateProjectInput{
