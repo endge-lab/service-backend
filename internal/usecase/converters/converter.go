@@ -62,6 +62,10 @@ func (c *Converter) Create(ctx context.Context, input CreateConverterInput) (res
 		logOperationError(observed.Logger(), op, err)
 		return nil, err
 	}
+	observed.RecordStep("converter.create.input_validated", "converter create input validated", nil,
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("converter_identity", input.Identity),
+	)
 	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -69,6 +73,10 @@ func (c *Converter) Create(ctx context.Context, input CreateConverterInput) (res
 		)
 		return nil, err
 	}
+	observed.RecordStep("converter.create.project_resolved", "project resolved for converter create", nil,
+		zap.String("project_id", project.ID.String()),
+		zap.String("project_identity", project.Identity),
+	)
 	folder, err := c.resolveFolder(ctx, project.ID, input.FolderIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -77,6 +85,10 @@ func (c *Converter) Create(ctx context.Context, input CreateConverterInput) (res
 		)
 		return nil, err
 	}
+	observed.RecordStep("converter.create.folder_resolved", "folder resolved for converter create", nil,
+		zap.String("folder_id", folder.ID.String()),
+		zap.String("folder_identity", folder.Identity),
+	)
 	exists, err := c.converterRepository.ExistsByIdentity(ctx, project.ID, input.Identity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -93,6 +105,9 @@ func (c *Converter) Create(ctx context.Context, input CreateConverterInput) (res
 		)
 		return nil, err
 	}
+	observed.RecordStep("converter.create.identity_available", "converter identity availability confirmed", nil,
+		zap.String("converter_identity", input.Identity),
+	)
 	converterResult, err := c.converterRepository.Create(ctx, &entities.RConverter{WorkspaceID: project.WorkspaceID, ProjectID: project.ID, FolderID: folder.ID, Identity: input.Identity, DisplayName: input.DisplayName, Description: input.Description, ConverterType: input.ConverterType, Source: input.Source, IsSystem: input.IsSystem, Meta: input.Meta, Active: input.Active})
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -101,7 +116,7 @@ func (c *Converter) Create(ctx context.Context, input CreateConverterInput) (res
 		)
 		return nil, err
 	}
-	observed.Logger().Debug("converter created",
+	observed.RecordStep("converter.create.persisted", "converter persisted", nil,
 		zap.String("converter_id", converterResult.ID.String()),
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("converter_identity", converterResult.Identity),
@@ -135,6 +150,10 @@ func (c *Converter) Update(ctx context.Context, input UpdateConverterInput) (res
 		logOperationError(observed.Logger(), op, err)
 		return nil, err
 	}
+	observed.RecordStep("converter.update.input_validated", "converter update input validated", nil,
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("converter_identity", input.ConverterIdentity),
+	)
 	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -142,6 +161,9 @@ func (c *Converter) Update(ctx context.Context, input UpdateConverterInput) (res
 		)
 		return nil, err
 	}
+	observed.RecordStep("converter.update.project_resolved", "project resolved for converter update", nil,
+		zap.String("project_id", project.ID.String()),
+	)
 	current, err := c.converterRepository.GetByIdentity(ctx, project.ID, input.ConverterIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -150,6 +172,10 @@ func (c *Converter) Update(ctx context.Context, input UpdateConverterInput) (res
 		)
 		return nil, err
 	}
+	observed.RecordStep("converter.update.current_resolved", "converter resolved for update", nil,
+		zap.String("converter_id", current.ID.String()),
+		zap.String("converter_identity", current.Identity),
+	)
 	folder, err := c.resolveFolder(ctx, project.ID, input.FolderIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -158,6 +184,10 @@ func (c *Converter) Update(ctx context.Context, input UpdateConverterInput) (res
 		)
 		return nil, err
 	}
+	observed.RecordStep("converter.update.folder_resolved", "folder resolved for converter update", nil,
+		zap.String("folder_id", folder.ID.String()),
+		zap.String("folder_identity", folder.Identity),
+	)
 	converterResult, err := c.converterRepository.Update(ctx, &entities.RConverter{ID: current.ID, WorkspaceID: current.WorkspaceID, ProjectID: current.ProjectID, FolderID: folder.ID, Identity: current.Identity, DisplayName: input.DisplayName, Description: input.Description, ConverterType: input.ConverterType, Source: input.Source, IsSystem: input.IsSystem, Meta: input.Meta, Active: input.Active, DeletedAt: current.DeletedAt, CreatedAt: current.CreatedAt, UpdatedAt: current.UpdatedAt})
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -166,7 +196,7 @@ func (c *Converter) Update(ctx context.Context, input UpdateConverterInput) (res
 		)
 		return nil, err
 	}
-	observed.Logger().Debug("converter updated",
+	observed.RecordStep("converter.update.persisted", "converter updated", nil,
 		zap.String("converter_id", converterResult.ID.String()),
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("converter_identity", converterResult.Identity),
@@ -200,6 +230,8 @@ func (c *Converter) GetByIdentity(ctx context.Context, input GetConverterInput) 
 		logOperationError(observed.Logger(), op, err)
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "converter identity input validated", nil,
+		zap.String("project_identity", input.ProjectIdentity), zap.String("converter_identity", input.ConverterIdentity))
 	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -207,6 +239,8 @@ func (c *Converter) GetByIdentity(ctx context.Context, input GetConverterInput) 
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for converter retrieval", nil,
+		zap.String("project_id", project.ID.String()), zap.String("project_identity", project.Identity))
 	converter, err := c.converterRepository.GetByIdentity(ctx, project.ID, input.ConverterIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -215,6 +249,8 @@ func (c *Converter) GetByIdentity(ctx context.Context, input GetConverterInput) 
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".current_resolved", "converter resolved for retrieval", nil,
+		zap.String("converter_id", converter.ID.String()), zap.String("converter_identity", converter.Identity))
 	folder, err := c.folderRepository.GetByID(ctx, converter.FolderID)
 	if err != nil {
 		relationErr := apperrors.Internal("converter_folder_not_found", "converter references an unavailable folder")
@@ -227,7 +263,9 @@ func (c *Converter) GetByIdentity(ctx context.Context, input GetConverterInput) 
 		)
 		return nil, relationErr
 	}
-	observed.Logger().Debug("converter retrieved",
+	observed.RecordStep(op+".folder_resolved", "converter folder resolved for retrieval", nil,
+		zap.String("folder_id", folder.ID.String()), zap.String("folder_identity", folder.Identity))
+	observed.RecordStep("converter.get_by_identity.result_loaded", "converter retrieved", nil,
 		zap.String("converter_id", converter.ID.String()),
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("converter_identity", converter.Identity),
@@ -262,6 +300,8 @@ func (c *Converter) List(ctx context.Context, input ListConvertersInput) (result
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "converter list input validated", nil,
+		zap.String("project_identity", input.ProjectIdentity), zap.String("folder_identity", dereferenceString(input.FolderIdentity)))
 	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -269,6 +309,8 @@ func (c *Converter) List(ctx context.Context, input ListConvertersInput) (result
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for converter list", nil,
+		zap.String("project_id", project.ID.String()), zap.String("project_identity", project.Identity))
 	filter := ports.ConvertersFilter{ProjectID: project.ID}
 	filter.FolderID, err = c.resolveFolderID(ctx, project.ID, input.FolderIdentity)
 	if err != nil {
@@ -278,6 +320,8 @@ func (c *Converter) List(ctx context.Context, input ListConvertersInput) (result
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".folder_filter_resolved", "converter folder filter resolved", nil,
+		zap.String("folder_identity", dereferenceString(input.FolderIdentity)))
 	converters, err := c.converterRepository.List(ctx, filter)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -286,7 +330,7 @@ func (c *Converter) List(ctx context.Context, input ListConvertersInput) (result
 		return nil, err
 	}
 	if len(converters) == 0 {
-		observed.Logger().Debug("converters listed",
+		observed.RecordStep("converter.list.result_loaded", "converters listed", nil,
 			zap.String("project_identity", input.ProjectIdentity),
 			zap.String("folder_identity", dereferenceString(input.FolderIdentity)),
 			zap.Int("count", 0),
@@ -316,7 +360,7 @@ func (c *Converter) List(ctx context.Context, input ListConvertersInput) (result
 		logOperationError(observed.Logger(), op, err, fields...)
 		return nil, err
 	}
-	observed.Logger().Debug("converters listed",
+	observed.RecordStep("converter.list.result_loaded", "converters listed", nil,
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("folder_identity", dereferenceString(input.FolderIdentity)),
 		zap.Int("count", len(result)),
@@ -343,6 +387,8 @@ func (c *Converter) SoftDelete(ctx context.Context, input ConverterIdentityInput
 	defer cancel()
 	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
+	observed.RecordStep(op+".input_received", "converter state change input received", nil,
+		zap.String("project_identity", input.ProjectIdentity), zap.String("converter_identity", input.ConverterIdentity))
 	converter, err := c.resolveConverter(ctx, input, false)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -351,6 +397,8 @@ func (c *Converter) SoftDelete(ctx context.Context, input ConverterIdentityInput
 		)
 		return err
 	}
+	observed.RecordStep(op+".current_resolved", "converter resolved for soft delete", nil,
+		zap.String("converter_id", converter.ID.String()), zap.String("converter_identity", converter.Identity))
 	if err = c.converterRepository.SoftDelete(ctx, converter.ID); err != nil {
 		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
@@ -359,7 +407,7 @@ func (c *Converter) SoftDelete(ctx context.Context, input ConverterIdentityInput
 		)
 		return err
 	}
-	observed.Logger().Debug("converter soft deleted",
+	observed.RecordStep("converter.soft_delete.persisted", "converter soft deleted", nil,
 		zap.String("converter_id", converter.ID.String()),
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("converter_identity", converter.Identity),
@@ -386,6 +434,8 @@ func (c *Converter) Restore(ctx context.Context, input ConverterIdentityInput) (
 	defer cancel()
 	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
+	observed.RecordStep(op+".input_received", "converter state change input received", nil,
+		zap.String("project_identity", input.ProjectIdentity), zap.String("converter_identity", input.ConverterIdentity))
 	converter, err := c.resolveConverter(ctx, input, true)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -394,6 +444,8 @@ func (c *Converter) Restore(ctx context.Context, input ConverterIdentityInput) (
 		)
 		return err
 	}
+	observed.RecordStep(op+".current_resolved", "deleted converter resolved for restore", nil,
+		zap.String("converter_id", converter.ID.String()), zap.String("converter_identity", converter.Identity))
 	if err = c.converterRepository.Restore(ctx, converter.ID); err != nil {
 		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
@@ -402,7 +454,7 @@ func (c *Converter) Restore(ctx context.Context, input ConverterIdentityInput) (
 		)
 		return err
 	}
-	observed.Logger().Debug("converter restored",
+	observed.RecordStep("converter.restore.persisted", "converter restored", nil,
 		zap.String("converter_id", converter.ID.String()),
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("converter_identity", converter.Identity),
@@ -429,6 +481,8 @@ func (c *Converter) HardDelete(ctx context.Context, input ConverterIdentityInput
 	defer cancel()
 	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
+	observed.RecordStep(op+".input_received", "converter state change input received", nil,
+		zap.String("project_identity", input.ProjectIdentity), zap.String("converter_identity", input.ConverterIdentity))
 	converter, err := c.resolveConverter(ctx, input, true)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -437,6 +491,8 @@ func (c *Converter) HardDelete(ctx context.Context, input ConverterIdentityInput
 		)
 		return err
 	}
+	observed.RecordStep(op+".current_resolved", "deleted converter resolved for hard delete", nil,
+		zap.String("converter_id", converter.ID.String()), zap.String("converter_identity", converter.Identity))
 	if converter.IsSystem {
 		err = apperrors.Conflict("system_converter_delete_forbidden", "system converter cannot be hard deleted")
 		logOperationError(observed.Logger(), op, err,
@@ -454,7 +510,7 @@ func (c *Converter) HardDelete(ctx context.Context, input ConverterIdentityInput
 		)
 		return err
 	}
-	observed.Logger().Debug("converter hard deleted",
+	observed.RecordStep("converter.hard_delete.persisted", "converter hard deleted", nil,
 		zap.String("converter_id", converter.ID.String()),
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("converter_identity", converter.Identity),
@@ -487,6 +543,8 @@ func (c *Converter) Count(ctx context.Context, input ListConvertersInput) (count
 		)
 		return 0, err
 	}
+	observed.RecordStep(op+".input_validated", "converter count input validated", nil,
+		zap.String("project_identity", input.ProjectIdentity), zap.String("folder_identity", dereferenceString(input.FolderIdentity)))
 	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -494,6 +552,8 @@ func (c *Converter) Count(ctx context.Context, input ListConvertersInput) (count
 		)
 		return 0, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for converter count", nil,
+		zap.String("project_id", project.ID.String()), zap.String("project_identity", project.Identity))
 	filter := ports.ConvertersFilter{ProjectID: project.ID}
 	filter.FolderID, err = c.resolveFolderID(ctx, project.ID, input.FolderIdentity)
 	if err != nil {
@@ -503,6 +563,8 @@ func (c *Converter) Count(ctx context.Context, input ListConvertersInput) (count
 		)
 		return 0, err
 	}
+	observed.RecordStep(op+".folder_filter_resolved", "converter folder filter resolved", nil,
+		zap.String("folder_identity", dereferenceString(input.FolderIdentity)))
 	count, err = c.converterRepository.Count(ctx, filter)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -510,7 +572,7 @@ func (c *Converter) Count(ctx context.Context, input ListConvertersInput) (count
 		)
 		return 0, err
 	}
-	observed.Logger().Debug("converters counted",
+	observed.RecordStep("converter.count.result_loaded", "converters counted", nil,
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("folder_identity", dereferenceString(input.FolderIdentity)),
 		zap.Int64("count", count),

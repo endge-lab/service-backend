@@ -109,6 +109,13 @@ func (s *DataView) resolveFolderID(ctx context.Context, projectID uuid.UUID, ide
 	return &folder.ID, nil
 }
 
+func dereferenceString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
 func (s *DataView) resolveFolder(ctx context.Context, projectID uuid.UUID, identity string) (*entities.RFolder, error) {
 	folder, err := s.folderRepository.GetByIdentity(ctx, &projectID, entities.FolderEntityTypeDataViews, identity)
 	if errors.Is(err, apperrors.ErrNotFound) {

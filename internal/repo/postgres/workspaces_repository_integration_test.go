@@ -51,7 +51,7 @@ func TestWorkspacesRepositoryRoundTrip(t *testing.T) {
 	}
 
 	fetched.DisplayName = "Updated"
-	fetched.Configuration.Vars = []map[string]any{{"name": "API_URL"}}
+	fetched.Configuration.Vars = []entities.EndgeVariable{{Name: "API_URL"}}
 	updated, err := repository.Update(ctx, fetched)
 	if err != nil {
 		t.Fatal(err)

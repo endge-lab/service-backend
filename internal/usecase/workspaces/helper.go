@@ -40,9 +40,8 @@ func validateConfiguration(c entities.EndgeConfiguration) error {
 	}
 	vars := map[string]struct{}{}
 	for _, v := range c.Vars {
-		name, ok := v["name"].(string)
-		name = strings.TrimSpace(name)
-		if !ok || name == "" {
+		name := strings.TrimSpace(v.Name)
+		if name == "" {
 			return apperrors.InvalidInput("validation_error", "workspace variable name is required")
 		}
 		if _, exists := vars[name]; exists {

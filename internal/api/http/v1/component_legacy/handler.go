@@ -34,8 +34,8 @@ func NewHandler(s UseCase, v appvalidator.Validator, core *observability.Core, m
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 409 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/components-legacy [post]
 func (h *Handler) Create(c *fiber.Ctx) error {
 	var r CreateComponentLegacyRequest
@@ -64,8 +64,8 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/components-legacy/{component_identity} [get]
 func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
 	p := c.Params("project_identity")
@@ -82,14 +82,14 @@ func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
 // @Tags components-legacy
 // @Produce json
 // @Param project_identity path string true "Project identity" example(demo-project)
-// @Param folder_identity query string false "Folder identity" example(root-components-legacy)
-// @Param component_type query string false "Legacy component type" Enums(component-sfc)
+// @Param folder_identity query string false "Folder identity" example(shared-components-legacy)
+// @Param component_type query string false "Legacy component type" Enums(component-sfc) example(component-sfc)
 // @Success 200 {object} ComponentsLegacyListResponse
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/components-legacy [get]
 func (h *Handler) List(c *fiber.Ctx) error {
 	p := c.Params("project_identity")
@@ -126,8 +126,8 @@ func (h *Handler) List(c *fiber.Ctx) error {
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/components-legacy/{component_identity} [patch]
 func (h *Handler) Update(c *fiber.Ctx) error {
 	var r UpdateComponentLegacyRequest
@@ -149,14 +149,14 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 // @Summary Удалить компонент
 // @Description Выполняет soft-delete компонента по identity.
 // @Tags components-legacy
-// @Param project_identity path string true "Project identity"
-// @Param component_identity path string true "Legacy component identity"
+// @Param project_identity path string true "Project identity" example(demo-project)
+// @Param component_identity path string true "Legacy component identity" example(user-card)
 // @Success 204
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/components-legacy/{component_identity} [delete]
 func (h *Handler) SoftDelete(c *fiber.Ctx) error { return h.change(c, h.service.SoftDelete) }
 
@@ -164,14 +164,14 @@ func (h *Handler) SoftDelete(c *fiber.Ctx) error { return h.change(c, h.service.
 // @Summary Восстановить компонент
 // @Description Восстанавливает soft-deleted компонент по identity.
 // @Tags components-legacy
-// @Param project_identity path string true "Project identity"
-// @Param component_identity path string true "Legacy component identity"
+// @Param project_identity path string true "Project identity" example(demo-project)
+// @Param component_identity path string true "Legacy component identity" example(restore-user-card)
 // @Success 204
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/components-legacy/{component_identity}/restore [post]
 func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Restore) }
 
@@ -179,13 +179,13 @@ func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Res
 // @Summary Физически удалить компонент
 // @Description Выполняет hard-delete компонента по identity.
 // @Tags components-legacy
-// @Param project_identity path string true "Project identity"
-// @Param component_identity path string true "Legacy component identity"
+// @Param project_identity path string true "Project identity" example(demo-project)
+// @Param component_identity path string true "Legacy component identity" example(hard-delete-user-card)
 // @Success 204
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/components-legacy/{component_identity}/hard [delete]
 func (h *Handler) HardDelete(c *fiber.Ctx) error { return h.change(c, h.service.HardDelete) }

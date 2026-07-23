@@ -13,15 +13,26 @@ func NewLogger(logLevel string, serviceName string, appEnv string, appVersion st
 		ServiceName: serviceName,
 		Environment: appEnv,
 		Version:     appVersion,
-	}, additionalCores...)
+	})
 	if err == nil {
-		return logger
+		return withAdditionalCores(logger, additionalCores)
 	}
 
 	logger, _ = servicelogging.NewLogger(servicelogging.Config{
 		ServiceName: serviceName,
 		Environment: appEnv,
 		Version:     appVersion,
-	}, additionalCores...)
-	return logger
+	})
+	return withAdditionalCores(logger, additionalCores)
+}
+
+func withAdditionalCores(logger *zap.Logger, additionalCores []zapcore.Core) *zap.Logger {
+	if logger == nil || len(additionalCores) == 0 {
+		return logger
+	}
+
+	return logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		cores := append([]zapcore.Core{core}, additionalCores...)
+		return zapcore.NewTee(cores...)
+	}))
 }

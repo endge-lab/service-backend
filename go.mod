@@ -2,8 +2,6 @@ module github.com/endge-lab/service-backend
 
 go 1.26.1
 
-replace github.com/endge-lab/service-kit-go => ../service-kit-go
-
 require (
 	github.com/gofiber/contrib/otelfiber/v2 v2.2.3
 	github.com/gofiber/fiber/v2 v2.52.13
@@ -70,7 +68,7 @@ require (
 	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/endge-lab/service-kit-go v0.2.0
+	github.com/endge-lab/service-kit-go v0.3.0
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

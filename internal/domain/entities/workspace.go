@@ -59,41 +59,49 @@ type RWorkspace struct {
 
 // EndgeConfiguration is the complete root configuration stored by a workspace.
 type EndgeConfiguration struct {
-	Vars                       []map[string]any       `json:"vars"`
+	Vars                       []EndgeVariable        `json:"vars"`
 	Locales                    []EndgeLocale          `json:"locales"`
-	DefaultLocale              string                 `json:"defaultLocale"`
-	FallbackLocale             string                 `json:"fallbackLocale"`
+	DefaultLocale              string                 `json:"defaultLocale" example:"ru"`
+	FallbackLocale             string                 `json:"fallbackLocale" example:"ru"`
 	Themes                     []EndgeTheme           `json:"themes"`
-	DefaultTheme               string                 `json:"defaultTheme"`
-	DefaultAuthProfileIdentity *string                `json:"defaultAuthProfileIdentity"`
-	SFCAdapterIDs              []string               `json:"sfcAdapterIds"`
-	DefaultSFCAdapterID        string                 `json:"defaultSfcAdapterId"`
+	DefaultTheme               string                 `json:"defaultTheme" example:"light"`
+	DefaultAuthProfileIdentity *string                `json:"defaultAuthProfileIdentity" example:"default-auth"`
+	SFCAdapterIDs              []string               `json:"sfcAdapterIds" example:"native-vue"`
+	DefaultSFCAdapterID        string                 `json:"defaultSfcAdapterId" example:"native-vue"`
 	SSE                        *EndgeSSEConfiguration `json:"sse,omitempty"`
 }
 
+// EndgeVariable declares a named workspace configuration variable.
+// DefaultValue is optional because a variable can be declared before a
+// concrete environment supplies its value.
+type EndgeVariable struct {
+	Name         string  `json:"name" validate:"required,min=1" example:"API_URL"`
+	DefaultValue *string `json:"defaultValue,omitempty" example:"https://api.example.com"`
+}
+
 type EndgeLocale struct {
-	Code        string `json:"code"`
-	DisplayName string `json:"displayName"`
-	ShortLabel  string `json:"shortLabel"`
-	Direction   string `json:"direction"`
+	Code        string `json:"code" example:"ru"`
+	DisplayName string `json:"displayName" example:"Русский"`
+	ShortLabel  string `json:"shortLabel" example:"RU"`
+	Direction   string `json:"direction" enums:"ltr,rtl" example:"ltr"`
 }
 
 type EndgeTheme struct {
-	Identity    string `json:"identity"`
-	DisplayName string `json:"displayName"`
+	Identity    string `json:"identity" example:"light"`
+	DisplayName string `json:"displayName" example:"Светлая"`
 }
 
 type EndgeSSEConfiguration struct {
-	URL                 string  `json:"url"`
-	AuthMode            string  `json:"authMode"`
-	AuthProfileIdentity *string `json:"authProfileIdentity"`
-	ManualToken         *string `json:"manualToken"`
+	URL                 string  `json:"url" example:"https://sse.example.com/events"`
+	AuthMode            string  `json:"authMode" enums:"inherit,profile,manual,none" example:"inherit"`
+	AuthProfileIdentity *string `json:"authProfileIdentity" example:"default-auth"`
+	ManualToken         *string `json:"manualToken" example:"secret-token"`
 }
 
 // DefaultEndgeConfiguration returns the system configuration for new workspaces.
 func DefaultEndgeConfiguration() EndgeConfiguration {
 	return EndgeConfiguration{
-		Vars: []map[string]any{},
+		Vars: []EndgeVariable{},
 		Locales: []EndgeLocale{
 			{Code: "ru", DisplayName: "Русский", ShortLabel: "RU", Direction: LocaleDirectionLTR},
 			{Code: "en", DisplayName: "English", ShortLabel: "EN", Direction: LocaleDirectionLTR},

@@ -71,12 +71,14 @@ func (s *Project) Create(ctx context.Context, input CreateProjectInput) (result 
 		observed.Logger().Error(op, zap.Error(err))
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "project create input validated", nil, zap.String("project_identity", input.Identity))
 	workspaceID, ok := entities.WorkspaceIDFromContext(ctx)
 	if !ok {
 		err = apperrors.InvalidInput("workspace_required", "workspace scope is required")
 		observed.Logger().Error(op, zap.Error(err))
 		return nil, err
 	}
+	observed.RecordStep(op+".workspace_resolved", "workspace scope resolved for project create", nil, zap.String("workspace_id", workspaceID.String()))
 
 	exists, err := s.projectRepository.ExistsByIdentity(ctx, input.Identity)
 	if err != nil {
@@ -89,6 +91,7 @@ func (s *Project) Create(ctx context.Context, input CreateProjectInput) (result 
 		observed.Logger().Error(op, zap.Error(err), zap.String("identity", input.Identity))
 		return nil, err
 	}
+	observed.RecordStep(op+".identity_available", "project identity availability confirmed", nil, zap.String("project_identity", input.Identity))
 
 	project := projectFromCreateInput(input, workspaceID)
 
@@ -117,12 +120,11 @@ func (s *Project) Create(ctx context.Context, input CreateProjectInput) (result 
 		return nil, err
 	}
 
-	observed.AddEvent("project.created",
+	observed.RecordStep("project.create.persisted", "project created with root folders", []attribute.KeyValue{
 		attribute.String("project.id", result.ID.String()),
 		attribute.String("workspace.id", workspaceID.String()),
 		attribute.Int("project.root_count", len(projectRootEntityTypes)),
-	)
-	observed.Logger().Info("project created with root folders",
+	},
 		zap.String("project_id", result.ID.String()),
 		zap.String("identity", result.Identity),
 		zap.Int("root_count", len(projectRootEntityTypes)),
@@ -160,12 +162,14 @@ func (s *Project) GetByID(ctx context.Context, id uuid.UUID) (result *entities.R
 		observed.Logger().Error(op, zap.Error(err))
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "project identifier validated", nil, zap.String("project_id", id.String()))
 
 	result, err = s.projectRepository.GetByID(ctx, id)
 	if err != nil {
 		observed.Logger().Error(op, zap.Error(err), zap.String("project_id", id.String()))
 		return nil, err
 	}
+	observed.RecordStep(op+".result_loaded", "project retrieved", nil, zap.String("project_id", result.ID.String()), zap.String("project_identity", result.Identity))
 
 	return result, nil
 }
@@ -202,12 +206,14 @@ func (s *Project) GetByIdentity(ctx context.Context, identity string) (result *e
 		observed.Logger().Error(op, zap.Error(err))
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "project identity validated", nil, zap.String("project_identity", identity))
 
 	result, err = s.projectRepository.GetByIdentity(ctx, identity)
 	if err != nil {
 		observed.Logger().Error(op, zap.Error(err), zap.String("identity", identity))
 		return nil, err
 	}
+	observed.RecordStep(op+".result_loaded", "project retrieved", nil, zap.String("project_id", result.ID.String()), zap.String("project_identity", result.Identity))
 
 	return result, nil
 }
@@ -242,7 +248,7 @@ func (s *Project) List(ctx context.Context) (result []*entities.RProject, err er
 		return nil, err
 	}
 
-	observed.Logger().Debug("projects listed", zap.Int("count", len(result)))
+	observed.RecordStep(op+".result_loaded", "projects listed", nil, zap.Int("count", len(result)))
 	return result, nil
 }
 
@@ -275,12 +281,17 @@ func (s *Project) Update(ctx context.Context, input UpdateProjectInput) (result 
 		observed.Logger().Error(op, zap.Error(err))
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "project update input validated", nil, zap.String("project_identity", input.Identity))
 
 	current, err := s.projectRepository.GetByIdentity(ctx, input.Identity)
 	if err != nil {
 		observed.Logger().Error(op, zap.Error(err), zap.String("identity", input.Identity))
 		return nil, err
 	}
+	observed.RecordStep(op+".current_resolved", "project resolved for update", nil,
+		zap.String("project_id", current.ID.String()),
+		zap.String("project_identity", current.Identity),
+	)
 
 	project := projectFromUpdateInput(current, input)
 
@@ -290,7 +301,7 @@ func (s *Project) Update(ctx context.Context, input UpdateProjectInput) (result 
 		return nil, err
 	}
 
-	observed.Logger().Debug("project updated",
+	observed.RecordStep(op+".persisted", "project updated", nil,
 		zap.String("project_id", result.ID.String()),
 		zap.String("identity", result.Identity),
 	)
@@ -327,12 +338,17 @@ func (s *Project) SoftDelete(ctx context.Context, identity string) (err error) {
 		observed.Logger().Error(op, zap.Error(err))
 		return err
 	}
+	observed.RecordStep(op+".input_validated", "project identity validated", nil, zap.String("project_identity", identity))
 
 	project, err := s.projectRepository.GetByIdentity(ctx, identity)
 	if err != nil {
 		observed.Logger().Error(op, zap.Error(err), zap.String("identity", identity))
 		return err
 	}
+	observed.RecordStep(op+".current_resolved", "project resolved for soft delete", nil,
+		zap.String("project_id", project.ID.String()),
+		zap.String("project_identity", project.Identity),
+	)
 
 	err = s.projectRepository.SoftDelete(ctx, project.ID)
 	if err != nil {
@@ -340,7 +356,7 @@ func (s *Project) SoftDelete(ctx context.Context, identity string) (err error) {
 		return err
 	}
 
-	observed.Logger().Debug("project soft deleted",
+	observed.RecordStep(op+".persisted", "project soft deleted", nil,
 		zap.String("project_id", project.ID.String()),
 		zap.String("identity", identity),
 	)
@@ -377,12 +393,17 @@ func (s *Project) Restore(ctx context.Context, identity string) (err error) {
 		observed.Logger().Error(op, zap.Error(err))
 		return err
 	}
+	observed.RecordStep(op+".input_validated", "project identity validated", nil, zap.String("project_identity", identity))
 
 	project, err := s.projectRepository.GetByIdentityIncludingDeleted(ctx, identity)
 	if err != nil {
 		observed.Logger().Error(op, zap.Error(err), zap.String("identity", identity))
 		return err
 	}
+	observed.RecordStep(op+".current_resolved", "deleted project resolved for restore", nil,
+		zap.String("project_id", project.ID.String()),
+		zap.String("project_identity", project.Identity),
+	)
 
 	err = s.projectRepository.Restore(ctx, project.ID)
 	if err != nil {
@@ -390,7 +411,7 @@ func (s *Project) Restore(ctx context.Context, identity string) (err error) {
 		return err
 	}
 
-	observed.Logger().Debug("project restored",
+	observed.RecordStep(op+".persisted", "project restored", nil,
 		zap.String("project_id", project.ID.String()),
 		zap.String("identity", identity),
 	)
@@ -427,12 +448,17 @@ func (s *Project) HardDelete(ctx context.Context, identity string) (err error) {
 		observed.Logger().Error(op, zap.Error(err))
 		return err
 	}
+	observed.RecordStep(op+".input_validated", "project identity validated", nil, zap.String("project_identity", identity))
 
 	project, err := s.projectRepository.GetByIdentityIncludingDeleted(ctx, identity)
 	if err != nil {
 		observed.Logger().Error(op, zap.Error(err), zap.String("identity", identity))
 		return err
 	}
+	observed.RecordStep(op+".current_resolved", "deleted project resolved for hard delete", nil,
+		zap.String("project_id", project.ID.String()),
+		zap.String("project_identity", project.Identity),
+	)
 
 	err = s.projectRepository.HardDelete(ctx, project.ID)
 	if err != nil {
@@ -440,7 +466,7 @@ func (s *Project) HardDelete(ctx context.Context, identity string) (err error) {
 		return err
 	}
 
-	observed.Logger().Debug("project hard deleted",
+	observed.RecordStep(op+".persisted", "project hard deleted", nil,
 		zap.String("project_id", project.ID.String()),
 		zap.String("identity", identity),
 	)
@@ -476,7 +502,7 @@ func (s *Project) Count(ctx context.Context) (result int64, err error) {
 		return 0, err
 	}
 
-	observed.Logger().Debug("projects counted", zap.Int64("count", result))
+	observed.RecordStep(op+".result_loaded", "projects counted", nil, zap.Int64("count", result))
 	return result, nil
 }
 

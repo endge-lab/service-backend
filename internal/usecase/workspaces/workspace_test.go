@@ -60,8 +60,11 @@ func TestValidateConfigurationInvariants(t *testing.T) {
 		name   string
 		change func(*entities.EndgeConfiguration)
 	}{
+		{name: "variable name is required", change: func(c *entities.EndgeConfiguration) {
+			c.Vars = []entities.EndgeVariable{{DefaultValue: stringPtr("https://api.example.com")}}
+		}},
 		{name: "duplicate variable names", change: func(c *entities.EndgeConfiguration) {
-			c.Vars = []map[string]any{{"name": "API_URL"}, {"name": "API_URL"}}
+			c.Vars = []entities.EndgeVariable{{Name: "API_URL"}, {Name: "API_URL"}}
 		}},
 		{name: "duplicate locale codes", change: func(c *entities.EndgeConfiguration) { c.Locales[1].Code = "ru" }},
 		{name: "fallback locale does not exist", change: func(c *entities.EndgeConfiguration) { c.FallbackLocale = "de" }},
@@ -99,17 +102,19 @@ func TestValidateConfigurationInvariants(t *testing.T) {
 		})
 	}
 }
+
+func stringPtr(value string) *string { return &value }
 func TestUpdateReplacesConfigurationWithoutMerge(t *testing.T) {
 	old := entities.DefaultEndgeConfiguration()
 	current := &entities.RWorkspace{ID: uuid.New(), Identity: "default", DisplayName: "Old", Configuration: old}
 	r := &repositoryStub{current: current}
 	next := entities.DefaultEndgeConfiguration()
-	next.Vars = []map[string]any{{"name": "API_URL"}}
+	next.Vars = []entities.EndgeVariable{{Name: "API_URL"}}
 	got, err := newService(r).Update(context.Background(), UpdateWorkspaceInput{Identity: "default", Configuration: &next})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got.Configuration.Vars) != 1 || got.Configuration.Vars[0]["name"] != "API_URL" {
+	if len(got.Configuration.Vars) != 1 || got.Configuration.Vars[0].Name != "API_URL" {
 		t.Fatalf("configuration was not replaced: %+v", got.Configuration.Vars)
 	}
 }

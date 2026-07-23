@@ -24,8 +24,8 @@ func NewHandler(s UseCase, v appvalidator.Validator, core *observability.Core, m
 // @Summary Создать конвертер
 // @Description Создает конвертер с JSON source/config. Source не исполняется.
 // @Tags converters
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Accept json
 // @Produce json
 // @Param project_identity path string true "Project identity" example(demo-project)
@@ -56,11 +56,11 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 // @Summary Список конвертеров
 // @Description Возвращает неудаленные конвертеры проекта с optional фильтром папки.
 // @Tags converters
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Produce json
-// @Param project_identity path string true "Project identity"
-// @Param folder_identity query string false "Folder identity"
+// @Param project_identity path string true "Project identity" example(demo-project)
+// @Param folder_identity query string false "Folder identity" example(shared-converters)
 // @Success 200 {object} ConvertersListResponse
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
@@ -87,11 +87,11 @@ func (h *Handler) List(c *fiber.Ctx) error {
 // @Summary Получить конвертер
 // @Description Возвращает активный конвертер по identity.
 // @Tags converters
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Produce json
-// @Param project_identity path string true "Project identity"
-// @Param converter_identity path string true "Converter identity"
+// @Param project_identity path string true "Project identity" example(demo-project)
+// @Param converter_identity path string true "Converter identity" example(date-to-string)
 // @Success 200 {object} ConverterResponse
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
@@ -110,12 +110,12 @@ func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
 // @Summary Обновить конвертер
 // @Description Заменяет editable payload конвертера, сохраняя id, identity, createdAt и deletedAt.
 // @Tags converters
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Accept json
 // @Produce json
-// @Param project_identity path string true "Project identity"
-// @Param converter_identity path string true "Converter identity"
+// @Param project_identity path string true "Project identity" example(demo-project)
+// @Param converter_identity path string true "Converter identity" example(date-to-string)
 // @Param request body UpdateConverterRequest true "Параметры обновления конвертера"
 // @Success 200 {object} ConverterResponse
 // @Failure 400 {object} respond.ErrorResponse
@@ -142,10 +142,10 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 // @Summary Удалить конвертер
 // @Description Выполняет soft-delete конвертера.
 // @Tags converters
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
-// @Param project_identity path string true "Project identity"
-// @Param converter_identity path string true "Converter identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
+// @Param project_identity path string true "Project identity" example(demo-project)
+// @Param converter_identity path string true "Converter identity" example(date-to-string)
 // @Success 204
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
@@ -157,10 +157,10 @@ func (h *Handler) SoftDelete(c *fiber.Ctx) error { return h.change(c, h.service.
 // @Summary Восстановить конвертер
 // @Description Восстанавливает soft-deleted конвертер.
 // @Tags converters
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
-// @Param project_identity path string true "Project identity"
-// @Param converter_identity path string true "Converter identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
+// @Param project_identity path string true "Project identity" example(demo-project)
+// @Param converter_identity path string true "Converter identity" example(restore-date-to-string)
 // @Success 204
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
@@ -172,10 +172,10 @@ func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Res
 // @Summary Физически удалить конвертер
 // @Description Выполняет hard-delete конвертера; system converter удалить нельзя.
 // @Tags converters
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
-// @Param project_identity path string true "Project identity"
-// @Param converter_identity path string true "Converter identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
+// @Param project_identity path string true "Project identity" example(demo-project)
+// @Param converter_identity path string true "Converter identity" example(hard-delete-date-to-string)
 // @Success 204
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse

@@ -25,35 +25,37 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_session.SessionResponse\"\n" +
+		"                $ref: \"#/components/schemas/session.SessionResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_session.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/session.ErrorResponse\"\n" +
 		"        \"401\":\n" +
 		"          description: Unauthorized\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_session.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/session.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_session.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/session.ErrorResponse\"\n" +
 		"  /api/v1/projects:\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Возвращает список неудаленных проектов.\n" +
 		"      tags:\n" +
 		"        - projects\n" +
 		"      summary: Список проектов\n" +
 		"      parameters:\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -65,23 +67,24 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_project.ProjectsListResponse\"\n" +
+		"                $ref: \"#/components/schemas/project.ProjectsListResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Создает новый проект.\n" +
 		"      tags:\n" +
 		"        - projects\n" +
 		"      summary: Создать проект\n" +
 		"      parameters:\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -91,7 +94,7 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/internal_api_http_v1_project.CreateProjectRequest\"\n" +
+		"              $ref: \"#/components/schemas/project.CreateProjectRequest\"\n" +
 		"        description: Параметры проекта\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -100,32 +103,30 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_project.ProjectResponse\"\n" +
+		"                $ref: \"#/components/schemas/project.ProjectResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"409\":\n" +
 		"          description: Conflict\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}\":\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Возвращает проект по identity.\n" +
 		"      tags:\n" +
 		"        - projects\n" +
@@ -138,7 +139,8 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -150,31 +152,29 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_project.ProjectResponse\"\n" +
+		"                $ref: \"#/components/schemas/project.ProjectResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Выполняет soft delete проекта по identity.\n" +
 		"      tags:\n" +
 		"        - projects\n" +
@@ -187,7 +187,8 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -201,25 +202,23 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Обновляет проект по identity.\n" +
 		"      tags:\n" +
 		"        - projects\n" +
@@ -232,7 +231,8 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -242,7 +242,7 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/internal_api_http_v1_project.UpdateProjectRequest\"\n" +
+		"              $ref: \"#/components/schemas/project.UpdateProjectRequest\"\n" +
 		"        description: Параметры обновления проекта\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -251,32 +251,30 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_project.ProjectResponse\"\n" +
+		"                $ref: \"#/components/schemas/project.ProjectResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/components-legacy\":\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Возвращает неудаленные компоненты проекта с optional фильтрами\n" +
 		"        папки и типа.\n" +
 		"      tags:\n" +
@@ -290,20 +288,22 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - example: root-components-legacy\n" +
+		"        - example: shared-components-legacy\n" +
 		"          description: Folder identity\n" +
 		"          name: folder_identity\n" +
 		"          in: query\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Legacy component type\n" +
+		"        - example: component-sfc\n" +
+		"          description: Legacy component type\n" +
 		"          name: component_type\n" +
 		"          in: query\n" +
 		"          schema:\n" +
 		"            type: string\n" +
 		"            enum:\n" +
 		"              - component-sfc\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -315,32 +315,29 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_component_legacy.ComponentsLeg\\\n" +
-		"                  acyListResponse\"\n" +
+		"                $ref: \"#/components/schemas/component_legacy.ComponentsLegacyListResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Создает component-sfc в папке проекта. Source хранится как\n" +
 		"        authoring source и не компилируется и не выполняется.\n" +
 		"      tags:\n" +
@@ -354,7 +351,8 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -364,8 +362,7 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/internal_api_http_v1_component_legacy.CreateCompone\\\n" +
-		"                ntLegacyRequest\"\n" +
+		"              $ref: \"#/components/schemas/component_legacy.CreateComponentLegacyRequest\"\n" +
 		"        description: Параметры компонента\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -374,40 +371,36 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_component_legacy.ComponentLega\\\n" +
-		"                  cyResponse\"\n" +
+		"                $ref: \"#/components/schemas/component_legacy.ComponentLegacyResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"409\":\n" +
 		"          description: Conflict\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/components-legacy/{component_identity}\":\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Возвращает активный компонент по identity в пределах проекта.\n" +
 		"      tags:\n" +
 		"        - components-legacy\n" +
@@ -427,7 +420,8 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -439,50 +433,50 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_component_legacy.ComponentLega\\\n" +
-		"                  cyResponse\"\n" +
+		"                $ref: \"#/components/schemas/component_legacy.ComponentLegacyResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Выполняет soft-delete компонента по identity.\n" +
 		"      tags:\n" +
 		"        - components-legacy\n" +
 		"      summary: Удалить компонент\n" +
 		"      parameters:\n" +
-		"        - description: Project identity\n" +
+		"        - example: demo-project\n" +
+		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Legacy component identity\n" +
+		"        - example: user-card\n" +
+		"          description: Legacy component identity\n" +
 		"          name: component_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -496,25 +490,23 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Заменяет editable payload компонента, сохраняя id, identity,\n" +
 		"        createdAt и deletedAt.\n" +
 		"      tags:\n" +
@@ -535,7 +527,8 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -545,8 +538,7 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/internal_api_http_v1_component_legacy.UpdateCompone\\\n" +
-		"                ntLegacyRequest\"\n" +
+		"              $ref: \"#/components/schemas/component_legacy.UpdateComponentLegacyRequest\"\n" +
 		"        description: Параметры обновления компонента\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -555,51 +547,51 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_component_legacy.ComponentLega\\\n" +
-		"                  cyResponse\"\n" +
+		"                $ref: \"#/components/schemas/component_legacy.ComponentLegacyResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/components-legacy/{component_identity}/hard\":\n" +
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Выполняет hard-delete компонента по identity.\n" +
 		"      tags:\n" +
 		"        - components-legacy\n" +
 		"      summary: Физически удалить компонент\n" +
 		"      parameters:\n" +
-		"        - description: Project identity\n" +
+		"        - example: demo-project\n" +
+		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Legacy component identity\n" +
+		"        - example: hard-delete-user-card\n" +
+		"          description: Legacy component identity\n" +
 		"          name: component_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -613,44 +605,45 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/components-legacy/{component_identity}/restore\":\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Восстанавливает soft-deleted компонент по identity.\n" +
 		"      tags:\n" +
 		"        - components-legacy\n" +
 		"      summary: Восстановить компонент\n" +
 		"      parameters:\n" +
-		"        - description: Project identity\n" +
+		"        - example: demo-project\n" +
+		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Legacy component identity\n" +
+		"        - example: restore-user-card\n" +
+		"          description: Legacy component identity\n" +
 		"          name: component_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -664,44 +657,45 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/converters\":\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Возвращает неудаленные конвертеры проекта с optional фильтром папки.\n" +
 		"      tags:\n" +
 		"        - converters\n" +
 		"      summary: Список конвертеров\n" +
 		"      parameters:\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Project identity\n" +
+		"        - example: demo-project\n" +
+		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Folder identity\n" +
+		"        - example: shared-converters\n" +
+		"          description: Folder identity\n" +
 		"          name: folder_identity\n" +
 		"          in: query\n" +
 		"          schema:\n" +
@@ -712,38 +706,36 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_converter.ConvertersListRespon\\\n" +
-		"                  se\"\n" +
+		"                $ref: \"#/components/schemas/converter.ConvertersListResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Создает конвертер с JSON source/config. Source не исполняется.\n" +
 		"      tags:\n" +
 		"        - converters\n" +
 		"      summary: Создать конвертер\n" +
 		"      parameters:\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -760,8 +752,7 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/internal_api_http_v1_converter.CreateConverterReque\\\n" +
-		"                st\"\n" +
+		"              $ref: \"#/components/schemas/converter.CreateConverterRequest\"\n" +
 		"        description: Параметры конвертера\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -770,57 +761,57 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_converter.ConverterResponse\"\n" +
+		"                $ref: \"#/components/schemas/converter.ConverterResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"409\":\n" +
 		"          description: Conflict\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/converters/{converter_identity}\":\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Возвращает активный конвертер по identity.\n" +
 		"      tags:\n" +
 		"        - converters\n" +
 		"      summary: Получить конвертер\n" +
 		"      parameters:\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Project identity\n" +
+		"        - example: demo-project\n" +
+		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Converter identity\n" +
+		"        - example: date-to-string\n" +
+		"          description: Converter identity\n" +
 		"          name: converter_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
@@ -832,49 +823,50 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_converter.ConverterResponse\"\n" +
+		"                $ref: \"#/components/schemas/converter.ConverterResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Выполняет soft-delete конвертера.\n" +
 		"      tags:\n" +
 		"        - converters\n" +
 		"      summary: Удалить конвертер\n" +
 		"      parameters:\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Project identity\n" +
+		"        - example: demo-project\n" +
+		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Converter identity\n" +
+		"        - example: date-to-string\n" +
+		"          description: Converter identity\n" +
 		"          name: converter_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
@@ -888,44 +880,45 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Заменяет editable payload конвертера, сохраняя id, identity,\n" +
 		"        createdAt и deletedAt.\n" +
 		"      tags:\n" +
 		"        - converters\n" +
 		"      summary: Обновить конвертер\n" +
 		"      parameters:\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Project identity\n" +
+		"        - example: demo-project\n" +
+		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Converter identity\n" +
+		"        - example: date-to-string\n" +
+		"          description: Converter identity\n" +
 		"          name: converter_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
@@ -935,8 +928,7 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/internal_api_http_v1_converter.UpdateConverterReque\\\n" +
-		"                st\"\n" +
+		"              $ref: \"#/components/schemas/converter.UpdateConverterRequest\"\n" +
 		"        description: Параметры обновления конвертера\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -945,50 +937,51 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_converter.ConverterResponse\"\n" +
+		"                $ref: \"#/components/schemas/converter.ConverterResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/converters/{converter_identity}/hard\":\n" +
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Выполняет hard-delete конвертера; system converter удалить нельзя.\n" +
 		"      tags:\n" +
 		"        - converters\n" +
 		"      summary: Физически удалить конвертер\n" +
 		"      parameters:\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Project identity\n" +
+		"        - example: demo-project\n" +
+		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Converter identity\n" +
+		"        - example: hard-delete-date-to-string\n" +
+		"          description: Converter identity\n" +
 		"          name: converter_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
@@ -1002,51 +995,51 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"409\":\n" +
 		"          description: Conflict\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/converters/{converter_identity}/restore\":\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Восстанавливает soft-deleted конвертер.\n" +
 		"      tags:\n" +
 		"        - converters\n" +
 		"      summary: Восстановить конвертер\n" +
 		"      parameters:\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Project identity\n" +
+		"        - example: demo-project\n" +
+		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Converter identity\n" +
+		"        - example: restore-date-to-string\n" +
+		"          description: Converter identity\n" +
 		"          name: converter_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
@@ -1060,26 +1053,24 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/data-views\":\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Возвращает активные DataView проекта с optional фильтрами папки и\n" +
 		"        Query. DataView, связанные с soft-deleted Query, не возвращаются.\n" +
 		"      tags:\n" +
@@ -1093,7 +1084,7 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - example: root-data-views\n" +
+		"        - example: shared-data-views\n" +
 		"          description: Folder identity\n" +
 		"          name: folder_identity\n" +
 		"          in: query\n" +
@@ -1105,7 +1096,8 @@ var openAPI3YAML = []byte(
 		"          in: query\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -1117,32 +1109,29 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_data_view.DataViewsListRespons\\\n" +
-		"                  e\"\n" +
+		"                $ref: \"#/components/schemas/data_view.DataViewsListResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Создает DataView в папке проекта и связывает его с активной Query\n" +
 		"        этого же проекта. Source и schema хранятся как authoring configuration и\n" +
 		"        не компилируются и не выполняются.\n" +
@@ -1157,7 +1146,8 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -1167,8 +1157,7 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/internal_api_http_v1_data_view.CreateDataViewReques\\\n" +
-		"                t\"\n" +
+		"              $ref: \"#/components/schemas/data_view.CreateDataViewRequest\"\n" +
 		"        description: Параметры DataView\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -1177,39 +1166,36 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_data_view.DataViewResponse\"\n" +
+		"                $ref: \"#/components/schemas/data_view.DataViewResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"409\":\n" +
 		"          description: Conflict\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/data-views/{data_view_identity}\":\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Возвращает активный DataView по identity в пределах проекта вместе\n" +
 		"        с identity папки и связанной Query.\n" +
 		"      tags:\n" +
@@ -1223,14 +1209,15 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - example: users-table-view\n" +
+		"        - example: users-table\n" +
 		"          description: DataView identity\n" +
 		"          name: data_view_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -1242,49 +1229,50 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_data_view.DataViewResponse\"\n" +
+		"                $ref: \"#/components/schemas/data_view.DataViewResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Выполняет soft-delete DataView по identity в пределах проекта.\n" +
 		"      tags:\n" +
 		"        - data-views\n" +
 		"      summary: Удалить DataView\n" +
 		"      parameters:\n" +
-		"        - description: Project identity\n" +
+		"        - example: demo-project\n" +
+		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: DataView identity\n" +
+		"        - example: users-table\n" +
+		"          description: DataView identity\n" +
 		"          name: data_view_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -1298,25 +1286,23 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Полностью заменяет editable payload DataView, включая папку,\n" +
 		"        связанную Query и authoring configuration. Поля id, identity, createdAt\n" +
 		"        и deletedAt сохраняются.\n" +
@@ -1331,14 +1317,15 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - example: users-table-view\n" +
+		"        - example: users-table\n" +
 		"          description: DataView identity\n" +
 		"          name: data_view_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -1348,8 +1335,7 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/internal_api_http_v1_data_view.UpdateDataViewReques\\\n" +
-		"                t\"\n" +
+		"              $ref: \"#/components/schemas/data_view.UpdateDataViewRequest\"\n" +
 		"        description: Параметры обновления DataView\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -1358,51 +1344,52 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_data_view.DataViewResponse\"\n" +
+		"                $ref: \"#/components/schemas/data_view.DataViewResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/data-views/{data_view_identity}/hard\":\n" +
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Выполняет hard-delete soft-deleted DataView по identity в пределах\n" +
 		"        проекта.\n" +
 		"      tags:\n" +
 		"        - data-views\n" +
 		"      summary: Физически удалить DataView\n" +
 		"      parameters:\n" +
-		"        - description: Project identity\n" +
+		"        - example: demo-project\n" +
+		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: DataView identity\n" +
+		"        - example: hard-delete-users-table\n" +
+		"          description: DataView identity\n" +
 		"          name: data_view_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -1416,44 +1403,45 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/data-views/{data_view_identity}/restore\":\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Восстанавливает soft-deleted DataView по identity в пределах проекта.\n" +
 		"      tags:\n" +
 		"        - data-views\n" +
 		"      summary: Восстановить DataView\n" +
 		"      parameters:\n" +
-		"        - description: Project identity\n" +
+		"        - example: demo-project\n" +
+		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: DataView identity\n" +
+		"        - example: restore-users-table\n" +
+		"          description: DataView identity\n" +
 		"          name: data_view_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -1467,26 +1455,24 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/folders\":\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Возвращает неудаленные папки проекта для указанного entity type.\n" +
 		"      tags:\n" +
 		"        - folders\n" +
@@ -1511,7 +1497,8 @@ var openAPI3YAML = []byte(
 		"              - converters\n" +
 		"              - queries\n" +
 		"              - data-views\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -1523,31 +1510,29 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_folder.FoldersListResponse\"\n" +
+		"                $ref: \"#/components/schemas/folder.FoldersListResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Создает папку внутри проекта и дерева указанного entity type.\n" +
 		"      tags:\n" +
 		"        - folders\n" +
@@ -1560,7 +1545,8 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -1570,7 +1556,7 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/internal_api_http_v1_folder.CreateFolderRequest\"\n" +
+		"              $ref: \"#/components/schemas/folder.CreateFolderRequest\"\n" +
 		"        description: Параметры папки\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -1579,39 +1565,36 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_folder.FolderResponse\"\n" +
+		"                $ref: \"#/components/schemas/folder.FolderResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"409\":\n" +
 		"          description: Conflict\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/folders/{folder_identity}\":\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Возвращает папку по project identity, folder identity и entity type.\n" +
 		"      tags:\n" +
 		"        - folders\n" +
@@ -1643,7 +1626,8 @@ var openAPI3YAML = []byte(
 		"              - converters\n" +
 		"              - queries\n" +
 		"              - data-views\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -1655,31 +1639,29 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_folder.FolderResponse\"\n" +
+		"                $ref: \"#/components/schemas/folder.FolderResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Выполняет soft delete папки.\n" +
 		"      tags:\n" +
 		"        - folders\n" +
@@ -1711,7 +1693,8 @@ var openAPI3YAML = []byte(
 		"              - converters\n" +
 		"              - queries\n" +
 		"              - data-views\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -1725,25 +1708,23 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Обновляет папку и при необходимости перемещает ее по parent identity.\n" +
 		"      tags:\n" +
 		"        - folders\n" +
@@ -1775,7 +1756,8 @@ var openAPI3YAML = []byte(
 		"              - converters\n" +
 		"              - queries\n" +
 		"              - data-views\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -1785,7 +1767,7 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/internal_api_http_v1_folder.UpdateFolderRequest\"\n" +
+		"              $ref: \"#/components/schemas/folder.UpdateFolderRequest\"\n" +
 		"        description: Параметры обновления папки\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -1794,39 +1776,36 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_folder.FolderResponse\"\n" +
+		"                $ref: \"#/components/schemas/folder.FolderResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"409\":\n" +
 		"          description: Conflict\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/folders/{folder_identity}/hard\":\n" +
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Выполняет hard delete папки, кроме system root folders.\n" +
 		"      tags:\n" +
 		"        - folders\n" +
@@ -1839,7 +1818,7 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - example: shared-components-legacy\n" +
+		"        - example: hard-delete-components-legacy\n" +
 		"          description: Folder identity\n" +
 		"          name: folder_identity\n" +
 		"          in: path\n" +
@@ -1858,7 +1837,8 @@ var openAPI3YAML = []byte(
 		"              - converters\n" +
 		"              - queries\n" +
 		"              - data-views\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -1872,33 +1852,30 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"409\":\n" +
 		"          description: Conflict\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/folders/{folder_identity}/restore\":\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Восстанавливает soft-deleted папку.\n" +
 		"      tags:\n" +
 		"        - folders\n" +
@@ -1911,7 +1888,7 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - example: shared-components-legacy\n" +
+		"        - example: restore-components-legacy\n" +
 		"          description: Folder identity\n" +
 		"          name: folder_identity\n" +
 		"          in: path\n" +
@@ -1930,7 +1907,8 @@ var openAPI3YAML = []byte(
 		"              - converters\n" +
 		"              - queries\n" +
 		"              - data-views\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -1944,39 +1922,38 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/hard\":\n" +
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Выполняет hard delete проекта по identity.\n" +
 		"      tags:\n" +
 		"        - projects\n" +
 		"      summary: Удалить проект физически\n" +
 		"      parameters:\n" +
-		"        - example: demo-project\n" +
+		"        - example: hard-delete-project\n" +
 		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -1990,26 +1967,24 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/queries\":\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Возвращает активные Query проекта. Можно отфильтровать записи по\n" +
 		"        identity папки и query type; soft-deleted Query не возвращаются.\n" +
 		"      tags:\n" +
@@ -2023,7 +1998,7 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - example: root-queries\n" +
+		"        - example: shared-queries\n" +
 		"          description: Folder identity\n" +
 		"          name: folder_identity\n" +
 		"          in: query\n" +
@@ -2035,7 +2010,8 @@ var openAPI3YAML = []byte(
 		"          in: query\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -2047,31 +2023,29 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_query.QueriesListResponse\"\n" +
+		"                $ref: \"#/components/schemas/query.QueriesListResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Создает конфигурацию Query в папке проекта. Query source, headers,\n" +
 		"        параметры и mock data только хранятся и не исполняются сервисом.\n" +
 		"      tags:\n" +
@@ -2085,7 +2059,8 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -2095,7 +2070,7 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/internal_api_http_v1_query.CreateQueryRequest\"\n" +
+		"              $ref: \"#/components/schemas/query.CreateQueryRequest\"\n" +
 		"        description: Параметры Query\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -2104,39 +2079,36 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_query.QueryResponse\"\n" +
+		"                $ref: \"#/components/schemas/query.QueryResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"409\":\n" +
 		"          description: Conflict\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/queries/{query_identity}\":\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Возвращает активную Query по identity в пределах проекта вместе с\n" +
 		"        identity ее папки.\n" +
 		"      tags:\n" +
@@ -2157,7 +2129,8 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -2169,50 +2142,51 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_query.QueryResponse\"\n" +
+		"                $ref: \"#/components/schemas/query.QueryResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Выполняет soft-delete Query. Связанные DataView физически не\n" +
 		"        удаляются, но не попадают в обычные query-based сценарии.\n" +
 		"      tags:\n" +
 		"        - queries\n" +
 		"      summary: Удалить Query\n" +
 		"      parameters:\n" +
-		"        - description: Project identity\n" +
+		"        - example: demo-project\n" +
+		"          description: Project identity\n" +
 		"          name: project_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Query identity\n" +
+		"        - example: users-list\n" +
+		"          description: Query identity\n" +
 		"          name: query_identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -2226,25 +2200,23 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Полностью заменяет editable payload Query, включая папку, source,\n" +
 		"        параметры, headers, auth и mock data. Поля id, identity, createdAt и\n" +
 		"        deletedAt сохраняются.\n" +
@@ -2266,7 +2238,8 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -2276,7 +2249,7 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/internal_api_http_v1_query.UpdateQueryRequest\"\n" +
+		"              $ref: \"#/components/schemas/query.UpdateQueryRequest\"\n" +
 		"        description: Параметры обновления Query\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -2285,139 +2258,35 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_query.QueryResponse\"\n" +
+		"                $ref: \"#/components/schemas/query.QueryResponse\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/projects/{project_identity}/queries/{query_identity}/hard\":\n" +
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
 		"      description: Выполняет hard-delete soft-deleted Query. Связанные DataView\n" +
 		"        удаляются каскадно на уровне базы данных.\n" +
 		"      tags:\n" +
 		"        - queries\n" +
 		"      summary: Физически удалить Query\n" +
-		"      parameters:\n" +
-		"        - description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Query identity\n" +
-		"          name: query_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/queries/{query_identity}/restore\":\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает soft-deleted Query по identity в пределах проекта.\n" +
-		"      tags:\n" +
-		"        - queries\n" +
-		"      summary: Восстановить Query\n" +
-		"      parameters:\n" +
-		"        - description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Query identity\n" +
-		"          name: query_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/restore\":\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает soft-deleted проект по identity.\n" +
-		"      tags:\n" +
-		"        - projects\n" +
-		"      summary: Восстановить проект\n" +
 		"      parameters:\n" +
 		"        - example: demo-project\n" +
 		"          description: Project identity\n" +
@@ -2426,7 +2295,15 @@ var openAPI3YAML = []byte(
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - description: Workspace identity\n" +
+		"        - example: hard-delete-users-list\n" +
+		"          description: Query identity\n" +
+		"          name: query_identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -2440,24 +2317,120 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"  \"/api/v1/projects/{project_identity}/queries/{query_identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
+		"      description: Восстанавливает soft-deleted Query по identity в пределах проекта.\n" +
+		"      tags:\n" +
+		"        - queries\n" +
+		"      summary: Восстановить Query\n" +
+		"      parameters:\n" +
+		"        - example: demo-project\n" +
+		"          description: Project identity\n" +
+		"          name: project_identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - example: restore-users-list\n" +
+		"          description: Query identity\n" +
+		"          name: query_identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"204\":\n" +
+		"          description: No Content\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Internal Server Error\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"  \"/api/v1/projects/{project_identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
+		"      description: Восстанавливает soft-deleted проект по identity.\n" +
+		"      tags:\n" +
+		"        - projects\n" +
+		"      summary: Восстановить проект\n" +
+		"      parameters:\n" +
+		"        - example: restore-project\n" +
+		"          description: Project identity\n" +
+		"          name: project_identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"204\":\n" +
+		"          description: No Content\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Internal Server Error\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  /api/v1/workspaces:\n" +
 		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
 		"      description: Возвращает все workspaces без user/membership filtering. Endpoint\n" +
 		"        не требует X-Endge-Workspace; sse.manualToken redacted.\n" +
 		"      tags:\n" +
@@ -2473,15 +2446,16 @@ var openAPI3YAML = []byte(
 		"                additionalProperties:\n" +
 		"                  type: array\n" +
 		"                  items:\n" +
-		"                    $ref: \"#/components/schemas/internal_api_http_v1_workspace.Response\"\n" +
+		"                    $ref: \"#/components/schemas/http.Response\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
 		"      description: \"Создаёт корневой workspace. Configuration необязательна: при\n" +
 		"        отсутствии backend применяет system default. Endpoint не требует\n" +
 		"        X-Endge-Workspace.\"\n" +
@@ -2492,7 +2466,7 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/internal_api_http_v1_workspace.CreateRequest\"\n" +
+		"              $ref: \"#/components/schemas/http.CreateRequest\"\n" +
 		"        description: Данные workspace\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -2501,37 +2475,36 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_workspace.Response\"\n" +
+		"                $ref: \"#/components/schemas/http.Response\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"409\":\n" +
 		"          description: Conflict\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  \"/api/v1/workspaces/{workspace_identity}\":\n" +
 		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
 		"      description: Возвращает workspace по identity с полной root configuration.\n" +
 		"        sse.manualToken не возвращается.\n" +
 		"      tags:\n" +
 		"        - workspaces\n" +
 		"      summary: Получить workspace\n" +
 		"      parameters:\n" +
-		"        - example: default\n" +
+		"        - example: demo-workspace\n" +
 		"          description: Workspace identity\n" +
 		"          name: workspace_identity\n" +
 		"          in: path\n" +
@@ -2544,29 +2517,28 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_workspace.Response\"\n" +
+		"                $ref: \"#/components/schemas/http.Response\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
 		"      description: Частично обновляет верхнеуровневые поля. Переданная configuration\n" +
 		"        полностью заменяет root configuration; JSON merge не выполняется.\n" +
 		"        sse.manualToken redacted в response.\n" +
@@ -2574,7 +2546,7 @@ var openAPI3YAML = []byte(
 		"        - workspaces\n" +
 		"      summary: Обновить workspace\n" +
 		"      parameters:\n" +
-		"        - example: default\n" +
+		"        - example: demo-workspace\n" +
 		"          description: Workspace identity\n" +
 		"          name: workspace_identity\n" +
 		"          in: path\n" +
@@ -2585,7 +2557,7 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/internal_api_http_v1_workspace.UpdateRequest\"\n" +
+		"              $ref: \"#/components/schemas/http.UpdateRequest\"\n" +
 		"        description: Изменяемые поля workspace\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -2594,28 +2566,25 @@ var openAPI3YAML = []byte(
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/internal_api_http_v1_workspace.Response\"\n" +
+		"                $ref: \"#/components/schemas/http.Response\"\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"404\":\n" +
 		"          description: Not Found\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Internal Server Error\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\\\n" +
-		"                  ttp_respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"servers:\n" +
 		"  - url: /\n" +
 		"components:\n" +
@@ -2624,82 +2593,553 @@ var openAPI3YAML = []byte(
 		"      type: apiKey\n" +
 		"      name: Authorization\n" +
 		"      in: header\n" +
+		"    WorkspaceAuth:\n" +
+		"      type: apiKey\n" +
+		"      name: X-Endge-Workspace\n" +
+		"      in: header\n" +
 		"  schemas:\n" +
-		"    github_com_endge-lab_service-backend_internal_api_http_respond.ErrorResponse:\n" +
+		"    component_legacy.ComponentLegacyResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
-		"        code:\n" +
-		"          type: string\n" +
-		"        details:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        bindings:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
-		"        message:\n" +
+		"        componentType:\n" +
+		"          enum:\n" +
+		"            - component-sfc\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.RComponentLegacyType\"\n" +
+		"          example: component-sfc\n" +
+		"        createdAt:\n" +
 		"          type: string\n" +
-		"    github_com_endge-lab_service-backend_internal_domain_entities.EndgeConfiguration:\n" +
+		"          example: 2026-07-23T10:00:00Z\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          example: 2026-07-23T10:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Displays a user card\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: User card\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: shared-components-legacy\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          example: 00000000-0000-4000-8000-000000000051\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: user-card\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        projectIdentity:\n" +
+		"          type: string\n" +
+		"          example: demo-project\n" +
+		"        propsSchema:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          example: <template><article>{{ user.name }}</article></template>\n" +
+		"        sourceFormat:\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.RComponentLegacySourceFormat\"\n" +
+		"          example: vue\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          example: 2026-07-23T10:00:00Z\n" +
+		"    component_legacy.ComponentsLegacyListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/component_legacy.ComponentLegacyResponse\"\n" +
+		"    component_legacy.CreateComponentLegacyRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - componentType\n" +
+		"        - displayName\n" +
+		"        - folderIdentity\n" +
+		"        - identity\n" +
+		"        - source\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        bindings:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        componentType:\n" +
+		"          enum:\n" +
+		"            - component-sfc\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.RComponentLegacyType\"\n" +
+		"          example: component-sfc\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Displays a user card\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
+		"          example: Example user card\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: shared-components-legacy\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: example-user-card\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        propsSchema:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          minLength: 1\n" +
+		"          example: <template><article>{{ user.name }}</article></template>\n" +
+		"    component_legacy.UpdateComponentLegacyRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - componentType\n" +
+		"        - displayName\n" +
+		"        - folderIdentity\n" +
+		"        - source\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        bindings:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        componentType:\n" +
+		"          enum:\n" +
+		"            - component-sfc\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.RComponentLegacyType\"\n" +
+		"          example: component-sfc\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Displays a user card\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
+		"          example: User card\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: shared-components-legacy\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        propsSchema:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          minLength: 1\n" +
+		"          example: <template><article>{{ user.name }}</article></template>\n" +
+		"    converter.ConverterResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        converterType:\n" +
+		"          type: string\n" +
+		"          example: javascript\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          example: 2026-07-23T10:00:00Z\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          example: 2026-07-23T10:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Formats an ISO date\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Date to string\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: shared-converters\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          example: 00000000-0000-4000-8000-000000000021\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: date-to-string\n" +
+		"        isSystem:\n" +
+		"          type: boolean\n" +
+		"          example: false\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        projectIdentity:\n" +
+		"          type: string\n" +
+		"          example: demo-project\n" +
+		"        source:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          example: 2026-07-23T10:00:00Z\n" +
+		"    converter.ConvertersListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/converter.ConverterResponse\"\n" +
+		"    converter.CreateConverterRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - converterType\n" +
+		"        - displayName\n" +
+		"        - folderIdentity\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        converterType:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: javascript\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Formats an ISO date\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
+		"          example: Example date to string\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: shared-converters\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: example-date-to-string\n" +
+		"        isSystem:\n" +
+		"          type: boolean\n" +
+		"          example: false\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    converter.UpdateConverterRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - converterType\n" +
+		"        - displayName\n" +
+		"        - folderIdentity\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        converterType:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: javascript\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Formats an ISO date\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
+		"          example: Date to string\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: shared-converters\n" +
+		"        isSystem:\n" +
+		"          type: boolean\n" +
+		"          example: false\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    data_view.CreateDataViewRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - folderIdentity\n" +
+		"        - identity\n" +
+		"        - queryIdentity\n" +
+		"        - source\n" +
+		"        - viewType\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Table view for users\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
+		"          example: Example users table\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: shared-data-views\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: example-users-table\n" +
+		"        inputSchema:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        outputSchema:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        queryIdentity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: users-list\n" +
+		"        source:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        viewType:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: table\n" +
+		"    data_view.DataViewResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          example: 2026-07-23T10:00:00Z\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          example: 2026-07-23T10:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Table view for users\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Users table\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: shared-data-views\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          example: 00000000-0000-4000-8000-000000000041\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: users-table\n" +
+		"        inputSchema:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        outputSchema:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        projectIdentity:\n" +
+		"          type: string\n" +
+		"          example: demo-project\n" +
+		"        queryIdentity:\n" +
+		"          type: string\n" +
+		"          example: users-list\n" +
+		"        source:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          example: 2026-07-23T10:00:00Z\n" +
+		"        viewType:\n" +
+		"          type: string\n" +
+		"          example: table\n" +
+		"    data_view.DataViewsListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/data_view.DataViewResponse\"\n" +
+		"    data_view.UpdateDataViewRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - folderIdentity\n" +
+		"        - queryIdentity\n" +
+		"        - source\n" +
+		"        - viewType\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Table view for users\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
+		"          example: Users table\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: shared-data-views\n" +
+		"        inputSchema:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        outputSchema:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        queryIdentity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: users-list\n" +
+		"        source:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        viewType:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: table\n" +
+		"    entities.EndgeConfiguration:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        defaultAuthProfileIdentity:\n" +
 		"          type: string\n" +
+		"          example: default-auth\n" +
 		"        defaultLocale:\n" +
 		"          type: string\n" +
+		"          example: ru\n" +
 		"        defaultSfcAdapterId:\n" +
 		"          type: string\n" +
+		"          example: native-vue\n" +
 		"        defaultTheme:\n" +
 		"          type: string\n" +
+		"          example: light\n" +
 		"        fallbackLocale:\n" +
 		"          type: string\n" +
+		"          example: ru\n" +
 		"        locales:\n" +
 		"          type: array\n" +
 		"          items:\n" +
-		"            $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
-		"              n_entities.EndgeLocale\"\n" +
+		"            $ref: \"#/components/schemas/entities.EndgeLocale\"\n" +
 		"        sfcAdapterIds:\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
+		"          example:\n" +
+		"            - native-vue\n" +
 		"        sse:\n" +
-		"          $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
-		"            n_entities.EndgeSSEConfiguration\"\n" +
+		"          $ref: \"#/components/schemas/entities.EndgeSSEConfiguration\"\n" +
 		"        themes:\n" +
 		"          type: array\n" +
 		"          items:\n" +
-		"            $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
-		"              n_entities.EndgeTheme\"\n" +
+		"            $ref: \"#/components/schemas/entities.EndgeTheme\"\n" +
 		"        vars:\n" +
 		"          type: array\n" +
 		"          items:\n" +
-		"            type: object\n" +
-		"            additionalProperties: {}\n" +
-		"    github_com_endge-lab_service-backend_internal_domain_entities.EndgeLocale:\n" +
+		"            $ref: \"#/components/schemas/entities.EndgeVariable\"\n" +
+		"    entities.EndgeLocale:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        code:\n" +
 		"          type: string\n" +
+		"          example: ru\n" +
 		"        direction:\n" +
 		"          type: string\n" +
+		"          enum:\n" +
+		"            - ltr\n" +
+		"            - rtl\n" +
+		"          example: ltr\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
+		"          example: Русский\n" +
 		"        shortLabel:\n" +
 		"          type: string\n" +
-		"    github_com_endge-lab_service-backend_internal_domain_entities.EndgeSSEConfiguration:\n" +
+		"          example: RU\n" +
+		"    entities.EndgeSSEConfiguration:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        authMode:\n" +
 		"          type: string\n" +
+		"          enum:\n" +
+		"            - inherit\n" +
+		"            - profile\n" +
+		"            - manual\n" +
+		"            - none\n" +
+		"          example: inherit\n" +
 		"        authProfileIdentity:\n" +
 		"          type: string\n" +
+		"          example: default-auth\n" +
 		"        manualToken:\n" +
 		"          type: string\n" +
+		"          example: secret-token\n" +
 		"        url:\n" +
 		"          type: string\n" +
-		"    github_com_endge-lab_service-backend_internal_domain_entities.EndgeTheme:\n" +
+		"          example: https://sse.example.com/events\n" +
+		"    entities.EndgeTheme:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
+		"          example: Светлая\n" +
 		"        identity:\n" +
 		"          type: string\n" +
-		"    github_com_endge-lab_service-backend_internal_domain_entities.FolderEntityType:\n" +
+		"          example: light\n" +
+		"    entities.EndgeVariable:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - name\n" +
+		"      properties:\n" +
+		"        defaultValue:\n" +
+		"          type: string\n" +
+		"          example: https://api.example.com\n" +
+		"        name:\n" +
+		"          type: string\n" +
+		"          minLength: 1\n" +
+		"          example: API_URL\n" +
+		"    entities.FolderEntityType:\n" +
 		"      type: string\n" +
 		"      enum:\n" +
 		"        - components-legacy\n" +
@@ -2711,442 +3151,19 @@ var openAPI3YAML = []byte(
 		"        - FolderEntityTypeConverters\n" +
 		"        - FolderEntityTypeQueries\n" +
 		"        - FolderEntityTypeDataViews\n" +
-		"    github_com_endge-lab_service-backend_internal_domain_entities.RComponentLegacySourceFormat:\n" +
+		"    entities.RComponentLegacySourceFormat:\n" +
 		"      type: string\n" +
 		"      enum:\n" +
 		"        - sfc\n" +
 		"      x-enum-varnames:\n" +
 		"        - RComponentLegacySourceFormatSFC\n" +
-		"    github_com_endge-lab_service-backend_internal_domain_entities.RComponentLegacyType:\n" +
+		"    entities.RComponentLegacyType:\n" +
 		"      type: string\n" +
 		"      enum:\n" +
 		"        - component-sfc\n" +
 		"      x-enum-varnames:\n" +
 		"        - RComponentLegacyTypeSFC\n" +
-		"    internal_api_http_session.ErrorResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        code:\n" +
-		"          type: string\n" +
-		"        details:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        message:\n" +
-		"          type: string\n" +
-		"    internal_api_http_session.SessionInfoResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        app:\n" +
-		"          type: string\n" +
-		"        expiresAt:\n" +
-		"          type: string\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"        platform:\n" +
-		"          type: string\n" +
-		"        scope:\n" +
-		"          type: array\n" +
-		"          items:\n" +
-		"            type: string\n" +
-		"        sessionId:\n" +
-		"          type: string\n" +
-		"    internal_api_http_session.SessionResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        session:\n" +
-		"          $ref: \"#/components/schemas/internal_api_http_session.SessionInfoResponse\"\n" +
-		"        user:\n" +
-		"          $ref: \"#/components/schemas/internal_api_http_session.UserResponse\"\n" +
-		"    internal_api_http_session.UserResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        authUserId:\n" +
-		"          type: string\n" +
-		"        createdAt:\n" +
-		"          type: string\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"        role:\n" +
-		"          type: string\n" +
-		"        updatedAt:\n" +
-		"          type: string\n" +
-		"        username:\n" +
-		"          type: string\n" +
-		"    internal_api_http_v1_component_legacy.ComponentLegacyResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"        bindings:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        componentType:\n" +
-		"          enum:\n" +
-		"            - component-sfc\n" +
-		"          allOf:\n" +
-		"            - $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
-		"                n_entities.RComponentLegacyType\"\n" +
-		"        createdAt:\n" +
-		"          type: string\n" +
-		"        deletedAt:\n" +
-		"          type: string\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        projectIdentity:\n" +
-		"          type: string\n" +
-		"        propsSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        source:\n" +
-		"          type: string\n" +
-		"        sourceFormat:\n" +
-		"          $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
-		"            n_entities.RComponentLegacySourceFormat\"\n" +
-		"        updatedAt:\n" +
-		"          type: string\n" +
-		"    internal_api_http_v1_component_legacy.ComponentsLegacyListResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        items:\n" +
-		"          type: array\n" +
-		"          items:\n" +
-		"            $ref: \"#/components/schemas/internal_api_http_v1_component_legacy.ComponentLega\\\n" +
-		"              cyResponse\"\n" +
-		"    internal_api_http_v1_component_legacy.CreateComponentLegacyRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - componentType\n" +
-		"        - displayName\n" +
-		"        - folderIdentity\n" +
-		"        - identity\n" +
-		"        - source\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"        bindings:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        componentType:\n" +
-		"          enum:\n" +
-		"            - component-sfc\n" +
-		"          allOf:\n" +
-		"            - $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
-		"                n_entities.RComponentLegacyType\"\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        propsSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        source:\n" +
-		"          type: string\n" +
-		"          minLength: 1\n" +
-		"    internal_api_http_v1_component_legacy.UpdateComponentLegacyRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - componentType\n" +
-		"        - displayName\n" +
-		"        - folderIdentity\n" +
-		"        - source\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"        bindings:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        componentType:\n" +
-		"          enum:\n" +
-		"            - component-sfc\n" +
-		"          allOf:\n" +
-		"            - $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
-		"                n_entities.RComponentLegacyType\"\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        propsSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        source:\n" +
-		"          type: string\n" +
-		"          minLength: 1\n" +
-		"    internal_api_http_v1_converter.ConverterResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"        converterType:\n" +
-		"          type: string\n" +
-		"        createdAt:\n" +
-		"          type: string\n" +
-		"        deletedAt:\n" +
-		"          type: string\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"        isSystem:\n" +
-		"          type: boolean\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        projectIdentity:\n" +
-		"          type: string\n" +
-		"        source:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        updatedAt:\n" +
-		"          type: string\n" +
-		"    internal_api_http_v1_converter.ConvertersListResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        items:\n" +
-		"          type: array\n" +
-		"          items:\n" +
-		"            $ref: \"#/components/schemas/internal_api_http_v1_converter.ConverterResponse\"\n" +
-		"    internal_api_http_v1_converter.CreateConverterRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - converterType\n" +
-		"        - displayName\n" +
-		"        - folderIdentity\n" +
-		"        - identity\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"        converterType:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"        isSystem:\n" +
-		"          type: boolean\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        source:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"    internal_api_http_v1_converter.UpdateConverterRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - converterType\n" +
-		"        - displayName\n" +
-		"        - folderIdentity\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"        converterType:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"        isSystem:\n" +
-		"          type: boolean\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        source:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"    internal_api_http_v1_data_view.CreateDataViewRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - displayName\n" +
-		"        - folderIdentity\n" +
-		"        - identity\n" +
-		"        - queryIdentity\n" +
-		"        - source\n" +
-		"        - viewType\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"        inputSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        outputSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        queryIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"        source:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        viewType:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"    internal_api_http_v1_data_view.DataViewResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"        createdAt:\n" +
-		"          type: string\n" +
-		"        deletedAt:\n" +
-		"          type: string\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"        inputSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        outputSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        projectIdentity:\n" +
-		"          type: string\n" +
-		"        queryIdentity:\n" +
-		"          type: string\n" +
-		"        source:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        updatedAt:\n" +
-		"          type: string\n" +
-		"        viewType:\n" +
-		"          type: string\n" +
-		"    internal_api_http_v1_data_view.DataViewsListResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        items:\n" +
-		"          type: array\n" +
-		"          items:\n" +
-		"            $ref: \"#/components/schemas/internal_api_http_v1_data_view.DataViewResponse\"\n" +
-		"    internal_api_http_v1_data_view.UpdateDataViewRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - displayName\n" +
-		"        - folderIdentity\n" +
-		"        - queryIdentity\n" +
-		"        - source\n" +
-		"        - viewType\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"        inputSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        outputSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        queryIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"        source:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        viewType:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"    internal_api_http_v1_folder.CreateFolderRequest:\n" +
+		"    folder.CreateFolderRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
 		"        - displayName\n" +
@@ -3160,7 +3177,7 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          minLength: 1\n" +
-		"          example: Shared legacy components\n" +
+		"          example: Example components folder\n" +
 		"        entityType:\n" +
 		"          enum:\n" +
 		"            - components-legacy\n" +
@@ -3168,14 +3185,13 @@ var openAPI3YAML = []byte(
 		"            - queries\n" +
 		"            - data-views\n" +
 		"          allOf:\n" +
-		"            - $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
-		"                n_entities.FolderEntityType\"\n" +
+		"            - $ref: \"#/components/schemas/entities.FolderEntityType\"\n" +
 		"          example: components-legacy\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          minLength: 1\n" +
-		"          example: shared-components-legacy\n" +
+		"          example: example-components-folder\n" +
 		"        meta:\n" +
 		"          type: object\n" +
 		"        parentIdentity:\n" +
@@ -3183,7 +3199,7 @@ var openAPI3YAML = []byte(
 		"          maxLength: 160\n" +
 		"          minLength: 1\n" +
 		"          example: root-components-legacy\n" +
-		"    internal_api_http_v1_folder.FolderResponse:\n" +
+		"    folder.FolderResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        createdAt:\n" +
@@ -3205,8 +3221,7 @@ var openAPI3YAML = []byte(
 		"            - queries\n" +
 		"            - data-views\n" +
 		"          allOf:\n" +
-		"            - $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
-		"                n_entities.FolderEntityType\"\n" +
+		"            - $ref: \"#/components/schemas/entities.FolderEntityType\"\n" +
 		"          example: components-legacy\n" +
 		"        id:\n" +
 		"          type: string\n" +
@@ -3231,14 +3246,14 @@ var openAPI3YAML = []byte(
 		"        updatedAt:\n" +
 		"          type: string\n" +
 		"          example: 2026-07-08T10:00:00Z\n" +
-		"    internal_api_http_v1_folder.FoldersListResponse:\n" +
+		"    folder.FoldersListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
 		"          type: array\n" +
 		"          items:\n" +
-		"            $ref: \"#/components/schemas/internal_api_http_v1_folder.FolderResponse\"\n" +
-		"    internal_api_http_v1_folder.UpdateFolderRequest:\n" +
+		"            $ref: \"#/components/schemas/folder.FolderResponse\"\n" +
+		"    folder.UpdateFolderRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
 		"        - displayName\n" +
@@ -3258,7 +3273,53 @@ var openAPI3YAML = []byte(
 		"          maxLength: 160\n" +
 		"          minLength: 1\n" +
 		"          example: root-components-legacy\n" +
-		"    internal_api_http_v1_project.CreateProjectRequest:\n" +
+		"    http.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        configuration:\n" +
+		"          $ref: \"#/components/schemas/entities.EndgeConfiguration\"\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
+		"          example: Example Workspace\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: example-workspace\n" +
+		"    http.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        configuration:\n" +
+		"          $ref: \"#/components/schemas/entities.EndgeConfiguration\"\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          example: 2026-07-23T10:00:00Z\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Demo Workspace\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          example: 00000000-0000-4000-8000-000000000001\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: demo-workspace\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          example: 2026-07-23T10:00:00Z\n" +
+		"    http.UpdateRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        configuration:\n" +
+		"          $ref: \"#/components/schemas/entities.EndgeConfiguration\"\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Updated Demo Workspace\n" +
+		"    project.CreateProjectRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
 		"        - displayName\n" +
@@ -3274,15 +3335,15 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          minLength: 1\n" +
-		"          example: Demo Project\n" +
+		"          example: Example Project\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          minLength: 1\n" +
-		"          example: demo-project\n" +
+		"          example: example-project\n" +
 		"        meta:\n" +
 		"          type: object\n" +
-		"    internal_api_http_v1_project.ProjectResponse:\n" +
+		"    project.ProjectResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
@@ -3311,14 +3372,14 @@ var openAPI3YAML = []byte(
 		"        updatedAt:\n" +
 		"          type: string\n" +
 		"          example: 2026-07-08T10:00:00Z\n" +
-		"    internal_api_http_v1_project.ProjectsListResponse:\n" +
+		"    project.ProjectsListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
 		"          type: array\n" +
 		"          items:\n" +
-		"            $ref: \"#/components/schemas/internal_api_http_v1_project.ProjectResponse\"\n" +
-		"    internal_api_http_v1_project.UpdateProjectRequest:\n" +
+		"            $ref: \"#/components/schemas/project.ProjectResponse\"\n" +
+		"    project.UpdateProjectRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
 		"        - displayName\n" +
@@ -3336,7 +3397,7 @@ var openAPI3YAML = []byte(
 		"          example: Demo Project\n" +
 		"        meta:\n" +
 		"          type: object\n" +
-		"    internal_api_http_v1_query.CreateQueryRequest:\n" +
+		"    query.CreateQueryRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
 		"        - displayName\n" +
@@ -3347,19 +3408,23 @@ var openAPI3YAML = []byte(
 		"      properties:\n" +
 		"        active:\n" +
 		"          type: boolean\n" +
+		"          example: true\n" +
 		"        auth:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        description:\n" +
 		"          type: string\n" +
+		"          example: Loads active users\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          minLength: 1\n" +
+		"          example: Example users list\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          minLength: 1\n" +
+		"          example: shared-queries\n" +
 		"        headers:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
@@ -3367,6 +3432,7 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          minLength: 1\n" +
+		"          example: example-users-list\n" +
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
@@ -3375,6 +3441,7 @@ var openAPI3YAML = []byte(
 		"          additionalProperties: {}\n" +
 		"        mockDataEnabled:\n" +
 		"          type: boolean\n" +
+		"          example: false\n" +
 		"        params:\n" +
 		"          type: array\n" +
 		"          items: {}\n" +
@@ -3382,44 +3449,54 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          minLength: 1\n" +
+		"          example: http\n" +
 		"        source:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        timeoutMs:\n" +
 		"          type: integer\n" +
 		"          minimum: 1\n" +
-		"    internal_api_http_v1_query.QueriesListResponse:\n" +
+		"          example: 5000\n" +
+		"    query.QueriesListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
 		"          type: array\n" +
 		"          items:\n" +
-		"            $ref: \"#/components/schemas/internal_api_http_v1_query.QueryResponse\"\n" +
-		"    internal_api_http_v1_query.QueryResponse:\n" +
+		"            $ref: \"#/components/schemas/query.QueryResponse\"\n" +
+		"    query.QueryResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
 		"          type: boolean\n" +
+		"          example: true\n" +
 		"        auth:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        createdAt:\n" +
 		"          type: string\n" +
+		"          example: 2026-07-23T10:00:00Z\n" +
 		"        deletedAt:\n" +
 		"          type: string\n" +
+		"          example: 2026-07-23T10:00:00Z\n" +
 		"        description:\n" +
 		"          type: string\n" +
+		"          example: Loads active users\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
+		"          example: Users list\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
+		"          example: shared-queries\n" +
 		"        headers:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        id:\n" +
 		"          type: string\n" +
+		"          example: 00000000-0000-4000-8000-000000000031\n" +
 		"        identity:\n" +
 		"          type: string\n" +
+		"          example: users-list\n" +
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
@@ -3428,21 +3505,26 @@ var openAPI3YAML = []byte(
 		"          additionalProperties: {}\n" +
 		"        mockDataEnabled:\n" +
 		"          type: boolean\n" +
+		"          example: false\n" +
 		"        params:\n" +
 		"          type: array\n" +
 		"          items: {}\n" +
 		"        projectIdentity:\n" +
 		"          type: string\n" +
+		"          example: demo-project\n" +
 		"        queryType:\n" +
 		"          type: string\n" +
+		"          example: http\n" +
 		"        source:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        timeoutMs:\n" +
 		"          type: integer\n" +
+		"          example: 5000\n" +
 		"        updatedAt:\n" +
 		"          type: string\n" +
-		"    internal_api_http_v1_query.UpdateQueryRequest:\n" +
+		"          example: 2026-07-23T10:00:00Z\n" +
+		"    query.UpdateQueryRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
 		"        - displayName\n" +
@@ -3452,19 +3534,23 @@ var openAPI3YAML = []byte(
 		"      properties:\n" +
 		"        active:\n" +
 		"          type: boolean\n" +
+		"          example: true\n" +
 		"        auth:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        description:\n" +
 		"          type: string\n" +
+		"          example: Loads active users\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          minLength: 1\n" +
+		"          example: Users list\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          minLength: 1\n" +
+		"          example: shared-queries\n" +
 		"        headers:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
@@ -3476,6 +3562,7 @@ var openAPI3YAML = []byte(
 		"          additionalProperties: {}\n" +
 		"        mockDataEnabled:\n" +
 		"          type: boolean\n" +
+		"          example: false\n" +
 		"        params:\n" +
 		"          type: array\n" +
 		"          items: {}\n" +
@@ -3483,51 +3570,73 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          minLength: 1\n" +
+		"          example: http\n" +
 		"        source:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        timeoutMs:\n" +
 		"          type: integer\n" +
 		"          minimum: 1\n" +
-		"    internal_api_http_v1_workspace.CreateRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - displayName\n" +
-		"        - identity\n" +
-		"      properties:\n" +
-		"        configuration:\n" +
-		"          $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
-		"            n_entities.EndgeConfiguration\"\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"    internal_api_http_v1_workspace.Response:\n" +
+		"          example: 5000\n" +
+		"    respond.ErrorResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
-		"        configuration:\n" +
-		"          $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
-		"            n_entities.EndgeConfiguration\"\n" +
+		"        code:\n" +
+		"          type: string\n" +
+		"        details:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        message:\n" +
+		"          type: string\n" +
+		"    session.ErrorResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        code:\n" +
+		"          type: string\n" +
+		"        details:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        message:\n" +
+		"          type: string\n" +
+		"    session.SessionInfoResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        app:\n" +
+		"          type: string\n" +
+		"        expiresAt:\n" +
+		"          type: string\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"        platform:\n" +
+		"          type: string\n" +
+		"        scope:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        sessionId:\n" +
+		"          type: string\n" +
+		"    session.SessionResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        session:\n" +
+		"          $ref: \"#/components/schemas/session.SessionInfoResponse\"\n" +
+		"        user:\n" +
+		"          $ref: \"#/components/schemas/session.UserResponse\"\n" +
+		"    session.UserResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        authUserId:\n" +
+		"          type: string\n" +
 		"        createdAt:\n" +
 		"          type: string\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
 		"        id:\n" +
 		"          type: string\n" +
-		"        identity:\n" +
+		"        role:\n" +
 		"          type: string\n" +
 		"        updatedAt:\n" +
 		"          type: string\n" +
-		"    internal_api_http_v1_workspace.UpdateRequest:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        configuration:\n" +
-		"          $ref: \"#/components/schemas/github_com_endge-lab_service-backend_internal_domai\\\n" +
-		"            n_entities.EndgeConfiguration\"\n" +
-		"        displayName:\n" +
+		"        username:\n" +
 		"          type: string\n",
 )

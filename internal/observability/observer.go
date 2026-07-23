@@ -131,6 +131,7 @@ func (o Observer) Start(
 
 	return ctx, &Operation{
 		ctx:       ctx,
+		layer:     o.layer,
 		logger:    logger,
 		recorder:  o.recorder,
 		operation: operation,
@@ -142,6 +143,7 @@ func (o Observer) Start(
 // Operation owns request-specific observation state.
 type Operation struct {
 	ctx       context.Context
+	layer     Layer
 	logger    *zap.Logger
 	recorder  Recorder
 	operation string
@@ -158,8 +160,16 @@ func (o *Operation) End(err *error) {
 	if err != nil {
 		actualErr = *err
 	}
+	status := "ok"
+	if actualErr != nil {
+		status = "error"
+	}
+	o.AddEvent(o.operation+".completed", attribute.String("operation.status", status))
 	if o.recorder != nil {
 		o.recorder.Record(o.ctx, o.operation, o.startedAt, actualErr)
+	}
+	if actualErr == nil && o.layer == LayerUseCase {
+		o.Logger().Info("use case operation completed", zap.String("operation", o.operation))
 	}
 	if o.step != nil {
 		o.step.End(actualErr)
@@ -180,4 +190,23 @@ func (o *Operation) AddEvent(name string, attrs ...attribute.KeyValue) {
 	}
 
 	o.step.Event(name, attrs...)
+}
+
+// RecordStep records a completed business step in both correlated outputs:
+// the active trace and the structured application log. Use it after a
+// successful meaningful use-case action (validation, resolution, state change
+// or persistence). Failures stay on the normal error path and are recorded by
+// End together with the operation result.
+func (o *Operation) RecordStep(
+	eventName string,
+	message string,
+	attrs []attribute.KeyValue,
+	fields ...zap.Field,
+) {
+	if o == nil {
+		return
+	}
+
+	o.AddEvent(eventName, attrs...)
+	o.Logger().Info(message, fields...)
 }

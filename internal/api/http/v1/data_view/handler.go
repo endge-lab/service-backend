@@ -33,8 +33,8 @@ func NewHandler(s UseCase, v appvalidator.Validator, core *observability.Core, m
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 409 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/data-views [post]
 func (h *Handler) Create(c *fiber.Ctx) error {
 	var request CreateDataViewRequest
@@ -58,14 +58,14 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 // @Tags data-views
 // @Produce json
 // @Param project_identity path string true "Project identity" example(demo-project)
-// @Param folder_identity query string false "Folder identity" example(root-data-views)
+// @Param folder_identity query string false "Folder identity" example(shared-data-views)
 // @Param query_identity query string false "Query identity" example(users-list)
 // @Success 200 {object} DataViewsListResponse
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/data-views [get]
 func (h *Handler) List(c *fiber.Ctx) error {
 	project := c.Params("project_identity")
@@ -93,13 +93,13 @@ func (h *Handler) List(c *fiber.Ctx) error {
 // @Tags data-views
 // @Produce json
 // @Param project_identity path string true "Project identity" example(demo-project)
-// @Param data_view_identity path string true "DataView identity" example(users-table-view)
+// @Param data_view_identity path string true "DataView identity" example(users-table)
 // @Success 200 {object} DataViewResponse
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/data-views/{data_view_identity} [get]
 func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
 	project := c.Params("project_identity")
@@ -117,14 +117,14 @@ func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param project_identity path string true "Project identity" example(demo-project)
-// @Param data_view_identity path string true "DataView identity" example(users-table-view)
+// @Param data_view_identity path string true "DataView identity" example(users-table)
 // @Param request body UpdateDataViewRequest true "Параметры обновления DataView"
 // @Success 200 {object} DataViewResponse
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/data-views/{data_view_identity} [patch]
 func (h *Handler) Update(c *fiber.Ctx) error {
 	var request UpdateDataViewRequest
@@ -146,14 +146,14 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 // @Summary Удалить DataView
 // @Description Выполняет soft-delete DataView по identity в пределах проекта.
 // @Tags data-views
-// @Param project_identity path string true "Project identity"
-// @Param data_view_identity path string true "DataView identity"
+// @Param project_identity path string true "Project identity" example(demo-project)
+// @Param data_view_identity path string true "DataView identity" example(users-table)
 // @Success 204
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/data-views/{data_view_identity} [delete]
 func (h *Handler) SoftDelete(c *fiber.Ctx) error { return h.change(c, h.service.SoftDelete) }
 
@@ -161,14 +161,14 @@ func (h *Handler) SoftDelete(c *fiber.Ctx) error { return h.change(c, h.service.
 // @Summary Восстановить DataView
 // @Description Восстанавливает soft-deleted DataView по identity в пределах проекта.
 // @Tags data-views
-// @Param project_identity path string true "Project identity"
-// @Param data_view_identity path string true "DataView identity"
+// @Param project_identity path string true "Project identity" example(demo-project)
+// @Param data_view_identity path string true "DataView identity" example(restore-users-table)
 // @Success 204
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/data-views/{data_view_identity}/restore [post]
 func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Restore) }
 
@@ -176,13 +176,13 @@ func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Res
 // @Summary Физически удалить DataView
 // @Description Выполняет hard-delete soft-deleted DataView по identity в пределах проекта.
 // @Tags data-views
-// @Param project_identity path string true "Project identity"
-// @Param data_view_identity path string true "DataView identity"
+// @Param project_identity path string true "Project identity" example(demo-project)
+// @Param data_view_identity path string true "DataView identity" example(hard-delete-users-table)
 // @Success 204
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/data-views/{data_view_identity}/hard [delete]
 func (h *Handler) HardDelete(c *fiber.Ctx) error { return h.change(c, h.service.HardDelete) }

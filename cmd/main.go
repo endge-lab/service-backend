@@ -9,6 +9,9 @@ import "github.com/endge-lab/service-backend/internal/bootstrap"
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
+// @securityDefinitions.apikey WorkspaceAuth
+// @in header
+// @name X-Endge-Workspace
 func main() {
 	bootstrap.NewApp().Run()
 }

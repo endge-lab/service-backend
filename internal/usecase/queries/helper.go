@@ -111,6 +111,13 @@ func (s *Query) resolveFolderID(ctx context.Context, projectID uuid.UUID, identi
 	return &folder.ID, nil
 }
 
+func dereferenceString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
 func (s *Query) resolveFolder(ctx context.Context, projectID uuid.UUID, identity string) (*entities.RFolder, error) {
 	folder, err := s.folderRepository.GetByIdentity(ctx, &projectID, entities.FolderEntityTypeQueries, identity)
 	if errors.Is(err, apperrors.ErrNotFound) {

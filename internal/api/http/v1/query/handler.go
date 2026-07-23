@@ -33,8 +33,8 @@ func NewHandler(s UseCase, v appvalidator.Validator, core *observability.Core, m
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 409 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/queries [post]
 func (h *Handler) Create(c *fiber.Ctx) error {
 	var request CreateQueryRequest
@@ -58,14 +58,14 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 // @Tags queries
 // @Produce json
 // @Param project_identity path string true "Project identity" example(demo-project)
-// @Param folder_identity query string false "Folder identity" example(root-queries)
+// @Param folder_identity query string false "Folder identity" example(shared-queries)
 // @Param query_type query string false "Query type" example(http)
 // @Success 200 {object} QueriesListResponse
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/queries [get]
 func (h *Handler) List(c *fiber.Ctx) error {
 	project := c.Params("project_identity")
@@ -98,8 +98,8 @@ func (h *Handler) List(c *fiber.Ctx) error {
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/queries/{query_identity} [get]
 func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
 	project := c.Params("project_identity")
@@ -123,8 +123,8 @@ func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/queries/{query_identity} [patch]
 func (h *Handler) Update(c *fiber.Ctx) error {
 	var request UpdateQueryRequest
@@ -146,14 +146,14 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 // @Summary Удалить Query
 // @Description Выполняет soft-delete Query. Связанные DataView физически не удаляются, но не попадают в обычные query-based сценарии.
 // @Tags queries
-// @Param project_identity path string true "Project identity"
-// @Param query_identity path string true "Query identity"
+// @Param project_identity path string true "Project identity" example(demo-project)
+// @Param query_identity path string true "Query identity" example(users-list)
 // @Success 204
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/queries/{query_identity} [delete]
 func (h *Handler) SoftDelete(c *fiber.Ctx) error { return h.change(c, h.service.SoftDelete) }
 
@@ -161,14 +161,14 @@ func (h *Handler) SoftDelete(c *fiber.Ctx) error { return h.change(c, h.service.
 // @Summary Восстановить Query
 // @Description Восстанавливает soft-deleted Query по identity в пределах проекта.
 // @Tags queries
-// @Param project_identity path string true "Project identity"
-// @Param query_identity path string true "Query identity"
+// @Param project_identity path string true "Project identity" example(demo-project)
+// @Param query_identity path string true "Query identity" example(restore-users-list)
 // @Success 204
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/queries/{query_identity}/restore [post]
 func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Restore) }
 
@@ -176,13 +176,13 @@ func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Res
 // @Summary Физически удалить Query
 // @Description Выполняет hard-delete soft-deleted Query. Связанные DataView удаляются каскадно на уровне базы данных.
 // @Tags queries
-// @Param project_identity path string true "Project identity"
-// @Param query_identity path string true "Query identity"
+// @Param project_identity path string true "Project identity" example(demo-project)
+// @Param query_identity path string true "Query identity" example(hard-delete-users-list)
 // @Success 204
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
-// @Param X-Endge-Workspace header string true "Workspace identity"
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/queries/{query_identity}/hard [delete]
 func (h *Handler) HardDelete(c *fiber.Ctx) error { return h.change(c, h.service.HardDelete) }

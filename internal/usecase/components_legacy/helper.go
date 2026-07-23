@@ -29,6 +29,13 @@ func dereferenceString(value *string) string {
 	return *value
 }
 
+func dereferenceComponentType(value *entities.RComponentLegacyType) string {
+	if value == nil {
+		return ""
+	}
+	return string(*value)
+}
+
 func (c *ComponentLegacy) resolveFolderID(ctx context.Context, projectID uuid.UUID, identity *string) (*uuid.UUID, error) {
 	if identity == nil {
 		return nil, nil

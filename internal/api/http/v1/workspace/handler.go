@@ -26,6 +26,7 @@ func NewHandler(s UseCase, v appvalidator.Validator, core *observability.Core, m
 // @Tags workspaces
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param request body CreateRequest true "Данные workspace"
 // @Success 201 {object} Response
 // @Failure 400 {object} respond.ErrorResponse
@@ -52,6 +53,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 // @Description Возвращает все workspaces без user/membership filtering. Endpoint не требует X-Endge-Workspace; sse.manualToken redacted.
 // @Tags workspaces
 // @Produce json
+// @Security BearerAuth
 // @Success 200 {object} map[string][]Response
 // @Failure 500 {object} respond.ErrorResponse
 // @Router /api/v1/workspaces [get]
@@ -72,7 +74,8 @@ func (h *Handler) List(c *fiber.Ctx) error {
 // @Description Возвращает workspace по identity с полной root configuration. sse.manualToken не возвращается.
 // @Tags workspaces
 // @Produce json
-// @Param workspace_identity path string true "Workspace identity" example(default)
+// @Security BearerAuth
+// @Param workspace_identity path string true "Workspace identity" example(demo-workspace)
 // @Success 200 {object} Response
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
@@ -92,7 +95,8 @@ func (h *Handler) Get(c *fiber.Ctx) error {
 // @Tags workspaces
 // @Accept json
 // @Produce json
-// @Param workspace_identity path string true "Workspace identity" example(default)
+// @Security BearerAuth
+// @Param workspace_identity path string true "Workspace identity" example(demo-workspace)
 // @Param request body UpdateRequest true "Изменяемые поля workspace"
 // @Success 200 {object} Response
 // @Failure 400 {object} respond.ErrorResponse

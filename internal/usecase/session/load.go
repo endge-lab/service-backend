@@ -50,13 +50,13 @@ func (u *LoadSession) Execute(ctx context.Context, input LoadSessionInput) (outp
 	}, nil)
 	defer obs.End(&err)
 
-	logger := obs.Logger()
-	logger.Debug("load session use case started", zap.String("auth_user_id", strings.TrimSpace(input.AuthUserID)))
-
 	authUserID := strings.TrimSpace(input.AuthUserID)
 	if authUserID == "" {
 		return nil, domainerrors.ErrAuthUserIDRequired
 	}
+	obs.RecordStep("session.load.auth_user_validated", "authenticated user identifier validated", nil,
+		zap.String("auth_user_id", authUserID),
+	)
 
 	user, err := u.userRepository.SyncUserFromIdentity(ctx, ports.SyncUserInput{
 		AuthUserID:  authUserID,
@@ -68,7 +68,9 @@ func (u *LoadSession) Execute(ctx context.Context, input LoadSessionInput) (outp
 		return nil, err
 	}
 
-	logger.Debug("load session use case completed", zap.String("service_user_id", user.ID))
+	obs.RecordStep("session.load.user_synchronized", "session user synchronized", nil,
+		zap.String("service_user_id", user.ID),
+	)
 
 	return &LoadSessionOutput{
 		Session: &entities.SessionInfo{

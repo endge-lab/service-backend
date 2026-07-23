@@ -61,16 +61,19 @@ func (s *Query) Create(ctx context.Context, input CreateQueryInput) (result *Que
 		logOperationError(observed.Logger(), op, err)
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "query create input validated", nil, zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", input.Identity))
 	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return nil, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for query create", nil, zap.String("project_id", project.ID.String()), zap.String("project_identity", project.Identity))
 	folder, err := s.resolveFolder(ctx, project.ID, input.FolderIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity), zap.String("folder_identity", input.FolderIdentity))
 		return nil, err
 	}
+	observed.RecordStep(op+".folder_resolved", "folder resolved for query create", nil, zap.String("folder_id", folder.ID.String()), zap.String("folder_identity", folder.Identity))
 	exists, err := s.queryRepository.ExistsByIdentity(ctx, project.ID, input.Identity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", input.Identity))
@@ -81,12 +84,13 @@ func (s *Query) Create(ctx context.Context, input CreateQueryInput) (result *Que
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", input.Identity))
 		return nil, err
 	}
+	observed.RecordStep(op+".identity_available", "query identity availability confirmed", nil, zap.String("query_identity", input.Identity))
 	query, err := s.queryRepository.Create(ctx, queryFromCreate(project.WorkspaceID, project.ID, folder.ID, input))
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", input.Identity))
 		return nil, err
 	}
-	observed.Logger().Debug("query created", zap.String("query_id", query.ID.String()), zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", query.Identity))
+	observed.RecordStep(op+".persisted", "query created", nil, zap.String("query_id", query.ID.String()), zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", query.Identity))
 	return queryWithFolder(query, folder.Identity), nil
 }
 
@@ -116,27 +120,31 @@ func (s *Query) Update(ctx context.Context, input UpdateQueryInput) (result *Que
 		logOperationError(observed.Logger(), op, err)
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "query update input validated", nil, zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", input.QueryIdentity))
 	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return nil, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for query update", nil, zap.String("project_id", project.ID.String()))
 	current, err := s.queryRepository.GetByIdentity(ctx, project.ID, input.QueryIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", input.QueryIdentity))
 		return nil, err
 	}
+	observed.RecordStep(op+".current_resolved", "query resolved for update", nil, zap.String("query_id", current.ID.String()), zap.String("query_identity", current.Identity))
 	folder, err := s.resolveFolder(ctx, project.ID, input.FolderIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity), zap.String("folder_identity", input.FolderIdentity))
 		return nil, err
 	}
+	observed.RecordStep(op+".folder_resolved", "folder resolved for query update", nil, zap.String("folder_id", folder.ID.String()), zap.String("folder_identity", folder.Identity))
 	query, err := s.queryRepository.Update(ctx, queryFromUpdate(current, folder.ID, input))
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", input.QueryIdentity))
 		return nil, err
 	}
-	observed.Logger().Debug("query updated", zap.String("query_id", query.ID.String()), zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", query.Identity))
+	observed.RecordStep(op+".persisted", "query updated", nil, zap.String("query_id", query.ID.String()), zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", query.Identity))
 	return queryWithFolder(query, folder.Identity), nil
 }
 
@@ -151,21 +159,30 @@ func (s *Query) GetByIdentity(ctx context.Context, input GetQueryInput) (result 
 		logOperationError(observed.Logger(), op, err)
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "query identity input validated", nil,
+		zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", input.QueryIdentity))
 	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return nil, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for query retrieval", nil,
+		zap.String("project_id", project.ID.String()), zap.String("project_identity", project.Identity))
 	query, err := s.queryRepository.GetByIdentity(ctx, project.ID, input.QueryIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("query_identity", input.QueryIdentity))
 		return nil, err
 	}
+	observed.RecordStep(op+".current_resolved", "query resolved for retrieval", nil,
+		zap.String("query_id", query.ID.String()), zap.String("query_identity", query.Identity))
 	folder, err := s.folderRepository.GetByID(ctx, query.FolderID)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("query_id", query.ID.String()))
 		return nil, err
 	}
+	observed.RecordStep(op+".folder_resolved", "query folder resolved for retrieval", nil,
+		zap.String("folder_id", folder.ID.String()), zap.String("folder_identity", folder.Identity))
+	observed.RecordStep(op+".result_loaded", "query retrieved", nil, zap.String("query_id", query.ID.String()), zap.String("query_identity", query.Identity), zap.String("folder_id", folder.ID.String()))
 	return queryWithFolder(query, folder.Identity), nil
 }
 
@@ -180,22 +197,29 @@ func (s *Query) List(ctx context.Context, input ListQueriesInput) (result []*Que
 		logOperationError(observed.Logger(), op, err)
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "query list input validated", nil,
+		zap.String("project_identity", input.ProjectIdentity), zap.String("folder_identity", dereferenceString(input.FolderIdentity)))
 	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return nil, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for query list", nil,
+		zap.String("project_id", project.ID.String()), zap.String("project_identity", project.Identity))
 	folderID, err := s.resolveFolderID(ctx, project.ID, input.FolderIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return nil, err
 	}
+	observed.RecordStep(op+".folder_filter_resolved", "query folder filter resolved", nil,
+		zap.String("folder_identity", dereferenceString(input.FolderIdentity)))
 	values, err := s.queryRepository.List(ctx, ports.QueriesFilter{ProjectID: project.ID, FolderID: folderID, QueryType: input.QueryType})
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return nil, err
 	}
 	if len(values) == 0 {
+		observed.RecordStep(op+".result_loaded", "queries listed", nil, zap.String("project_identity", input.ProjectIdentity), zap.Int("count", 0))
 		return []*QueryWithFolder{}, nil
 	}
 	folders, err := s.folderRepository.List(ctx, &project.ID, entities.FolderEntityTypeQueries)
@@ -203,7 +227,13 @@ func (s *Query) List(ctx context.Context, input ListQueriesInput) (result []*Que
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return nil, err
 	}
-	return queriesWithFolders(values, folders)
+	result, err = queriesWithFolders(values, folders)
+	if err != nil {
+		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
+		return nil, err
+	}
+	observed.RecordStep(op+".result_loaded", "queries listed", nil, zap.String("project_identity", input.ProjectIdentity), zap.Int("count", len(result)))
+	return result, nil
 }
 
 // SoftDelete помечает активную Query удаленной.
@@ -232,17 +262,29 @@ func (s *Query) Count(ctx context.Context, input ListQueriesInput) (count int64,
 		logOperationError(observed.Logger(), op, err)
 		return 0, err
 	}
+	observed.RecordStep(op+".input_validated", "query count input validated", nil,
+		zap.String("project_identity", input.ProjectIdentity), zap.String("folder_identity", dereferenceString(input.FolderIdentity)))
 	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return 0, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for query count", nil,
+		zap.String("project_id", project.ID.String()), zap.String("project_identity", project.Identity))
 	folderID, err := s.resolveFolderID(ctx, project.ID, input.FolderIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return 0, err
 	}
-	return s.queryRepository.Count(ctx, ports.QueriesFilter{ProjectID: project.ID, FolderID: folderID, QueryType: input.QueryType})
+	observed.RecordStep(op+".folder_filter_resolved", "query folder filter resolved", nil,
+		zap.String("folder_identity", dereferenceString(input.FolderIdentity)))
+	count, err = s.queryRepository.Count(ctx, ports.QueriesFilter{ProjectID: project.ID, FolderID: folderID, QueryType: input.QueryType})
+	if err != nil {
+		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
+		return 0, err
+	}
+	observed.RecordStep(op+".result_loaded", "queries counted", nil, zap.String("project_identity", input.ProjectIdentity), zap.Int64("count", count))
+	return count, nil
 }
 
 func (s *Query) change(ctx context.Context, op string, input QueryIdentityInput, includeDeleted bool, change func(context.Context, uuid.UUID) error) (err error) {
@@ -254,11 +296,15 @@ func (s *Query) change(ctx context.Context, op string, input QueryIdentityInput,
 		logOperationError(observed.Logger(), op, err)
 		return err
 	}
+	observed.RecordStep(op+".input_validated", "query state change input validated", nil,
+		zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", input.QueryIdentity))
 	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for query state change", nil,
+		zap.String("project_id", project.ID.String()), zap.String("project_identity", project.Identity))
 	var query *entities.RQuery
 	if includeDeleted {
 		query, err = s.queryRepository.GetByIdentityIncludingDeleted(ctx, project.ID, input.QueryIdentity)
@@ -269,10 +315,12 @@ func (s *Query) change(ctx context.Context, op string, input QueryIdentityInput,
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", input.QueryIdentity))
 		return err
 	}
+	observed.RecordStep(op+".current_resolved", "query resolved for state change", nil,
+		zap.String("query_id", query.ID.String()), zap.String("query_identity", query.Identity))
 	if err = change(ctx, query.ID); err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("query_id", query.ID.String()))
 		return err
 	}
-	observed.Logger().Debug("query state changed", zap.String("query_id", query.ID.String()), zap.String("operation", op))
+	observed.RecordStep(op+".persisted", "query state changed", nil, zap.String("query_id", query.ID.String()), zap.String("operation", op))
 	return nil
 }

@@ -25,10 +25,12 @@ func TestGeneratedOpenAPISpecMatchesCheckedInContract(t *testing.T) {
 func TestScopedOperationsRequireWorkspaceHeader(t *testing.T) {
 	var document struct {
 		Paths map[string]map[string]struct {
+			Security   []map[string][]string `yaml:"security"`
 			Parameters []struct {
 				Name     string `yaml:"name"`
 				In       string `yaml:"in"`
 				Required bool   `yaml:"required"`
+				Example  string `yaml:"example"`
 			} `yaml:"parameters"`
 		} `yaml:"paths"`
 	}
@@ -46,8 +48,11 @@ func TestScopedOperationsRequireWorkspaceHeader(t *testing.T) {
 				continue
 			}
 			checked++
-			if !hasRequiredWorkspaceHeader(operation.Parameters) {
-				t.Errorf("%s %s does not require X-Endge-Workspace", strings.ToUpper(method), path)
+			if !requiresWorkspaceSecurity(operation.Security) {
+				t.Errorf("%s %s does not require WorkspaceAuth", strings.ToUpper(method), path)
+			}
+			if !hasWorkspaceHeaderParameter(operation.Parameters) {
+				t.Errorf("%s %s does not expose X-Endge-Workspace with demo-workspace example", strings.ToUpper(method), path)
 			}
 		}
 	}
@@ -56,13 +61,26 @@ func TestScopedOperationsRequireWorkspaceHeader(t *testing.T) {
 	}
 }
 
-func hasRequiredWorkspaceHeader(parameters []struct {
+func requiresWorkspaceSecurity(requirements []map[string][]string) bool {
+	for _, requirement := range requirements {
+		if _, ok := requirement["WorkspaceAuth"]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func hasWorkspaceHeaderParameter(parameters []struct {
 	Name     string `yaml:"name"`
 	In       string `yaml:"in"`
 	Required bool   `yaml:"required"`
+	Example  string `yaml:"example"`
 }) bool {
 	for _, parameter := range parameters {
-		if parameter.Name == "X-Endge-Workspace" && parameter.In == "header" && parameter.Required {
+		if parameter.Name == "X-Endge-Workspace" &&
+			parameter.In == "header" &&
+			parameter.Required &&
+			parameter.Example == "demo-workspace" {
 			return true
 		}
 	}

@@ -69,6 +69,11 @@ func (s *Folder) Create(
 		observed.Logger().Warn(op, zap.Error(err))
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "folder create input validated", nil,
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("folder_identity", input.Identity),
+		zap.String("entity_type", string(input.EntityType)),
+	)
 
 	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
@@ -78,6 +83,10 @@ func (s *Folder) Create(
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for folder create", nil,
+		zap.String("project_id", project.ID.String()),
+		zap.String("project_identity", project.Identity),
+	)
 
 	exists, err := s.folderRepository.ExistsByIdentity(ctx, &project.ID, input.EntityType, input.Identity)
 	if err != nil {
@@ -99,6 +108,10 @@ func (s *Folder) Create(
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".identity_available", "folder identity availability confirmed", nil,
+		zap.String("folder_identity", input.Identity),
+		zap.String("entity_type", string(input.EntityType)),
+	)
 
 	parentID, err := s.resolveParentID(ctx, project.ID, input.EntityType, input.ParentIdentity)
 	if err != nil {
@@ -108,6 +121,9 @@ func (s *Folder) Create(
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".parent_resolved", "folder parent resolved", nil,
+		zap.String("parent_identity", nullableString(input.ParentIdentity)),
+	)
 
 	folder := &entities.RFolder{
 		WorkspaceID: project.WorkspaceID,
@@ -130,7 +146,7 @@ func (s *Folder) Create(
 		return nil, err
 	}
 
-	observed.Logger().Debug("folder created",
+	observed.RecordStep(op+".persisted", "folder created", nil,
 		zap.String("folder_id", result.ID.String()),
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("folder_identity", result.Identity),
@@ -171,6 +187,11 @@ func (s *Folder) Update(
 		observed.Logger().Warn(op, zap.Error(err))
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "folder update input validated", nil,
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("folder_identity", input.Identity),
+		zap.String("entity_type", string(input.EntityType)),
+	)
 
 	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
@@ -180,6 +201,10 @@ func (s *Folder) Update(
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for folder update", nil,
+		zap.String("project_id", project.ID.String()),
+		zap.String("project_identity", project.Identity),
+	)
 
 	current, err := s.folderRepository.GetByIdentity(ctx, &project.ID, input.EntityType, input.Identity)
 	if err != nil {
@@ -190,6 +215,10 @@ func (s *Folder) Update(
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".current_resolved", "folder resolved for update", nil,
+		zap.String("folder_id", current.ID.String()),
+		zap.String("folder_identity", current.Identity),
+	)
 
 	parentID, err := s.resolveParentID(ctx, project.ID, input.EntityType, input.ParentIdentity)
 	if err != nil {
@@ -199,6 +228,9 @@ func (s *Folder) Update(
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".parent_resolved", "folder parent resolved for update", nil,
+		zap.String("parent_identity", nullableString(input.ParentIdentity)),
+	)
 
 	if parentID != nil && *parentID == current.ID {
 		return nil, apperrors.InvalidInput(
@@ -216,6 +248,9 @@ func (s *Folder) Update(
 		observed.Logger().Warn(op, zap.Error(err), zap.String("folder_id", current.ID.String()))
 		return nil, err
 	}
+	observed.RecordStep(op+".hierarchy_validated", "folder hierarchy validated", nil,
+		zap.String("folder_id", current.ID.String()),
+	)
 
 	updated := &entities.RFolder{
 		ID:          current.ID,
@@ -244,7 +279,7 @@ func (s *Folder) Update(
 		return nil, err
 	}
 
-	observed.Logger().Debug("folder updated",
+	observed.RecordStep(op+".persisted", "folder updated", nil,
 		zap.String("folder_id", result.ID.String()),
 		zap.String("folder_identity", result.Identity),
 	)
@@ -281,12 +316,14 @@ func (s *Folder) GetByID(ctx context.Context, id uuid.UUID) (result *entities.RF
 		observed.Logger().Warn(op, zap.Error(err))
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "folder identifier validated", nil, zap.String("folder_id", id.String()))
 
 	result, err = s.folderRepository.GetByID(ctx, id)
 	if err != nil {
 		observed.Logger().Error(op, zap.Error(err), zap.String("folder_id", id.String()))
 		return nil, err
 	}
+	observed.RecordStep(op+".result_loaded", "folder retrieved", nil, zap.String("folder_id", result.ID.String()), zap.String("folder_identity", result.Identity))
 
 	return result, nil
 }
@@ -323,6 +360,11 @@ func (s *Folder) GetByIdentity(
 		observed.Logger().Warn(op, zap.Error(err))
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "folder identity input validated", nil,
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("folder_identity", input.Identity),
+		zap.String("entity_type", string(input.EntityType)),
+	)
 
 	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
@@ -332,6 +374,10 @@ func (s *Folder) GetByIdentity(
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for folder retrieval", nil,
+		zap.String("project_id", project.ID.String()),
+		zap.String("project_identity", project.Identity),
+	)
 
 	result, err = s.folderRepository.GetByIdentity(ctx, &project.ID, input.EntityType, input.Identity)
 	if err != nil {
@@ -342,6 +388,7 @@ func (s *Folder) GetByIdentity(
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".result_loaded", "folder retrieved", nil, zap.String("folder_id", result.ID.String()), zap.String("folder_identity", result.Identity), zap.String("project_id", project.ID.String()))
 
 	return result, nil
 }
@@ -378,6 +425,10 @@ func (s *Folder) List(
 		observed.Logger().Warn(op, zap.Error(err))
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "folder list input validated", nil,
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("entity_type", string(input.EntityType)),
+	)
 
 	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
@@ -387,6 +438,10 @@ func (s *Folder) List(
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for folder list", nil,
+		zap.String("project_id", project.ID.String()),
+		zap.String("project_identity", project.Identity),
+	)
 
 	result, err = s.folderRepository.List(ctx, &project.ID, input.EntityType)
 	if err != nil {
@@ -398,7 +453,7 @@ func (s *Folder) List(
 		return nil, err
 	}
 
-	observed.Logger().Debug("folders listed",
+	observed.RecordStep(op+".result_loaded", "folders listed", nil,
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("entity_type", string(input.EntityType)),
 		zap.Int("count", len(result)),
@@ -429,6 +484,11 @@ func (s *Folder) SoftDelete(ctx context.Context, input FolderIdentityInput) (err
 
 	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
+	observed.RecordStep(op+".input_received", "folder state change input received", nil,
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("folder_identity", input.Identity),
+		zap.String("entity_type", string(input.EntityType)),
+	)
 
 	folder, err := s.resolveFolder(ctx, &input, false)
 	if err != nil {
@@ -439,6 +499,10 @@ func (s *Folder) SoftDelete(ctx context.Context, input FolderIdentityInput) (err
 		)
 		return err
 	}
+	observed.RecordStep(op+".current_resolved", "folder resolved for soft delete", nil,
+		zap.String("folder_id", folder.ID.String()),
+		zap.String("folder_identity", folder.Identity),
+	)
 
 	err = s.folderRepository.SoftDelete(ctx, folder.ID)
 	if err != nil {
@@ -446,7 +510,7 @@ func (s *Folder) SoftDelete(ctx context.Context, input FolderIdentityInput) (err
 		return err
 	}
 
-	observed.Logger().Debug("folder soft deleted", zap.String("folder_id", folder.ID.String()))
+	observed.RecordStep(op+".persisted", "folder soft deleted", nil, zap.String("folder_id", folder.ID.String()))
 	return nil
 }
 
@@ -473,6 +537,11 @@ func (s *Folder) Restore(ctx context.Context, input FolderIdentityInput) (err er
 
 	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
+	observed.RecordStep(op+".input_received", "folder state change input received", nil,
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("folder_identity", input.Identity),
+		zap.String("entity_type", string(input.EntityType)),
+	)
 
 	folder, err := s.resolveFolder(ctx, &input, true)
 	if err != nil {
@@ -483,6 +552,10 @@ func (s *Folder) Restore(ctx context.Context, input FolderIdentityInput) (err er
 		)
 		return err
 	}
+	observed.RecordStep(op+".current_resolved", "deleted folder resolved for restore", nil,
+		zap.String("folder_id", folder.ID.String()),
+		zap.String("folder_identity", folder.Identity),
+	)
 
 	err = s.folderRepository.Restore(ctx, folder.ID)
 	if err != nil {
@@ -490,7 +563,7 @@ func (s *Folder) Restore(ctx context.Context, input FolderIdentityInput) (err er
 		return err
 	}
 
-	observed.Logger().Debug("folder restored", zap.String("folder_id", folder.ID.String()))
+	observed.RecordStep(op+".persisted", "folder restored", nil, zap.String("folder_id", folder.ID.String()))
 	return nil
 }
 
@@ -517,6 +590,11 @@ func (s *Folder) HardDelete(ctx context.Context, input FolderIdentityInput) (err
 
 	ctx, observed := s.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
+	observed.RecordStep(op+".input_received", "folder state change input received", nil,
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("folder_identity", input.Identity),
+		zap.String("entity_type", string(input.EntityType)),
+	)
 
 	folder, err := s.resolveFolder(ctx, &input, true)
 	if err != nil {
@@ -527,6 +605,10 @@ func (s *Folder) HardDelete(ctx context.Context, input FolderIdentityInput) (err
 		)
 		return err
 	}
+	observed.RecordStep(op+".current_resolved", "deleted folder resolved for hard delete", nil,
+		zap.String("folder_id", folder.ID.String()),
+		zap.String("folder_identity", folder.Identity),
+	)
 	if folder.IsRoot && folder.IsSystem {
 		err = apperrors.Conflict(
 			"system_folder_delete_forbidden",
@@ -542,7 +624,7 @@ func (s *Folder) HardDelete(ctx context.Context, input FolderIdentityInput) (err
 		return err
 	}
 
-	observed.Logger().Debug("folder hard deleted", zap.String("folder_id", folder.ID.String()))
+	observed.RecordStep(op+".persisted", "folder hard deleted", nil, zap.String("folder_id", folder.ID.String()))
 	return nil
 }
 
@@ -578,6 +660,10 @@ func (s *Folder) Count(
 		observed.Logger().Warn(op, zap.Error(err))
 		return 0, err
 	}
+	observed.RecordStep(op+".input_validated", "folder count input validated", nil,
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("entity_type", string(input.EntityType)),
+	)
 
 	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
@@ -587,6 +673,10 @@ func (s *Folder) Count(
 		)
 		return 0, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for folder count", nil,
+		zap.String("project_id", project.ID.String()),
+		zap.String("project_identity", project.Identity),
+	)
 
 	count, err := s.folderRepository.Count(ctx, &project.ID, input.EntityType)
 	if err != nil {
@@ -598,7 +688,7 @@ func (s *Folder) Count(
 		return 0, err
 	}
 
-	observed.Logger().Debug("folders counted",
+	observed.RecordStep(op+".result_loaded", "folders counted", nil,
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("entity_type", string(input.EntityType)),
 		zap.Int64("count", count),

@@ -153,7 +153,18 @@ metrics в интернет: ограничьте доступ сетью кла
 scrape_configs:
   - job_name: service-backend
     static_configs:
-      - targets: ["service-backend:9090"]
+      - targets: ["service-backend.observability:9090"]
+```
+
+Для общего Prometheus готовый file-SD target лежит в
+`observability/prometheus/targets/service-backend.yml`. Подключите каталог с
+такими файлами к конфигурации центрального Prometheus:
+
+```yaml
+scrape_configs:
+  - job_name: services
+    file_sd_configs:
+      - files: ["/etc/prometheus/targets/*.yml"]
 ```
 
 ## Logging
@@ -181,6 +192,68 @@ LOGGER_OPENSEARCH_REQUEST_TIMEOUT=5s
 
 При остановке сервис сначала flush-ит Zap logger, затем завершает OpenSearch
 exporter и только после этого закрывает trace/meter providers.
+
+## Grafana
+
+Наблюдаемость развёртывается отдельно от приложения. Это исключает дублирование
+Grafana и backend при локальном запуске и позволяет позже вынести тот же стек в
+CI/CD. `docker-compose.observability.yml` создаёт сеть
+`service-observability`; базовый Compose приложения подключается к ней как к
+внешней.
+
+Локальный стек включает OpenSearch для логов, Tempo для трейсов, OTel Collector,
+Prometheus и Grafana. В нём сознательно отключены TLS и OpenSearch Security
+Plugin: он
+предназначен только для локальной Docker-сети и не должен публиковаться в
+интернет.
+
+Сначала поднимите инфраструктуру:
+
+```bash
+docker compose --env-file .env.development -f docker-compose.observability.yml up -d
+```
+
+Затем запустите приложение. Для локальной разработки второй файл только
+переопределяет `service-backend` (Air, исходники в volume и локальный Postgres):
+
+```bash
+docker compose --env-file .env.development \
+  -f docker-compose.yml \
+  -f docker-compose.dev.yml \
+  up --build
+```
+
+Для базового контейнера используйте только `docker-compose.yml`. В production
+сеть `service-edge` по-прежнему должна существовать и управляется внешним
+reverse proxy/платформой.
+
+Параметры локальной observability-сборки в `.env.development`:
+
+```env
+TELEMETRY_ENABLED=true
+OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
+OTEL_EXPORTER_OTLP_INSECURE=true
+LOGGER_OPENSEARCH_ENABLED=true
+LOGGER_OPENSEARCH_ENDPOINT=http://opensearch:9200
+GRAFANA_ADMIN_USER=admin
+GRAFANA_ADMIN_PASSWORD=admin
+PROMETHEUS_URL=http://prometheus:9090
+OPENSEARCH_URL=http://opensearch:9200
+OPENSEARCH_LOG_INDEX=service-logs
+OPENSEARCH_VERSION=2.19.1
+TEMPO_URL=http://tempo:3200
+```
+
+Откройте Grafana на `http://localhost:3000`. Provisioning автоматически создаёт
+Prometheus, OpenSearch Logs и Tempo datasource, а также dashboard
+**Service overview**. Логи остаются одновременно в stdout (`docker compose
+logs -f service-backend`) и в OpenSearch. Трейсы проходят цепочку
+`backend -> OTel Collector -> Tempo`; в Grafana Explore выберите **Tempo** и
+найдите конкретный trace по `traceId`.
+
+Метрики включены во всех Compose-окружениях. Они доступны на внутреннем
+порту `9090`, а Prometheus собирает их через
+`service-backend.observability:9090`.
 
 ## Публикация
 

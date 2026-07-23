@@ -61,6 +61,7 @@ func (s *Workspace) Create(ctx context.Context, input CreateWorkspaceInput) (res
 		observed.Logger().Warn("workspace create validation failed", zap.Error(err))
 		return nil, err
 	}
+	observed.RecordStep("workspace.create.input_validated", "workspace create input validated", nil, zap.String("workspace_identity", input.Identity))
 	configuration := entities.DefaultEndgeConfiguration()
 	if input.Configuration != nil {
 		configuration = *input.Configuration
@@ -69,12 +70,13 @@ func (s *Workspace) Create(ctx context.Context, input CreateWorkspaceInput) (res
 		observed.Logger().Warn("workspace configuration validation failed", zap.Error(err))
 		return nil, err
 	}
+	observed.RecordStep("workspace.create.configuration_validated", "workspace configuration validated", nil, zap.String("workspace_identity", input.Identity))
 	result, err = s.repository.Create(ctx, &entities.RWorkspace{Identity: input.Identity, DisplayName: input.DisplayName, Configuration: configuration})
 	if err != nil {
 		observed.Logger().Error("workspace create failed", zap.Error(err))
 		return nil, err
 	}
-	observed.Logger().Debug("workspace created", zap.String("workspace_id", result.ID.String()), zap.String("identity", result.Identity))
+	observed.RecordStep("workspace.create.persisted", "workspace created", nil, zap.String("workspace_id", result.ID.String()), zap.String("identity", result.Identity))
 	return result, nil
 }
 
@@ -104,7 +106,7 @@ func (s *Workspace) List(ctx context.Context) (result []*entities.RWorkspace, er
 		observed.Logger().Error("workspace list failed", zap.Error(err))
 		return nil, err
 	}
-	observed.Logger().Debug("workspaces listed", zap.Int("count", len(result)))
+	observed.RecordStep("workspace.list.result_loaded", "workspaces listed", nil, zap.Int("count", len(result)))
 	return result, nil
 }
 
@@ -135,11 +137,13 @@ func (s *Workspace) GetByIdentity(ctx context.Context, identity string) (result 
 	if identity == "" {
 		return nil, apperrors.InvalidInput("validation_error", "workspace identity is required")
 	}
+	observed.RecordStep("workspace.get_by_identity.input_validated", "workspace identity validated", nil, zap.String("workspace_identity", identity))
 	result, err = s.repository.GetByIdentity(ctx, identity)
 	if err != nil {
 		observed.Logger().Error("workspace get failed", zap.Error(err))
 		return nil, err
 	}
+	observed.RecordStep("workspace.get_by_identity.result_loaded", "workspace retrieved", nil, zap.String("workspace_id", result.ID.String()), zap.String("workspace_identity", result.Identity))
 	return result, nil
 }
 
@@ -174,11 +178,13 @@ func (s *Workspace) Update(ctx context.Context, input UpdateWorkspaceInput) (res
 		observed.Logger().Warn("workspace update validation failed", zap.Error(err))
 		return nil, err
 	}
+	observed.RecordStep("workspace.update.input_validated", "workspace update input validated", nil, zap.String("workspace_identity", input.Identity))
 	current, err := s.repository.GetByIdentity(ctx, input.Identity)
 	if err != nil {
 		observed.Logger().Error("workspace resolve failed", zap.Error(err))
 		return nil, err
 	}
+	observed.RecordStep("workspace.update.current_resolved", "workspace resolved for update", nil, zap.String("workspace_id", current.ID.String()), zap.String("workspace_identity", current.Identity))
 	updated := *current
 	if input.DisplayName != nil {
 		updated.DisplayName = *input.DisplayName
@@ -188,6 +194,7 @@ func (s *Workspace) Update(ctx context.Context, input UpdateWorkspaceInput) (res
 			observed.Logger().Warn("workspace configuration validation failed", zap.Error(err))
 			return nil, err
 		}
+		observed.RecordStep("workspace.update.configuration_validated", "workspace configuration validated", nil, zap.String("workspace_id", current.ID.String()))
 		updated.Configuration = *input.Configuration
 	}
 	result, err = s.repository.Update(ctx, &updated)
@@ -195,6 +202,6 @@ func (s *Workspace) Update(ctx context.Context, input UpdateWorkspaceInput) (res
 		observed.Logger().Error("workspace update failed", zap.Error(err))
 		return nil, err
 	}
-	observed.Logger().Debug("workspace updated", zap.String("workspace_id", result.ID.String()))
+	observed.RecordStep("workspace.update.persisted", "workspace updated", nil, zap.String("workspace_id", result.ID.String()))
 	return result, nil
 }
