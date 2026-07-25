@@ -8,6 +8,8 @@ services:
       - ${APP_RUNTIME_ENV_FILE:-.env.development}
     ports:
       - "${HOST_PORT:-8080}:8080"
+    expose:
+      - "9090"
     restart: unless-stopped
     networks:
       edge:
@@ -21,6 +23,7 @@ networks:
   edge:
     external: true
     name: ${EDGE_NETWORK:-service-edge}
+  # This network is created by docker-compose.observability.yml.
   observability:
     external: true
     name: ${OBSERVABILITY_NETWORK:-service-observability}

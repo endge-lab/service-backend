@@ -8,6 +8,7 @@ import (
 
 type RProject struct {
 	ID          uuid.UUID      `json:"id"`
+	WorkspaceID uuid.UUID      `json:"workspace_id"`
 	Identity    string         `json:"identity"`
 	DisplayName string         `json:"display_name"`
 	Description *string        `json:"description,omitempty"`

@@ -6,6 +6,7 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
@@ -67,7 +68,7 @@ func mustCreateError(t *testing.T, service *Query, input CreateQueryInput) error
 }
 
 func newQueryServiceForTest(project *entities.RProject, folders *queryFoldersRepositoryStub, queries *queriesRepositoryStub) *Query {
-	return NewQueryService(QueryParams{ProjectRepository: &queryProjectsRepositoryStub{project: project}, FolderRepository: folders, QueryRepository: queries, Tracer: otel.Tracer("queries-test"), Logger: zap.NewNop()})
+	return NewQueryService(QueryParams{ProjectRepository: &queryProjectsRepositoryStub{project: project}, FolderRepository: folders, QueryRepository: queries, Observability: observability.NewCore(otel.Tracer("queries-test"), zap.NewNop())})
 }
 
 type queryProjectsRepositoryStub struct {

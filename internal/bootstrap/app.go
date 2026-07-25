@@ -11,6 +11,7 @@ func appOptions() []fx.Option {
 		CommonModules(),
 		RepositoryModules(),
 		UseCaseModules(),
+		WorkspaceContextModules(),
 		HandlerModules(),
 		InvokeModules(),
 	}

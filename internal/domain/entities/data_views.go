@@ -7,10 +7,11 @@ import (
 )
 
 type RDataView struct {
-	ID        uuid.UUID
-	ProjectID uuid.UUID
-	FolderID  uuid.UUID
-	QueryID   uuid.UUID
+	ID          uuid.UUID
+	WorkspaceID uuid.UUID
+	ProjectID   uuid.UUID
+	FolderID    uuid.UUID
+	QueryID     uuid.UUID
 
 	Identity    string
 	DisplayName string

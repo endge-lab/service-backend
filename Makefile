@@ -6,6 +6,8 @@ RUNTIME_ENV_FILE ?= $(ENV_FILE)
 ifeq ($(APP_ENV),development)
 ifneq ($(wildcard $(LOCAL_ENV_FILE)),)
 RUNTIME_ENV_FILE := $(LOCAL_ENV_FILE)
+else ifeq ($(wildcard $(RUNTIME_ENV_FILE)),)
+RUNTIME_ENV_FILE := .env.development.example
 endif
 endif
 
@@ -25,8 +27,12 @@ OPENAPI_TMP_DIR := ./tmp/openapi
 OPENAPI_SPEC := ./docs/openapi3.yaml
 OPENAPI_GENERATED_GO := ./internal/api/http/openapi/openapi.gen.go
 
+DOCKER_COMPOSE_BASE := docker-compose.yml
 DOCKER_COMPOSE_DEV := docker-compose.dev.yml
+DOCKER_COMPOSE_OBSERVABILITY := docker-compose.observability.yml
+DOCKER_COMPOSE_APP := -f $(DOCKER_COMPOSE_BASE) -f $(DOCKER_COMPOSE_DEV)
 COMPOSE_ENV_FILE_ARG := $(if $(wildcard $(RUNTIME_ENV_FILE)),--env-file $(RUNTIME_ENV_FILE),)
+APP_RUNTIME_ENV_FILE_ARG := APP_RUNTIME_ENV_FILE=$(RUNTIME_ENV_FILE)
 
 MIGRATIONS_DIR ?= ./migrations
 POSTGRES_HOST ?= localhost
@@ -67,7 +73,7 @@ mod-update:
 docs:
 	rm -rf $(OPENAPI_TMP_DIR)
 	mkdir -p $(OPENAPI_TMP_DIR)
-	go run github.com/swaggo/swag/cmd/swag@$(SWAG_VERSION) init --parseDependency --parseInternal --parseDepth 5 --outputTypes json --output $(OPENAPI_TMP_DIR) -g ./cmd/main.go
+	go run github.com/swaggo/swag/cmd/swag@$(SWAG_VERSION) init --parseInternal --parseDepth 5 --outputTypes json --output $(OPENAPI_TMP_DIR) -g ./cmd/main.go
 	npx --yes swagger2openapi@$(SWAGGER2OPENAPI_VERSION) $(OPENAPI_TMP_DIR)/swagger.json -o $(OPENAPI_SPEC)
 	go run ./internal/tools/openapiembed -input $(OPENAPI_SPEC) -output $(OPENAPI_GENERATED_GO)
 	rm -rf $(OPENAPI_TMP_DIR)
@@ -147,29 +153,61 @@ migrate-down:
 	@echo "Rolling back one migration..."
 	goose -dir $(MIGRATIONS_DIR) postgres "$(POSTGRES_DSN)" down
 
+.PHONY: compose-observability-up
+compose-observability-up:
+	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_OBSERVABILITY) up -d
+	# docker compose --env-file .env.development.example -f docker-compose.observability.yml up -d
+
+.PHONY: compose-observability-down
+compose-observability-down:
+	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_OBSERVABILITY) down
+	# docker compose --env-file .env.development.example -f docker-compose.observability.yml down
+
+.PHONY: compose-observability-clean
+compose-observability-clean:
+	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_OBSERVABILITY) down --volumes --remove-orphans
+	# docker compose --env-file .env.development.example -f docker-compose.observability.yml down --volumes --remove-orphans
+
+.PHONY: compose-observability-logs
+compose-observability-logs:
+	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_OBSERVABILITY) logs -f
+	# docker compose --env-file .env.development.example -f docker-compose.observability.yml logs -f
+
+.PHONY: compose-observability-ps
+compose-observability-ps:
+	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_OBSERVABILITY) ps
+	# docker compose --env-file .env.development.example -f docker-compose.observability.yml ps
+
 .PHONY: compose-up
 compose-up:
-	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) up --build --remove-orphans
+	$(APP_RUNTIME_ENV_FILE_ARG) docker compose $(COMPOSE_ENV_FILE_ARG) $(DOCKER_COMPOSE_APP) up --build --remove-orphans
+	# APP_RUNTIME_ENV_FILE=.env.development.example docker compose --env-file .env.development.example -f docker-compose.yml -f docker-compose.dev.yml up --build --remove-orphans
 
 .PHONY: compose-app
 compose-app:
-	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) up --build --remove-orphans app
+	$(APP_RUNTIME_ENV_FILE_ARG) docker compose $(COMPOSE_ENV_FILE_ARG) $(DOCKER_COMPOSE_APP) up --build --remove-orphans service-backend
+	# APP_RUNTIME_ENV_FILE=.env.development.example docker compose --env-file .env.development.example -f docker-compose.yml -f docker-compose.dev.yml up --build --remove-orphans service-backend
 
 .PHONY: compose-down
 compose-down:
-	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) down
+	$(APP_RUNTIME_ENV_FILE_ARG) docker compose $(COMPOSE_ENV_FILE_ARG) $(DOCKER_COMPOSE_APP) down
+	# APP_RUNTIME_ENV_FILE=.env.development.example docker compose --env-file .env.development.example -f docker-compose.yml -f docker-compose.dev.yml down
 
 .PHONY: compose-clean
 compose-clean:
-	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) down --volumes --remove-orphans
+	$(APP_RUNTIME_ENV_FILE_ARG) docker compose $(COMPOSE_ENV_FILE_ARG) $(DOCKER_COMPOSE_APP) down --volumes --remove-orphans
+	# APP_RUNTIME_ENV_FILE=.env.development.example docker compose --env-file .env.development.example -f docker-compose.yml -f docker-compose.dev.yml down --volumes --remove-orphans
 
 .PHONY: compose-logs
 compose-logs:
-	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) logs -f
+	$(APP_RUNTIME_ENV_FILE_ARG) docker compose $(COMPOSE_ENV_FILE_ARG) $(DOCKER_COMPOSE_APP) logs -f
+	# APP_RUNTIME_ENV_FILE=.env.development.example docker compose --env-file .env.development.example -f docker-compose.yml -f docker-compose.dev.yml logs -f
 
 .PHONY: compose-ps
 compose-ps:
-	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) ps
+	$(APP_RUNTIME_ENV_FILE_ARG) docker compose $(COMPOSE_ENV_FILE_ARG) $(DOCKER_COMPOSE_APP) ps
+	# APP_RUNTIME_ENV_FILE=.env.development.example docker compose --env-file .env.development.example -f docker-compose.yml -f docker-compose.dev.yml ps
 .PHONY: db
 db:
-	docker compose $(COMPOSE_ENV_FILE_ARG) -f $(DOCKER_COMPOSE_DEV) exec postgres psql -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-service_backend}
+	$(APP_RUNTIME_ENV_FILE_ARG) docker compose $(COMPOSE_ENV_FILE_ARG) $(DOCKER_COMPOSE_APP) exec postgres psql -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-service_backend}
+	# APP_RUNTIME_ENV_FILE=.env.development.example docker compose --env-file .env.development.example -f docker-compose.yml -f docker-compose.dev.yml exec postgres psql -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-service_backend}

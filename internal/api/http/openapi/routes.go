@@ -25,11 +25,29 @@ func handleSwaggerUI(c *fiber.Ctx) error {
     </style>
   </head>
   <body>
-    <script
-      id="api-reference"
-      data-url="/swagger/openapi3.yaml"
-      data-configuration='{"theme":"blue","layout":"modern","showSidebar":true,"persistAuth":true,"defaultOpenAllTags":false}'></script>
+    <div id="api-reference"></div>
     <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.28.5"></script>
+    <script>
+      Scalar.createApiReference('#api-reference', {
+        url: '/swagger/openapi3.yaml',
+        theme: 'blue',
+        layout: 'modern',
+        showSidebar: true,
+        persistAuth: true,
+        defaultOpenAllTags: false,
+        authentication: {
+          // Scoped operations require both the user token and workspace header.
+          preferredSecurityScheme: [['BearerAuth', 'WorkspaceAuth']],
+          securitySchemes: {
+            WorkspaceAuth: {
+              name: 'X-Endge-Workspace',
+              in: 'header',
+              value: 'demo-workspace',
+            },
+          },
+        },
+      })
+    </script>
   </body>
 </html>`)
 }

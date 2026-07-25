@@ -6,6 +6,7 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
@@ -68,7 +69,7 @@ func TestCreateRejectsFolderWithWrongEntityType(t *testing.T) {
 }
 
 func newDataViewServiceForTest(project *entities.RProject, folders *dataViewFoldersRepositoryStub, queries *dataViewQueriesRepositoryStub, dataViews *dataViewsRepositoryStub) *DataView {
-	return NewDataViewService(DataViewParams{ProjectRepository: &dataViewProjectsRepositoryStub{project: project}, FolderRepository: folders, QueryRepository: queries, DataViewRepository: dataViews, Tracer: otel.Tracer("data-views-test"), Logger: zap.NewNop()})
+	return NewDataViewService(DataViewParams{ProjectRepository: &dataViewProjectsRepositoryStub{project: project}, FolderRepository: folders, QueryRepository: queries, DataViewRepository: dataViews, Observability: observability.NewCore(otel.Tracer("data-views-test"), zap.NewNop())})
 }
 
 type dataViewProjectsRepositoryStub struct {

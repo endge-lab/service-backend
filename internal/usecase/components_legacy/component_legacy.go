@@ -6,9 +6,9 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -18,15 +18,14 @@ type ComponentLegacy struct {
 	componentRepository ports.ComponentsLegacyRepository
 	folderRepository    ports.FoldersRepository
 	projectRepository   ports.ProjectsRepository
-	observed            shared.ObservedUseCase
+	observer            observability.Observer
 }
 
 type ComponentLegacyParams struct {
 	ComponentLegacyRepository ports.ComponentsLegacyRepository
 	FolderRepository          ports.FoldersRepository
 	ProjectRepository         ports.ProjectsRepository
-	Tracer                    trace.Tracer
-	Logger                    *zap.Logger
+	Observability             *observability.Core
 	Metrics                   *shared.UseCaseMetrics
 }
 
@@ -35,7 +34,7 @@ func NewComponentLegacyService(params ComponentLegacyParams) *ComponentLegacy {
 		componentRepository: params.ComponentLegacyRepository,
 		folderRepository:    params.FolderRepository,
 		projectRepository:   params.ProjectRepository,
-		observed:            shared.NewObservedUseCase(params.Tracer, params.Logger, params.Metrics),
+		observer:            params.Observability.For(observability.LayerUseCase, "components_legacy_usecase").WithRecorder(params.Metrics),
 	}
 }
 
@@ -59,13 +58,14 @@ func (c *ComponentLegacy) Create(ctx context.Context, input CreateComponentLegac
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
 
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateCreateInput(&input); err != nil {
 		logOperationError(observed.Logger(), op, err)
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "component create input validated", nil, zap.String("project_identity", input.ProjectIdentity), zap.String("component_identity", input.Identity))
 
 	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
@@ -74,6 +74,7 @@ func (c *ComponentLegacy) Create(ctx context.Context, input CreateComponentLegac
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for component create", nil, zap.String("project_id", project.ID.String()))
 
 	folder, err := c.resolveFolder(ctx, project.ID, input.FolderIdentity)
 	if err != nil {
@@ -83,6 +84,7 @@ func (c *ComponentLegacy) Create(ctx context.Context, input CreateComponentLegac
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".folder_resolved", "folder resolved for component create", nil, zap.String("folder_id", folder.ID.String()), zap.String("folder_identity", folder.Identity))
 
 	exists, err := c.componentRepository.ExistsByIdentity(
 		ctx,
@@ -106,8 +108,10 @@ func (c *ComponentLegacy) Create(ctx context.Context, input CreateComponentLegac
 			zap.String("component_identity", input.Identity))
 		return nil, err
 	}
+	observed.RecordStep(op+".identity_available", "component identity availability confirmed", nil, zap.String("component_identity", input.Identity))
 
 	component := &entities.RComponentLegacy{
+		WorkspaceID:   project.WorkspaceID,
 		ProjectID:     project.ID,
 		FolderID:      folder.ID,
 		Identity:      input.Identity,
@@ -130,7 +134,7 @@ func (c *ComponentLegacy) Create(ctx context.Context, input CreateComponentLegac
 		)
 		return nil, err
 	}
-	observed.Logger().Debug("component created",
+	observed.RecordStep(op+".persisted", "component created", nil,
 		zap.String("component_id", componentResult.ID.String()),
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("component_identity", componentResult.Identity),
@@ -162,13 +166,14 @@ func (c *ComponentLegacy) Update(ctx context.Context, input UpdateComponentLegac
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
 
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateUpdateInput(&input); err != nil {
 		logOperationError(observed.Logger(), op, err)
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "component update input validated", nil, zap.String("project_identity", input.ProjectIdentity), zap.String("component_identity", input.ComponentLegacyIdentity))
 
 	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
@@ -177,6 +182,7 @@ func (c *ComponentLegacy) Update(ctx context.Context, input UpdateComponentLegac
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for component update", nil, zap.String("project_id", project.ID.String()))
 
 	current, err := c.componentRepository.GetByIdentity(ctx, project.ID, input.ComponentLegacyIdentity)
 	if err != nil {
@@ -185,6 +191,7 @@ func (c *ComponentLegacy) Update(ctx context.Context, input UpdateComponentLegac
 			zap.String("component_identity", input.ComponentLegacyIdentity))
 		return nil, err
 	}
+	observed.RecordStep(op+".current_resolved", "component resolved for update", nil, zap.String("component_id", current.ID.String()), zap.String("component_identity", current.Identity))
 
 	folder, err := c.resolveFolder(ctx, project.ID, input.FolderIdentity)
 	if err != nil {
@@ -195,9 +202,11 @@ func (c *ComponentLegacy) Update(ctx context.Context, input UpdateComponentLegac
 
 		return nil, err
 	}
+	observed.RecordStep(op+".folder_resolved", "folder resolved for component update", nil, zap.String("folder_id", folder.ID.String()), zap.String("folder_identity", folder.Identity))
 
 	updated := &entities.RComponentLegacy{
 		ID:            current.ID,
+		WorkspaceID:   current.WorkspaceID,
 		ProjectID:     current.ProjectID,
 		FolderID:      folder.ID,
 		Identity:      current.Identity,
@@ -223,7 +232,7 @@ func (c *ComponentLegacy) Update(ctx context.Context, input UpdateComponentLegac
 		)
 		return nil, err
 	}
-	observed.Logger().Debug("component updated",
+	observed.RecordStep(op+".persisted", "component updated", nil,
 		zap.String("component_id", componentResult.ID.String()),
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("component_identity", componentResult.Identity),
@@ -258,7 +267,7 @@ func (c *ComponentLegacy) GetByIdentity(
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
 
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateIdentityInput(
@@ -268,6 +277,8 @@ func (c *ComponentLegacy) GetByIdentity(
 		logOperationError(observed.Logger(), op, err)
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "component identity input validated", nil,
+		zap.String("project_identity", input.ProjectIdentity), zap.String("component_identity", input.ComponentLegacyIdentity))
 
 	project, err := c.projectRepository.GetByIdentity(
 		ctx,
@@ -279,6 +290,8 @@ func (c *ComponentLegacy) GetByIdentity(
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for component retrieval", nil,
+		zap.String("project_id", project.ID.String()), zap.String("project_identity", project.Identity))
 
 	component, err := c.componentRepository.GetByIdentity(
 		ctx,
@@ -292,6 +305,8 @@ func (c *ComponentLegacy) GetByIdentity(
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".current_resolved", "component resolved for retrieval", nil,
+		zap.String("component_id", component.ID.String()), zap.String("component_identity", component.Identity))
 
 	folder, err := c.folderRepository.GetByID(ctx, component.FolderID)
 	if err != nil {
@@ -308,7 +323,9 @@ func (c *ComponentLegacy) GetByIdentity(
 		)
 		return nil, relationErr
 	}
-	observed.Logger().Debug("component retrieved",
+	observed.RecordStep(op+".folder_resolved", "component folder resolved for retrieval", nil,
+		zap.String("folder_id", folder.ID.String()), zap.String("folder_identity", folder.Identity))
+	observed.RecordStep(op+".result_loaded", "component retrieved", nil,
 		zap.String("component_id", component.ID.String()),
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("component_identity", component.Identity),
@@ -338,7 +355,7 @@ func (c *ComponentLegacy) List(ctx context.Context, input ListComponentsLegacyIn
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
 
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateListInput(
@@ -351,6 +368,10 @@ func (c *ComponentLegacy) List(ctx context.Context, input ListComponentsLegacyIn
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".input_validated", "component list input validated", nil,
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("folder_identity", dereferenceString(input.FolderIdentity)),
+		zap.String("component_type", dereferenceComponentType(input.ComponentType)))
 
 	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
@@ -359,6 +380,8 @@ func (c *ComponentLegacy) List(ctx context.Context, input ListComponentsLegacyIn
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for component list", nil,
+		zap.String("project_id", project.ID.String()), zap.String("project_identity", project.Identity))
 
 	filter := ports.ComponentsLegacyFilter{
 		ProjectID:     project.ID,
@@ -373,6 +396,8 @@ func (c *ComponentLegacy) List(ctx context.Context, input ListComponentsLegacyIn
 		)
 		return nil, err
 	}
+	observed.RecordStep(op+".folder_filter_resolved", "component folder filter resolved", nil,
+		zap.String("folder_identity", dereferenceString(input.FolderIdentity)))
 
 	components, err := c.componentRepository.List(ctx, filter)
 	if err != nil {
@@ -381,7 +406,7 @@ func (c *ComponentLegacy) List(ctx context.Context, input ListComponentsLegacyIn
 		return nil, err
 	}
 	if len(components) == 0 {
-		observed.Logger().Debug("components listed",
+		observed.RecordStep(op+".result_loaded", "components listed", nil,
 			zap.String("project_identity", input.ProjectIdentity),
 			zap.String("folder_identity", dereferenceString(input.FolderIdentity)),
 			zap.Int("count", 0),
@@ -412,7 +437,7 @@ func (c *ComponentLegacy) List(ctx context.Context, input ListComponentsLegacyIn
 		logOperationError(observed.Logger(), op, err, fields...)
 		return nil, err
 	}
-	observed.Logger().Debug("components listed",
+	observed.RecordStep(op+".result_loaded", "components listed", nil,
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("folder_identity", dereferenceString(input.FolderIdentity)),
 		zap.Int("count", len(result)),
@@ -438,8 +463,10 @@ func (c *ComponentLegacy) SoftDelete(ctx context.Context, input ComponentLegacyI
 	const op = "component.soft_delete"
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
+	observed.RecordStep(op+".input_received", "component state change input received", nil,
+		zap.String("project_identity", input.ProjectIdentity), zap.String("component_identity", input.ComponentLegacyIdentity))
 
 	component, err := c.resolveComponentLegacy(ctx, input, false)
 	if err != nil {
@@ -449,6 +476,8 @@ func (c *ComponentLegacy) SoftDelete(ctx context.Context, input ComponentLegacyI
 		)
 		return err
 	}
+	observed.RecordStep(op+".current_resolved", "component resolved for soft delete", nil,
+		zap.String("component_id", component.ID.String()), zap.String("component_identity", component.Identity))
 	if err = c.componentRepository.SoftDelete(ctx, component.ID); err != nil {
 		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
@@ -457,7 +486,7 @@ func (c *ComponentLegacy) SoftDelete(ctx context.Context, input ComponentLegacyI
 		)
 		return err
 	}
-	observed.Logger().Debug("component soft deleted",
+	observed.RecordStep(op+".persisted", "component soft deleted", nil,
 		zap.String("component_id", component.ID.String()),
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("component_identity", component.Identity),
@@ -482,8 +511,10 @@ func (c *ComponentLegacy) Restore(ctx context.Context, input ComponentLegacyIden
 	const op = "component.restore"
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
+	observed.RecordStep(op+".input_received", "component state change input received", nil,
+		zap.String("project_identity", input.ProjectIdentity), zap.String("component_identity", input.ComponentLegacyIdentity))
 
 	component, err := c.resolveComponentLegacy(ctx, input, true)
 	if err != nil {
@@ -493,6 +524,8 @@ func (c *ComponentLegacy) Restore(ctx context.Context, input ComponentLegacyIden
 		)
 		return err
 	}
+	observed.RecordStep(op+".current_resolved", "deleted component resolved for restore", nil,
+		zap.String("component_id", component.ID.String()), zap.String("component_identity", component.Identity))
 	if err = c.componentRepository.Restore(ctx, component.ID); err != nil {
 		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
@@ -501,7 +534,7 @@ func (c *ComponentLegacy) Restore(ctx context.Context, input ComponentLegacyIden
 		)
 		return err
 	}
-	observed.Logger().Debug("component restored",
+	observed.RecordStep(op+".persisted", "component restored", nil,
 		zap.String("component_id", component.ID.String()),
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("component_identity", component.Identity),
@@ -526,8 +559,10 @@ func (c *ComponentLegacy) HardDelete(ctx context.Context, input ComponentLegacyI
 	const op = "component.hard_delete"
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
+	observed.RecordStep(op+".input_received", "component state change input received", nil,
+		zap.String("project_identity", input.ProjectIdentity), zap.String("component_identity", input.ComponentLegacyIdentity))
 
 	component, err := c.resolveComponentLegacy(ctx, input, true)
 	if err != nil {
@@ -537,6 +572,8 @@ func (c *ComponentLegacy) HardDelete(ctx context.Context, input ComponentLegacyI
 		)
 		return err
 	}
+	observed.RecordStep(op+".current_resolved", "deleted component resolved for hard delete", nil,
+		zap.String("component_id", component.ID.String()), zap.String("component_identity", component.Identity))
 	if err = c.componentRepository.HardDelete(ctx, component.ID); err != nil {
 		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
@@ -545,7 +582,7 @@ func (c *ComponentLegacy) HardDelete(ctx context.Context, input ComponentLegacyI
 		)
 		return err
 	}
-	observed.Logger().Debug("component hard deleted",
+	observed.RecordStep(op+".persisted", "component hard deleted", nil,
 		zap.String("component_id", component.ID.String()),
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("component_identity", component.Identity),
@@ -570,7 +607,7 @@ func (c *ComponentLegacy) Count(ctx context.Context, input ListComponentsLegacyI
 	const op = "component.count"
 	ctx, cancel := context.WithTimeout(ctx, componentOperationTimeout)
 	defer cancel()
-	ctx, observed := c.observed.StartObservedOperation(ctx, op, nil, nil)
+	ctx, observed := c.observer.Start(ctx, op, nil, nil)
 	defer observed.End(&err)
 
 	if err = normalizeAndValidateListInput(&input.ProjectIdentity, input.FolderIdentity, input.ComponentType); err != nil {
@@ -579,6 +616,10 @@ func (c *ComponentLegacy) Count(ctx context.Context, input ListComponentsLegacyI
 		)
 		return 0, err
 	}
+	observed.RecordStep(op+".input_validated", "component count input validated", nil,
+		zap.String("project_identity", input.ProjectIdentity),
+		zap.String("folder_identity", dereferenceString(input.FolderIdentity)),
+		zap.String("component_type", dereferenceComponentType(input.ComponentType)))
 	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -586,6 +627,8 @@ func (c *ComponentLegacy) Count(ctx context.Context, input ListComponentsLegacyI
 		)
 		return 0, err
 	}
+	observed.RecordStep(op+".project_resolved", "project resolved for component count", nil,
+		zap.String("project_id", project.ID.String()), zap.String("project_identity", project.Identity))
 	filter := ports.ComponentsLegacyFilter{ProjectID: project.ID, ComponentType: input.ComponentType}
 	filter.FolderID, err = c.resolveFolderID(ctx, project.ID, input.FolderIdentity)
 	if err != nil {
@@ -595,6 +638,8 @@ func (c *ComponentLegacy) Count(ctx context.Context, input ListComponentsLegacyI
 		)
 		return 0, err
 	}
+	observed.RecordStep(op+".folder_filter_resolved", "component folder filter resolved", nil,
+		zap.String("folder_identity", dereferenceString(input.FolderIdentity)))
 	count, err = c.componentRepository.Count(ctx, filter)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
@@ -602,7 +647,7 @@ func (c *ComponentLegacy) Count(ctx context.Context, input ListComponentsLegacyI
 		)
 		return 0, err
 	}
-	observed.Logger().Debug("components counted",
+	observed.RecordStep(op+".result_loaded", "components counted", nil,
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("folder_identity", dereferenceString(input.FolderIdentity)),
 		zap.Int64("count", count),

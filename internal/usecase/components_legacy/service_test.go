@@ -6,6 +6,7 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
@@ -136,8 +137,7 @@ func newComponentLegacyServiceForTest(
 		ProjectRepository:         &componentProjectRepositoryStub{project: project},
 		FolderRepository:          folders,
 		ComponentLegacyRepository: components,
-		Tracer:                    otel.Tracer("components-test"),
-		Logger:                    zap.NewNop(),
+		Observability:             observability.NewCore(otel.Tracer("components-test"), zap.NewNop()),
 	})
 }
 

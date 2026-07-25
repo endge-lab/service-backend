@@ -1,7 +1,10 @@
 // Package session implements the unversioned HTTP session adapter.
 package session
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/endge-lab/service-backend/internal/api/http/middleware"
+	"github.com/gofiber/fiber/v2"
+)
 
 type SHandler interface {
 	SessionHandler
@@ -9,9 +12,8 @@ type SHandler interface {
 
 type SessionHandler interface {
 	LoadSession(c *fiber.Ctx) error
-	TraceMiddleware(spanName string) fiber.Handler
 }
 
 func RegisterRoutes(api fiber.Router, handler SHandler) {
-	api.Get("/session/me", handler.TraceMiddleware("handler.load_session"), handler.LoadSession)
+	api.Get("/session/me", middleware.TraceMiddleware("handler.load_session"), handler.LoadSession)
 }

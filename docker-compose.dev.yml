@@ -1,15 +1,13 @@
 services:
-  app:
+  # Development override for the service declared in docker-compose.yml.
+  # It intentionally does not define Grafana or a second backend service.
+  service-backend:
     build:
       context: .
       dockerfile: Dockerfile.dev
-
-    container_name: service-backend
-
     volumes:
       - .:/app
       - go-mod-cache:/go/pkg/mod
-
     environment:
       APP_ENV: development
       POSTGRES_HOST: postgres
@@ -21,32 +19,26 @@ services:
       POSTGRES_SCHEMA: public
       POSTGRES_SSLMODE: disable
       POSTGRES_MIGRATIONS_ENABLED: true
-
-    ports:
-      - "8080:8080"
-
+      # Metrics are exposed to Prometheus through the observability network.
+      METRICS_ENABLED: "true"
     depends_on:
       postgres:
         condition: service_healthy
-
-    restart: unless-stopped
+    networks: !override
+      - default
+      - observability
 
   postgres:
     image: postgres:17-alpine
-
     container_name: service-postgres
-
     environment:
       POSTGRES_DB: service_backend
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-
     ports:
       - "5432:5432"
-
     volumes:
       - postgres-data:/var/lib/postgresql/data
-
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d service_backend"]
       interval: 5s
@@ -56,3 +48,8 @@ services:
 volumes:
   postgres-data:
   go-mod-cache:
+
+networks:
+  observability:
+    external: true
+    name: ${OBSERVABILITY_NETWORK:-service-observability}

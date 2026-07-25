@@ -7,8 +7,8 @@ import (
 )
 
 type CreateProjectRequest struct {
-	Identity    string         `json:"identity" validate:"required,min=1,max=160" example:"demo-project"`
-	DisplayName string         `json:"displayName" validate:"required,min=1,max=255" example:"Demo Project"`
+	Identity    string         `json:"identity" validate:"required,min=1,max=160" example:"example-project"`
+	DisplayName string         `json:"displayName" validate:"required,min=1,max=255" example:"Example Project"`
 	Description *string        `json:"description" example:"Project for local configuration"`
 	Active      bool           `json:"active" example:"true"`
 	Meta        map[string]any `json:"meta" swaggertype:"object"`

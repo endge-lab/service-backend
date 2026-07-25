@@ -11,7 +11,6 @@ import (
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
 )
 
 func TestFolderHandlers(t *testing.T) {
@@ -27,7 +26,6 @@ func TestFolderHandlers(t *testing.T) {
 	handler := &Handler{
 		folderService: service,
 		validator:     appvalidator.NewValidator(),
-		logger:        zap.NewNop(),
 	}
 	app := fiber.New()
 	folders := app.Group("/api/v1/projects/:project_identity/folders")

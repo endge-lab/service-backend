@@ -1,231 +1,111 @@
-# 04. Workspaces Foundation
+# 04. Workspaces Foundation — progress
 
-## Цель
+Статус: в работе.
 
-Реализовать `RWorkspace` как корневой организационный scope домена: migration, entity, repository, usecase и HTTP API.
+## Выполнено
 
-Workspace хранит полную исходную `EndgeConfiguration`. Это единственный из четырёх configuration layers, который не является patch. Project, Environment и Tenant хранят собственные `EndgeConfigurationContribution` и уточняют либо полностью заменяют результат предыдущего слоя.
+### Пункт 1 — анализ задания
 
-На текущем этапе backend открытый: authentication, users, memberships и роли не реализовывать. Все клиенты имеют полный доступ ко всем workspace.
+- Сверены задание, текущая схема, SQLC-контракты и структура слоёв.
+- Выявлены все реализованные workspace-scoped таблицы и зависимость старых
+  repository от появления `workspace_id`.
+- Согласовано: workspace scope существующих API будет передаваться через
+  request context; позднее задача 05 централизует это middleware.
 
-## Таблица `workspaces`
+### Пункт 2 — таблицы, SQLC и доменный контракт
 
-```sql
-CREATE TABLE workspaces (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  identity TEXT NOT NULL UNIQUE,
-  display_name TEXT NOT NULL,
-  configuration JSONB NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CHECK (btrim(identity) <> ''),
-  CHECK (btrim(display_name) <> ''),
-  CHECK (jsonb_typeof(configuration) = 'object')
-);
-```
+- Реализована таблица `workspaces` с полной nested `configuration JSONB`.
+- В 13 реализованных workspace-scoped таблиц добавлен `workspace_id NOT NULL`.
+- Identity uniqueness перенесена в scope workspace.
+- Добавлены Workspace SQLC CRUD-запросы и generated-код.
+- Добавлены `RWorkspace`, `EndgeConfiguration`, system default и
+  `WorkspacesRepository` port.
+- Миграции успешно применены на изолированной чистой PostgreSQL-БД; временная
+  тестовая БД затем удалена.
 
-Не раскладывать `vars`, locales, themes, SSE и adapter settings по отдельным колонкам. Persisted contract и frontend contract должны иметь одну nested-структуру `configuration`.
+### Пункт 3 — PostgreSQL repository
 
-## Полная `EndgeConfiguration`
+- Реализован `WorkspacesRepository` с `Create`, `List`, `GetByIdentity` и
+  `Update`; repository подключён в Fx.
+- Добавлены отдельные JSONB mappers Workspace с явной обработкой ошибок
+  сериализации и десериализации.
+- `sse.manualToken` не добавляется в repository-логи и trace fields.
+- Существующие mappers и SQLC create-контракты workspace-scoped сущностей
+  передают `workspace_id`; Project identity-операции берут scope из context.
+- Добавлен типизированный helper для передачи разрешённого workspace UUID через
+  `context.Context`; handler подключит его на последующем HTTP-пункте.
+- Проверки успешно пройдены: `go test ./internal/repo/postgres`, `go test ./...`,
+  `go vet ./...`, `git diff --check`.
 
-```json
-{
-  "vars": [],
-  "locales": [
-    {
-      "code": "ru",
-      "displayName": "Русский",
-      "shortLabel": "RU",
-      "direction": "ltr"
-    },
-    {
-      "code": "en",
-      "displayName": "English",
-      "shortLabel": "EN",
-      "direction": "ltr"
-    }
-  ],
-  "defaultLocale": "ru",
-  "fallbackLocale": "ru",
-  "themes": [
-    { "identity": "light", "displayName": "Светлая" },
-    { "identity": "dark", "displayName": "Тёмная" }
-  ],
-  "defaultTheme": "light",
-  "defaultAuthProfileIdentity": null,
-  "sfcAdapterIds": ["vue-native"],
-  "defaultSfcAdapterId": "vue-native"
-}
-```
+### Пункт 4 — usecase/service слой
 
-Это одновременно default для новой записи. Поле `sse` optional и при отсутствии настройки не включается в JSON:
+- Реализован `Workspace` usecase с `Create`, `List`, `GetByIdentity`, `Update`.
+- Create подставляет system default, если configuration не передана.
+- Валидация проверяет arrays, uniqueness, default locale/theme/adapter и правила
+  optional SSE; configuration при update заменяется целиком без JSON merge.
+- Workspace usecase подключён в Fx.
+- Project Create требует resolved workspace scope из context и передаёт его в
+  Project и создаваемые system root folders.
+- Публичные Workspace repository и usecase-методы документируют полный flow:
+  вход, валидацию/маппинг, действия, результат и доменные ошибки.
+- Обновлены тесты Project Create для явной проверки workspace scope.
+- Проверки успешно пройдены: `go test ./...`, `go vet ./...`, `git diff --check`.
 
-```json
-{
-  "sse": {
-    "url": "{ENDPOINT_SSE}",
-    "authMode": "inherit",
-    "authProfileIdentity": null,
-    "manualToken": null
-  }
-}
-```
+### Пункт 5 — HTTP handler и workspace scope
 
-Допустимые значения:
+Статус: завершён.
 
-```text
-locales[].direction: ltr | rtl
-sse.authMode: inherit | profile | manual | none
-```
+#### Уже сделано
 
-Usecase обязан проверять:
+- Создан `internal/api/http/v1/workspace` с HTTP-контрактом, handler, DTO и
+  routes.
+- Добавлены четыре endpoint: list, create, get by identity и patch.
+- Handler использует bind, HTTP validation, mapping, usecase и
+  `respond.RespondDomainError`; бизнес-логика в него не добавлена.
+- Обычные Workspace responses redacted: `sse.manualToken` не возвращается.
+- Handler и маршруты подключены в Fx и `SetupRoutes`.
+- Проверка bootstrap dependency graph проходит.
 
-- `vars`, `locales`, `themes`, `sfcAdapterIds` являются arrays;
-- `locales`, `themes` и `sfcAdapterIds` не пустые;
-- `vars[].name`, `locales[].code`, `themes[].identity` и элементы `sfcAdapterIds` непустые и уникальные внутри массива;
-- `defaultLocale` и `fallbackLocale` входят в `locales[].code`;
-- `defaultTheme` входит в `themes[].identity`;
-- `defaultSfcAdapterId` входит в `sfcAdapterIds`;
-- `defaultAuthProfileIdentity` и `sse.authProfileIdentity` имеют значение `string | null`;
-- при `sse.authMode=profile` указан `sse.authProfileIdentity`;
-- при `sse.authMode=manual` значение `manualToken` обрабатывается как secret.
+#### Завершение после возврата к пункту 5
 
-После задачи `18-auth-profiles-foundation` auth profile identities валидируются внутри текущего workspace. В portable configuration сохраняется стабильный identity, а не UUID relation из конкретной БД.
+1. Выполнено: реализован минимальный workspace-context middleware:
+   - прочитать `X-Endge-Workspace`;
+   - разрешить workspace identity в UUID;
+   - передать UUID далее через `entities.WithWorkspaceID`;
+   - не логировать configuration и secret-поля.
 
-`sse.manualToken` нельзя логировать, добавлять в traces/errors или включать в portable/debug dump. Если backend поддерживает encryption at rest, сохранять secret через этот механизм.
+2. Выполнено: middleware подключён к workspace-scoped routes: Projects,
+   Folders, Components Legacy, Converters, Queries и Data Views. Workspace API
+   не должен требовать этот header.
 
-## Configuration cascade
+3. Выполнено: `docs/openapi3.yaml` содержит Workspace schemas: configuration,
+   locale, theme, SSE, create, patch, response и list; в описании endpoint
+   указана redaction `manualToken`.
 
-Backend должен использовать тот же порядок, что и frontend Core:
+4. Выполнено: добавлены подробные Swagger-комментарии над Workspace handler methods и
+   документацию flow handler-слоя.
 
-```text
-Workspace.configuration
-  -> Project.configuration
-  -> Environment.configuration
-  -> Tenant.configuration
-  = effective EndgeConfiguration
-```
+5. Выполнено: добавлены middleware и handler tests; выполнены
+   `go test ./...`, `go vet ./...`, `git diff --check`.
 
-Эффективная конфигурация зависит от полного execution context и вычисляется при boot/build. Её нельзя сохранять в отдельную таблицу или обратно в любую из четырёх сущностей.
+### Пункт 6 — tests по acceptance criteria
 
-Workspace, Project, Environment и Tenant не образуют жёсткую parent chain через foreign keys друг на друга. Project и Environment могут использоваться в разных execution contexts. Все три дочерних слоя принадлежат Workspace, а конкретное сочетание выбирается при запуске.
+Статус: завершён.
 
-## Связь с доменом
-
-- добавить `workspace_id UUID NOT NULL REFERENCES workspaces(id)` в `projects`, `environments`, `tenants`, `folders` и остальные workspace-scoped таблицы;
-- uniqueness стабильных identities задавать внутри workspace, если отдельная задача не требует глобальной уникальности;
-- нельзя доверять `workspaceId` или `workspaceIdentity` из body доменных документов: scope приходит из request context;
-- не добавлять `tenant_id`, `project_id` или `environment_id` в сущность только ради configuration resolution;
-- правила внешних ключей, dependency validation и portable import реализуются по задаче `07-domain-relations-and-portable-import`.
-
-## Entity и usecase
-
-Создать `RWorkspace` и port:
-
-```text
-WorkspacesRepository
-```
-
-Минимальные operations:
-
-```text
-Create(input) -> workspace
-List() -> workspaces
-GetByIdentity(identity) -> workspace
-Update(identity, patch) -> workspace
-```
-
-Update является partial update верхнего уровня. `identity`, `id` и `createdAt` неизменяемы. Если передано поле `configuration`, оно заменяет полную root configuration и проходит полную validation. Частичный JSON merge внутри `configuration` не выполнять.
-
-Удаление workspace в этой задаче не реализовывать: сначала должна быть определена cascade/archive policy для всего домена.
-
-## HTTP API
-
-Эти endpoints не требуют `X-Endge-Workspace`, потому что они выбирают или создают сам workspace.
-
-```text
-GET   /api/v1/workspaces
-POST  /api/v1/workspaces
-GET   /api/v1/workspaces/:workspace_identity
-PATCH /api/v1/workspaces/:workspace_identity
-```
-
-Create request:
-
-```json
-{
-  "identity": "default",
-  "displayName": "Default workspace",
-  "configuration": {
-    "vars": [],
-    "locales": [
-      { "code": "ru", "displayName": "Русский", "shortLabel": "RU", "direction": "ltr" },
-      { "code": "en", "displayName": "English", "shortLabel": "EN", "direction": "ltr" }
-    ],
-    "defaultLocale": "ru",
-    "fallbackLocale": "ru",
-    "themes": [
-      { "identity": "light", "displayName": "Светлая" },
-      { "identity": "dark", "displayName": "Тёмная" }
-    ],
-    "defaultTheme": "light",
-    "defaultAuthProfileIdentity": null,
-    "sfcAdapterIds": ["vue-native"],
-    "defaultSfcAdapterId": "vue-native"
-  }
-}
-```
-
-Поле `configuration` можно не передавать при create: backend обязан поставить system default выше.
-
-Response:
-
-```json
-{
-  "id": "00000000-0000-4000-8000-000000000001",
-  "identity": "default",
-  "displayName": "Default workspace",
-  "configuration": {
-    "vars": [],
-    "locales": [
-      { "code": "ru", "displayName": "Русский", "shortLabel": "RU", "direction": "ltr" },
-      { "code": "en", "displayName": "English", "shortLabel": "EN", "direction": "ltr" }
-    ],
-    "defaultLocale": "ru",
-    "fallbackLocale": "ru",
-    "themes": [
-      { "identity": "light", "displayName": "Светлая" },
-      { "identity": "dark", "displayName": "Тёмная" }
-    ],
-    "defaultTheme": "light",
-    "defaultAuthProfileIdentity": null,
-    "sfcAdapterIds": ["vue-native"],
-    "defaultSfcAdapterId": "vue-native"
-  },
-  "createdAt": "2026-07-16T10:00:00Z",
-  "updatedAt": "2026-07-16T10:00:00Z"
-}
-```
-
-`PATCH` принимает `displayName` и/или полную `configuration`. `sse.manualToken` в обычных responses должен быть redacted согласно общей secret policy.
-
-## Tests
-
-Минимально проверить:
-
-- create без `configuration` использует `ru/en`, `light/dark` и `light` по умолчанию;
-- nested configuration проходит repository round-trip без раскладывания по legacy columns;
-- locale, theme и adapter invariants;
-- optional SSE и secret redaction;
-- partial workspace update не выполняет скрытый merge внутри configuration;
-- duplicate workspace identity;
-- list/get/create/update HTTP scenarios.
-
-## Acceptance Criteria
-
-- migration создаёт одну nested `configuration JSONB`, без legacy columns `vars`, `locales`, `themes` и подобных;
-- default configuration содержит locales `ru/en`, themes `light/dark`, default locale `ru` и default theme `light`;
-- list/get возвращают все workspaces без проверки пользователя;
-- configuration invariants валидируются в domain/usecase layer;
-- project, environment и tenant остаются отдельными workspace-scoped layers;
-- есть repository/usecase/HTTP tests и проходит `go test ./...`.
+- Create без configuration проверен на system default locales ru/en, themes
+  light/dark и default locale/theme.
+- Проверены configuration invariant для default theme и полная replacement
+  configuration при update без JSON merge.
+- Проверен JSONB round-trip полной configuration и явная ошибка malformed JSONB.
+- Проверены обязательность `X-Endge-Workspace`, передача resolved UUID в context
+  и redaction `sse.manualToken` в HTTP response.
+- Добавлены HTTP CRUD tests Workspace для `POST`, `GET list`, `GET by identity`
+  и `PATCH`; они проверяют transport input и отсутствие secret в каждом обычном
+  response. Некорректный create request возвращает `validation_error` и HTTP 400.
+- Добавлена table-driven проверка uniqueness vars/locales/themes/adapters,
+  fallback locale, direction, default adapter и допустимых SSE auth modes.
+- Выполнен tagged integration test `WorkspacesRepository` на чистой временной
+  PostgreSQL-БД: накатывание всех миграций, `Create → Get → Update → List` и
+  конфликт duplicate identity. Временные container, volume и network удалены
+  после проверки.
+- Проверки успешно пройдены: `go test ./...`, `go vet ./...`, `git diff --check`.

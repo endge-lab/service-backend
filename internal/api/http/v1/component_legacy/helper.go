@@ -6,7 +6,6 @@ import (
 	respond "github.com/endge-lab/service-backend/internal/api/http/respond"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	"github.com/endge-lab/service-backend/internal/usecase/components_legacy"
-	servicefiber "github.com/endge-lab/service-kit-go/pkg/httpkit/fiber"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -48,12 +47,8 @@ func (h *Handler) change(c *fiber.Ctx, fn func(context.Context, components_legac
 		ProjectIdentity:         c.Params("project_identity"),
 		ComponentLegacyIdentity: c.Params("component_identity"),
 	}); err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
-}
-
-func (h *Handler) TraceMiddleware(spanName string) fiber.Handler {
-	return servicefiber.TraceMiddleware(h.tracer, h.logger, spanName)
 }

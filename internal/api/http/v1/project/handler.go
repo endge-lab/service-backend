@@ -1,12 +1,13 @@
 package project
 
 import (
+	httpobservability "github.com/endge-lab/service-backend/internal/api/http/observability"
 	respond "github.com/endge-lab/service-backend/internal/api/http/respond"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/projects"
 	"github.com/endge-lab/service-kit-go/pkg/logging"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -15,21 +16,20 @@ type ErrorResponse = respond.ErrorResponse
 type Handler struct {
 	projectService UseCase
 	validator      appvalidator.Validator
-	logger         *zap.Logger
-	tracer         trace.Tracer
+	observer       observability.Observer
 }
 
 func NewHandler(
 	service UseCase,
 	validator appvalidator.Validator,
-	logger *zap.Logger,
-	tracer trace.Tracer,
+	core *observability.Core,
+	metrics *httpobservability.HandlerMetrics,
 ) *Handler {
+	observer := core.For(observability.LayerHandler, "project_http_handler").WithRecorder(metrics)
 	return &Handler{
 		projectService: service,
 		validator:      validator,
-		logger:         logger.With(zap.String("component", "project_http_handler")),
-		tracer:         tracer,
+		observer:       observer,
 	}
 }
 
@@ -44,10 +44,11 @@ func NewHandler(
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 409 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects [post]
 func (h *Handler) CreateProject(c *fiber.Ctx) error {
-	logger := logging.WithContext(c.UserContext(), h.logger).With(zap.String("handler", "create_project"))
+	logger := logging.WithContext(c.UserContext(), h.observer.Logger()).With(zap.String("handler", "create_project"))
 
 	var request CreateProjectRequest
 	if err := c.BodyParser(&request); err != nil {
@@ -65,7 +66,7 @@ func (h *Handler) CreateProject(c *fiber.Ctx) error {
 		Meta:        request.Meta,
 	})
 	if err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	logger.Debug("create project handler completed", zap.String("project_id", project.ID.String()))
@@ -79,12 +80,13 @@ func (h *Handler) CreateProject(c *fiber.Ctx) error {
 // @Produce json
 // @Success 200 {object} ProjectsListResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects [get]
 func (h *Handler) ListProjects(c *fiber.Ctx) error {
 	projects, err := h.projectService.List(c.UserContext())
 	if err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(NewProjectsListResponse(projects))
@@ -100,12 +102,13 @@ func (h *Handler) ListProjects(c *fiber.Ctx) error {
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity} [get]
 func (h *Handler) GetProjectByIdentity(c *fiber.Ctx) error {
 	project, err := h.projectService.GetByIdentity(c.UserContext(), c.Params("project_identity"))
 	if err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(NewProjectResponse(project))
@@ -123,7 +126,8 @@ func (h *Handler) GetProjectByIdentity(c *fiber.Ctx) error {
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity} [patch]
 func (h *Handler) UpdateProject(c *fiber.Ctx) error {
 	var request UpdateProjectRequest
@@ -142,7 +146,7 @@ func (h *Handler) UpdateProject(c *fiber.Ctx) error {
 		Meta:        request.Meta,
 	})
 	if err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(NewProjectResponse(project))
@@ -157,11 +161,12 @@ func (h *Handler) UpdateProject(c *fiber.Ctx) error {
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity} [delete]
 func (h *Handler) SoftDeleteProject(c *fiber.Ctx) error {
 	if err := h.projectService.SoftDelete(c.UserContext(), c.Params("project_identity")); err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
@@ -171,16 +176,17 @@ func (h *Handler) SoftDeleteProject(c *fiber.Ctx) error {
 // @Summary Восстановить проект
 // @Description Восстанавливает soft-deleted проект по identity.
 // @Tags projects
-// @Param project_identity path string true "Project identity" example(demo-project)
+// @Param project_identity path string true "Project identity" example(restore-project)
 // @Success 204
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/restore [post]
 func (h *Handler) RestoreProject(c *fiber.Ctx) error {
 	if err := h.projectService.Restore(c.UserContext(), c.Params("project_identity")); err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
@@ -190,16 +196,17 @@ func (h *Handler) RestoreProject(c *fiber.Ctx) error {
 // @Summary Удалить проект физически
 // @Description Выполняет hard delete проекта по identity.
 // @Tags projects
-// @Param project_identity path string true "Project identity" example(demo-project)
+// @Param project_identity path string true "Project identity" example(hard-delete-project)
 // @Success 204
 // @Failure 400 {object} respond.ErrorResponse
 // @Failure 404 {object} respond.ErrorResponse
 // @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth
+// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
+// @Security BearerAuth && WorkspaceAuth
 // @Router /api/v1/projects/{project_identity}/hard [delete]
 func (h *Handler) HardDeleteProject(c *fiber.Ctx) error {
 	if err := h.projectService.HardDelete(c.UserContext(), c.Params("project_identity")); err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)

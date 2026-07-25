@@ -12,6 +12,7 @@ import (
 func RepositoryModules() fx.Option {
 	return fx.Options(
 		fx.Provide(
+			postgres.NewRepositoryMetrics,
 			func(db *pgxpool.Pool) *sqlc.Queries {
 				return sqlc.New(db)
 			},
@@ -22,6 +23,10 @@ func RepositoryModules() fx.Option {
 			fx.Annotate(
 				postgres.NewProjectsRepository,
 				fx.As(new(ports.ProjectsRepository)),
+			),
+			fx.Annotate(
+				postgres.NewWorkspacesRepository,
+				fx.As(new(ports.WorkspacesRepository)),
 			),
 			fx.Annotate(
 				postgres.NewFoldersRepository,

@@ -6,10 +6,14 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestConverterCreateAndUpdateReturnFolderIdentity(t *testing.T) {
@@ -53,6 +57,59 @@ func TestConverterCreateRejectsIdentityConflict(t *testing.T) {
 	})
 	if got := apperrors.CodeOf(err); got != "identity_conflict" {
 		t.Fatalf("error code = %q, want identity_conflict", got)
+	}
+}
+
+func TestConverterCreateRecordsBusinessSteps(t *testing.T) {
+	project := &entities.RProject{ID: uuid.New(), Identity: "demo"}
+	folder := &entities.RFolder{ID: uuid.New(), Identity: "root-converters"}
+	spanRecorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	defer func() { _ = provider.Shutdown(context.Background()) }()
+	logCore, logs := observer.New(zap.InfoLevel)
+	service := NewConverterService(ConverterParams{
+		ProjectRepository: &converterProjectRepositoryStub{project: project},
+		FolderRepository:  &foldersRepositoryStub{folder: folder},
+		ConverterRepository: &converterRepositoryTestStub{
+			createResult: &entities.RConverter{ID: uuid.New(), Identity: "date-format", FolderID: folder.ID},
+		},
+		Observability: observability.NewCore(provider.Tracer("converter-test"), zap.New(logCore)),
+	})
+
+	_, err := service.Create(context.Background(), CreateConverterInput{
+		ProjectIdentity: "demo",
+		FolderIdentity:  folder.Identity,
+		Identity:        "date-format",
+		DisplayName:     "Date format",
+		ConverterType:   "format",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ended := spanRecorder.Ended()
+	if len(ended) != 1 {
+		t.Fatalf("ended spans = %d, want 1", len(ended))
+	}
+	wantEvents := []string{
+		"converter.create.input_validated",
+		"converter.create.project_resolved",
+		"converter.create.folder_resolved",
+		"converter.create.identity_available",
+		"converter.create.persisted",
+		"converter.create.completed",
+	}
+	events := ended[0].Events()
+	if len(events) != len(wantEvents) {
+		t.Fatalf("events = %#v, want %v", events, wantEvents)
+	}
+	for index, want := range wantEvents {
+		if events[index].Name != want {
+			t.Fatalf("event[%d] = %q, want %q", index, events[index].Name, want)
+		}
+	}
+	if len(logs.FilterMessage("converter persisted").All()) != 1 {
+		t.Fatalf("persisted log entries = %#v, want one", logs.All())
 	}
 }
 
@@ -148,8 +205,7 @@ func newConverterServiceForTest(
 		ProjectRepository:   &converterProjectRepositoryStub{project: project},
 		FolderRepository:    folders,
 		ConverterRepository: converters,
-		Tracer:              otel.Tracer("converters-test"),
-		Logger:              zap.NewNop(),
+		Observability:       observability.NewCore(otel.Tracer("converters-test"), zap.NewNop()),
 	})
 }
 

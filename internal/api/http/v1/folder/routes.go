@@ -1,6 +1,9 @@
 package folder
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/endge-lab/service-backend/internal/api/http/middleware"
+	"github.com/gofiber/fiber/v2"
+)
 
 type FHandler interface {
 	FolderHandler
@@ -14,18 +17,17 @@ type FolderHandler interface {
 	SoftDeleteFolder(c *fiber.Ctx) error
 	RestoreFolder(c *fiber.Ctx) error
 	HardDeleteFolder(c *fiber.Ctx) error
-
-	TraceMiddleware(spanName string) fiber.Handler
 }
 
-func RegisterRoutes(api fiber.Router, handler FHandler) {
+func RegisterRoutes(api fiber.Router, handler FHandler, workspaceMiddleware *middleware.WorkspaceContextMiddleware) {
 	folders := api.Group("/v1/projects/:project_identity/folders")
+	folders.Use(workspaceMiddleware.RequireWorkspace())
 
-	folders.Post("/", handler.TraceMiddleware("handler.folder.create"), handler.CreateFolder)
-	folders.Get("/", handler.TraceMiddleware("handler.folder.list"), handler.ListFolders)
-	folders.Get("/:folder_identity", handler.TraceMiddleware("handler.folder.get_by_identity"), handler.GetFolderByIdentity)
-	folders.Patch("/:folder_identity", handler.TraceMiddleware("handler.folder.update"), handler.UpdateFolder)
-	folders.Delete("/:folder_identity", handler.TraceMiddleware("handler.folder.soft_delete"), handler.SoftDeleteFolder)
-	folders.Post("/:folder_identity/restore", handler.TraceMiddleware("handler.folder.restore"), handler.RestoreFolder)
-	folders.Delete("/:folder_identity/hard", handler.TraceMiddleware("handler.folder.hard_delete"), handler.HardDeleteFolder)
+	folders.Post("/", middleware.TraceMiddleware("handler.folder.create"), handler.CreateFolder)
+	folders.Get("/", middleware.TraceMiddleware("handler.folder.list"), handler.ListFolders)
+	folders.Get("/:folder_identity", middleware.TraceMiddleware("handler.folder.get_by_identity"), handler.GetFolderByIdentity)
+	folders.Patch("/:folder_identity", middleware.TraceMiddleware("handler.folder.update"), handler.UpdateFolder)
+	folders.Delete("/:folder_identity", middleware.TraceMiddleware("handler.folder.soft_delete"), handler.SoftDeleteFolder)
+	folders.Post("/:folder_identity/restore", middleware.TraceMiddleware("handler.folder.restore"), handler.RestoreFolder)
+	folders.Delete("/:folder_identity/hard", middleware.TraceMiddleware("handler.folder.hard_delete"), handler.HardDeleteFolder)
 }

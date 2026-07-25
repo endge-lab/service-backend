@@ -14,13 +14,12 @@ import (
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
 )
 
 func TestDataViewHandlers(t *testing.T) {
 	value := &data_views.DataViewWithRelations{DataView: &entities.RDataView{ID: uuid.New(), Identity: "users-table", ViewType: "pipeline", Source: map[string]any{}}, FolderIdentity: "root-data-views", QueryIdentity: "users-list"}
 	service := &dataViewServiceStub{value: value}
-	handler := &Handler{service: service, validator: appvalidator.NewValidator(), logger: zap.NewNop()}
+	handler := &Handler{service: service, validator: appvalidator.NewValidator()}
 	app := fiber.New()
 	routes := app.Group("/api/v1/projects/:project_identity/data-views")
 	routes.Post("/", handler.Create)
@@ -75,7 +74,7 @@ func TestDataViewHandlers(t *testing.T) {
 
 func TestDataViewHandlerValidationAndDomainErrors(t *testing.T) {
 	service := &dataViewServiceStub{value: &data_views.DataViewWithRelations{DataView: &entities.RDataView{}, FolderIdentity: "root-data-views", QueryIdentity: "users-list"}}
-	handler := &Handler{service: service, validator: appvalidator.NewValidator(), logger: zap.NewNop()}
+	handler := &Handler{service: service, validator: appvalidator.NewValidator()}
 	app := fiber.New()
 	app.Post("/data-views", handler.Create)
 	app.Get("/data-views/:data_view_identity", handler.GetByIdentity)

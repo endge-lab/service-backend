@@ -6,6 +6,7 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/mappers"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -22,17 +22,17 @@ type UserRepository struct {
 	*baseRepository
 }
 
-func NewUserRepository(queries *sqlc.Queries, tracer trace.Tracer, logger *zap.Logger) *UserRepository {
+func NewUserRepository(queries *sqlc.Queries, core *observability.Core, metrics *RepositoryMetrics) *UserRepository {
 	return &UserRepository{
-		baseRepository: newBaseRepository(queries, tracer, logger, "user"),
+		baseRepository: newBaseRepository(queries, core, metrics, "user"),
 	}
 }
 
 func (r *UserRepository) SyncUserFromIdentity(ctx context.Context, input ports.SyncUserInput) (user *entities.User, err error) {
 	ctx, step := telemetry.StartTrace(
 		ctx,
-		r.tracer,
-		r.logger,
+		r.observer.Tracer(),
+		r.observer.Logger(),
 		"repo.user.sync_from_identity",
 		attribute.String("repository", "user"),
 		attribute.String("auth.user_id", strings.TrimSpace(input.AuthUserID)),
@@ -41,7 +41,7 @@ func (r *UserRepository) SyncUserFromIdentity(ctx context.Context, input ports.S
 		step.End(err)
 	}()
 
-	logger := logging.WithContext(ctx, r.logger)
+	logger := logging.WithContext(ctx, r.observer.Logger())
 	authUserID := strings.TrimSpace(input.AuthUserID)
 	if authUserID == "" {
 		return nil, domainerrors.ErrAuthUserIDRequired

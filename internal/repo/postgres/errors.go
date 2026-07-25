@@ -40,11 +40,18 @@ type storageErrorMapping struct {
 
 var (
 	projectStorageErrorMapping = storageErrorMapping{
-		identityConstraintNames: []string{"projects_identity_unique"},
+		identityConstraintNames: []string{"projects_workspace_identity_unique", "projects_identity_unique"},
 		identityConflictMessage: "project identity already exists",
 		validationMessage:       "project data violates a constraint",
 		internalCode:            "internal_error",
 		internalStorageMessage:  "failed to create project",
+	}
+	workspaceStorageErrorMapping = storageErrorMapping{
+		identityConstraintNames: []string{"workspaces_identity_key"},
+		identityConflictMessage: "workspace identity already exists",
+		validationMessage:       "workspace data violates a constraint",
+		internalCode:            "internal_error",
+		internalStorageMessage:  "failed to save workspace",
 	}
 	componentLegacyStorageErrorMapping = storageErrorMapping{
 		identityConstraintNames: []string{"components_legacy_project_identity_unique"},

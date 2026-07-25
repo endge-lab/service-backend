@@ -2,8 +2,6 @@ package project
 
 import (
 	"github.com/endge-lab/service-backend/internal/domain/entities"
-	servicefiber "github.com/endge-lab/service-kit-go/pkg/httpkit/fiber"
-	"github.com/gofiber/fiber/v2"
 )
 
 func NewProjectResponse(project *entities.RProject) *ProjectResponse {
@@ -31,8 +29,4 @@ func NewProjectsListResponse(projects []*entities.RProject) ProjectsListResponse
 	}
 
 	return ProjectsListResponse{Items: items}
-}
-
-func (h *Handler) TraceMiddleware(spanName string) fiber.Handler {
-	return servicefiber.TraceMiddleware(h.tracer, h.logger, spanName)
 }

@@ -8,18 +8,18 @@ import (
 )
 
 type CreateFolderRequest struct {
-	EntityType     entities.FolderEntityType `json:"entityType" validate:"required" enums:"components-legacy,converters,queries,data-views" example:"components-legacy"`
-	Identity       string                    `json:"identity" validate:"required,min=1,max=160" example:"shared-components-legacy"`
-	DisplayName    string                    `json:"displayName" validate:"required,min=1,max=255" example:"Shared legacy components"`
+	EntityType     entities.FolderEntityType `json:"entityType" validate:"required,oneof=components-legacy converters queries data-views" enums:"components-legacy,converters,queries,data-views" example:"components-legacy"`
+	Identity       string                    `json:"identity" validate:"required,min=1,max=160" example:"example-components-folder"`
+	DisplayName    string                    `json:"displayName" validate:"required,min=1,max=255" example:"Example components folder"`
 	Description    *string                   `json:"description,omitempty" example:"Reusable components"`
-	ParentIdentity *string                   `json:"parentIdentity,omitempty" example:"root-components-legacy"`
+	ParentIdentity *string                   `json:"parentIdentity,omitempty" validate:"omitempty,min=1,max=160" example:"root-components-legacy"`
 	Meta           map[string]any            `json:"meta" swaggertype:"object"`
 }
 
 type UpdateFolderRequest struct {
 	DisplayName    string         `json:"displayName" validate:"required,min=1,max=255" example:"Shared legacy components"`
 	Description    *string        `json:"description,omitempty" example:"Reusable components"`
-	ParentIdentity *string        `json:"parentIdentity,omitempty" example:"root-components-legacy"`
+	ParentIdentity *string        `json:"parentIdentity,omitempty" validate:"omitempty,min=1,max=160" example:"root-components-legacy"`
 	Meta           map[string]any `json:"meta" swaggertype:"object"`
 }
 

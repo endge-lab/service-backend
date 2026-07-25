@@ -131,6 +131,7 @@ func TestDomainMigrationOrder(t *testing.T) {
 		"000019_init_converters.sql",
 		"000020_init_auth_profiles.sql",
 		"000021_init_navigations.sql",
+		"000022_seed_swagger_demo_data.sql",
 	}
 
 	entries, err := os.ReadDir(filepath.Join(root, "migrations"))

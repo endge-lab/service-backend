@@ -20,59 +20,76 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_session.SessionResponse"
+                $ref: "#/components/schemas/session.SessionResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_session.ErrorResponse"
+                $ref: "#/components/schemas/session.ErrorResponse"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_session.ErrorResponse"
+                $ref: "#/components/schemas/session.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_session.ErrorResponse"
+                $ref: "#/components/schemas/session.ErrorResponse"
   /api/v1/projects:
     get:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Возвращает список неудаленных проектов.
       tags:
         - projects
       summary: Список проектов
+      parameters:
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_project.ProjectsListResponse"
+                $ref: "#/components/schemas/project.ProjectsListResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     post:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Создает новый проект.
       tags:
         - projects
       summary: Создать проект
+      parameters:
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/internal_api_http_v1_project.CreateProjectRequest"
+              $ref: "#/components/schemas/project.CreateProjectRequest"
         description: Параметры проекта
         required: true
       responses:
@@ -81,32 +98,30 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_project.ProjectResponse"
+                $ref: "#/components/schemas/project.ProjectResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}":
     get:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Возвращает проект по identity.
       tags:
         - projects
@@ -119,37 +134,42 @@ paths:
           required: true
           schema:
             type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_project.ProjectResponse"
+                $ref: "#/components/schemas/project.ProjectResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     delete:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Выполняет soft delete проекта по identity.
       tags:
         - projects
@@ -162,6 +182,13 @@ paths:
           required: true
           schema:
             type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: No Content
@@ -170,25 +197,23 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     patch:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Обновляет проект по identity.
       tags:
         - projects
@@ -201,11 +226,18 @@ paths:
           required: true
           schema:
             type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/internal_api_http_v1_project.UpdateProjectRequest"
+              $ref: "#/components/schemas/project.UpdateProjectRequest"
         description: Параметры обновления проекта
         required: true
       responses:
@@ -214,32 +246,30 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_project.ProjectResponse"
+                $ref: "#/components/schemas/project.ProjectResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/components-legacy":
     get:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Возвращает неудаленные компоненты проекта с optional фильтрами
         папки и типа.
       tags:
@@ -253,51 +283,56 @@ paths:
           required: true
           schema:
             type: string
-        - example: root-components-legacy
+        - example: shared-components-legacy
           description: Folder identity
           name: folder_identity
           in: query
           schema:
             type: string
-        - description: Legacy component type
+        - example: component-sfc
+          description: Legacy component type
           name: component_type
           in: query
           schema:
             type: string
             enum:
               - component-sfc
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_component_legacy.ComponentsLeg\
-                  acyListResponse"
+                $ref: "#/components/schemas/component_legacy.ComponentsLegacyListResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     post:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Создает component-sfc в папке проекта. Source хранится как
         authoring source и не компилируется и не выполняется.
       tags:
@@ -311,12 +346,18 @@ paths:
           required: true
           schema:
             type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/internal_api_http_v1_component_legacy.CreateCompone\
-                ntLegacyRequest"
+              $ref: "#/components/schemas/component_legacy.CreateComponentLegacyRequest"
         description: Параметры компонента
         required: true
       responses:
@@ -325,40 +366,36 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_component_legacy.ComponentLega\
-                  cyResponse"
+                $ref: "#/components/schemas/component_legacy.ComponentLegacyResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/components-legacy/{component_identity}":
     get:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Возвращает активный компонент по identity в пределах проекта.
       tags:
         - components-legacy
@@ -378,52 +415,65 @@ paths:
           required: true
           schema:
             type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_component_legacy.ComponentLega\
-                  cyResponse"
+                $ref: "#/components/schemas/component_legacy.ComponentLegacyResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     delete:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Выполняет soft-delete компонента по identity.
       tags:
         - components-legacy
       summary: Удалить компонент
       parameters:
-        - description: Project identity
+        - example: demo-project
+          description: Project identity
           name: project_identity
           in: path
           required: true
           schema:
             type: string
-        - description: Legacy component identity
+        - example: user-card
+          description: Legacy component identity
           name: component_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -435,25 +485,23 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     patch:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Заменяет editable payload компонента, сохраняя id, identity,
         createdAt и deletedAt.
       tags:
@@ -474,12 +522,18 @@ paths:
           required: true
           schema:
             type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/internal_api_http_v1_component_legacy.UpdateCompone\
-                ntLegacyRequest"
+              $ref: "#/components/schemas/component_legacy.UpdateComponentLegacyRequest"
         description: Параметры обновления компонента
         required: true
       responses:
@@ -488,47 +542,53 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_component_legacy.ComponentLega\
-                  cyResponse"
+                $ref: "#/components/schemas/component_legacy.ComponentLegacyResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/components-legacy/{component_identity}/hard":
     delete:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Выполняет hard-delete компонента по identity.
       tags:
         - components-legacy
       summary: Физически удалить компонент
       parameters:
-        - description: Project identity
+        - example: demo-project
+          description: Project identity
           name: project_identity
           in: path
           required: true
           schema:
             type: string
-        - description: Legacy component identity
+        - example: hard-delete-user-card
+          description: Legacy component identity
           name: component_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -540,40 +600,47 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/components-legacy/{component_identity}/restore":
     post:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Восстанавливает soft-deleted компонент по identity.
       tags:
         - components-legacy
       summary: Восстановить компонент
       parameters:
-        - description: Project identity
+        - example: demo-project
+          description: Project identity
           name: project_identity
           in: path
           required: true
           schema:
             type: string
-        - description: Legacy component identity
+        - example: restore-user-card
+          description: Legacy component identity
           name: component_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -585,38 +652,45 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/converters":
     get:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Возвращает неудаленные конвертеры проекта с optional фильтром папки.
       tags:
         - converters
       summary: Список конвертеров
       parameters:
-        - description: Project identity
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - example: demo-project
+          description: Project identity
           name: project_identity
           in: path
           required: true
           schema:
             type: string
-        - description: Folder identity
+        - example: shared-converters
+          description: Folder identity
           name: folder_identity
           in: query
           schema:
@@ -627,37 +701,41 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_converter.ConvertersListRespon\
-                  se"
+                $ref: "#/components/schemas/converter.ConvertersListResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     post:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Создает конвертер с JSON source/config. Source не исполняется.
       tags:
         - converters
       summary: Создать конвертер
       parameters:
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
         - example: demo-project
           description: Project identity
           name: project_identity
@@ -669,8 +747,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/internal_api_http_v1_converter.CreateConverterReque\
-                st"
+              $ref: "#/components/schemas/converter.CreateConverterRequest"
         description: Параметры конвертера
         required: true
       responses:
@@ -679,51 +756,57 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_converter.ConverterResponse"
+                $ref: "#/components/schemas/converter.ConverterResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/converters/{converter_identity}":
     get:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Возвращает активный конвертер по identity.
       tags:
         - converters
       summary: Получить конвертер
       parameters:
-        - description: Project identity
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - example: demo-project
+          description: Project identity
           name: project_identity
           in: path
           required: true
           schema:
             type: string
-        - description: Converter identity
+        - example: date-to-string
+          description: Converter identity
           name: converter_identity
           in: path
           required: true
@@ -735,43 +818,50 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_converter.ConverterResponse"
+                $ref: "#/components/schemas/converter.ConverterResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     delete:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Выполняет soft-delete конвертера.
       tags:
         - converters
       summary: Удалить конвертер
       parameters:
-        - description: Project identity
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - example: demo-project
+          description: Project identity
           name: project_identity
           in: path
           required: true
           schema:
             type: string
-        - description: Converter identity
+        - example: date-to-string
+          description: Converter identity
           name: converter_identity
           in: path
           required: true
@@ -785,38 +875,45 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     patch:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Заменяет editable payload конвертера, сохраняя id, identity,
         createdAt и deletedAt.
       tags:
         - converters
       summary: Обновить конвертер
       parameters:
-        - description: Project identity
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - example: demo-project
+          description: Project identity
           name: project_identity
           in: path
           required: true
           schema:
             type: string
-        - description: Converter identity
+        - example: date-to-string
+          description: Converter identity
           name: converter_identity
           in: path
           required: true
@@ -826,8 +923,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/internal_api_http_v1_converter.UpdateConverterReque\
-                st"
+              $ref: "#/components/schemas/converter.UpdateConverterRequest"
         description: Параметры обновления конвертера
         required: true
       responses:
@@ -836,44 +932,51 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_converter.ConverterResponse"
+                $ref: "#/components/schemas/converter.ConverterResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/converters/{converter_identity}/hard":
     delete:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Выполняет hard-delete конвертера; system converter удалить нельзя.
       tags:
         - converters
       summary: Физически удалить конвертер
       parameters:
-        - description: Project identity
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - example: demo-project
+          description: Project identity
           name: project_identity
           in: path
           required: true
           schema:
             type: string
-        - description: Converter identity
+        - example: hard-delete-date-to-string
+          description: Converter identity
           name: converter_identity
           in: path
           required: true
@@ -887,45 +990,51 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/converters/{converter_identity}/restore":
     post:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Восстанавливает soft-deleted конвертер.
       tags:
         - converters
       summary: Восстановить конвертер
       parameters:
-        - description: Project identity
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - example: demo-project
+          description: Project identity
           name: project_identity
           in: path
           required: true
           schema:
             type: string
-        - description: Converter identity
+        - example: restore-date-to-string
+          description: Converter identity
           name: converter_identity
           in: path
           required: true
@@ -939,26 +1048,24 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/data-views":
     get:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Возвращает активные DataView проекта с optional фильтрами папки и
         Query. DataView, связанные с soft-deleted Query, не возвращаются.
       tags:
@@ -972,7 +1079,7 @@ paths:
           required: true
           schema:
             type: string
-        - example: root-data-views
+        - example: shared-data-views
           description: Folder identity
           name: folder_identity
           in: query
@@ -984,38 +1091,42 @@ paths:
           in: query
           schema:
             type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_data_view.DataViewsListRespons\
-                  e"
+                $ref: "#/components/schemas/data_view.DataViewsListResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     post:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Создает DataView в папке проекта и связывает его с активной Query
         этого же проекта. Source и schema хранятся как authoring configuration и
         не компилируются и не выполняются.
@@ -1030,12 +1141,18 @@ paths:
           required: true
           schema:
             type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/internal_api_http_v1_data_view.CreateDataViewReques\
-                t"
+              $ref: "#/components/schemas/data_view.CreateDataViewRequest"
         description: Параметры DataView
         required: true
       responses:
@@ -1044,39 +1161,36 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_data_view.DataViewResponse"
+                $ref: "#/components/schemas/data_view.DataViewResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/data-views/{data_view_identity}":
     get:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Возвращает активный DataView по identity в пределах проекта вместе
         с identity папки и связанной Query.
       tags:
@@ -1090,10 +1204,17 @@ paths:
           required: true
           schema:
             type: string
-        - example: users-table-view
+        - example: users-table
           description: DataView identity
           name: data_view_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -1103,45 +1224,52 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_data_view.DataViewResponse"
+                $ref: "#/components/schemas/data_view.DataViewResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     delete:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Выполняет soft-delete DataView по identity в пределах проекта.
       tags:
         - data-views
       summary: Удалить DataView
       parameters:
-        - description: Project identity
+        - example: demo-project
+          description: Project identity
           name: project_identity
           in: path
           required: true
           schema:
             type: string
-        - description: DataView identity
+        - example: users-table
+          description: DataView identity
           name: data_view_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -1153,25 +1281,23 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     patch:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Полностью заменяет editable payload DataView, включая папку,
         связанную Query и authoring configuration. Поля id, identity, createdAt
         и deletedAt сохраняются.
@@ -1186,10 +1312,17 @@ paths:
           required: true
           schema:
             type: string
-        - example: users-table-view
+        - example: users-table
           description: DataView identity
           name: data_view_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -1197,8 +1330,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/internal_api_http_v1_data_view.UpdateDataViewReques\
-                t"
+              $ref: "#/components/schemas/data_view.UpdateDataViewRequest"
         description: Параметры обновления DataView
         required: true
       responses:
@@ -1207,47 +1339,54 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_data_view.DataViewResponse"
+                $ref: "#/components/schemas/data_view.DataViewResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/data-views/{data_view_identity}/hard":
     delete:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Выполняет hard-delete soft-deleted DataView по identity в пределах
         проекта.
       tags:
         - data-views
       summary: Физически удалить DataView
       parameters:
-        - description: Project identity
+        - example: demo-project
+          description: Project identity
           name: project_identity
           in: path
           required: true
           schema:
             type: string
-        - description: DataView identity
+        - example: hard-delete-users-table
+          description: DataView identity
           name: data_view_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -1259,40 +1398,47 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/data-views/{data_view_identity}/restore":
     post:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Восстанавливает soft-deleted DataView по identity в пределах проекта.
       tags:
         - data-views
       summary: Восстановить DataView
       parameters:
-        - description: Project identity
+        - example: demo-project
+          description: Project identity
           name: project_identity
           in: path
           required: true
           schema:
             type: string
-        - description: DataView identity
+        - example: restore-users-table
+          description: DataView identity
           name: data_view_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -1304,26 +1450,24 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/folders":
     get:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Возвращает неудаленные папки проекта для указанного entity type.
       tags:
         - folders
@@ -1348,37 +1492,42 @@ paths:
               - converters
               - queries
               - data-views
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_folder.FoldersListResponse"
+                $ref: "#/components/schemas/folder.FoldersListResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     post:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Создает папку внутри проекта и дерева указанного entity type.
       tags:
         - folders
@@ -1391,11 +1540,18 @@ paths:
           required: true
           schema:
             type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/internal_api_http_v1_folder.CreateFolderRequest"
+              $ref: "#/components/schemas/folder.CreateFolderRequest"
         description: Параметры папки
         required: true
       responses:
@@ -1404,39 +1560,36 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_folder.FolderResponse"
+                $ref: "#/components/schemas/folder.FolderResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/folders/{folder_identity}":
     get:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Возвращает папку по project identity, folder identity и entity type.
       tags:
         - folders
@@ -1468,37 +1621,42 @@ paths:
               - converters
               - queries
               - data-views
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_folder.FolderResponse"
+                $ref: "#/components/schemas/folder.FolderResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     delete:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Выполняет soft delete папки.
       tags:
         - folders
@@ -1530,6 +1688,13 @@ paths:
               - converters
               - queries
               - data-views
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: No Content
@@ -1538,25 +1703,23 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     patch:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Обновляет папку и при необходимости перемещает ее по parent identity.
       tags:
         - folders
@@ -1588,11 +1751,18 @@ paths:
               - converters
               - queries
               - data-views
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/internal_api_http_v1_folder.UpdateFolderRequest"
+              $ref: "#/components/schemas/folder.UpdateFolderRequest"
         description: Параметры обновления папки
         required: true
       responses:
@@ -1601,39 +1771,36 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_folder.FolderResponse"
+                $ref: "#/components/schemas/folder.FolderResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/folders/{folder_identity}/hard":
     delete:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Выполняет hard delete папки, кроме system root folders.
       tags:
         - folders
@@ -1646,7 +1813,7 @@ paths:
           required: true
           schema:
             type: string
-        - example: shared-components-legacy
+        - example: hard-delete-components-legacy
           description: Folder identity
           name: folder_identity
           in: path
@@ -1665,6 +1832,13 @@ paths:
               - converters
               - queries
               - data-views
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: No Content
@@ -1673,33 +1847,30 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/folders/{folder_identity}/restore":
     post:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Восстанавливает soft-deleted папку.
       tags:
         - folders
@@ -1712,7 +1883,7 @@ paths:
           required: true
           schema:
             type: string
-        - example: shared-components-legacy
+        - example: restore-components-legacy
           description: Folder identity
           name: folder_identity
           in: path
@@ -1731,43 +1902,10 @@ paths:
               - converters
               - queries
               - data-views
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          content:
-            "*/*":
-              schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
-        "404":
-          description: Not Found
-          content:
-            "*/*":
-              schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
-        "500":
-          description: Internal Server Error
-          content:
-            "*/*":
-              schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
-  "/api/v1/projects/{project_identity}/hard":
-    delete:
-      security:
-        - BearerAuth: []
-      description: Выполняет hard delete проекта по identity.
-      tags:
-        - projects
-      summary: Удалить проект физически
-      parameters:
-        - example: demo-project
-          description: Project identity
-          name: project_identity
-          in: path
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -1779,26 +1917,69 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
+  "/api/v1/projects/{project_identity}/hard":
+    delete:
+      security:
+        - BearerAuth: []
+          WorkspaceAuth: []
+      description: Выполняет hard delete проекта по identity.
+      tags:
+        - projects
+      summary: Удалить проект физически
+      parameters:
+        - example: hard-delete-project
+          description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/queries":
     get:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Возвращает активные Query проекта. Можно отфильтровать записи по
         identity папки и query type; soft-deleted Query не возвращаются.
       tags:
@@ -1812,7 +1993,7 @@ paths:
           required: true
           schema:
             type: string
-        - example: root-queries
+        - example: shared-queries
           description: Folder identity
           name: folder_identity
           in: query
@@ -1824,37 +2005,42 @@ paths:
           in: query
           schema:
             type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_query.QueriesListResponse"
+                $ref: "#/components/schemas/query.QueriesListResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     post:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Создает конфигурацию Query в папке проекта. Query source, headers,
         параметры и mock data только хранятся и не исполняются сервисом.
       tags:
@@ -1868,11 +2054,18 @@ paths:
           required: true
           schema:
             type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/internal_api_http_v1_query.CreateQueryRequest"
+              $ref: "#/components/schemas/query.CreateQueryRequest"
         description: Параметры Query
         required: true
       responses:
@@ -1881,39 +2074,36 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_query.QueryResponse"
+                $ref: "#/components/schemas/query.QueryResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "409":
           description: Conflict
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/queries/{query_identity}":
     get:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Возвращает активную Query по identity в пределах проекта вместе с
         identity ее папки.
       tags:
@@ -1934,52 +2124,66 @@ paths:
           required: true
           schema:
             type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_query.QueryResponse"
+                $ref: "#/components/schemas/query.QueryResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     delete:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Выполняет soft-delete Query. Связанные DataView физически не
         удаляются, но не попадают в обычные query-based сценарии.
       tags:
         - queries
       summary: Удалить Query
       parameters:
-        - description: Project identity
+        - example: demo-project
+          description: Project identity
           name: project_identity
           in: path
           required: true
           schema:
             type: string
-        - description: Query identity
+        - example: users-list
+          description: Query identity
           name: query_identity
           in: path
+          required: true
+          schema:
+            type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
           required: true
           schema:
             type: string
@@ -1991,25 +2195,23 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
     patch:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Полностью заменяет editable payload Query, включая папку, source,
         параметры, headers, auth и mock data. Поля id, identity, createdAt и
         deletedAt сохраняются.
@@ -2031,11 +2233,18 @@ paths:
           required: true
           schema:
             type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/internal_api_http_v1_query.UpdateQueryRequest"
+              $ref: "#/components/schemas/query.UpdateQueryRequest"
         description: Параметры обновления Query
         required: true
       responses:
@@ -2044,127 +2253,35 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/internal_api_http_v1_query.QueryResponse"
+                $ref: "#/components/schemas/query.QueryResponse"
         "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
   "/api/v1/projects/{project_identity}/queries/{query_identity}/hard":
     delete:
       security:
         - BearerAuth: []
+          WorkspaceAuth: []
       description: Выполняет hard-delete soft-deleted Query. Связанные DataView
         удаляются каскадно на уровне базы данных.
       tags:
         - queries
       summary: Физически удалить Query
-      parameters:
-        - description: Project identity
-          name: project_identity
-          in: path
-          required: true
-          schema:
-            type: string
-        - description: Query identity
-          name: query_identity
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          content:
-            "*/*":
-              schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
-        "404":
-          description: Not Found
-          content:
-            "*/*":
-              schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
-        "500":
-          description: Internal Server Error
-          content:
-            "*/*":
-              schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
-  "/api/v1/projects/{project_identity}/queries/{query_identity}/restore":
-    post:
-      security:
-        - BearerAuth: []
-      description: Восстанавливает soft-deleted Query по identity в пределах проекта.
-      tags:
-        - queries
-      summary: Восстановить Query
-      parameters:
-        - description: Project identity
-          name: project_identity
-          in: path
-          required: true
-          schema:
-            type: string
-        - description: Query identity
-          name: query_identity
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          content:
-            "*/*":
-              schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
-        "404":
-          description: Not Found
-          content:
-            "*/*":
-              schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
-        "500":
-          description: Internal Server Error
-          content:
-            "*/*":
-              schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
-  "/api/v1/projects/{project_identity}/restore":
-    post:
-      security:
-        - BearerAuth: []
-      description: Восстанавливает soft-deleted проект по identity.
-      tags:
-        - projects
-      summary: Восстановить проект
       parameters:
         - example: demo-project
           description: Project identity
@@ -2173,6 +2290,20 @@ paths:
           required: true
           schema:
             type: string
+        - example: hard-delete-users-list
+          description: Query identity
+          name: query_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: No Content
@@ -2181,22 +2312,274 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "404":
           description: Not Found
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
         "500":
           description: Internal Server Error
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_api_h\
-                  ttp_respond.ErrorResponse"
+                $ref: "#/components/schemas/respond.ErrorResponse"
+  "/api/v1/projects/{project_identity}/queries/{query_identity}/restore":
+    post:
+      security:
+        - BearerAuth: []
+          WorkspaceAuth: []
+      description: Восстанавливает soft-deleted Query по identity в пределах проекта.
+      tags:
+        - queries
+      summary: Восстановить Query
+      parameters:
+        - example: demo-project
+          description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - example: restore-users-list
+          description: Query identity
+          name: query_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+  "/api/v1/projects/{project_identity}/restore":
+    post:
+      security:
+        - BearerAuth: []
+          WorkspaceAuth: []
+      description: Восстанавливает soft-deleted проект по identity.
+      tags:
+        - projects
+      summary: Восстановить проект
+      parameters:
+        - example: restore-project
+          description: Project identity
+          name: project_identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+  /api/v1/workspaces:
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает все workspaces без user/membership filtering. Endpoint
+        не требует X-Endge-Workspace; sse.manualToken redacted.
+      tags:
+        - workspaces
+      summary: Список workspaces
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/http.Response"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+    post:
+      security:
+        - BearerAuth: []
+      description: "Создаёт корневой workspace. Configuration необязательна: при
+        отсутствии backend применяет system default. Endpoint не требует
+        X-Endge-Workspace."
+      tags:
+        - workspaces
+      summary: Создать workspace
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/http.CreateRequest"
+        description: Данные workspace
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/http.Response"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+  "/api/v1/workspaces/{workspace_identity}":
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает workspace по identity с полной root configuration.
+        sse.manualToken не возвращается.
+      tags:
+        - workspaces
+      summary: Получить workspace
+      parameters:
+        - example: demo-workspace
+          description: Workspace identity
+          name: workspace_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/http.Response"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+    patch:
+      security:
+        - BearerAuth: []
+      description: Частично обновляет верхнеуровневые поля. Переданная configuration
+        полностью заменяет root configuration; JSON merge не выполняется.
+        sse.manualToken redacted в response.
+      tags:
+        - workspaces
+      summary: Обновить workspace
+      parameters:
+        - example: demo-workspace
+          description: Workspace identity
+          name: workspace_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/http.UpdateRequest"
+        description: Изменяемые поля workspace
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/http.Response"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
 servers:
   - url: /
 components:
@@ -2205,18 +2588,553 @@ components:
       type: apiKey
       name: Authorization
       in: header
+    WorkspaceAuth:
+      type: apiKey
+      name: X-Endge-Workspace
+      in: header
   schemas:
-    github_com_endge-lab_service-backend_internal_api_http_respond.ErrorResponse:
+    component_legacy.ComponentLegacyResponse:
+      type: object
+      properties:
+        active:
+          type: boolean
+          example: true
+        bindings:
+          type: object
+          additionalProperties: {}
+        componentType:
+          enum:
+            - component-sfc
+          allOf:
+            - $ref: "#/components/schemas/entities.RComponentLegacyType"
+          example: component-sfc
+        createdAt:
+          type: string
+          example: 2026-07-23T10:00:00Z
+        deletedAt:
+          type: string
+          example: 2026-07-23T10:00:00Z
+        description:
+          type: string
+          example: Displays a user card
+        displayName:
+          type: string
+          example: User card
+        folderIdentity:
+          type: string
+          example: shared-components-legacy
+        id:
+          type: string
+          example: 00000000-0000-4000-8000-000000000051
+        identity:
+          type: string
+          example: user-card
+        meta:
+          type: object
+          additionalProperties: {}
+        projectIdentity:
+          type: string
+          example: demo-project
+        propsSchema:
+          type: object
+          additionalProperties: {}
+        source:
+          type: string
+          example: <template><article>{{ user.name }}</article></template>
+        sourceFormat:
+          allOf:
+            - $ref: "#/components/schemas/entities.RComponentLegacySourceFormat"
+          example: vue
+        updatedAt:
+          type: string
+          example: 2026-07-23T10:00:00Z
+    component_legacy.ComponentsLegacyListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/component_legacy.ComponentLegacyResponse"
+    component_legacy.CreateComponentLegacyRequest:
+      type: object
+      required:
+        - componentType
+        - displayName
+        - folderIdentity
+        - identity
+        - source
+      properties:
+        active:
+          type: boolean
+          example: true
+        bindings:
+          type: object
+          additionalProperties: {}
+        componentType:
+          enum:
+            - component-sfc
+          allOf:
+            - $ref: "#/components/schemas/entities.RComponentLegacyType"
+          example: component-sfc
+        description:
+          type: string
+          example: Displays a user card
+        displayName:
+          type: string
+          maxLength: 255
+          minLength: 1
+          example: Example user card
+        folderIdentity:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: shared-components-legacy
+        identity:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: example-user-card
+        meta:
+          type: object
+          additionalProperties: {}
+        propsSchema:
+          type: object
+          additionalProperties: {}
+        source:
+          type: string
+          minLength: 1
+          example: <template><article>{{ user.name }}</article></template>
+    component_legacy.UpdateComponentLegacyRequest:
+      type: object
+      required:
+        - componentType
+        - displayName
+        - folderIdentity
+        - source
+      properties:
+        active:
+          type: boolean
+          example: true
+        bindings:
+          type: object
+          additionalProperties: {}
+        componentType:
+          enum:
+            - component-sfc
+          allOf:
+            - $ref: "#/components/schemas/entities.RComponentLegacyType"
+          example: component-sfc
+        description:
+          type: string
+          example: Displays a user card
+        displayName:
+          type: string
+          maxLength: 255
+          minLength: 1
+          example: User card
+        folderIdentity:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: shared-components-legacy
+        meta:
+          type: object
+          additionalProperties: {}
+        propsSchema:
+          type: object
+          additionalProperties: {}
+        source:
+          type: string
+          minLength: 1
+          example: <template><article>{{ user.name }}</article></template>
+    converter.ConverterResponse:
+      type: object
+      properties:
+        active:
+          type: boolean
+          example: true
+        converterType:
+          type: string
+          example: javascript
+        createdAt:
+          type: string
+          example: 2026-07-23T10:00:00Z
+        deletedAt:
+          type: string
+          example: 2026-07-23T10:00:00Z
+        description:
+          type: string
+          example: Formats an ISO date
+        displayName:
+          type: string
+          example: Date to string
+        folderIdentity:
+          type: string
+          example: shared-converters
+        id:
+          type: string
+          example: 00000000-0000-4000-8000-000000000021
+        identity:
+          type: string
+          example: date-to-string
+        isSystem:
+          type: boolean
+          example: false
+        meta:
+          type: object
+          additionalProperties: {}
+        projectIdentity:
+          type: string
+          example: demo-project
+        source:
+          type: object
+          additionalProperties: {}
+        updatedAt:
+          type: string
+          example: 2026-07-23T10:00:00Z
+    converter.ConvertersListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/converter.ConverterResponse"
+    converter.CreateConverterRequest:
+      type: object
+      required:
+        - converterType
+        - displayName
+        - folderIdentity
+        - identity
+      properties:
+        active:
+          type: boolean
+          example: true
+        converterType:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: javascript
+        description:
+          type: string
+          example: Formats an ISO date
+        displayName:
+          type: string
+          maxLength: 255
+          minLength: 1
+          example: Example date to string
+        folderIdentity:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: shared-converters
+        identity:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: example-date-to-string
+        isSystem:
+          type: boolean
+          example: false
+        meta:
+          type: object
+          additionalProperties: {}
+        source:
+          type: object
+          additionalProperties: {}
+    converter.UpdateConverterRequest:
+      type: object
+      required:
+        - converterType
+        - displayName
+        - folderIdentity
+      properties:
+        active:
+          type: boolean
+          example: true
+        converterType:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: javascript
+        description:
+          type: string
+          example: Formats an ISO date
+        displayName:
+          type: string
+          maxLength: 255
+          minLength: 1
+          example: Date to string
+        folderIdentity:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: shared-converters
+        isSystem:
+          type: boolean
+          example: false
+        meta:
+          type: object
+          additionalProperties: {}
+        source:
+          type: object
+          additionalProperties: {}
+    data_view.CreateDataViewRequest:
+      type: object
+      required:
+        - displayName
+        - folderIdentity
+        - identity
+        - queryIdentity
+        - source
+        - viewType
+      properties:
+        active:
+          type: boolean
+          example: true
+        description:
+          type: string
+          example: Table view for users
+        displayName:
+          type: string
+          maxLength: 255
+          minLength: 1
+          example: Example users table
+        folderIdentity:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: shared-data-views
+        identity:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: example-users-table
+        inputSchema:
+          type: object
+          additionalProperties: {}
+        meta:
+          type: object
+          additionalProperties: {}
+        outputSchema:
+          type: object
+          additionalProperties: {}
+        queryIdentity:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: users-list
+        source:
+          type: object
+          additionalProperties: {}
+        viewType:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: table
+    data_view.DataViewResponse:
+      type: object
+      properties:
+        active:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          example: 2026-07-23T10:00:00Z
+        deletedAt:
+          type: string
+          example: 2026-07-23T10:00:00Z
+        description:
+          type: string
+          example: Table view for users
+        displayName:
+          type: string
+          example: Users table
+        folderIdentity:
+          type: string
+          example: shared-data-views
+        id:
+          type: string
+          example: 00000000-0000-4000-8000-000000000041
+        identity:
+          type: string
+          example: users-table
+        inputSchema:
+          type: object
+          additionalProperties: {}
+        meta:
+          type: object
+          additionalProperties: {}
+        outputSchema:
+          type: object
+          additionalProperties: {}
+        projectIdentity:
+          type: string
+          example: demo-project
+        queryIdentity:
+          type: string
+          example: users-list
+        source:
+          type: object
+          additionalProperties: {}
+        updatedAt:
+          type: string
+          example: 2026-07-23T10:00:00Z
+        viewType:
+          type: string
+          example: table
+    data_view.DataViewsListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/data_view.DataViewResponse"
+    data_view.UpdateDataViewRequest:
+      type: object
+      required:
+        - displayName
+        - folderIdentity
+        - queryIdentity
+        - source
+        - viewType
+      properties:
+        active:
+          type: boolean
+          example: true
+        description:
+          type: string
+          example: Table view for users
+        displayName:
+          type: string
+          maxLength: 255
+          minLength: 1
+          example: Users table
+        folderIdentity:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: shared-data-views
+        inputSchema:
+          type: object
+          additionalProperties: {}
+        meta:
+          type: object
+          additionalProperties: {}
+        outputSchema:
+          type: object
+          additionalProperties: {}
+        queryIdentity:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: users-list
+        source:
+          type: object
+          additionalProperties: {}
+        viewType:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: table
+    entities.EndgeConfiguration:
+      type: object
+      properties:
+        defaultAuthProfileIdentity:
+          type: string
+          example: default-auth
+        defaultLocale:
+          type: string
+          example: ru
+        defaultSfcAdapterId:
+          type: string
+          example: native-vue
+        defaultTheme:
+          type: string
+          example: light
+        fallbackLocale:
+          type: string
+          example: ru
+        locales:
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.EndgeLocale"
+        sfcAdapterIds:
+          type: array
+          items:
+            type: string
+          example:
+            - native-vue
+        sse:
+          $ref: "#/components/schemas/entities.EndgeSSEConfiguration"
+        themes:
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.EndgeTheme"
+        vars:
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.EndgeVariable"
+    entities.EndgeLocale:
       type: object
       properties:
         code:
           type: string
-        details:
-          type: object
-          additionalProperties: {}
-        message:
+          example: ru
+        direction:
           type: string
-    github_com_endge-lab_service-backend_internal_domain_entities.FolderEntityType:
+          enum:
+            - ltr
+            - rtl
+          example: ltr
+        displayName:
+          type: string
+          example: Русский
+        shortLabel:
+          type: string
+          example: RU
+    entities.EndgeSSEConfiguration:
+      type: object
+      properties:
+        authMode:
+          type: string
+          enum:
+            - inherit
+            - profile
+            - manual
+            - none
+          example: inherit
+        authProfileIdentity:
+          type: string
+          example: default-auth
+        manualToken:
+          type: string
+          example: secret-token
+        url:
+          type: string
+          example: https://sse.example.com/events
+    entities.EndgeTheme:
+      type: object
+      properties:
+        displayName:
+          type: string
+          example: Светлая
+        identity:
+          type: string
+          example: light
+    entities.EndgeVariable:
+      type: object
+      required:
+        - name
+      properties:
+        defaultValue:
+          type: string
+          example: https://api.example.com
+        name:
+          type: string
+          minLength: 1
+          example: API_URL
+    entities.FolderEntityType:
       type: string
       enum:
         - components-legacy
@@ -2228,389 +3146,19 @@ components:
         - FolderEntityTypeConverters
         - FolderEntityTypeQueries
         - FolderEntityTypeDataViews
-    github_com_endge-lab_service-backend_internal_domain_entities.RComponentLegacySourceFormat:
+    entities.RComponentLegacySourceFormat:
       type: string
       enum:
         - sfc
       x-enum-varnames:
         - RComponentLegacySourceFormatSFC
-    github_com_endge-lab_service-backend_internal_domain_entities.RComponentLegacyType:
+    entities.RComponentLegacyType:
       type: string
       enum:
         - component-sfc
       x-enum-varnames:
         - RComponentLegacyTypeSFC
-    internal_api_http_session.ErrorResponse:
-      type: object
-      properties:
-        code:
-          type: string
-        details:
-          type: object
-          additionalProperties: {}
-        message:
-          type: string
-    internal_api_http_session.SessionInfoResponse:
-      type: object
-      properties:
-        app:
-          type: string
-        expiresAt:
-          type: string
-        id:
-          type: string
-        platform:
-          type: string
-        scope:
-          type: array
-          items:
-            type: string
-        sessionId:
-          type: string
-    internal_api_http_session.SessionResponse:
-      type: object
-      properties:
-        session:
-          $ref: "#/components/schemas/internal_api_http_session.SessionInfoResponse"
-        user:
-          $ref: "#/components/schemas/internal_api_http_session.UserResponse"
-    internal_api_http_session.UserResponse:
-      type: object
-      properties:
-        authUserId:
-          type: string
-        createdAt:
-          type: string
-        displayName:
-          type: string
-        id:
-          type: string
-        role:
-          type: string
-        updatedAt:
-          type: string
-        username:
-          type: string
-    internal_api_http_v1_component_legacy.ComponentLegacyResponse:
-      type: object
-      properties:
-        active:
-          type: boolean
-        bindings:
-          type: object
-          additionalProperties: {}
-        componentType:
-          $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
-            n_entities.RComponentLegacyType"
-        createdAt:
-          type: string
-        deletedAt:
-          type: string
-        description:
-          type: string
-        displayName:
-          type: string
-        folderIdentity:
-          type: string
-        id:
-          type: string
-        identity:
-          type: string
-        meta:
-          type: object
-          additionalProperties: {}
-        projectIdentity:
-          type: string
-        propsSchema:
-          type: object
-          additionalProperties: {}
-        source:
-          type: string
-        sourceFormat:
-          $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
-            n_entities.RComponentLegacySourceFormat"
-        updatedAt:
-          type: string
-    internal_api_http_v1_component_legacy.ComponentsLegacyListResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/internal_api_http_v1_component_legacy.ComponentLega\
-              cyResponse"
-    internal_api_http_v1_component_legacy.CreateComponentLegacyRequest:
-      type: object
-      required:
-        - componentType
-        - displayName
-        - folderIdentity
-        - identity
-        - source
-      properties:
-        active:
-          type: boolean
-        bindings:
-          type: object
-          additionalProperties: {}
-        componentType:
-          $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
-            n_entities.RComponentLegacyType"
-        description:
-          type: string
-        displayName:
-          type: string
-        folderIdentity:
-          type: string
-        identity:
-          type: string
-        meta:
-          type: object
-          additionalProperties: {}
-        propsSchema:
-          type: object
-          additionalProperties: {}
-        source:
-          type: string
-    internal_api_http_v1_component_legacy.UpdateComponentLegacyRequest:
-      type: object
-      required:
-        - componentType
-        - displayName
-        - folderIdentity
-        - source
-      properties:
-        active:
-          type: boolean
-        bindings:
-          type: object
-          additionalProperties: {}
-        componentType:
-          $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
-            n_entities.RComponentLegacyType"
-        description:
-          type: string
-        displayName:
-          type: string
-        folderIdentity:
-          type: string
-        meta:
-          type: object
-          additionalProperties: {}
-        propsSchema:
-          type: object
-          additionalProperties: {}
-        source:
-          type: string
-    internal_api_http_v1_converter.ConverterResponse:
-      type: object
-      properties:
-        active:
-          type: boolean
-        converterType:
-          type: string
-        createdAt:
-          type: string
-        deletedAt:
-          type: string
-        description:
-          type: string
-        displayName:
-          type: string
-        folderIdentity:
-          type: string
-        id:
-          type: string
-        identity:
-          type: string
-        isSystem:
-          type: boolean
-        meta:
-          type: object
-          additionalProperties: {}
-        projectIdentity:
-          type: string
-        source:
-          type: object
-          additionalProperties: {}
-        updatedAt:
-          type: string
-    internal_api_http_v1_converter.ConvertersListResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/internal_api_http_v1_converter.ConverterResponse"
-    internal_api_http_v1_converter.CreateConverterRequest:
-      type: object
-      required:
-        - converterType
-        - displayName
-        - folderIdentity
-        - identity
-      properties:
-        active:
-          type: boolean
-        converterType:
-          type: string
-        description:
-          type: string
-        displayName:
-          type: string
-        folderIdentity:
-          type: string
-        identity:
-          type: string
-        isSystem:
-          type: boolean
-        meta:
-          type: object
-          additionalProperties: {}
-        source:
-          type: object
-          additionalProperties: {}
-    internal_api_http_v1_converter.UpdateConverterRequest:
-      type: object
-      required:
-        - converterType
-        - displayName
-        - folderIdentity
-      properties:
-        active:
-          type: boolean
-        converterType:
-          type: string
-        description:
-          type: string
-        displayName:
-          type: string
-        folderIdentity:
-          type: string
-        isSystem:
-          type: boolean
-        meta:
-          type: object
-          additionalProperties: {}
-        source:
-          type: object
-          additionalProperties: {}
-    internal_api_http_v1_data_view.CreateDataViewRequest:
-      type: object
-      required:
-        - displayName
-        - folderIdentity
-        - identity
-        - queryIdentity
-        - source
-        - viewType
-      properties:
-        active:
-          type: boolean
-        description:
-          type: string
-        displayName:
-          type: string
-        folderIdentity:
-          type: string
-        identity:
-          type: string
-        inputSchema:
-          type: object
-          additionalProperties: {}
-        meta:
-          type: object
-          additionalProperties: {}
-        outputSchema:
-          type: object
-          additionalProperties: {}
-        queryIdentity:
-          type: string
-        source:
-          type: object
-          additionalProperties: {}
-        viewType:
-          type: string
-    internal_api_http_v1_data_view.DataViewResponse:
-      type: object
-      properties:
-        active:
-          type: boolean
-        createdAt:
-          type: string
-        deletedAt:
-          type: string
-        description:
-          type: string
-        displayName:
-          type: string
-        folderIdentity:
-          type: string
-        id:
-          type: string
-        identity:
-          type: string
-        inputSchema:
-          type: object
-          additionalProperties: {}
-        meta:
-          type: object
-          additionalProperties: {}
-        outputSchema:
-          type: object
-          additionalProperties: {}
-        projectIdentity:
-          type: string
-        queryIdentity:
-          type: string
-        source:
-          type: object
-          additionalProperties: {}
-        updatedAt:
-          type: string
-        viewType:
-          type: string
-    internal_api_http_v1_data_view.DataViewsListResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/internal_api_http_v1_data_view.DataViewResponse"
-    internal_api_http_v1_data_view.UpdateDataViewRequest:
-      type: object
-      required:
-        - displayName
-        - folderIdentity
-        - queryIdentity
-        - source
-        - viewType
-      properties:
-        active:
-          type: boolean
-        description:
-          type: string
-        displayName:
-          type: string
-        folderIdentity:
-          type: string
-        inputSchema:
-          type: object
-          additionalProperties: {}
-        meta:
-          type: object
-          additionalProperties: {}
-        outputSchema:
-          type: object
-          additionalProperties: {}
-        queryIdentity:
-          type: string
-        source:
-          type: object
-          additionalProperties: {}
-        viewType:
-          type: string
-    internal_api_http_v1_folder.CreateFolderRequest:
+    folder.CreateFolderRequest:
       type: object
       required:
         - displayName
@@ -2624,7 +3172,7 @@ components:
           type: string
           maxLength: 255
           minLength: 1
-          example: Shared legacy components
+          example: Example components folder
         entityType:
           enum:
             - components-legacy
@@ -2632,20 +3180,21 @@ components:
             - queries
             - data-views
           allOf:
-            - $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
-                n_entities.FolderEntityType"
+            - $ref: "#/components/schemas/entities.FolderEntityType"
           example: components-legacy
         identity:
           type: string
           maxLength: 160
           minLength: 1
-          example: shared-components-legacy
+          example: example-components-folder
         meta:
           type: object
         parentIdentity:
           type: string
+          maxLength: 160
+          minLength: 1
           example: root-components-legacy
-    internal_api_http_v1_folder.FolderResponse:
+    folder.FolderResponse:
       type: object
       properties:
         createdAt:
@@ -2667,8 +3216,7 @@ components:
             - queries
             - data-views
           allOf:
-            - $ref: "#/components/schemas/github_com_endge-lab_service-backend_internal_domai\
-                n_entities.FolderEntityType"
+            - $ref: "#/components/schemas/entities.FolderEntityType"
           example: components-legacy
         id:
           type: string
@@ -2693,14 +3241,14 @@ components:
         updatedAt:
           type: string
           example: 2026-07-08T10:00:00Z
-    internal_api_http_v1_folder.FoldersListResponse:
+    folder.FoldersListResponse:
       type: object
       properties:
         items:
           type: array
           items:
-            $ref: "#/components/schemas/internal_api_http_v1_folder.FolderResponse"
-    internal_api_http_v1_folder.UpdateFolderRequest:
+            $ref: "#/components/schemas/folder.FolderResponse"
+    folder.UpdateFolderRequest:
       type: object
       required:
         - displayName
@@ -2717,8 +3265,56 @@ components:
           type: object
         parentIdentity:
           type: string
+          maxLength: 160
+          minLength: 1
           example: root-components-legacy
-    internal_api_http_v1_project.CreateProjectRequest:
+    http.CreateRequest:
+      type: object
+      required:
+        - displayName
+        - identity
+      properties:
+        configuration:
+          $ref: "#/components/schemas/entities.EndgeConfiguration"
+        displayName:
+          type: string
+          maxLength: 255
+          minLength: 1
+          example: Example Workspace
+        identity:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: example-workspace
+    http.Response:
+      type: object
+      properties:
+        configuration:
+          $ref: "#/components/schemas/entities.EndgeConfiguration"
+        createdAt:
+          type: string
+          example: 2026-07-23T10:00:00Z
+        displayName:
+          type: string
+          example: Demo Workspace
+        id:
+          type: string
+          example: 00000000-0000-4000-8000-000000000001
+        identity:
+          type: string
+          example: demo-workspace
+        updatedAt:
+          type: string
+          example: 2026-07-23T10:00:00Z
+    http.UpdateRequest:
+      type: object
+      properties:
+        configuration:
+          $ref: "#/components/schemas/entities.EndgeConfiguration"
+        displayName:
+          type: string
+          example: Updated Demo Workspace
+    project.CreateProjectRequest:
       type: object
       required:
         - displayName
@@ -2734,15 +3330,15 @@ components:
           type: string
           maxLength: 255
           minLength: 1
-          example: Demo Project
+          example: Example Project
         identity:
           type: string
           maxLength: 160
           minLength: 1
-          example: demo-project
+          example: example-project
         meta:
           type: object
-    internal_api_http_v1_project.ProjectResponse:
+    project.ProjectResponse:
       type: object
       properties:
         active:
@@ -2771,14 +3367,14 @@ components:
         updatedAt:
           type: string
           example: 2026-07-08T10:00:00Z
-    internal_api_http_v1_project.ProjectsListResponse:
+    project.ProjectsListResponse:
       type: object
       properties:
         items:
           type: array
           items:
-            $ref: "#/components/schemas/internal_api_http_v1_project.ProjectResponse"
-    internal_api_http_v1_project.UpdateProjectRequest:
+            $ref: "#/components/schemas/project.ProjectResponse"
+    project.UpdateProjectRequest:
       type: object
       required:
         - displayName
@@ -2796,7 +3392,7 @@ components:
           example: Demo Project
         meta:
           type: object
-    internal_api_http_v1_query.CreateQueryRequest:
+    query.CreateQueryRequest:
       type: object
       required:
         - displayName
@@ -2807,20 +3403,31 @@ components:
       properties:
         active:
           type: boolean
+          example: true
         auth:
           type: object
           additionalProperties: {}
         description:
           type: string
+          example: Loads active users
         displayName:
           type: string
+          maxLength: 255
+          minLength: 1
+          example: Example users list
         folderIdentity:
           type: string
+          maxLength: 160
+          minLength: 1
+          example: shared-queries
         headers:
           type: object
           additionalProperties: {}
         identity:
           type: string
+          maxLength: 160
+          minLength: 1
+          example: example-users-list
         meta:
           type: object
           additionalProperties: {}
@@ -2829,48 +3436,62 @@ components:
           additionalProperties: {}
         mockDataEnabled:
           type: boolean
+          example: false
         params:
           type: array
           items: {}
         queryType:
           type: string
+          maxLength: 160
+          minLength: 1
+          example: http
         source:
           type: object
           additionalProperties: {}
         timeoutMs:
           type: integer
-    internal_api_http_v1_query.QueriesListResponse:
+          minimum: 1
+          example: 5000
+    query.QueriesListResponse:
       type: object
       properties:
         items:
           type: array
           items:
-            $ref: "#/components/schemas/internal_api_http_v1_query.QueryResponse"
-    internal_api_http_v1_query.QueryResponse:
+            $ref: "#/components/schemas/query.QueryResponse"
+    query.QueryResponse:
       type: object
       properties:
         active:
           type: boolean
+          example: true
         auth:
           type: object
           additionalProperties: {}
         createdAt:
           type: string
+          example: 2026-07-23T10:00:00Z
         deletedAt:
           type: string
+          example: 2026-07-23T10:00:00Z
         description:
           type: string
+          example: Loads active users
         displayName:
           type: string
+          example: Users list
         folderIdentity:
           type: string
+          example: shared-queries
         headers:
           type: object
           additionalProperties: {}
         id:
           type: string
+          example: 00000000-0000-4000-8000-000000000031
         identity:
           type: string
+          example: users-list
         meta:
           type: object
           additionalProperties: {}
@@ -2879,21 +3500,26 @@ components:
           additionalProperties: {}
         mockDataEnabled:
           type: boolean
+          example: false
         params:
           type: array
           items: {}
         projectIdentity:
           type: string
+          example: demo-project
         queryType:
           type: string
+          example: http
         source:
           type: object
           additionalProperties: {}
         timeoutMs:
           type: integer
+          example: 5000
         updatedAt:
           type: string
-    internal_api_http_v1_query.UpdateQueryRequest:
+          example: 2026-07-23T10:00:00Z
+    query.UpdateQueryRequest:
       type: object
       required:
         - displayName
@@ -2903,15 +3529,23 @@ components:
       properties:
         active:
           type: boolean
+          example: true
         auth:
           type: object
           additionalProperties: {}
         description:
           type: string
+          example: Loads active users
         displayName:
           type: string
+          maxLength: 255
+          minLength: 1
+          example: Users list
         folderIdentity:
           type: string
+          maxLength: 160
+          minLength: 1
+          example: shared-queries
         headers:
           type: object
           additionalProperties: {}
@@ -2923,13 +3557,80 @@ components:
           additionalProperties: {}
         mockDataEnabled:
           type: boolean
+          example: false
         params:
           type: array
           items: {}
         queryType:
           type: string
+          maxLength: 160
+          minLength: 1
+          example: http
         source:
           type: object
           additionalProperties: {}
         timeoutMs:
           type: integer
+          minimum: 1
+          example: 5000
+    respond.ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        details:
+          type: object
+          additionalProperties: {}
+        message:
+          type: string
+    session.ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        details:
+          type: object
+          additionalProperties: {}
+        message:
+          type: string
+    session.SessionInfoResponse:
+      type: object
+      properties:
+        app:
+          type: string
+        expiresAt:
+          type: string
+        id:
+          type: string
+        platform:
+          type: string
+        scope:
+          type: array
+          items:
+            type: string
+        sessionId:
+          type: string
+    session.SessionResponse:
+      type: object
+      properties:
+        session:
+          $ref: "#/components/schemas/session.SessionInfoResponse"
+        user:
+          $ref: "#/components/schemas/session.UserResponse"
+    session.UserResponse:
+      type: object
+      properties:
+        authUserId:
+          type: string
+        createdAt:
+          type: string
+        displayName:
+          type: string
+        id:
+          type: string
+        role:
+          type: string
+        updatedAt:
+          type: string
+        username:
+          type: string

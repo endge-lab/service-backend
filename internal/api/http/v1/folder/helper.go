@@ -3,7 +3,6 @@ package folder
 import (
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	"github.com/endge-lab/service-backend/internal/usecase/folders"
-	servicefiber "github.com/endge-lab/service-kit-go/pkg/httpkit/fiber"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -57,8 +56,4 @@ func NewFolderResponse(
 		CreatedAt:       folder.CreatedAt,
 		UpdatedAt:       folder.UpdatedAt,
 	}
-}
-
-func (h *Handler) TraceMiddleware(spanName string) fiber.Handler {
-	return servicefiber.TraceMiddleware(h.tracer, h.logger, spanName)
 }

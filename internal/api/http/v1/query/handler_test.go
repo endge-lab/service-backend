@@ -14,13 +14,12 @@ import (
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
 )
 
 func TestQueryHandlers(t *testing.T) {
 	value := &queries.QueryWithFolder{Query: &entities.RQuery{ID: uuid.New(), Identity: "users-list", QueryType: "http", Source: map[string]any{}}, FolderIdentity: "root-queries"}
 	service := &queryServiceStub{value: value}
-	handler := &Handler{service: service, validator: appvalidator.NewValidator(), logger: zap.NewNop()}
+	handler := &Handler{service: service, validator: appvalidator.NewValidator()}
 	app := fiber.New()
 	routes := app.Group("/api/v1/projects/:project_identity/queries")
 	routes.Post("/", handler.Create)
@@ -75,7 +74,7 @@ func TestQueryHandlers(t *testing.T) {
 
 func TestQueryHandlerValidationAndDomainErrors(t *testing.T) {
 	service := &queryServiceStub{value: &queries.QueryWithFolder{Query: &entities.RQuery{}, FolderIdentity: "root-queries"}}
-	handler := &Handler{service: service, validator: appvalidator.NewValidator(), logger: zap.NewNop()}
+	handler := &Handler{service: service, validator: appvalidator.NewValidator()}
 	app := fiber.New()
 	app.Post("/queries", handler.Create)
 	app.Get("/queries/:query_identity", handler.GetByIdentity)
@@ -86,6 +85,7 @@ func TestQueryHandlerValidationAndDomainErrors(t *testing.T) {
 	}{
 		{"invalid json", http.MethodPost, "/queries", `{`, nil, http.StatusBadRequest},
 		{"validation", http.MethodPost, "/queries", `{}`, nil, http.StatusBadRequest},
+		{"timeout must be positive", http.MethodPost, "/queries", `{"folderIdentity":"root-queries","identity":"users-list","displayName":"Users","queryType":"http","source":{},"timeoutMs":0}`, nil, http.StatusBadRequest},
 		{"not found", http.MethodGet, "/queries/users-list", "", apperrors.NotFound("not_found", "query not found"), http.StatusNotFound},
 		{"internal", http.MethodGet, "/queries/users-list", "", apperrors.Internal("internal_error", "failure"), http.StatusInternalServerError},
 	} {

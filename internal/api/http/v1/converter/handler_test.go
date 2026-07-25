@@ -14,7 +14,6 @@ import (
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
 )
 
 func TestConverterHandlers(t *testing.T) {
@@ -23,7 +22,7 @@ func TestConverterHandlers(t *testing.T) {
 		FolderIdentity: "root-converters",
 	}
 	service := &converterServiceStub{value: value}
-	handler := &Handler{service: service, validator: appvalidator.NewValidator(), logger: zap.NewNop()}
+	handler := &Handler{service: service, validator: appvalidator.NewValidator()}
 	app := fiber.New()
 	routes := app.Group("/api/v1/projects/:project_identity/converters")
 	routes.Post("/", handler.Create)
@@ -83,7 +82,7 @@ func TestConverterHandlers(t *testing.T) {
 
 func TestConverterHandlerValidationAndDomainErrors(t *testing.T) {
 	service := &converterServiceStub{value: &converters.ConverterWithFolder{Converter: &entities.RConverter{ID: uuid.New()}, FolderIdentity: "root-converters"}}
-	handler := &Handler{service: service, validator: appvalidator.NewValidator(), logger: zap.NewNop()}
+	handler := &Handler{service: service, validator: appvalidator.NewValidator()}
 	app := fiber.New()
 	app.Post("/converters", handler.Create)
 	app.Get("/converters/:converter_identity", handler.GetByIdentity)

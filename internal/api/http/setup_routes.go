@@ -12,6 +12,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/folder"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/project"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/query"
+	workspace "github.com/endge-lab/service-backend/internal/api/http/v1/workspace"
 	"github.com/endge-lab/service-backend/internal/config"
 
 	"github.com/gofiber/fiber/v2"
@@ -27,6 +28,8 @@ type Handler struct {
 	ConverterHandler       converter.ConvHandler
 	QueryHandler           query.QHandler
 	DataViewHandler        data_view.DVHandler
+	WorkspaceHandler       workspace.WHandler
+	WorkspaceMiddleware    *httpmiddleware.WorkspaceContextMiddleware
 }
 
 func NewHandler(
@@ -37,6 +40,8 @@ func NewHandler(
 	converterHandler converter.ConvHandler,
 	queryHandler query.QHandler,
 	dataViewHandler data_view.DVHandler,
+	workspaceHandler workspace.WHandler,
+	workspaceMiddleware *httpmiddleware.WorkspaceContextMiddleware,
 ) *Handler {
 	return &Handler{
 		SessionHandler:         sessionHandler,
@@ -46,6 +51,8 @@ func NewHandler(
 		ConverterHandler:       converterHandler,
 		QueryHandler:           queryHandler,
 		DataViewHandler:        dataViewHandler,
+		WorkspaceHandler:       workspaceHandler,
+		WorkspaceMiddleware:    workspaceMiddleware,
 	}
 }
 
@@ -74,12 +81,13 @@ func SetupRoutes(
 		api.Use(authMiddleware.AuthMiddleware())
 		session.RegisterRoutes(api, handler.SessionHandler)
 	}
-	project.RegisterRoutes(api, handler.ProjectHandler)
-	folder.RegisterRoutes(api, handler.FolderHandler)
-	component_legacy.RegisterRoutes(api, handler.ComponentLegacyHandler)
-	converter.RegisterRoutes(api, handler.ConverterHandler)
-	query.RegisterRoutes(api, handler.QueryHandler)
-	data_view.RegisterRoutes(api, handler.DataViewHandler)
+	project.RegisterRoutes(api, handler.ProjectHandler, handler.WorkspaceMiddleware)
+	folder.RegisterRoutes(api, handler.FolderHandler, handler.WorkspaceMiddleware)
+	component_legacy.RegisterRoutes(api, handler.ComponentLegacyHandler, handler.WorkspaceMiddleware)
+	converter.RegisterRoutes(api, handler.ConverterHandler, handler.WorkspaceMiddleware)
+	query.RegisterRoutes(api, handler.QueryHandler, handler.WorkspaceMiddleware)
+	data_view.RegisterRoutes(api, handler.DataViewHandler, handler.WorkspaceMiddleware)
+	workspace.RegisterRoutes(api, handler.WorkspaceHandler)
 	app.Use(func(c *fiber.Ctx) error {
 		return respond.WriteErrorResponse(c, respond.ErrRouteNotFound)
 	})

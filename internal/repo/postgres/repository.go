@@ -3,23 +3,22 @@ package postgres
 import (
 	"context"
 
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
 
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 type baseRepository struct {
-	q      *sqlc.Queries
-	tracer trace.Tracer
-	logger *zap.Logger
+	q        *sqlc.Queries
+	observer observability.Observer
 }
 
-func newBaseRepository(queries *sqlc.Queries, tracer trace.Tracer, logger *zap.Logger, repository string) *baseRepository {
+func newBaseRepository(queries *sqlc.Queries, core *observability.Core, metrics *RepositoryMetrics, repository string) *baseRepository {
+	observer := core.For(observability.LayerRepository, "postgres_"+repository+"_repository").WithRecorder(metrics).WithFields(zap.String("repository", repository))
 	return &baseRepository{
-		q:      queries,
-		tracer: tracer,
-		logger: logger.With(zap.String("component", "repo"), zap.String("repository", repository)),
+		q:        queries,
+		observer: observer,
 	}
 }
 

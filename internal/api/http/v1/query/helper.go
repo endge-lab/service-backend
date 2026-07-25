@@ -6,7 +6,6 @@ import (
 	respond "github.com/endge-lab/service-backend/internal/api/http/respond"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	"github.com/endge-lab/service-backend/internal/usecase/queries"
-	servicefiber "github.com/endge-lab/service-kit-go/pkg/httpkit/fiber"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -26,11 +25,7 @@ func newQueryResponse(value *entities.RQuery, projectIdentity, folderIdentity st
 
 func (h *Handler) change(c *fiber.Ctx, fn func(context.Context, queries.QueryIdentityInput) error) error {
 	if err := fn(c.UserContext(), queries.QueryIdentityInput{ProjectIdentity: c.Params("project_identity"), QueryIdentity: c.Params("query_identity")}); err != nil {
-		return respond.RespondDomainError(c, h.logger, err)
+		return respond.RespondDomainError(c, h.observer.Logger(), err)
 	}
 	return c.SendStatus(fiber.StatusNoContent)
-}
-
-func (h *Handler) TraceMiddleware(spanName string) fiber.Handler {
-	return servicefiber.TraceMiddleware(h.tracer, h.logger, spanName)
 }

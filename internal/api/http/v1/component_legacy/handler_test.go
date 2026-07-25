@@ -14,7 +14,6 @@ import (
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
 )
 
 func TestComponentLegacyHandlers(t *testing.T) {
@@ -23,7 +22,7 @@ func TestComponentLegacyHandlers(t *testing.T) {
 		FolderIdentity:  "root-components-legacy",
 	}
 	service := &componentServiceStub{value: value}
-	handler := &Handler{service: service, validator: appvalidator.NewValidator(), logger: zap.NewNop()}
+	handler := &Handler{service: service, validator: appvalidator.NewValidator()}
 	app := fiber.New()
 	routes := app.Group("/api/v1/projects/:project_identity/components-legacy")
 	routes.Post("/", handler.Create)
@@ -83,7 +82,7 @@ func TestComponentLegacyHandlers(t *testing.T) {
 
 func TestComponentLegacyHandlerValidationAndDomainErrors(t *testing.T) {
 	service := &componentServiceStub{value: &components_legacy.ComponentLegacyWithFolder{ComponentLegacy: &entities.RComponentLegacy{ID: uuid.New()}, FolderIdentity: "root-components-legacy"}}
-	handler := &Handler{service: service, validator: appvalidator.NewValidator(), logger: zap.NewNop()}
+	handler := &Handler{service: service, validator: appvalidator.NewValidator()}
 	app := fiber.New()
 	app.Post("/components-legacy", handler.Create)
 	app.Get("/components-legacy/:component_identity", handler.GetByIdentity)
@@ -98,6 +97,7 @@ func TestComponentLegacyHandlerValidationAndDomainErrors(t *testing.T) {
 	}{
 		{"invalid json", http.MethodPost, "/components-legacy", `{`, nil, http.StatusBadRequest},
 		{"validation", http.MethodPost, "/components-legacy", `{}`, nil, http.StatusBadRequest},
+		{"unsupported component type", http.MethodPost, "/components-legacy", `{"folderIdentity":"root-components-legacy","identity":"user-card","displayName":"User card","componentType":"legacy-html","source":"<template />"}`, nil, http.StatusBadRequest},
 		{"not found", http.MethodGet, "/components-legacy/user-card", "", apperrors.NotFound("component_not_found", "component not found"), http.StatusNotFound},
 		{"internal", http.MethodGet, "/components-legacy/user-card", "", apperrors.Internal("internal_error", "internal error"), http.StatusInternalServerError},
 	}

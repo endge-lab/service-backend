@@ -1,6 +1,7 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS folders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id),
     project_id UUID NULL REFERENCES projects(id) ON DELETE CASCADE,
     entity_type TEXT NOT NULL,
     identity TEXT NOT NULL,
@@ -31,19 +32,19 @@ CREATE TABLE IF NOT EXISTS folders (
     );
 
 CREATE UNIQUE INDEX IF NOT EXISTS folders_project_entity_identity_unique
-    ON folders (project_id, entity_type, identity)
+    ON folders (workspace_id, project_id, entity_type, identity)
     WHERE project_id IS NOT NULL;
 
 CREATE UNIQUE INDEX IF NOT EXISTS folders_global_entity_identity_unique
-    ON folders (entity_type, identity)
+    ON folders (workspace_id, entity_type, identity)
     WHERE project_id IS NULL;
 
 CREATE UNIQUE INDEX IF NOT EXISTS folders_project_entity_root_unique
-    ON folders (project_id, entity_type)
+    ON folders (workspace_id, project_id, entity_type)
     WHERE project_id IS NOT NULL AND is_root;
 
 CREATE UNIQUE INDEX IF NOT EXISTS folders_global_entity_root_unique
-    ON folders (entity_type)
+    ON folders (workspace_id, entity_type)
     WHERE project_id IS NULL AND is_root;
 
 ALTER TABLE tenants

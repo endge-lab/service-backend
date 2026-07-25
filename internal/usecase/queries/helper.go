@@ -111,6 +111,13 @@ func (s *Query) resolveFolderID(ctx context.Context, projectID uuid.UUID, identi
 	return &folder.ID, nil
 }
 
+func dereferenceString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
 func (s *Query) resolveFolder(ctx context.Context, projectID uuid.UUID, identity string) (*entities.RFolder, error) {
 	folder, err := s.folderRepository.GetByIdentity(ctx, &projectID, entities.FolderEntityTypeQueries, identity)
 	if errors.Is(err, apperrors.ErrNotFound) {
@@ -119,12 +126,12 @@ func (s *Query) resolveFolder(ctx context.Context, projectID uuid.UUID, identity
 	return folder, err
 }
 
-func queryFromCreate(projectID, folderID uuid.UUID, input CreateQueryInput) *entities.RQuery {
-	return &entities.RQuery{ProjectID: projectID, FolderID: folderID, Identity: input.Identity, DisplayName: input.DisplayName, Description: input.Description, QueryType: input.QueryType, Source: input.Source, Params: input.Params, Headers: input.Headers, Auth: input.Auth, TimeoutMS: input.TimeoutMS, MockData: input.MockData, MockDataEnabled: input.MockDataEnabled, Meta: input.Meta, Active: input.Active}
+func queryFromCreate(workspaceID, projectID, folderID uuid.UUID, input CreateQueryInput) *entities.RQuery {
+	return &entities.RQuery{WorkspaceID: workspaceID, ProjectID: projectID, FolderID: folderID, Identity: input.Identity, DisplayName: input.DisplayName, Description: input.Description, QueryType: input.QueryType, Source: input.Source, Params: input.Params, Headers: input.Headers, Auth: input.Auth, TimeoutMS: input.TimeoutMS, MockData: input.MockData, MockDataEnabled: input.MockDataEnabled, Meta: input.Meta, Active: input.Active}
 }
 
 func queryFromUpdate(current *entities.RQuery, folderID uuid.UUID, input UpdateQueryInput) *entities.RQuery {
-	return &entities.RQuery{ID: current.ID, ProjectID: current.ProjectID, FolderID: folderID, Identity: current.Identity, DisplayName: input.DisplayName, Description: input.Description, QueryType: input.QueryType, Source: input.Source, Params: input.Params, Headers: input.Headers, Auth: input.Auth, TimeoutMS: input.TimeoutMS, MockData: input.MockData, MockDataEnabled: input.MockDataEnabled, Meta: input.Meta, Active: input.Active, DeletedAt: current.DeletedAt, CreatedAt: current.CreatedAt, UpdatedAt: current.UpdatedAt}
+	return &entities.RQuery{ID: current.ID, WorkspaceID: current.WorkspaceID, ProjectID: current.ProjectID, FolderID: folderID, Identity: current.Identity, DisplayName: input.DisplayName, Description: input.Description, QueryType: input.QueryType, Source: input.Source, Params: input.Params, Headers: input.Headers, Auth: input.Auth, TimeoutMS: input.TimeoutMS, MockData: input.MockData, MockDataEnabled: input.MockDataEnabled, Meta: input.Meta, Active: input.Active, DeletedAt: current.DeletedAt, CreatedAt: current.CreatedAt, UpdatedAt: current.UpdatedAt}
 }
 
 func queryWithFolder(query *entities.RQuery, folderIdentity string) *QueryWithFolder {

@@ -17,6 +17,7 @@ const (
 
 type RFolder struct {
 	ID          uuid.UUID        `json:"id"`
+	WorkspaceID uuid.UUID        `json:"workspace_id"`
 	ProjectID   *uuid.UUID       `json:"project_id,omitempty"`
 	EntityType  FolderEntityType `json:"entity_type"`
 	Identity    string           `json:"identity"`

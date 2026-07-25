@@ -6,64 +6,57 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 type LoadSession struct {
-	observed       shared.ObservedUseCase
+	observer       observability.Observer
 	userRepository ports.UserRepository
 }
 
 type LoadSessionParams struct {
 	UserRepository ports.UserRepository
-	Tracer         trace.Tracer
-	Logger         *zap.Logger
+	Observability  *observability.Core
 	Metrics        *shared.UseCaseMetrics
 }
 
 func NewLoadSessionUseCase(
 	userRepository ports.UserRepository,
-	tracer trace.Tracer,
-	logger *zap.Logger,
+	core *observability.Core,
 	metrics *shared.UseCaseMetrics,
 ) *LoadSession {
 	return newLoadSessionUseCase(LoadSessionParams{
 		UserRepository: userRepository,
-		Tracer:         tracer,
-		Logger:         logger,
+		Observability:  core,
 		Metrics:        metrics,
 	})
 }
 
 func newLoadSessionUseCase(params LoadSessionParams) *LoadSession {
 	return &LoadSession{
-		observed: shared.NewObservedUseCase(
-			params.Tracer,
-			params.Logger.With(zap.String("component", "usecase"), zap.String("usecase", "load_session")),
-			params.Metrics,
-		),
+		observer:       params.Observability.For(observability.LayerUseCase, "load_session_usecase").WithRecorder(params.Metrics),
 		userRepository: params.UserRepository,
 	}
 }
 
 func (u *LoadSession) Execute(ctx context.Context, input LoadSessionInput) (output *LoadSessionOutput, err error) {
-	ctx, obs := u.observed.StartObservedOperation(ctx, "load_session", []attribute.KeyValue{
+	ctx, obs := u.observer.Start(ctx, "load_session", []attribute.KeyValue{
 		attribute.String("auth.user_id", strings.TrimSpace(input.AuthUserID)),
 	}, nil)
 	defer obs.End(&err)
-
-	logger := obs.Logger()
-	logger.Debug("load session use case started", zap.String("auth_user_id", strings.TrimSpace(input.AuthUserID)))
 
 	authUserID := strings.TrimSpace(input.AuthUserID)
 	if authUserID == "" {
 		return nil, domainerrors.ErrAuthUserIDRequired
 	}
+	obs.RecordStep("session.load.auth_user_validated", "authenticated user identifier validated", nil,
+		zap.String("auth_user_id", authUserID),
+	)
 
 	user, err := u.userRepository.SyncUserFromIdentity(ctx, ports.SyncUserInput{
 		AuthUserID:  authUserID,
@@ -75,7 +68,9 @@ func (u *LoadSession) Execute(ctx context.Context, input LoadSessionInput) (outp
 		return nil, err
 	}
 
-	logger.Debug("load session use case completed", zap.String("service_user_id", user.ID))
+	obs.RecordStep("session.load.user_synchronized", "session user synchronized", nil,
+		zap.String("service_user_id", user.ID),
+	)
 
 	return &LoadSessionOutput{
 		Session: &entities.SessionInfo{

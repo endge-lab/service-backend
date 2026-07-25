@@ -109,6 +109,13 @@ func (s *DataView) resolveFolderID(ctx context.Context, projectID uuid.UUID, ide
 	return &folder.ID, nil
 }
 
+func dereferenceString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
 func (s *DataView) resolveFolder(ctx context.Context, projectID uuid.UUID, identity string) (*entities.RFolder, error) {
 	folder, err := s.folderRepository.GetByIdentity(ctx, &projectID, entities.FolderEntityTypeDataViews, identity)
 	if errors.Is(err, apperrors.ErrNotFound) {
@@ -143,12 +150,12 @@ func (s *DataView) resolveActiveQuery(ctx context.Context, projectID uuid.UUID, 
 	return nil, err
 }
 
-func dataViewFromCreate(projectID, folderID, queryID uuid.UUID, input CreateDataViewInput) *entities.RDataView {
-	return &entities.RDataView{ProjectID: projectID, FolderID: folderID, QueryID: queryID, Identity: input.Identity, DisplayName: input.DisplayName, Description: input.Description, ViewType: input.ViewType, Source: input.Source, InputSchema: input.InputSchema, OutputSchema: input.OutputSchema, Meta: input.Meta, Active: input.Active}
+func dataViewFromCreate(workspaceID, projectID, folderID, queryID uuid.UUID, input CreateDataViewInput) *entities.RDataView {
+	return &entities.RDataView{WorkspaceID: workspaceID, ProjectID: projectID, FolderID: folderID, QueryID: queryID, Identity: input.Identity, DisplayName: input.DisplayName, Description: input.Description, ViewType: input.ViewType, Source: input.Source, InputSchema: input.InputSchema, OutputSchema: input.OutputSchema, Meta: input.Meta, Active: input.Active}
 }
 
 func dataViewFromUpdate(current *entities.RDataView, folderID, queryID uuid.UUID, input UpdateDataViewInput) *entities.RDataView {
-	return &entities.RDataView{ID: current.ID, ProjectID: current.ProjectID, FolderID: folderID, QueryID: queryID, Identity: current.Identity, DisplayName: input.DisplayName, Description: input.Description, ViewType: input.ViewType, Source: input.Source, InputSchema: input.InputSchema, OutputSchema: input.OutputSchema, Meta: input.Meta, Active: input.Active, DeletedAt: current.DeletedAt, CreatedAt: current.CreatedAt, UpdatedAt: current.UpdatedAt}
+	return &entities.RDataView{ID: current.ID, WorkspaceID: current.WorkspaceID, ProjectID: current.ProjectID, FolderID: folderID, QueryID: queryID, Identity: current.Identity, DisplayName: input.DisplayName, Description: input.Description, ViewType: input.ViewType, Source: input.Source, InputSchema: input.InputSchema, OutputSchema: input.OutputSchema, Meta: input.Meta, Active: input.Active, DeletedAt: current.DeletedAt, CreatedAt: current.CreatedAt, UpdatedAt: current.UpdatedAt}
 }
 
 func dataViewWithRelations(dataView *entities.RDataView, folderIdentity, queryIdentity string) *DataViewWithRelations {
