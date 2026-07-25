@@ -108,9 +108,9 @@ Default:
     "sfcAdapterIds": {
       "entries": [
         {
-          "key": "shadcn-vue",
+          "key": "vue-shadcn",
           "op": "upsert",
-          "value": "shadcn-vue"
+          "value": "vue-shadcn"
         }
       ]
     }

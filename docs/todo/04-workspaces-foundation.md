@@ -53,8 +53,8 @@ CREATE TABLE workspaces (
   ],
   "defaultTheme": "light",
   "defaultAuthProfileIdentity": null,
-  "sfcAdapterIds": ["native-vue"],
-  "defaultSfcAdapterId": "native-vue"
+  "sfcAdapterIds": ["vue-native"],
+  "defaultSfcAdapterId": "vue-native"
 }
 ```
 
@@ -170,8 +170,8 @@ Create request:
     ],
     "defaultTheme": "light",
     "defaultAuthProfileIdentity": null,
-    "sfcAdapterIds": ["native-vue"],
-    "defaultSfcAdapterId": "native-vue"
+    "sfcAdapterIds": ["vue-native"],
+    "defaultSfcAdapterId": "vue-native"
   }
 }
 ```
@@ -199,8 +199,8 @@ Response:
     ],
     "defaultTheme": "light",
     "defaultAuthProfileIdentity": null,
-    "sfcAdapterIds": ["native-vue"],
-    "defaultSfcAdapterId": "native-vue"
+    "sfcAdapterIds": ["vue-native"],
+    "defaultSfcAdapterId": "vue-native"
   },
   "createdAt": "2026-07-16T10:00:00Z",
   "updatedAt": "2026-07-16T10:00:00Z"

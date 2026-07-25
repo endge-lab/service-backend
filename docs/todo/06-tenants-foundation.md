@@ -103,8 +103,8 @@ Default означает чистое наследование:
     ],
     "defaultTheme": "light",
     "defaultAuthProfileIdentity": null,
-    "sfcAdapterIds": ["native-vue"],
-    "defaultSfcAdapterId": "native-vue"
+    "sfcAdapterIds": ["vue-native"],
+    "defaultSfcAdapterId": "vue-native"
   }
 }
 ```
