@@ -188,21 +188,22 @@ type Tenant struct {
 }
 
 type Type struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Schema      []byte             `json:"schema"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Active      bool               `json:"active"`
-	IsSystem    bool               `json:"is_system"`
-	IsPrimitive bool               `json:"is_primitive"`
-	Inherited   bool               `json:"inherited"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	Author      pgtype.Text        `json:"author"`
-	Meta        []byte             `json:"meta"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID            uuid.UUID          `json:"id"`
+	WorkspaceID   uuid.UUID          `json:"workspace_id"`
+	Identity      string             `json:"identity"`
+	DisplayName   string             `json:"display_name"`
+	FolderID      pgtype.UUID        `json:"folder_id"`
+	Active        bool               `json:"active"`
+	IsSystem      bool               `json:"is_system"`
+	IsPrimitive   bool               `json:"is_primitive"`
+	Inherited     bool               `json:"inherited"`
+	DeletedAt     pgtype.Timestamptz `json:"deleted_at"`
+	Author        pgtype.Text        `json:"author"`
+	Meta          []byte             `json:"meta"`
+	CreatedAt     time.Time          `json:"created_at"`
+	UpdatedAt     time.Time          `json:"updated_at"`
+	Source        string             `json:"source"`
+	SourceVersion int32              `json:"source_version"`
 }
 
 type Version struct {

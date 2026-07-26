@@ -152,7 +152,7 @@ sourcePath
 В этой задаче реализовать infrastructure и tests с test extractor. Реальные extractors подключаются в задачах конкретных моделей:
 
 ```text
-Types        → schema.fields[].type
+Types        → references из скомпилированного Type Source
 Filters      → fields[].vocabIdentity / converterIdentities[]
 Components  → references, доступные parser/compiler
 Compositions/Stores → references, доступные parser/compiler
@@ -206,7 +206,7 @@ Response `200 OK`:
       "ownerType": "type",
       "ownerId": "550e8400-e29b-41d4-a716-446655440000",
       "ownerIdentity": "OrderList",
-      "sourcePath": "schema.fields[0].type",
+      "sourcePath": "source.registration",
       "verificationState": "verified"
     }
   ],
@@ -295,7 +295,7 @@ References внутри canonical source или вложенного authoring J
 Component/Composition/Store source
 Filter.fields[].vocabIdentity
 Filter.fields[].converterIdentities
-Type.schema.fields[].type
+Type Source references
 component identity/tag references
 ```
 
