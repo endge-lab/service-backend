@@ -8,17 +8,21 @@ import (
 	httpfolder "github.com/endge-lab/service-backend/internal/api/http/v1/folder"
 	httpproject "github.com/endge-lab/service-backend/internal/api/http/v1/project"
 	httpquery "github.com/endge-lab/service-backend/internal/api/http/v1/query"
+	httptenant "github.com/endge-lab/service-backend/internal/api/http/v1/tenant"
 	httpworkspace "github.com/endge-lab/service-backend/internal/api/http/v1/workspace"
 	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/components_legacy"
 	"github.com/endge-lab/service-backend/internal/usecase/converters"
 	"github.com/endge-lab/service-backend/internal/usecase/data_views"
+	"github.com/endge-lab/service-backend/internal/usecase/dependencies"
 	"github.com/endge-lab/service-backend/internal/usecase/folders"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/projects"
 	"github.com/endge-lab/service-backend/internal/usecase/queries"
+	"github.com/endge-lab/service-backend/internal/usecase/relations"
 	usecasesession "github.com/endge-lab/service-backend/internal/usecase/session"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
+	"github.com/endge-lab/service-backend/internal/usecase/tenants"
 	"github.com/endge-lab/service-backend/internal/usecase/workspaces"
 
 	"go.uber.org/fx"
@@ -28,6 +32,8 @@ func UseCaseModules() fx.Option {
 	return fx.Options(
 		fx.Provide(
 			shared.NewUseCaseMetrics,
+			newDependenciesUseCase,
+			relations.NewResolver,
 			fx.Annotate(usecasesession.NewLoadSessionUseCase, fx.As(new(httpsession.UseCase))),
 			fx.Annotate(newProjectUseCase, fx.As(new(httpproject.UseCase))),
 			fx.Annotate(newFolderUseCase, fx.As(new(httpfolder.UseCase))),
@@ -36,12 +42,22 @@ func UseCaseModules() fx.Option {
 			fx.Annotate(newQueryUseCase, fx.As(new(httpquery.UseCase))),
 			fx.Annotate(newDataViewUseCase, fx.As(new(httpdataview.UseCase))),
 			fx.Annotate(newWorkspaceUseCase, fx.As(new(httpworkspace.UseCase))),
+			fx.Annotate(newTenantUseCase, fx.As(new(httptenant.UseCase))),
+			fx.Annotate(httptenant.NewHandler, fx.As(new(httptenant.THandler))),
 		),
 	)
 }
 
-func newWorkspaceUseCase(repository ports.WorkspacesRepository, core *observability.Core, metrics *shared.UseCaseMetrics) *workspaces.Workspace {
-	return workspaces.NewWorkspaceService(workspaces.WorkspaceParams{Repository: repository, Observability: core, Metrics: metrics})
+func newDependenciesUseCase(repository ports.DomainDependenciesRepository, txManager ports.TxManager, core *observability.Core, metrics *shared.UseCaseMetrics) *dependencies.Dependencies {
+	return dependencies.NewDependenciesService(dependencies.DependenciesParams{Repository: repository, TxManager: txManager, Observability: core, Metrics: metrics})
+}
+
+func newWorkspaceUseCase(repository ports.WorkspacesRepository, folderRepository ports.FoldersRepository, txManager ports.TxManager, core *observability.Core, metrics *shared.UseCaseMetrics) *workspaces.Workspace {
+	return workspaces.NewWorkspaceService(workspaces.WorkspaceParams{Repository: repository, FolderRepository: folderRepository, TxManager: txManager, Observability: core, Metrics: metrics})
+}
+
+func newTenantUseCase(repository ports.TenantsRepository, folderRepository ports.FoldersRepository, txManager ports.TxManager, resolver *relations.Resolver, core *observability.Core, metrics *shared.UseCaseMetrics) *tenants.Tenant {
+	return tenants.NewTenantService(tenants.TenantParams{Repository: repository, FolderRepository: folderRepository, TxManager: txManager, Relations: resolver, Observability: core, Metrics: metrics})
 }
 
 func newProjectUseCase(
@@ -94,6 +110,7 @@ func newConverterUseCase(
 	converterRepository ports.ConvertersRepository,
 	folderRepository ports.FoldersRepository,
 	projectRepository ports.ProjectsRepository,
+	resolver *relations.Resolver,
 	core *observability.Core,
 	metrics *shared.UseCaseMetrics,
 ) *converters.Converter {
@@ -101,6 +118,7 @@ func newConverterUseCase(
 		ConverterRepository: converterRepository,
 		FolderRepository:    folderRepository,
 		ProjectRepository:   projectRepository,
+		Relations:           resolver,
 		Observability:       core,
 		Metrics:             metrics,
 	})
@@ -110,6 +128,7 @@ func newQueryUseCase(
 	queryRepository ports.QueriesRepository,
 	folderRepository ports.FoldersRepository,
 	projectRepository ports.ProjectsRepository,
+	resolver *relations.Resolver,
 	core *observability.Core,
 	metrics *shared.UseCaseMetrics,
 ) *queries.Query {
@@ -117,6 +136,7 @@ func newQueryUseCase(
 		QueryRepository:   queryRepository,
 		FolderRepository:  folderRepository,
 		ProjectRepository: projectRepository,
+		Relations:         resolver,
 		Observability:     core,
 		Metrics:           metrics,
 	})
@@ -127,6 +147,7 @@ func newDataViewUseCase(
 	queryRepository ports.QueriesRepository,
 	folderRepository ports.FoldersRepository,
 	projectRepository ports.ProjectsRepository,
+	resolver *relations.Resolver,
 	core *observability.Core,
 	metrics *shared.UseCaseMetrics,
 ) *data_views.DataView {
@@ -135,6 +156,7 @@ func newDataViewUseCase(
 		QueryRepository:    queryRepository,
 		FolderRepository:   folderRepository,
 		ProjectRepository:  projectRepository,
+		Relations:          resolver,
 		Observability:      core,
 		Metrics:            metrics,
 	})

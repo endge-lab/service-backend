@@ -39,6 +39,70 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/session.ErrorResponse"
+  /api/v1/domain/usages:
+    get:
+      security:
+        - BearerAuth: []
+          WorkspaceAuth: []
+      description: Возвращает документы текущего workspace, которые ссылаются на
+        dependency identity внутри source или authoring JSON. Dependency index
+        является derived projection и через API не редактируется.
+      tags:
+        - domain
+      summary: Получить usages domain identity
+      parameters:
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - example: type
+          description: Dependency type
+          name: dependency_type
+          in: query
+          required: true
+          schema:
+            type: string
+        - example: Orders
+          description: Dependency identity
+          name: dependency_identity
+          in: query
+          required: true
+          schema:
+            type: string
+        - description: "Размер страницы: от 1 до 200, по умолчанию 50"
+          name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - description: Смещение, по умолчанию 0
+          name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/domain.UsagesListResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
   /api/v1/projects:
     get:
       security:
@@ -2422,6 +2486,266 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/respond.ErrorResponse"
+  /api/v1/tenants:
+    get:
+      security:
+        - BearerAuth: []
+          WorkspaceAuth: []
+      description: Возвращает tenants текущего workspace; folder_identity ограничивает
+        список папкой типа tenants.
+      tags:
+        - tenants
+      summary: Список tenants
+      parameters:
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - example: root-tenants
+          description: Tenant folder identity
+          name: folder_identity
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/tenant.TenantsListResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+    post:
+      security:
+        - BearerAuth: []
+          WorkspaceAuth: []
+      description: Создаёт final configuration layer Tenant в workspace из
+        X-Endge-Workspace. При отсутствии folderIdentity используется
+        root-tenants.
+      tags:
+        - tenants
+      summary: Создать tenant
+      parameters:
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/tenant.CreateTenantRequest"
+        description: Данные tenant
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/tenant.TenantResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+  "/api/v1/tenants/{tenant_identity}":
+    get:
+      security:
+        - BearerAuth: []
+          WorkspaceAuth: []
+      description: Возвращает tenant по identity только из workspace X-Endge-Workspace.
+      tags:
+        - tenants
+      summary: Получить tenant
+      parameters:
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - example: tenant-default
+          description: Tenant identity
+          name: tenant_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/tenant.TenantResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+    delete:
+      security:
+        - BearerAuth: []
+          WorkspaceAuth: []
+      description: Физически удаляет tenant по identity в workspace X-Endge-Workspace.
+      tags:
+        - tenants
+      summary: Удалить tenant
+      parameters:
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - example: tenant-default
+          description: Tenant identity
+          name: tenant_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+    patch:
+      security:
+        - BearerAuth: []
+          WorkspaceAuth: []
+      description: Частично обновляет tenant. folderIdentity:null перемещает tenant в
+        root-tenants; переданная configuration полностью заменяет contribution.
+      tags:
+        - tenants
+      summary: Обновить tenant
+      parameters:
+        - example: demo-workspace
+          description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - example: tenant-default
+          description: Tenant identity
+          name: tenant_identity
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/tenant.UpdateTenantRequest"
+        description: Поля PATCH tenant
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/tenant.TenantResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respond.ErrorResponse"
   /api/v1/workspaces:
     get:
       security:
@@ -3037,6 +3361,40 @@ components:
           maxLength: 160
           minLength: 1
           example: table
+    domain.UsageResponse:
+      type: object
+      properties:
+        ownerId:
+          type: string
+          example: 550e8400-e29b-41d4-a716-446655440000
+        ownerIdentity:
+          type: string
+          example: OrderList
+        ownerType:
+          type: string
+          example: type
+        sourcePath:
+          type: string
+          example: schema.fields[0].type
+        verificationState:
+          type: string
+          example: verified
+    domain.UsagesListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/domain.UsageResponse"
+        limit:
+          type: integer
+          example: 50
+        offset:
+          type: integer
+          example: 0
+        total:
+          type: integer
+          example: 1
     entities.EndgeConfiguration:
       type: object
       properties:
@@ -3075,6 +3433,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/entities.EndgeVariable"
+    entities.EndgeConfigurationContributionMode:
+      type: string
+      enum:
+        - inherit
+        - replace
+      x-enum-varnames:
+        - EndgeConfigurationContributionModeInherit
+        - EndgeConfigurationContributionModeReplace
     entities.EndgeLocale:
       type: object
       properties:
@@ -3141,11 +3507,13 @@ components:
         - converters
         - queries
         - data-views
+        - tenants
       x-enum-varnames:
         - FolderEntityTypeComponentsLegacy
         - FolderEntityTypeConverters
         - FolderEntityTypeQueries
         - FolderEntityTypeDataViews
+        - FolderEntityTypeTenants
     entities.RComponentLegacySourceFormat:
       type: string
       enum:
@@ -3634,3 +4002,106 @@ components:
           type: string
         username:
           type: string
+    tenant.ConfigurationContribution:
+      type: object
+      properties:
+        mode:
+          enum:
+            - inherit
+            - replace
+          allOf:
+            - $ref: "#/components/schemas/entities.EndgeConfigurationContributionMode"
+          example: inherit
+        patch:
+          type: object
+        value:
+          $ref: "#/components/schemas/entities.EndgeConfiguration"
+    tenant.CreateTenantRequest:
+      type: object
+      required:
+        - code
+        - displayName
+        - identity
+      properties:
+        code:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: TENANT_DEFAULT
+        configuration:
+          $ref: "#/components/schemas/tenant.ConfigurationContribution"
+        description:
+          type: string
+          example: Main business tenant
+        displayName:
+          type: string
+          maxLength: 255
+          minLength: 1
+          example: Default tenant
+        folderIdentity:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: root-tenants
+        identity:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: tenant-default
+    tenant.TenantResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: TENANT_DEFAULT
+        configuration:
+          $ref: "#/components/schemas/tenant.ConfigurationContribution"
+        createdAt:
+          type: string
+          example: 2026-07-25T10:00:00Z
+        description:
+          type: string
+          example: Main business tenant
+        displayName:
+          type: string
+          example: Default tenant
+        folderIdentity:
+          type: string
+          example: root-tenants
+        id:
+          type: string
+          example: 00000000-0000-4000-8000-000000000071
+        identity:
+          type: string
+          example: tenant-default
+        updatedAt:
+          type: string
+          example: 2026-07-25T10:00:00Z
+    tenant.TenantsListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/tenant.TenantResponse"
+    tenant.UpdateTenantRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          maxLength: 160
+          minLength: 1
+          example: TENANT_RENAMED
+        configuration:
+          $ref: "#/components/schemas/tenant.ConfigurationContribution"
+        description:
+          type: string
+          example: Updated business tenant
+        displayName:
+          type: string
+          maxLength: 255
+          minLength: 1
+          example: Renamed tenant
+        folderIdentity:
+          type: string
+          example: root-tenants

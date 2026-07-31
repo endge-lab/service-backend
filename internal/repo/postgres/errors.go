@@ -81,6 +81,16 @@ var (
 		internalCode:            "internal_error",
 		internalStorageMessage:  "failed to save data view",
 	}
+	tenantStorageErrorMapping = storageErrorMapping{
+		identityConstraintNames: []string{
+			"tenants_workspace_identity_unique",
+			"tenants_workspace_code_unique",
+		},
+		identityConflictMessage: "tenant identity or code already exists",
+		validationMessage:       "tenant data violates a constraint",
+		internalCode:            "internal_error",
+		internalStorageMessage:  "failed to save tenant",
+	}
 )
 
 func classifyPostgresError(err error) postgresErrorInfo {

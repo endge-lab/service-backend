@@ -61,6 +61,45 @@ func TestScopedOperationsRequireWorkspaceHeader(t *testing.T) {
 	}
 }
 
+func TestTenantOperationsRequireWorkspaceHeader(t *testing.T) {
+	var document struct {
+		Paths map[string]map[string]struct {
+			Security   []map[string][]string `yaml:"security"`
+			Parameters []struct {
+				Name     string `yaml:"name"`
+				In       string `yaml:"in"`
+				Required bool   `yaml:"required"`
+				Example  string `yaml:"example"`
+			} `yaml:"parameters"`
+		} `yaml:"paths"`
+	}
+	if err := yaml.Unmarshal(openAPI3YAML, &document); err != nil {
+		t.Fatalf("parse embedded OpenAPI document: %v", err)
+	}
+
+	checked := 0
+	for path, operations := range document.Paths {
+		if !strings.HasPrefix(path, "/api/v1/tenants") {
+			continue
+		}
+		for method, operation := range operations {
+			if !isHTTPMethod(method) {
+				continue
+			}
+			checked++
+			if !requiresWorkspaceSecurity(operation.Security) {
+				t.Errorf("%s %s does not require WorkspaceAuth", strings.ToUpper(method), path)
+			}
+			if !hasWorkspaceHeaderParameter(operation.Parameters) {
+				t.Errorf("%s %s does not expose X-Endge-Workspace with demo-workspace example", strings.ToUpper(method), path)
+			}
+		}
+	}
+	if checked != 5 {
+		t.Fatalf("tenant operation count = %d, want 5", checked)
+	}
+}
+
 func requiresWorkspaceSecurity(requirements []map[string][]string) bool {
 	for _, requirement := range requirements {
 		if _, ok := requirement["WorkspaceAuth"]; ok {

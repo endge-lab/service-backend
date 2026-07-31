@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS types (
     identity TEXT NOT NULL,
     display_name TEXT NOT NULL,
     schema JSONB NOT NULL DEFAULT '{}'::jsonb,
-    folder_id UUID NULL REFERENCES folders(id) ON DELETE SET NULL,
+    folder_id UUID NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
     is_system BOOLEAN NOT NULL DEFAULT FALSE,
     is_primitive BOOLEAN NOT NULL DEFAULT FALSE,
@@ -15,7 +15,11 @@ CREATE TABLE IF NOT EXISTS types (
     meta JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT types_workspace_identity_unique UNIQUE (workspace_id, identity)
+    CONSTRAINT types_workspace_identity_unique UNIQUE (workspace_id, identity),
+    CONSTRAINT types_workspace_folder_fkey
+    FOREIGN KEY (workspace_id, folder_id)
+    REFERENCES folders(workspace_id, id)
+    ON DELETE SET NULL (folder_id)
 );
 
 -- +goose Down

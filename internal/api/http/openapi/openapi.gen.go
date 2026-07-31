@@ -44,6 +44,70 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/session.ErrorResponse\"\n" +
+		"  /api/v1/domain/usages:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
+		"      description: Возвращает документы текущего workspace, которые ссылаются на\n" +
+		"        dependency identity внутри source или authoring JSON. Dependency index\n" +
+		"        является derived projection и через API не редактируется.\n" +
+		"      tags:\n" +
+		"        - domain\n" +
+		"      summary: Получить usages domain identity\n" +
+		"      parameters:\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - example: type\n" +
+		"          description: Dependency type\n" +
+		"          name: dependency_type\n" +
+		"          in: query\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - example: Orders\n" +
+		"          description: Dependency identity\n" +
+		"          name: dependency_identity\n" +
+		"          in: query\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: \"Размер страницы: от 1 до 200, по умолчанию 50\"\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            default: 50\n" +
+		"        - description: Смещение, по умолчанию 0\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/domain.UsagesListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Internal Server Error\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  /api/v1/projects:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -2427,6 +2491,266 @@ var openAPI3YAML = []byte(
 		"            \"*/*\":\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"  /api/v1/tenants:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
+		"      description: Возвращает tenants текущего workspace; folder_identity ограничивает\n" +
+		"        список папкой типа tenants.\n" +
+		"      tags:\n" +
+		"        - tenants\n" +
+		"      summary: Список tenants\n" +
+		"      parameters:\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - example: root-tenants\n" +
+		"          description: Tenant folder identity\n" +
+		"          name: folder_identity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/tenant.TenantsListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Internal Server Error\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
+		"      description: Создаёт final configuration layer Tenant в workspace из\n" +
+		"        X-Endge-Workspace. При отсутствии folderIdentity используется\n" +
+		"        root-tenants.\n" +
+		"      tags:\n" +
+		"        - tenants\n" +
+		"      summary: Создать tenant\n" +
+		"      parameters:\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/tenant.CreateTenantRequest\"\n" +
+		"        description: Данные tenant\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Created\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/tenant.TenantResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Conflict\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Internal Server Error\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"  \"/api/v1/tenants/{tenant_identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
+		"      description: Возвращает tenant по identity только из workspace X-Endge-Workspace.\n" +
+		"      tags:\n" +
+		"        - tenants\n" +
+		"      summary: Получить tenant\n" +
+		"      parameters:\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - example: tenant-default\n" +
+		"          description: Tenant identity\n" +
+		"          name: tenant_identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/tenant.TenantResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Internal Server Error\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
+		"      description: Физически удаляет tenant по identity в workspace X-Endge-Workspace.\n" +
+		"      tags:\n" +
+		"        - tenants\n" +
+		"      summary: Удалить tenant\n" +
+		"      parameters:\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - example: tenant-default\n" +
+		"          description: Tenant identity\n" +
+		"          name: tenant_identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"204\":\n" +
+		"          description: No Content\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Internal Server Error\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"          WorkspaceAuth: []\n" +
+		"      description: Частично обновляет tenant. folderIdentity:null перемещает tenant в\n" +
+		"        root-tenants; переданная configuration полностью заменяет contribution.\n" +
+		"      tags:\n" +
+		"        - tenants\n" +
+		"      summary: Обновить tenant\n" +
+		"      parameters:\n" +
+		"        - example: demo-workspace\n" +
+		"          description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - example: tenant-default\n" +
+		"          description: Tenant identity\n" +
+		"          name: tenant_identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/tenant.UpdateTenantRequest\"\n" +
+		"        description: Поля PATCH tenant\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/tenant.TenantResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Conflict\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Internal Server Error\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  /api/v1/workspaces:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -3042,6 +3366,40 @@ var openAPI3YAML = []byte(
 		"          maxLength: 160\n" +
 		"          minLength: 1\n" +
 		"          example: table\n" +
+		"    domain.UsageResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        ownerId:\n" +
+		"          type: string\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        ownerIdentity:\n" +
+		"          type: string\n" +
+		"          example: OrderList\n" +
+		"        ownerType:\n" +
+		"          type: string\n" +
+		"          example: type\n" +
+		"        sourcePath:\n" +
+		"          type: string\n" +
+		"          example: schema.fields[0].type\n" +
+		"        verificationState:\n" +
+		"          type: string\n" +
+		"          example: verified\n" +
+		"    domain.UsagesListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/domain.UsageResponse\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 50\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
 		"    entities.EndgeConfiguration:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -3080,6 +3438,14 @@ var openAPI3YAML = []byte(
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.EndgeVariable\"\n" +
+		"    entities.EndgeConfigurationContributionMode:\n" +
+		"      type: string\n" +
+		"      enum:\n" +
+		"        - inherit\n" +
+		"        - replace\n" +
+		"      x-enum-varnames:\n" +
+		"        - EndgeConfigurationContributionModeInherit\n" +
+		"        - EndgeConfigurationContributionModeReplace\n" +
 		"    entities.EndgeLocale:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -3146,11 +3512,13 @@ var openAPI3YAML = []byte(
 		"        - converters\n" +
 		"        - queries\n" +
 		"        - data-views\n" +
+		"        - tenants\n" +
 		"      x-enum-varnames:\n" +
 		"        - FolderEntityTypeComponentsLegacy\n" +
 		"        - FolderEntityTypeConverters\n" +
 		"        - FolderEntityTypeQueries\n" +
 		"        - FolderEntityTypeDataViews\n" +
+		"        - FolderEntityTypeTenants\n" +
 		"    entities.RComponentLegacySourceFormat:\n" +
 		"      type: string\n" +
 		"      enum:\n" +
@@ -3638,5 +4006,108 @@ var openAPI3YAML = []byte(
 		"        updatedAt:\n" +
 		"          type: string\n" +
 		"        username:\n" +
-		"          type: string\n",
+		"          type: string\n" +
+		"    tenant.ConfigurationContribution:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        mode:\n" +
+		"          enum:\n" +
+		"            - inherit\n" +
+		"            - replace\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.EndgeConfigurationContributionMode\"\n" +
+		"          example: inherit\n" +
+		"        patch:\n" +
+		"          type: object\n" +
+		"        value:\n" +
+		"          $ref: \"#/components/schemas/entities.EndgeConfiguration\"\n" +
+		"    tenant.CreateTenantRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - code\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        code:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: TENANT_DEFAULT\n" +
+		"        configuration:\n" +
+		"          $ref: \"#/components/schemas/tenant.ConfigurationContribution\"\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Main business tenant\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
+		"          example: Default tenant\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: root-tenants\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: tenant-default\n" +
+		"    tenant.TenantResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        code:\n" +
+		"          type: string\n" +
+		"          example: TENANT_DEFAULT\n" +
+		"        configuration:\n" +
+		"          $ref: \"#/components/schemas/tenant.ConfigurationContribution\"\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          example: 2026-07-25T10:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Main business tenant\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Default tenant\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-tenants\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          example: 00000000-0000-4000-8000-000000000071\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: tenant-default\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          example: 2026-07-25T10:00:00Z\n" +
+		"    tenant.TenantsListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/tenant.TenantResponse\"\n" +
+		"    tenant.UpdateTenantRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        code:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          minLength: 1\n" +
+		"          example: TENANT_RENAMED\n" +
+		"        configuration:\n" +
+		"          $ref: \"#/components/schemas/tenant.ConfigurationContribution\"\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Updated business tenant\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          minLength: 1\n" +
+		"          example: Renamed tenant\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-tenants\n",
 )

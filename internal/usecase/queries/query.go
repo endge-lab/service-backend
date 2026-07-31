@@ -8,6 +8,7 @@ import (
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
+	relationresolver "github.com/endge-lab/service-backend/internal/usecase/relations"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -16,22 +17,27 @@ import (
 const queryOperationTimeout = 15 * time.Second
 
 type Query struct {
-	queryRepository   ports.QueriesRepository
-	folderRepository  ports.FoldersRepository
-	projectRepository ports.ProjectsRepository
-	observer          observability.Observer
+	queryRepository  ports.QueriesRepository
+	folderRepository ports.FoldersRepository
+	relations        *relationresolver.Resolver
+	observer         observability.Observer
 }
 
 type QueryParams struct {
 	QueryRepository   ports.QueriesRepository
 	FolderRepository  ports.FoldersRepository
 	ProjectRepository ports.ProjectsRepository
+	Relations         *relationresolver.Resolver
 	Observability     *observability.Core
 	Metrics           *shared.UseCaseMetrics
 }
 
 func NewQueryService(params QueryParams) *Query {
-	return &Query{queryRepository: params.QueryRepository, folderRepository: params.FolderRepository, projectRepository: params.ProjectRepository, observer: params.Observability.For(observability.LayerUseCase, "queries_usecase").WithRecorder(params.Metrics)}
+	resolver := params.Relations
+	if resolver == nil {
+		resolver = relationresolver.NewResolver(params.ProjectRepository, params.FolderRepository)
+	}
+	return &Query{queryRepository: params.QueryRepository, folderRepository: params.FolderRepository, relations: resolver, observer: params.Observability.For(observability.LayerUseCase, "queries_usecase").WithRecorder(params.Metrics)}
 }
 
 // Create создает Query в указанной папке проекта.
@@ -62,7 +68,7 @@ func (s *Query) Create(ctx context.Context, input CreateQueryInput) (result *Que
 		return nil, err
 	}
 	observed.RecordStep(op+".input_validated", "query create input validated", nil, zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", input.Identity))
-	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := s.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return nil, err
@@ -121,7 +127,7 @@ func (s *Query) Update(ctx context.Context, input UpdateQueryInput) (result *Que
 		return nil, err
 	}
 	observed.RecordStep(op+".input_validated", "query update input validated", nil, zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", input.QueryIdentity))
-	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := s.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return nil, err
@@ -161,7 +167,7 @@ func (s *Query) GetByIdentity(ctx context.Context, input GetQueryInput) (result 
 	}
 	observed.RecordStep(op+".input_validated", "query identity input validated", nil,
 		zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", input.QueryIdentity))
-	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := s.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return nil, err
@@ -199,7 +205,7 @@ func (s *Query) List(ctx context.Context, input ListQueriesInput) (result []*Que
 	}
 	observed.RecordStep(op+".input_validated", "query list input validated", nil,
 		zap.String("project_identity", input.ProjectIdentity), zap.String("folder_identity", dereferenceString(input.FolderIdentity)))
-	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := s.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return nil, err
@@ -264,7 +270,7 @@ func (s *Query) Count(ctx context.Context, input ListQueriesInput) (count int64,
 	}
 	observed.RecordStep(op+".input_validated", "query count input validated", nil,
 		zap.String("project_identity", input.ProjectIdentity), zap.String("folder_identity", dereferenceString(input.FolderIdentity)))
-	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := s.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return 0, err
@@ -298,7 +304,7 @@ func (s *Query) change(ctx context.Context, op string, input QueryIdentityInput,
 	}
 	observed.RecordStep(op+".input_validated", "query state change input validated", nil,
 		zap.String("project_identity", input.ProjectIdentity), zap.String("query_identity", input.QueryIdentity))
-	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := s.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return err

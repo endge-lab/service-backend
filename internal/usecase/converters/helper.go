@@ -2,11 +2,11 @@ package converters
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	relationresolver "github.com/endge-lab/service-backend/internal/usecase/relations"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -43,18 +43,11 @@ func (c *Converter) resolveFolderID(ctx context.Context, projectID uuid.UUID, id
 }
 
 func (c *Converter) resolveFolder(ctx context.Context, projectID uuid.UUID, identity string) (*entities.RFolder, error) {
-	folder, err := c.folderRepository.GetByIdentity(ctx, &projectID, entities.FolderEntityTypeConverters, identity)
-	if err == nil {
-		return folder, nil
+	resolver := c.relations
+	if resolver == nil {
+		resolver = relationresolver.NewResolver(nil, c.folderRepository)
 	}
-	if errors.Is(err, apperrors.ErrNotFound) {
-		return nil, apperrors.InvalidInput(
-			"folder_entity_type_mismatch",
-			"folder must belong to the project and have converters entity type",
-		)
-	}
-
-	return nil, err
+	return resolver.ResolveFolderFromContext(ctx, identity, entities.FolderEntityTypeConverters, &projectID)
 }
 
 func converterWithFolder(converter *entities.RConverter, folderIdentity string) *ConverterWithFolder {
@@ -107,7 +100,7 @@ func (c *Converter) resolveConverter(ctx context.Context, input ConverterIdentit
 	if err := normalizeAndValidateIdentityInput(&input.ProjectIdentity, &input.ConverterIdentity); err != nil {
 		return nil, err
 	}
-	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := c.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		return nil, err
 	}

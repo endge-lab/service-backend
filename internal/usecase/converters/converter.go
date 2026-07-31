@@ -8,6 +8,7 @@ import (
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
+	relationresolver "github.com/endge-lab/service-backend/internal/usecase/relations"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 
 	"go.uber.org/zap"
@@ -18,7 +19,7 @@ const converterOperationTimeout = 15 * time.Second
 type Converter struct {
 	converterRepository ports.ConvertersRepository
 	folderRepository    ports.FoldersRepository
-	projectRepository   ports.ProjectsRepository
+	relations           *relationresolver.Resolver
 	observer            observability.Observer
 }
 
@@ -26,15 +27,20 @@ type ConverterParams struct {
 	ConverterRepository ports.ConvertersRepository
 	FolderRepository    ports.FoldersRepository
 	ProjectRepository   ports.ProjectsRepository
+	Relations           *relationresolver.Resolver
 	Observability       *observability.Core
 	Metrics             *shared.UseCaseMetrics
 }
 
 func NewConverterService(params ConverterParams) *Converter {
+	resolver := params.Relations
+	if resolver == nil {
+		resolver = relationresolver.NewResolver(params.ProjectRepository, params.FolderRepository)
+	}
 	return &Converter{
 		converterRepository: params.ConverterRepository,
 		folderRepository:    params.FolderRepository,
-		projectRepository:   params.ProjectRepository,
+		relations:           resolver,
 		observer:            params.Observability.For(observability.LayerUseCase, "converters_usecase").WithRecorder(params.Metrics),
 	}
 }
@@ -66,7 +72,7 @@ func (c *Converter) Create(ctx context.Context, input CreateConverterInput) (res
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("converter_identity", input.Identity),
 	)
-	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := c.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
@@ -154,7 +160,7 @@ func (c *Converter) Update(ctx context.Context, input UpdateConverterInput) (res
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("converter_identity", input.ConverterIdentity),
 	)
-	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := c.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
@@ -232,7 +238,7 @@ func (c *Converter) GetByIdentity(ctx context.Context, input GetConverterInput) 
 	}
 	observed.RecordStep(op+".input_validated", "converter identity input validated", nil,
 		zap.String("project_identity", input.ProjectIdentity), zap.String("converter_identity", input.ConverterIdentity))
-	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := c.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
@@ -302,7 +308,7 @@ func (c *Converter) List(ctx context.Context, input ListConvertersInput) (result
 	}
 	observed.RecordStep(op+".input_validated", "converter list input validated", nil,
 		zap.String("project_identity", input.ProjectIdentity), zap.String("folder_identity", dereferenceString(input.FolderIdentity)))
-	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := c.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),
@@ -545,7 +551,7 @@ func (c *Converter) Count(ctx context.Context, input ListConvertersInput) (count
 	}
 	observed.RecordStep(op+".input_validated", "converter count input validated", nil,
 		zap.String("project_identity", input.ProjectIdentity), zap.String("folder_identity", dereferenceString(input.FolderIdentity)))
-	project, err := c.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := c.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err,
 			zap.String("project_identity", input.ProjectIdentity),

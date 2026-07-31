@@ -101,8 +101,8 @@ func TestOperationRecordStepWritesTraceEventAndInfoLog(t *testing.T) {
 	if entries[0].ContextMap()["project_identity"] != "demo" {
 		t.Fatalf("log fields = %#v, want project_identity=demo", entries[0].ContextMap())
 	}
-	if completed := logs.FilterMessage("use case operation completed").All(); len(completed) != 1 || completed[0].ContextMap()["operation"] != "project.create" {
-		t.Fatalf("completion log entries = %#v, want project.create", completed)
+	if completed := logs.FilterMessage("use case operation completed").All(); len(completed) != 0 {
+		t.Fatalf("generic completion log entries = %#v, want none", completed)
 	}
 }
 

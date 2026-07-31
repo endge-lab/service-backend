@@ -26,7 +26,7 @@ func TestConverterCreateAndUpdateReturnFolderIdentity(t *testing.T) {
 	}
 	service := newConverterServiceForTest(project, &foldersRepositoryStub{folder: folder}, repository)
 
-	created, err := service.Create(context.Background(), CreateConverterInput{
+	created, err := service.Create(converterContext(project), CreateConverterInput{
 		ProjectIdentity: "demo", FolderIdentity: folder.Identity, Identity: "date-format", DisplayName: "Date format", ConverterType: "format",
 	})
 	if err != nil {
@@ -36,7 +36,7 @@ func TestConverterCreateAndUpdateReturnFolderIdentity(t *testing.T) {
 		t.Fatalf("create result = %#v, created = %#v", created, repository.created)
 	}
 
-	updated, err := service.Update(context.Background(), UpdateConverterInput{
+	updated, err := service.Update(converterContext(project), UpdateConverterInput{
 		ProjectIdentity: "demo", ConverterIdentity: "date-format", FolderIdentity: folder.Identity, DisplayName: "Date format", ConverterType: "format",
 	})
 	if err != nil {
@@ -52,7 +52,7 @@ func TestConverterCreateRejectsIdentityConflict(t *testing.T) {
 	folder := &entities.RFolder{ID: uuid.New(), Identity: "root-converters"}
 	service := newConverterServiceForTest(project, &foldersRepositoryStub{folder: folder}, &converterRepositoryTestStub{exists: true})
 
-	_, err := service.Create(context.Background(), CreateConverterInput{
+	_, err := service.Create(converterContext(project), CreateConverterInput{
 		ProjectIdentity: "demo", FolderIdentity: folder.Identity, Identity: "date-format", DisplayName: "Date format", ConverterType: "format",
 	})
 	if got := apperrors.CodeOf(err); got != "identity_conflict" {
@@ -76,7 +76,7 @@ func TestConverterCreateRecordsBusinessSteps(t *testing.T) {
 		Observability: observability.NewCore(provider.Tracer("converter-test"), zap.New(logCore)),
 	})
 
-	_, err := service.Create(context.Background(), CreateConverterInput{
+	_, err := service.Create(converterContext(project), CreateConverterInput{
 		ProjectIdentity: "demo",
 		FolderIdentity:  folder.Identity,
 		Identity:        "date-format",
@@ -123,7 +123,7 @@ func TestConverterGetAndListResolveFoldersInUseCase(t *testing.T) {
 	repository := &converterRepositoryTestStub{getResult: firstConverter, listResult: []*entities.RConverter{firstConverter, secondConverter}}
 	service := newConverterServiceForTest(project, folders, repository)
 
-	got, err := service.GetByIdentity(context.Background(), GetConverterInput{ProjectIdentity: "demo", ConverterIdentity: "date-format"})
+	got, err := service.GetByIdentity(converterContext(project), GetConverterInput{ProjectIdentity: "demo", ConverterIdentity: "date-format"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +131,7 @@ func TestConverterGetAndListResolveFoldersInUseCase(t *testing.T) {
 		t.Fatalf("get result = %#v, folder calls = %d", got, folders.getByIDCalls)
 	}
 
-	items, err := service.List(context.Background(), ListConvertersInput{ProjectIdentity: "demo"})
+	items, err := service.List(converterContext(project), ListConvertersInput{ProjectIdentity: "demo"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,13 +148,13 @@ func TestConverterListSkipsFoldersForEmptyResultAndDetectsUnavailableFolder(t *t
 	folders := &foldersRepositoryStub{}
 	service := newConverterServiceForTest(project, folders, &converterRepositoryTestStub{})
 
-	items, err := service.List(context.Background(), ListConvertersInput{ProjectIdentity: "demo"})
+	items, err := service.List(converterContext(project), ListConvertersInput{ProjectIdentity: "demo"})
 	if err != nil || len(items) != 0 || folders.listCalls != 0 {
 		t.Fatalf("items = %#v, err = %v, list calls = %d", items, err, folders.listCalls)
 	}
 
 	service = newConverterServiceForTest(project, folders, &converterRepositoryTestStub{listResult: []*entities.RConverter{{FolderID: uuid.New()}}})
-	_, err = service.List(context.Background(), ListConvertersInput{ProjectIdentity: "demo"})
+	_, err = service.List(converterContext(project), ListConvertersInput{ProjectIdentity: "demo"})
 	if got := apperrors.CodeOf(err); got != "converter_folder_not_found" {
 		t.Fatalf("error code = %q, want converter_folder_not_found", got)
 	}
@@ -167,13 +167,13 @@ func TestConverterDeleteOperations(t *testing.T) {
 	repository := &converterRepositoryTestStub{getResult: active, getIncludingDeletedResult: deleted}
 	service := newConverterServiceForTest(project, &foldersRepositoryStub{}, repository)
 
-	if err := service.SoftDelete(context.Background(), ConverterIdentityInput{ProjectIdentity: "demo", ConverterIdentity: "date-format"}); err != nil {
+	if err := service.SoftDelete(converterContext(project), ConverterIdentityInput{ProjectIdentity: "demo", ConverterIdentity: "date-format"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := service.Restore(context.Background(), ConverterIdentityInput{ProjectIdentity: "demo", ConverterIdentity: "deleted-format"}); err != nil {
+	if err := service.Restore(converterContext(project), ConverterIdentityInput{ProjectIdentity: "demo", ConverterIdentity: "deleted-format"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := service.HardDelete(context.Background(), ConverterIdentityInput{ProjectIdentity: "demo", ConverterIdentity: "deleted-format"}); err != nil {
+	if err := service.HardDelete(converterContext(project), ConverterIdentityInput{ProjectIdentity: "demo", ConverterIdentity: "deleted-format"}); err != nil {
 		t.Fatal(err)
 	}
 	if repository.softDeletedID != active.ID || repository.restoredID != deleted.ID || repository.hardDeletedID != deleted.ID {
@@ -187,7 +187,7 @@ func TestConverterHardDeleteRejectsSystemConverter(t *testing.T) {
 	repository := &converterRepositoryTestStub{getIncludingDeletedResult: systemConverter}
 	service := newConverterServiceForTest(project, &foldersRepositoryStub{}, repository)
 
-	err := service.HardDelete(context.Background(), ConverterIdentityInput{ProjectIdentity: "demo", ConverterIdentity: "system"})
+	err := service.HardDelete(converterContext(project), ConverterIdentityInput{ProjectIdentity: "demo", ConverterIdentity: "system"})
 	if got := apperrors.CodeOf(err); got != "system_converter_delete_forbidden" {
 		t.Fatalf("error code = %q, want system_converter_delete_forbidden", got)
 	}
@@ -201,12 +201,22 @@ func newConverterServiceForTest(
 	folders *foldersRepositoryStub,
 	converters *converterRepositoryTestStub,
 ) *Converter {
+	if project.WorkspaceID == uuid.Nil {
+		project.WorkspaceID = uuid.New()
+	}
 	return NewConverterService(ConverterParams{
 		ProjectRepository:   &converterProjectRepositoryStub{project: project},
 		FolderRepository:    folders,
 		ConverterRepository: converters,
 		Observability:       observability.NewCore(otel.Tracer("converters-test"), zap.NewNop()),
 	})
+}
+
+func converterContext(project *entities.RProject) context.Context {
+	if project.WorkspaceID == uuid.Nil {
+		project.WorkspaceID = uuid.New()
+	}
+	return entities.WithWorkspaceID(context.Background(), project.WorkspaceID)
 }
 
 type converterProjectRepositoryStub struct {

@@ -1,6 +1,7 @@
 package architecture_test
 
 import (
+	"go/ast"
 	"go/parser"
 	"go/token"
 	"os"
@@ -131,7 +132,8 @@ func TestDomainMigrationOrder(t *testing.T) {
 		"000019_init_converters.sql",
 		"000020_init_auth_profiles.sql",
 		"000021_init_navigations.sql",
-		"000022_seed_swagger_demo_data.sql",
+		"000022_init_domain_dependencies.sql",
+		"000023_seed_swagger_demo_data.sql",
 	}
 
 	entries, err := os.ReadDir(filepath.Join(root, "migrations"))
@@ -165,9 +167,11 @@ func TestTemplateLayerPackageNames(t *testing.T) {
 		"internal/api/http/v1/component_legacy": "component_legacy",
 		"internal/api/http/v1/converter":        "converter",
 		"internal/api/http/v1/data_view":        "data_view",
+		"internal/api/http/v1/domain":           "domain",
 		"internal/api/http/v1/folder":           "folder",
 		"internal/api/http/v1/project":          "project",
 		"internal/api/http/v1/query":            "query",
+		"internal/api/http/v1/tenant":           "tenant",
 		"internal/bootstrap":                    "bootstrap",
 		"internal/domain/entities":              "entities",
 		"internal/domain/errors":                "errors",
@@ -179,11 +183,15 @@ func TestTemplateLayerPackageNames(t *testing.T) {
 		"internal/usecase/components_legacy":    "components_legacy",
 		"internal/usecase/converters":           "converters",
 		"internal/usecase/data_views":           "data_views",
+		"internal/usecase/dependencies":         "dependencies",
 		"internal/usecase/folders":              "folders",
 		"internal/usecase/projects":             "projects",
 		"internal/usecase/queries":              "queries",
+		"internal/usecase/portable":             "portable",
+		"internal/usecase/relations":            "relations",
 		"internal/usecase/session":              "session",
 		"internal/usecase/shared":               "shared",
+		"internal/usecase/tenants":              "tenants",
 	}
 
 	for relativeDir, expectedPackage := range expectedPackages {
@@ -210,6 +218,64 @@ func TestTemplateLayerPackageNames(t *testing.T) {
 				t.Fatalf("unexpected package name in %s: got %s want %s", filePath, actualPackage, effectiveExpectedPackage)
 			}
 		}
+	}
+}
+
+func TestHTTPHandlersDoNotImportRelationResolver(t *testing.T) {
+	root := repoRoot(t)
+
+	for _, filePath := range listGoFiles(t, root, "internal/api/http/v1") {
+		for _, importedPath := range parsedImports(t, filePath) {
+			if strings.Contains(importedPath, "/internal/usecase/relations") {
+				t.Fatalf("HTTP handler layer must delegate relation resolution to usecases, found %s in %s", importedPath, filePath)
+			}
+		}
+	}
+}
+
+func TestPublicTransportDoesNotExposeForeignUUIDs(t *testing.T) {
+	root := repoRoot(t)
+
+	for _, filePath := range listGoFiles(t, root, "internal/api/http/v1") {
+		if !strings.HasSuffix(filePath, "_transport.go") && !strings.HasSuffix(filePath, "transport.go") {
+			continue
+		}
+		assertNoForeignUUIDTransportFields(t, filePath)
+	}
+}
+
+func assertNoForeignUUIDTransportFields(t *testing.T, filePath string) {
+	t.Helper()
+
+	fileSet := token.NewFileSet()
+	parsed, err := parser.ParseFile(fileSet, filePath, nil, 0)
+	if err != nil {
+		t.Fatalf("parse transport %s: %v", filePath, err)
+	}
+
+	ast.Inspect(parsed, func(node ast.Node) bool {
+		field, ok := node.(*ast.Field)
+		if !ok || field.Tag == nil || !strings.Contains(field.Tag.Value, "json:") || !isUUIDType(field.Type) {
+			return true
+		}
+		for _, name := range field.Names {
+			if name.Name != "ID" {
+				t.Fatalf("public transport must use relation identity instead of foreign UUID %s in %s", name.Name, filePath)
+			}
+		}
+		return true
+	})
+}
+
+func isUUIDType(expression ast.Expr) bool {
+	switch value := expression.(type) {
+	case *ast.StarExpr:
+		return isUUIDType(value.X)
+	case *ast.SelectorExpr:
+		identifier, ok := value.X.(*ast.Ident)
+		return ok && identifier.Name == "uuid" && value.Sel.Name == "UUID"
+	default:
+		return false
 	}
 }
 

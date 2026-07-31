@@ -28,6 +28,7 @@ func TestNormalizeAndValidateUpdateInputRejectsMissingType(t *testing.T) {
 
 func TestResolveFolderID(t *testing.T) {
 	projectID := uuid.New()
+	workspaceID := uuid.New()
 	folderID := uuid.New()
 	identity := "root-converters"
 
@@ -35,7 +36,7 @@ func TestResolveFolderID(t *testing.T) {
 		repository := &foldersRepositoryStub{folder: &entities.RFolder{ID: folderID}}
 		service := &Converter{folderRepository: repository}
 
-		result, err := service.resolveFolderID(context.Background(), projectID, &identity)
+		result, err := service.resolveFolderID(entities.WithWorkspaceID(context.Background(), workspaceID), projectID, &identity)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -52,9 +53,9 @@ func TestResolveFolderID(t *testing.T) {
 			err: apperrors.NotFound("folder_not_found", "folder not found"),
 		}}
 
-		_, err := service.resolveFolderID(context.Background(), projectID, &identity)
-		if got := apperrors.CodeOf(err); got != "folder_entity_type_mismatch" {
-			t.Fatalf("error code = %q, want %q", got, "folder_entity_type_mismatch")
+		_, err := service.resolveFolderID(entities.WithWorkspaceID(context.Background(), workspaceID), projectID, &identity)
+		if got := apperrors.CodeOf(err); got != "folder_not_found" {
+			t.Fatalf("error code = %q, want %q", got, "folder_not_found")
 		}
 	})
 
@@ -62,7 +63,7 @@ func TestResolveFolderID(t *testing.T) {
 		repositoryErr := stderrors.New("database unavailable")
 		service := &Converter{folderRepository: &foldersRepositoryStub{err: repositoryErr}}
 
-		_, err := service.resolveFolderID(context.Background(), projectID, &identity)
+		_, err := service.resolveFolderID(entities.WithWorkspaceID(context.Background(), workspaceID), projectID, &identity)
 		if !stderrors.Is(err, repositoryErr) {
 			t.Fatalf("error = %v, want original repository error", err)
 		}
@@ -135,13 +136,26 @@ func (s *foldersRepositoryStub) GetByIDIncludingDeleted(context.Context, uuid.UU
 }
 
 func (s *foldersRepositoryStub) GetByIdentity(
-	_ context.Context,
-	_ *uuid.UUID,
+	ctx context.Context,
+	projectID *uuid.UUID,
 	entityType entities.FolderEntityType,
 	_ string,
 ) (*entities.RFolder, error) {
 	s.entityType = entityType
-	return s.folder, s.err
+	if s.folder == nil {
+		return nil, s.err
+	}
+	folder := *s.folder
+	if workspaceID, ok := entities.WorkspaceIDFromContext(ctx); ok && folder.WorkspaceID == uuid.Nil {
+		folder.WorkspaceID = workspaceID
+	}
+	if folder.ProjectID == nil {
+		folder.ProjectID = projectID
+	}
+	if folder.EntityType == "" {
+		folder.EntityType = entityType
+	}
+	return &folder, s.err
 }
 
 func (s *foldersRepositoryStub) GetByIdentityIncludingDeleted(

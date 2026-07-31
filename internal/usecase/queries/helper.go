@@ -2,7 +2,6 @@ package queries
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
@@ -119,11 +118,7 @@ func dereferenceString(value *string) string {
 }
 
 func (s *Query) resolveFolder(ctx context.Context, projectID uuid.UUID, identity string) (*entities.RFolder, error) {
-	folder, err := s.folderRepository.GetByIdentity(ctx, &projectID, entities.FolderEntityTypeQueries, identity)
-	if errors.Is(err, apperrors.ErrNotFound) {
-		return nil, apperrors.InvalidInput("folder_entity_type_mismatch", "folder must belong to the project and have queries entity type")
-	}
-	return folder, err
+	return s.relations.ResolveFolderFromContext(ctx, identity, entities.FolderEntityTypeQueries, &projectID)
 }
 
 func queryFromCreate(workspaceID, projectID, folderID uuid.UUID, input CreateQueryInput) *entities.RQuery {

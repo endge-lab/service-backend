@@ -8,6 +8,7 @@ import (
 	apperrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
+	relationresolver "github.com/endge-lab/service-backend/internal/usecase/relations"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -19,7 +20,7 @@ type DataView struct {
 	dataViewRepository ports.DataViewsRepository
 	queryRepository    ports.QueriesRepository
 	folderRepository   ports.FoldersRepository
-	projectRepository  ports.ProjectsRepository
+	relations          *relationresolver.Resolver
 	observer           observability.Observer
 }
 
@@ -28,12 +29,17 @@ type DataViewParams struct {
 	QueryRepository    ports.QueriesRepository
 	FolderRepository   ports.FoldersRepository
 	ProjectRepository  ports.ProjectsRepository
+	Relations          *relationresolver.Resolver
 	Observability      *observability.Core
 	Metrics            *shared.UseCaseMetrics
 }
 
 func NewDataViewService(params DataViewParams) *DataView {
-	return &DataView{dataViewRepository: params.DataViewRepository, queryRepository: params.QueryRepository, folderRepository: params.FolderRepository, projectRepository: params.ProjectRepository, observer: params.Observability.For(observability.LayerUseCase, "data_views_usecase").WithRecorder(params.Metrics)}
+	resolver := params.Relations
+	if resolver == nil {
+		resolver = relationresolver.NewResolver(params.ProjectRepository, params.FolderRepository)
+	}
+	return &DataView{dataViewRepository: params.DataViewRepository, queryRepository: params.QueryRepository, folderRepository: params.FolderRepository, relations: resolver, observer: params.Observability.For(observability.LayerUseCase, "data_views_usecase").WithRecorder(params.Metrics)}
 }
 
 // Create создает DataView в указанной папке проекта.
@@ -63,7 +69,7 @@ func (s *DataView) Create(ctx context.Context, input CreateDataViewInput) (resul
 		return nil, err
 	}
 	observed.RecordStep(op+".input_validated", "data view create input validated", nil, zap.String("project_identity", input.ProjectIdentity), zap.String("data_view_identity", input.Identity))
-	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := s.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return nil, err
@@ -128,7 +134,7 @@ func (s *DataView) Update(ctx context.Context, input UpdateDataViewInput) (resul
 		return nil, err
 	}
 	observed.RecordStep(op+".input_validated", "data view update input validated", nil, zap.String("project_identity", input.ProjectIdentity), zap.String("data_view_identity", input.DataViewIdentity))
-	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := s.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return nil, err
@@ -189,7 +195,7 @@ func (s *DataView) GetByIdentity(ctx context.Context, input GetDataViewInput) (r
 	}
 	observed.RecordStep(op+".input_validated", "data view identity input validated", nil,
 		zap.String("project_identity", input.ProjectIdentity), zap.String("data_view_identity", input.DataViewIdentity))
-	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := s.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return nil, err
@@ -251,7 +257,7 @@ func (s *DataView) List(ctx context.Context, input ListDataViewsInput) (result [
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("folder_identity", dereferenceString(input.FolderIdentity)),
 		zap.String("query_identity", dereferenceString(input.QueryIdentity)))
-	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := s.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return nil, err
@@ -330,7 +336,7 @@ func (s *DataView) Count(ctx context.Context, input ListDataViewsInput) (count i
 		zap.String("project_identity", input.ProjectIdentity),
 		zap.String("folder_identity", dereferenceString(input.FolderIdentity)),
 		zap.String("query_identity", dereferenceString(input.QueryIdentity)))
-	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := s.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return 0, err
@@ -371,7 +377,7 @@ func (s *DataView) change(ctx context.Context, op string, input DataViewIdentity
 	}
 	observed.RecordStep(op+".input_validated", "data view state change input validated", nil,
 		zap.String("project_identity", input.ProjectIdentity), zap.String("data_view_identity", input.DataViewIdentity))
-	project, err := s.projectRepository.GetByIdentity(ctx, input.ProjectIdentity)
+	project, err := s.relations.ResolveProjectFromContext(ctx, input.ProjectIdentity)
 	if err != nil {
 		logOperationError(observed.Logger(), op, err, zap.String("project_identity", input.ProjectIdentity))
 		return err

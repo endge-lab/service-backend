@@ -14,13 +14,13 @@ import (
 )
 
 func TestCreateReturnsResolvedRelations(t *testing.T) {
-	project := &entities.RProject{ID: uuid.New(), Identity: "demo"}
-	folder := &entities.RFolder{ID: uuid.New(), Identity: "root-data-views"}
+	project := &entities.RProject{ID: uuid.New(), WorkspaceID: uuid.New(), Identity: "demo"}
+	folder := &entities.RFolder{ID: uuid.New(), WorkspaceID: project.WorkspaceID, ProjectID: &project.ID, EntityType: entities.FolderEntityTypeDataViews, Identity: "root-data-views"}
 	query := &entities.RQuery{ID: uuid.New(), ProjectID: project.ID, Identity: "users-list"}
 	repository := &dataViewsRepositoryStub{createResult: &entities.RDataView{ID: uuid.New(), Identity: "users-table", FolderID: folder.ID, QueryID: query.ID}}
 	service := newDataViewServiceForTest(project, &dataViewFoldersRepositoryStub{folder: folder}, &dataViewQueriesRepositoryStub{query: query}, repository)
 
-	result, err := service.Create(context.Background(), CreateDataViewInput{ProjectIdentity: "demo", FolderIdentity: folder.Identity, QueryIdentity: query.Identity, Identity: "users-table", DisplayName: "Users Table", ViewType: "pipeline"})
+	result, err := service.Create(dataViewContext(project), CreateDataViewInput{ProjectIdentity: "demo", FolderIdentity: folder.Identity, QueryIdentity: query.Identity, Identity: "users-table", DisplayName: "Users Table", ViewType: "pipeline"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,27 +30,27 @@ func TestCreateReturnsResolvedRelations(t *testing.T) {
 }
 
 func TestCreateRejectsQueryFromAnotherProject(t *testing.T) {
-	project := &entities.RProject{ID: uuid.New(), Identity: "demo"}
-	folder := &entities.RFolder{ID: uuid.New(), Identity: "root-data-views"}
+	project := &entities.RProject{ID: uuid.New(), WorkspaceID: uuid.New(), Identity: "demo"}
+	folder := &entities.RFolder{ID: uuid.New(), WorkspaceID: project.WorkspaceID, ProjectID: &project.ID, EntityType: entities.FolderEntityTypeDataViews, Identity: "root-data-views"}
 	queries := &dataViewQueriesRepositoryStub{getErr: apperrors.NotFound("not_found", "query not found"), existsOutside: true}
 	service := newDataViewServiceForTest(project, &dataViewFoldersRepositoryStub{folder: folder}, queries, &dataViewsRepositoryStub{})
 
-	_, err := service.Create(context.Background(), CreateDataViewInput{ProjectIdentity: "demo", FolderIdentity: folder.Identity, QueryIdentity: "foreign-query", Identity: "users-table", DisplayName: "Users Table", ViewType: "pipeline"})
+	_, err := service.Create(dataViewContext(project), CreateDataViewInput{ProjectIdentity: "demo", FolderIdentity: folder.Identity, QueryIdentity: "foreign-query", Identity: "users-table", DisplayName: "Users Table", ViewType: "pipeline"})
 	if got := apperrors.CodeOf(err); got != "query_project_mismatch" {
 		t.Fatalf("code = %q, want query_project_mismatch", got)
 	}
 }
 
 func TestListResolvesRelationsWithoutNPlusOne(t *testing.T) {
-	project := &entities.RProject{ID: uuid.New(), Identity: "demo"}
-	folder := &entities.RFolder{ID: uuid.New(), Identity: "root-data-views"}
+	project := &entities.RProject{ID: uuid.New(), WorkspaceID: uuid.New(), Identity: "demo"}
+	folder := &entities.RFolder{ID: uuid.New(), WorkspaceID: project.WorkspaceID, ProjectID: &project.ID, EntityType: entities.FolderEntityTypeDataViews, Identity: "root-data-views"}
 	query := &entities.RQuery{ID: uuid.New(), ProjectID: project.ID, Identity: "users-list"}
 	folders := &dataViewFoldersRepositoryStub{folders: []*entities.RFolder{folder}}
 	queries := &dataViewQueriesRepositoryStub{listResult: []*entities.RQuery{query}}
 	dataViews := &dataViewsRepositoryStub{listResult: []*entities.RDataView{{ID: uuid.New(), FolderID: folder.ID, QueryID: query.ID, Identity: "users-table"}}}
 	service := newDataViewServiceForTest(project, folders, queries, dataViews)
 
-	result, err := service.List(context.Background(), ListDataViewsInput{ProjectIdentity: "demo"})
+	result, err := service.List(dataViewContext(project), ListDataViewsInput{ProjectIdentity: "demo"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,12 +60,16 @@ func TestListResolvesRelationsWithoutNPlusOne(t *testing.T) {
 }
 
 func TestCreateRejectsFolderWithWrongEntityType(t *testing.T) {
-	project := &entities.RProject{ID: uuid.New(), Identity: "demo"}
+	project := &entities.RProject{ID: uuid.New(), WorkspaceID: uuid.New(), Identity: "demo"}
 	service := newDataViewServiceForTest(project, &dataViewFoldersRepositoryStub{getErr: apperrors.NotFound("not_found", "folder not found")}, &dataViewQueriesRepositoryStub{}, &dataViewsRepositoryStub{})
-	_, err := service.Create(context.Background(), CreateDataViewInput{ProjectIdentity: "demo", FolderIdentity: "other", QueryIdentity: "users-list", Identity: "users-table", DisplayName: "Users Table", ViewType: "pipeline"})
-	if got := apperrors.CodeOf(err); got != "folder_entity_type_mismatch" {
-		t.Fatalf("code = %q, want folder_entity_type_mismatch", got)
+	_, err := service.Create(dataViewContext(project), CreateDataViewInput{ProjectIdentity: "demo", FolderIdentity: "other", QueryIdentity: "users-list", Identity: "users-table", DisplayName: "Users Table", ViewType: "pipeline"})
+	if got := apperrors.CodeOf(err); got != "folder_not_found" {
+		t.Fatalf("code = %q, want folder_not_found", got)
 	}
+}
+
+func dataViewContext(project *entities.RProject) context.Context {
+	return entities.WithWorkspaceID(context.Background(), project.WorkspaceID)
 }
 
 func newDataViewServiceForTest(project *entities.RProject, folders *dataViewFoldersRepositoryStub, queries *dataViewQueriesRepositoryStub, dataViews *dataViewsRepositoryStub) *DataView {

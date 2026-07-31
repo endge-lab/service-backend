@@ -36,9 +36,9 @@ func newOpenSearchLogExporter(cfg *config.Config) *openSearchLogExporter {
 func InitLogger(cfg *config.Config, openSearch *openSearchLogExporter) *zap.Logger {
 	var logger *zap.Logger
 	if openSearch != nil && openSearch.exporter != nil {
-		logger = platform.NewLogger(cfg.Logger.Level, cfg.App.Name, cfg.App.Env, cfg.App.Version, openSearch.exporter)
+		logger = platform.NewLogger(cfg.Logger.Level, cfg.Logger.Format, cfg.Logger.Color, cfg.App.Name, cfg.App.Env, cfg.App.Version, openSearch.exporter)
 	} else {
-		logger = platform.NewLogger(cfg.Logger.Level, cfg.App.Name, cfg.App.Env, cfg.App.Version)
+		logger = platform.NewLogger(cfg.Logger.Level, cfg.Logger.Format, cfg.Logger.Color, cfg.App.Name, cfg.App.Env, cfg.App.Version)
 	}
 	if openSearch != nil && openSearch.err != nil {
 		logger.Warn("opensearch log exporter disabled", zap.Error(openSearch.err))

@@ -69,6 +69,27 @@ type DataView struct {
 	UpdatedAt    time.Time          `json:"updated_at"`
 }
 
+type DomainDependency struct {
+	ID                 uuid.UUID `json:"id"`
+	WorkspaceID        uuid.UUID `json:"workspace_id"`
+	OwnerType          string    `json:"owner_type"`
+	OwnerID            uuid.UUID `json:"owner_id"`
+	DependencyType     string    `json:"dependency_type"`
+	DependencyIdentity string    `json:"dependency_identity"`
+	SourcePath         string    `json:"source_path"`
+	CreatedAt          time.Time `json:"created_at"`
+}
+
+type DomainDependencyState struct {
+	WorkspaceID       uuid.UUID   `json:"workspace_id"`
+	OwnerType         string      `json:"owner_type"`
+	OwnerID           uuid.UUID   `json:"owner_id"`
+	OwnerIdentity     string      `json:"owner_identity"`
+	VerificationState string      `json:"verification_state"`
+	VerificationError pgtype.Text `json:"verification_error"`
+	UpdatedAt         time.Time   `json:"updated_at"`
+}
+
 type Environment struct {
 	ID          uuid.UUID   `json:"id"`
 	WorkspaceID uuid.UUID   `json:"workspace_id"`
@@ -176,15 +197,16 @@ type ServiceUser struct {
 }
 
 type Tenant struct {
-	ID          uuid.UUID   `json:"id"`
-	WorkspaceID uuid.UUID   `json:"workspace_id"`
-	Identity    string      `json:"identity"`
-	DisplayName string      `json:"display_name"`
-	Code        string      `json:"code"`
-	Description pgtype.Text `json:"description"`
-	FolderID    pgtype.UUID `json:"folder_id"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
+	ID            uuid.UUID   `json:"id"`
+	WorkspaceID   uuid.UUID   `json:"workspace_id"`
+	Identity      string      `json:"identity"`
+	DisplayName   string      `json:"display_name"`
+	Code          string      `json:"code"`
+	Description   pgtype.Text `json:"description"`
+	FolderID      pgtype.UUID `json:"folder_id"`
+	Configuration []byte      `json:"configuration"`
+	CreatedAt     time.Time   `json:"created_at"`
+	UpdatedAt     time.Time   `json:"updated_at"`
 }
 
 type Type struct {

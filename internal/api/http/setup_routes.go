@@ -9,9 +9,11 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/component_legacy"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/converter"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/data_view"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/domain"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/folder"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/project"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/query"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/tenant"
 	workspace "github.com/endge-lab/service-backend/internal/api/http/v1/workspace"
 	"github.com/endge-lab/service-backend/internal/config"
 
@@ -28,7 +30,9 @@ type Handler struct {
 	ConverterHandler       converter.ConvHandler
 	QueryHandler           query.QHandler
 	DataViewHandler        data_view.DVHandler
+	DomainHandler          domain.DHandler
 	WorkspaceHandler       workspace.WHandler
+	TenantHandler          tenant.THandler
 	WorkspaceMiddleware    *httpmiddleware.WorkspaceContextMiddleware
 }
 
@@ -40,7 +44,9 @@ func NewHandler(
 	converterHandler converter.ConvHandler,
 	queryHandler query.QHandler,
 	dataViewHandler data_view.DVHandler,
+	domainHandler domain.DHandler,
 	workspaceHandler workspace.WHandler,
+	tenantHandler tenant.THandler,
 	workspaceMiddleware *httpmiddleware.WorkspaceContextMiddleware,
 ) *Handler {
 	return &Handler{
@@ -51,7 +57,9 @@ func NewHandler(
 		ConverterHandler:       converterHandler,
 		QueryHandler:           queryHandler,
 		DataViewHandler:        dataViewHandler,
+		DomainHandler:          domainHandler,
 		WorkspaceHandler:       workspaceHandler,
+		TenantHandler:          tenantHandler,
 		WorkspaceMiddleware:    workspaceMiddleware,
 	}
 }
@@ -87,6 +95,8 @@ func SetupRoutes(
 	converter.RegisterRoutes(api, handler.ConverterHandler, handler.WorkspaceMiddleware)
 	query.RegisterRoutes(api, handler.QueryHandler, handler.WorkspaceMiddleware)
 	data_view.RegisterRoutes(api, handler.DataViewHandler, handler.WorkspaceMiddleware)
+	domain.RegisterRoutes(api, handler.DomainHandler, handler.WorkspaceMiddleware)
+	tenant.RegisterRoutes(api, handler.TenantHandler, handler.WorkspaceMiddleware)
 	workspace.RegisterRoutes(api, handler.WorkspaceHandler)
 	app.Use(func(c *fiber.Ctx) error {
 		return respond.WriteErrorResponse(c, respond.ErrRouteNotFound)

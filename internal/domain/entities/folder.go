@@ -13,6 +13,7 @@ const (
 	FolderEntityTypeConverters       FolderEntityType = "converters"
 	FolderEntityTypeQueries          FolderEntityType = "queries"
 	FolderEntityTypeDataViews        FolderEntityType = "data-views"
+	FolderEntityTypeTenants          FolderEntityType = "tenants"
 )
 
 type RFolder struct {

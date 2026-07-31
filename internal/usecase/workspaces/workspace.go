@@ -16,17 +16,21 @@ import (
 const operationTimeout = 15 * time.Second
 
 type Workspace struct {
-	repository ports.WorkspacesRepository
-	observer   observability.Observer
+	repository       ports.WorkspacesRepository
+	folderRepository ports.FoldersRepository
+	txManager        ports.TxManager
+	observer         observability.Observer
 }
 type WorkspaceParams struct {
-	Repository    ports.WorkspacesRepository
-	Observability *observability.Core
-	Metrics       *shared.UseCaseMetrics
+	Repository       ports.WorkspacesRepository
+	FolderRepository ports.FoldersRepository
+	TxManager        ports.TxManager
+	Observability    *observability.Core
+	Metrics          *shared.UseCaseMetrics
 }
 
 func NewWorkspaceService(params WorkspaceParams) *Workspace {
-	return &Workspace{repository: params.Repository, observer: params.Observability.For(observability.LayerUseCase, "workspaces_usecase").WithRecorder(params.Metrics)}
+	return &Workspace{repository: params.Repository, folderRepository: params.FolderRepository, txManager: params.TxManager, observer: params.Observability.For(observability.LayerUseCase, "workspaces_usecase").WithRecorder(params.Metrics)}
 }
 
 // Create валидирует вход и создаёт корневой workspace.
@@ -71,7 +75,28 @@ func (s *Workspace) Create(ctx context.Context, input CreateWorkspaceInput) (res
 		return nil, err
 	}
 	observed.RecordStep("workspace.create.configuration_validated", "workspace configuration validated", nil, zap.String("workspace_identity", input.Identity))
-	result, err = s.repository.Create(ctx, &entities.RWorkspace{Identity: input.Identity, DisplayName: input.DisplayName, Configuration: configuration})
+	workspace := &entities.RWorkspace{Identity: input.Identity, DisplayName: input.DisplayName, Configuration: configuration}
+	if s.folderRepository == nil || s.txManager == nil {
+		result, err = s.repository.Create(ctx, workspace)
+	} else {
+		err = s.txManager.WithinTransaction(ctx, func(txCtx context.Context) error {
+			result, err = s.repository.Create(txCtx, workspace)
+			if err != nil {
+				return err
+			}
+			folderCtx := entities.WithWorkspace(txCtx, entities.WorkspaceScope{ID: result.ID, Identity: result.Identity})
+			_, err = s.folderRepository.Create(folderCtx, &entities.RFolder{
+				WorkspaceID: result.ID,
+				EntityType:  entities.FolderEntityTypeTenants,
+				Identity:    entities.TenantRootFolderIdentity,
+				DisplayName: entities.TenantRootFolderIdentity,
+				IsRoot:      true,
+				IsSystem:    true,
+				Meta:        map[string]any{},
+			})
+			return err
+		})
+	}
 	if err != nil {
 		observed.Logger().Error("workspace create failed", zap.Error(err))
 		return nil, err

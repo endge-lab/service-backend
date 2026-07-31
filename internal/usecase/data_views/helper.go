@@ -117,11 +117,7 @@ func dereferenceString(value *string) string {
 }
 
 func (s *DataView) resolveFolder(ctx context.Context, projectID uuid.UUID, identity string) (*entities.RFolder, error) {
-	folder, err := s.folderRepository.GetByIdentity(ctx, &projectID, entities.FolderEntityTypeDataViews, identity)
-	if errors.Is(err, apperrors.ErrNotFound) {
-		return nil, apperrors.InvalidInput("folder_entity_type_mismatch", "folder must belong to the project and have data_views entity type")
-	}
-	return folder, err
+	return s.relations.ResolveFolderFromContext(ctx, identity, entities.FolderEntityTypeDataViews, &projectID)
 }
 
 func (s *DataView) resolveQueryID(ctx context.Context, projectID uuid.UUID, identity *string) (*uuid.UUID, error) {

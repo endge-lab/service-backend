@@ -175,6 +175,20 @@ scrape_configs:
 - заменить на стандартный `log/slog`;
 - передавать noop logger там, где логи не нужны.
 
+Формат stdout не смешивается с окружением приложения: `APP_ENV` определяет
+runtime-режим, а `LOGGER_FORMAT` — только отображение одной строки лога.
+Если формат не задан, development использует `console`, остальные окружения —
+`json`. Для локального Docker Compose используйте цветной вывод:
+
+```env
+LOGGER_FORMAT=console
+LOGGER_COLOR=always
+```
+
+Доступные значения: `LOGGER_FORMAT=json|console` и
+`LOGGER_COLOR=auto|always|never`. OpenSearch exporter всегда получает чистый
+JSON без ANSI-цветов.
+
 По умолчанию логи пишутся только в stdout. Для прямой пакетной отправки JSON-логов
 в OpenSearch Bulk API включите exporter:
 

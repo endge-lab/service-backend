@@ -168,9 +168,6 @@ func (o *Operation) End(err *error) {
 	if o.recorder != nil {
 		o.recorder.Record(o.ctx, o.operation, o.startedAt, actualErr)
 	}
-	if actualErr == nil && o.layer == LayerUseCase {
-		o.Logger().Info("use case operation completed", zap.String("operation", o.operation))
-	}
 	if o.step != nil {
 		o.step.End(actualErr)
 	}

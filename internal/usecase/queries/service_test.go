@@ -14,12 +14,12 @@ import (
 )
 
 func TestCreateNormalizesPayloadAndReturnsFolderIdentity(t *testing.T) {
-	project := &entities.RProject{ID: uuid.New(), Identity: "demo"}
-	folder := &entities.RFolder{ID: uuid.New(), Identity: "root-queries"}
+	project := &entities.RProject{ID: uuid.New(), WorkspaceID: uuid.New(), Identity: "demo"}
+	folder := &entities.RFolder{ID: uuid.New(), WorkspaceID: project.WorkspaceID, ProjectID: &project.ID, EntityType: entities.FolderEntityTypeQueries, Identity: "root-queries"}
 	repository := &queriesRepositoryStub{createResult: &entities.RQuery{ID: uuid.New(), Identity: "users-list", FolderID: folder.ID}}
 	service := newQueryServiceForTest(project, &queryFoldersRepositoryStub{folder: folder}, repository)
 
-	result, err := service.Create(context.Background(), CreateQueryInput{ProjectIdentity: " demo ", FolderIdentity: " root-queries ", Identity: " users-list ", DisplayName: " Users ", QueryType: " http "})
+	result, err := service.Create(queryContext(project), CreateQueryInput{ProjectIdentity: " demo ", FolderIdentity: " root-queries ", Identity: " users-list ", DisplayName: " Users ", QueryType: " http "})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,30 +29,30 @@ func TestCreateNormalizesPayloadAndReturnsFolderIdentity(t *testing.T) {
 }
 
 func TestCreateRejectsConflictAndFolderEntityTypeMismatch(t *testing.T) {
-	project := &entities.RProject{ID: uuid.New(), Identity: "demo"}
-	folder := &entities.RFolder{ID: uuid.New(), Identity: "root-queries"}
+	project := &entities.RProject{ID: uuid.New(), WorkspaceID: uuid.New(), Identity: "demo"}
+	folder := &entities.RFolder{ID: uuid.New(), WorkspaceID: project.WorkspaceID, ProjectID: &project.ID, EntityType: entities.FolderEntityTypeQueries, Identity: "root-queries"}
 	input := CreateQueryInput{ProjectIdentity: "demo", FolderIdentity: folder.Identity, Identity: "users-list", DisplayName: "Users", QueryType: "http"}
 
 	service := newQueryServiceForTest(project, &queryFoldersRepositoryStub{folder: folder}, &queriesRepositoryStub{exists: true})
-	if got := apperrors.CodeOf(mustCreateError(t, service, input)); got != "identity_conflict" {
+	if got := apperrors.CodeOf(mustCreateError(t, project, service, input)); got != "identity_conflict" {
 		t.Fatalf("code = %q", got)
 	}
 
 	service = newQueryServiceForTest(project, &queryFoldersRepositoryStub{getErr: apperrors.NotFound("not_found", "folder not found")}, &queriesRepositoryStub{})
-	if got := apperrors.CodeOf(mustCreateError(t, service, input)); got != "folder_entity_type_mismatch" {
+	if got := apperrors.CodeOf(mustCreateError(t, project, service, input)); got != "folder_not_found" {
 		t.Fatalf("code = %q", got)
 	}
 }
 
 func TestListResolvesFoldersWithoutNPlusOne(t *testing.T) {
-	project := &entities.RProject{ID: uuid.New(), Identity: "demo"}
-	first := &entities.RFolder{ID: uuid.New(), Identity: "root-queries"}
-	second := &entities.RFolder{ID: uuid.New(), Identity: "api"}
+	project := &entities.RProject{ID: uuid.New(), WorkspaceID: uuid.New(), Identity: "demo"}
+	first := &entities.RFolder{ID: uuid.New(), WorkspaceID: project.WorkspaceID, ProjectID: &project.ID, EntityType: entities.FolderEntityTypeQueries, Identity: "root-queries"}
+	second := &entities.RFolder{ID: uuid.New(), WorkspaceID: project.WorkspaceID, ProjectID: &project.ID, EntityType: entities.FolderEntityTypeQueries, Identity: "api"}
 	folders := &queryFoldersRepositoryStub{folders: []*entities.RFolder{first, second}}
 	repository := &queriesRepositoryStub{listResult: []*entities.RQuery{{ID: uuid.New(), FolderID: first.ID, Identity: "one"}, {ID: uuid.New(), FolderID: second.ID, Identity: "two"}}}
 	service := newQueryServiceForTest(project, folders, repository)
 
-	result, err := service.List(context.Background(), ListQueriesInput{ProjectIdentity: "demo"})
+	result, err := service.List(queryContext(project), ListQueriesInput{ProjectIdentity: "demo"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,10 +61,14 @@ func TestListResolvesFoldersWithoutNPlusOne(t *testing.T) {
 	}
 }
 
-func mustCreateError(t *testing.T, service *Query, input CreateQueryInput) error {
+func mustCreateError(t *testing.T, project *entities.RProject, service *Query, input CreateQueryInput) error {
 	t.Helper()
-	_, err := service.Create(context.Background(), input)
+	_, err := service.Create(queryContext(project), input)
 	return err
+}
+
+func queryContext(project *entities.RProject) context.Context {
+	return entities.WithWorkspaceID(context.Background(), project.WorkspaceID)
 }
 
 func newQueryServiceForTest(project *entities.RProject, folders *queryFoldersRepositoryStub, queries *queriesRepositoryStub) *Query {

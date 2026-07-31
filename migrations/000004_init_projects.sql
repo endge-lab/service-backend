@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS projects (
     meta JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT projects_workspace_id_unique UNIQUE (workspace_id, id),
     CONSTRAINT projects_workspace_identity_unique UNIQUE (workspace_id, identity),
     CONSTRAINT projects_identity_not_empty_check CHECK (btrim(identity) <> ''),
     CONSTRAINT projects_display_name_not_empty_check CHECK (btrim(display_name) <> '')

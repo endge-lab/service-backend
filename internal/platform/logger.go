@@ -7,9 +7,11 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func NewLogger(logLevel string, serviceName string, appEnv string, appVersion string, additionalCores ...zapcore.Core) *zap.Logger {
+func NewLogger(logLevel, logFormat, logColor, serviceName, appEnv, appVersion string, additionalCores ...zapcore.Core) *zap.Logger {
 	logger, err := servicelogging.NewLogger(servicelogging.Config{
 		Level:       logLevel,
+		Format:      logFormat,
+		Color:       logColor,
 		ServiceName: serviceName,
 		Environment: appEnv,
 		Version:     appVersion,
@@ -19,6 +21,8 @@ func NewLogger(logLevel string, serviceName string, appEnv string, appVersion st
 	}
 
 	logger, _ = servicelogging.NewLogger(servicelogging.Config{
+		Format:      "json",
+		Color:       "never",
 		ServiceName: serviceName,
 		Environment: appEnv,
 		Version:     appVersion,
