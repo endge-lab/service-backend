@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+// TestCodeOfReturnsSpecificWrappedCode проверяет безопасное преобразование доменной ошибки.
 func TestCodeOfReturnsSpecificWrappedCode(t *testing.T) {
 	err := InvalidInput("validation.invalid_input", "Некорректные входные данные")
 
@@ -19,6 +20,7 @@ func TestCodeOfReturnsSpecificWrappedCode(t *testing.T) {
 	}
 }
 
+// TestWithDetailsPreservesAppError проверяет сохранение кода и безопасных details.
 func TestWithDetailsPreservesAppError(t *testing.T) {
 	err := WithDetails(ErrAuthUserIDRequired, map[string]any{"field": "authUserId"})
 

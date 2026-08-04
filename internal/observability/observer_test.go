@@ -23,6 +23,7 @@ func (r *recorderStub) Record(_ context.Context, operation string, _ time.Time, 
 	r.err = err
 }
 
+// TestObserverCreatesChildSpanAndRecordsOperation проверяет дочерний span и запись операции.
 func TestObserverCreatesChildSpanAndRecordsOperation(t *testing.T) {
 	t.Parallel()
 
@@ -49,6 +50,7 @@ func TestObserverCreatesChildSpanAndRecordsOperation(t *testing.T) {
 	}
 }
 
+// TestObserverWithRecorderDoesNotMutateSourceObserver проверяет неизменяемость исходного observer.
 func TestObserverWithRecorderDoesNotMutateSourceObserver(t *testing.T) {
 	t.Parallel()
 
@@ -68,6 +70,7 @@ func TestObserverWithRecorderDoesNotMutateSourceObserver(t *testing.T) {
 	}
 }
 
+// TestOperationRecordStepWritesTraceEventAndInfoLog проверяет trace event и безопасный info log.
 func TestOperationRecordStepWritesTraceEventAndInfoLog(t *testing.T) {
 	spans := tracetest.NewSpanRecorder()
 	provider := trace.NewTracerProvider(trace.WithSpanProcessor(spans))
@@ -106,6 +109,7 @@ func TestOperationRecordStepWritesTraceEventAndInfoLog(t *testing.T) {
 	}
 }
 
+// TestOperationEndRecordsFailedCompletionWithoutSuccessLog проверяет завершение ошибочной операции.
 func TestOperationEndRecordsFailedCompletionWithoutSuccessLog(t *testing.T) {
 	spans := tracetest.NewSpanRecorder()
 	provider := trace.NewTracerProvider(trace.WithSpanProcessor(spans))

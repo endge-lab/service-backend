@@ -1,185 +1,158 @@
 package converter
 
 import (
-	httpobservability "github.com/endge-lab/service-backend/internal/api/http/observability"
-	respond "github.com/endge-lab/service-backend/internal/api/http/respond"
-	"github.com/endge-lab/service-backend/internal/observability"
-	"github.com/endge-lab/service-backend/internal/usecase/converters"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/shared"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
+// Handler обслуживает HTTP-операции ресурса и зависит только от application-порта.
 type Handler struct {
-	service   UseCase
+	usecase   UseCase
 	validator appvalidator.Validator
-	observer  observability.Observer
 }
 
-func NewHandler(s UseCase, v appvalidator.Validator, core *observability.Core, metrics *httpobservability.HandlerMetrics) *Handler {
-	observer := core.For(observability.LayerHandler, "converter_http_handler").WithRecorder(metrics)
-	return &Handler{service: s, validator: v, observer: observer}
+// NewHandler создаёт HTTP-обработчик ресурса.
+func NewHandler(usecase UseCase, validator appvalidator.Validator) *Handler {
+	return &Handler{usecase: usecase, validator: validator}
 }
 
-// Create godoc
-// @Summary Создать конвертер
-// @Description Создает конвертер с JSON source/config. Source не исполняется.
-// @Tags converters
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Accept json
+// List возвращает список документов ресурса с фильтрацией и пагинацией.
+// @Summary Получить список конвертеров
+// @Description Возвращает список конвертеров текущего рабочего пространства с фильтрацией и пагинацией.
+// @ID listConverters
+// @Tags Конвертеры
 // @Produce json
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param request body CreateConverterRequest true "Параметры конвертера"
-// @Success 201 {object} ConverterResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 409 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Router /api/v1/projects/{project_identity}/converters [post]
-func (h *Handler) Create(c *fiber.Ctx) error {
-	var request CreateConverterRequest
-	if err := c.BodyParser(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrInvalidBody)
-	}
-	if err := h.validator.Validate(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrValidationError)
-	}
-	project := c.Params("project_identity")
-	value, err := h.service.Create(c.UserContext(), converters.CreateConverterInput{ProjectIdentity: project, FolderIdentity: request.FolderIdentity, Identity: request.Identity, DisplayName: request.DisplayName, Description: request.Description, ConverterType: request.ConverterType, Source: request.Source, IsSystem: request.IsSystem, Meta: request.Meta, Active: request.Active})
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-	return c.Status(fiber.StatusCreated).JSON(h.response(value, project))
-}
-
-// List godoc
-// @Summary Список конвертеров
-// @Description Возвращает неудаленные конвертеры проекта с optional фильтром папки.
-// @Tags converters
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Produce json
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param folder_identity query string false "Folder identity" example(shared-converters)
-// @Success 200 {object} ConvertersListResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Router /api/v1/projects/{project_identity}/converters [get]
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param includeDeleted query bool false "Включить мягко удалённые документы" default(false)
+// @Param folderIdentity query string false "Identity папки" maxlength(160)
+// @Param active query bool false "Фильтр по активности"
+// @Param limit query int false "Размер страницы" default(100) minimum(1) maximum(500)
+// @Param offset query int false "Смещение" default(0) minimum(0)
+// @Success 200 {object} ListResponse "Список конвертеров"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/converters [get]
 func (h *Handler) List(c *fiber.Ctx) error {
-	project := c.Params("project_identity")
-	var folder *string
-	if value := c.Query("folder_identity"); value != "" {
-		folder = &value
-	}
-	values, err := h.service.List(c.UserContext(), converters.ListConvertersInput{ProjectIdentity: project, FolderIdentity: folder})
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-	items := make([]*ConverterResponse, 0, len(values))
-	for _, value := range values {
-		items = append(items, h.response(value, project))
-	}
-	return c.JSON(ConvertersListResponse{Items: items})
+	return shared.ListDocuments(c, h.usecase.List, NewResponse)
 }
 
-// GetByIdentity godoc
-// @Summary Получить конвертер
-// @Description Возвращает активный конвертер по identity.
-// @Tags converters
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Produce json
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param converter_identity path string true "Converter identity" example(date-to-string)
-// @Success 200 {object} ConverterResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Router /api/v1/projects/{project_identity}/converters/{converter_identity} [get]
-func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
-	project := c.Params("project_identity")
-	value, err := h.service.GetByIdentity(c.UserContext(), converters.GetConverterInput{ProjectIdentity: project, ConverterIdentity: c.Params("converter_identity")})
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-	return c.JSON(h.response(value, project))
-}
-
-// Update godoc
-// @Summary Обновить конвертер
-// @Description Заменяет editable payload конвертера, сохраняя id, identity, createdAt и deletedAt.
-// @Tags converters
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
+// Create проверяет запрос и создаёт документ ресурса.
+// @Summary Создать конвертер
+// @Description Создаёт конвертер в текущем рабочем пространстве.
+// @ID createConverter
+// @Tags Конвертеры
 // @Accept json
 // @Produce json
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param converter_identity path string true "Converter identity" example(date-to-string)
-// @Param request body UpdateConverterRequest true "Параметры обновления конвертера"
-// @Success 200 {object} ConverterResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Router /api/v1/projects/{project_identity}/converters/{converter_identity} [patch]
-func (h *Handler) Update(c *fiber.Ctx) error {
-	var request UpdateConverterRequest
-	if err := c.BodyParser(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrInvalidBody)
-	}
-	if err := h.validator.Validate(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrValidationError)
-	}
-	project := c.Params("project_identity")
-	value, err := h.service.Update(c.UserContext(), converters.UpdateConverterInput{ProjectIdentity: project, ConverterIdentity: c.Params("converter_identity"), FolderIdentity: request.FolderIdentity, DisplayName: request.DisplayName, Description: request.Description, ConverterType: request.ConverterType, Source: request.Source, IsSystem: request.IsSystem, Meta: request.Meta, Active: request.Active})
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-	return c.JSON(h.response(value, project))
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param request body CreateRequest true "Данные нового документа"
+// @Success 201 {object} Response "Документ создан"
+// @Header 201 {string} ETag "Текущая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/converters [post]
+func (h *Handler) Create(c *fiber.Ctx) error {
+	return shared.CreateDocument[CreateRequest](c, h.validator, h.usecase.Create, NewResponse)
 }
 
-// SoftDelete godoc
+// Get возвращает документ ресурса по identity.
+// @Summary Получить конвертер
+// @Description Возвращает конвертер по identity.
+// @ID getConverter
+// @Tags Конвертеры
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param includeDeleted query bool false "Разрешить получение мягко удалённого документа" default(false)
+// @Success 200 {object} Response "Найденный документ"
+// @Header 200 {string} ETag "Текущая revision документа"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/converters/{identity} [get]
+func (h *Handler) Get(c *fiber.Ctx) error {
+	return shared.GetDocument(c, h.usecase.Get, NewResponse)
+}
+
+// Patch проверяет If-Match и частично изменяет документ ресурса.
+// @Summary Изменить конвертер
+// @Description Частично изменяет конвертер; актуальная revision передаётся в If-Match.
+// @ID patchConverter
+// @Tags Конвертеры
+// @Accept json
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param If-Match header string true "Текущая revision документа" example("3")
+// @Param request body PatchRequest true "Изменяемые поля документа"
+// @Success 200 {object} Response "Документ изменён"
+// @Header 200 {string} ETag "Новая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 428 {object} shared.ErrorResponse "Требуется заголовок If-Match"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/converters/{identity} [patch]
+func (h *Handler) Patch(c *fiber.Ctx) error {
+	return shared.PatchDocument[PatchRequest](c, h.validator, h.usecase.Patch, NewResponse)
+}
+
+// Delete выполняет мягкое удаление документа ресурса.
 // @Summary Удалить конвертер
-// @Description Выполняет soft-delete конвертера.
-// @Tags converters
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param converter_identity path string true "Converter identity" example(date-to-string)
-// @Success 204
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Router /api/v1/projects/{project_identity}/converters/{converter_identity} [delete]
-func (h *Handler) SoftDelete(c *fiber.Ctx) error { return h.change(c, h.service.SoftDelete) }
+// @Description Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.
+// @ID deleteConverter
+// @Tags Конвертеры
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param If-Match header string true "Текущая revision документа" example("3")
+// @Success 200 {object} Response "Документ мягко удалён"
+// @Header 200 {string} ETag "Новая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 428 {object} shared.ErrorResponse "Требуется заголовок If-Match"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/converters/{identity} [delete]
+func (h *Handler) Delete(c *fiber.Ctx) error {
+	return shared.MutateDocument(c, h.usecase.Delete, NewResponse)
+}
 
-// Restore godoc
+// Restore восстанавливает мягко удалённый документ ресурса.
 // @Summary Восстановить конвертер
-// @Description Восстанавливает soft-deleted конвертер.
-// @Tags converters
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param converter_identity path string true "Converter identity" example(restore-date-to-string)
-// @Success 204
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Router /api/v1/projects/{project_identity}/converters/{converter_identity}/restore [post]
-func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Restore) }
-
-// HardDelete godoc
-// @Summary Физически удалить конвертер
-// @Description Выполняет hard-delete конвертера; system converter удалить нельзя.
-// @Tags converters
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param converter_identity path string true "Converter identity" example(hard-delete-date-to-string)
-// @Success 204
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 409 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Router /api/v1/projects/{project_identity}/converters/{converter_identity}/hard [delete]
-func (h *Handler) HardDelete(c *fiber.Ctx) error { return h.change(c, h.service.HardDelete) }
+// @Description Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.
+// @ID restoreConverter
+// @Tags Конвертеры
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param If-Match header string true "Текущая revision документа" example("3")
+// @Success 200 {object} Response "Документ восстановлен"
+// @Header 200 {string} ETag "Новая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 428 {object} shared.ErrorResponse "Требуется заголовок If-Match"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/converters/{identity}/restore [post]
+func (h *Handler) Restore(c *fiber.Ctx) error {
+	return shared.MutateDocument(c, h.usecase.Restore, NewResponse)
+}

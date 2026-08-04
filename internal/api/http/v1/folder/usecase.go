@@ -4,18 +4,19 @@ import (
 	"context"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
-	"github.com/endge-lab/service-backend/internal/usecase/folders"
-	"github.com/google/uuid"
+	"github.com/endge-lab/service-backend/internal/usecase/documents"
+	resourceusecase "github.com/endge-lab/service-backend/internal/usecase/folders"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 )
 
-// UseCase is the application contract consumed by the folder HTTP adapter.
 type UseCase interface {
-	Create(ctx context.Context, input folders.CreateFolderInput) (*entities.RFolder, error)
-	Update(ctx context.Context, input folders.UpdateFolderInput) (*entities.RFolder, error)
-	GetByID(ctx context.Context, id uuid.UUID) (*entities.RFolder, error)
-	GetByIdentity(ctx context.Context, input folders.GetFolderInput) (*entities.RFolder, error)
-	List(ctx context.Context, input folders.ListFoldersInput) ([]*entities.RFolder, error)
-	SoftDelete(ctx context.Context, input folders.FolderIdentityInput) error
-	Restore(ctx context.Context, input folders.FolderIdentityInput) error
-	HardDelete(ctx context.Context, input folders.FolderIdentityInput) error
+	List(context.Context, ports.DocumentFilter) ([]entities.Document, error)
+	Get(context.Context, string, bool) (*entities.Document, error)
+	Create(context.Context, documents.CreateInput) (*entities.Document, error)
+	Patch(context.Context, string, documents.PatchInput, int) (*entities.Document, error)
+	Delete(context.Context, string, int) (*entities.Document, error)
+	Restore(context.Context, string, int) (*entities.Document, error)
 }
+
+// BindUseCase предоставляет concrete application use case как HTTP-порт ресурса.
+func BindUseCase(useCase *resourceusecase.UseCase) UseCase { return useCase }

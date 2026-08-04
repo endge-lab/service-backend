@@ -2,87 +2,74 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/endge-lab/service-backend/internal/auth"
-	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	kitfiberauth "github.com/endge-lab/service-kit-go/pkg/auth/fiber"
-
+	"github.com/endge-lab/service-backend/internal/config"
 	"github.com/gofiber/fiber/v2"
-	"go.uber.org/zap"
 )
 
-type AuthMiddleware interface {
-	AuthMiddleware() fiber.Handler
-	Authenticate(c *fiber.Ctx, allowQueryToken bool) error
-}
+type AuthMiddleware interface{ AuthMiddleware() fiber.Handler }
 
 type authMiddleware struct {
-	delegate *kitfiberauth.Middleware
+	resolver auth.Resolver
+	sessions *auth.SessionManager
+	config   *config.Config
 }
 
-type errorResponse struct {
-	Code    string         `json:"code"`
-	Message string         `json:"message"`
-	Details map[string]any `json:"details,omitempty"`
-}
-
-func NewAuthMiddleware(authResolver auth.Resolver, log *zap.Logger) AuthMiddleware {
-	return &authMiddleware{
-		delegate: kitfiberauth.NewMiddleware(authResolver, log),
-	}
+func NewAuthMiddleware(resolver auth.Resolver, sessions *auth.SessionManager, cfg *config.Config) AuthMiddleware {
+	return &authMiddleware{resolver: resolver, sessions: sessions, config: cfg}
 }
 
 func (m *authMiddleware) AuthMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		if err := m.Authenticate(c, false); err != nil {
-			return err
+		claims, sessionID, cookieAuth, err := m.authenticate(c)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"code": "unauthorized", "message": "authentication required", "loginUrl": m.sessions.LoginURL(),
+			})
 		}
+		if cookieAuth && !isSafeMethod(c.Method()) {
+			origin := strings.TrimSpace(c.Get(fiber.HeaderOrigin))
+			if origin == "" || !isOriginAllowed(origin, m.config.HTTP.CORSAllowedOrigins) {
+				return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"code": "csrf_origin_rejected", "message": "request origin is not allowed"})
+			}
+		}
+		identity := RequestIdentity{ProviderID: claims.ProviderID, Subject: claims.Subject, Issuer: claims.Issuer, AuthUserID: claims.Subject,
+			Username: claims.Username, DisplayName: claims.DisplayName, Groups: claims.Groups, PlatformAdmin: claims.PlatformAdmin,
+			SessionID: sessionID, ExpiresAt: claims.ExpiresAt.Format("2006-01-02T15:04:05Z07:00")}
+		ctx := context.WithValue(c.UserContext(), identityKey, identity)
+		if sessionID != "" {
+			ctx = context.WithValue(ctx, sessionIDKey, sessionID)
+		}
+		c.SetUserContext(ctx)
 		return c.Next()
 	}
 }
 
-func (m *authMiddleware) Authenticate(c *fiber.Ctx, allowQueryToken bool) error {
-	if err := m.delegate.AuthenticateRequest(c, allowQueryToken); err != nil {
-		return respondJSONError(c, err)
+func (m *authMiddleware) authenticate(c *fiber.Ctx) (auth.Claims, string, bool, error) {
+	header := strings.TrimSpace(c.Get(fiber.HeaderAuthorization))
+	if header != "" {
+		if !strings.HasPrefix(strings.ToLower(header), "bearer ") {
+			return auth.Claims{}, "", false, fmt.Errorf("unsupported Authorization scheme")
+		}
+		claims, err := m.resolver.Resolve(c.UserContext(), strings.TrimSpace(header[7:]))
+		return claims, "", false, err
 	}
-
-	identity, ok := kitfiberauth.GetIdentity(c.UserContext())
-	if !ok || strings.TrimSpace(identity.AuthUserID) == "" {
-		return respondJSONError(c, domainerrors.Unauthorized("auth.identity_missing", "В токене отсутствует идентификатор пользователя"))
+	if cookieToken := strings.TrimSpace(c.Cookies(m.sessions.CookieName())); cookieToken != "" {
+		identity, err := m.sessions.Resolve(c.UserContext(), cookieToken)
+		return identity.Claims, identity.SessionID, true, err
 	}
-
-	userID := strings.TrimSpace(identity.AuthUserID)
-	ctx := context.WithValue(c.UserContext(), userIDKey, userID)
-	ctx = context.WithValue(ctx, identityKey, RequestIdentity{
-		AuthUserID:  userID,
-		Username:    strings.TrimSpace(identity.Username),
-		DisplayName: strings.TrimSpace(identity.DisplayName),
-		Role:        strings.TrimSpace(identity.Role),
-		SessionID:   strings.TrimSpace(identity.SessionID),
-		App:         strings.TrimSpace(identity.App),
-		Platform:    strings.TrimSpace(identity.Platform),
-		Scope:       identity.Scope,
-		ExpiresAt:   strings.TrimSpace(identity.ExpiresAt),
-	})
-
-	sessionID := strings.TrimSpace(identity.SessionID)
-	if sessionID != "" {
-		ctx = context.WithValue(ctx, sessionIDKey, sessionID)
-		c.Locals(string(sessionIDKey), sessionID)
-	}
-
-	c.SetUserContext(ctx)
-	c.Locals(string(userIDKey), userID)
-	c.Locals(string(identityKey), identity)
-
-	return nil
+	claims, err := m.resolver.Resolve(c.UserContext(), "")
+	return claims, "", false, err
 }
 
-func respondJSONError(c *fiber.Ctx, err error) error {
-	return c.Status(domainerrors.HTTPStatusOf(err)).JSON(errorResponse{
-		Code:    domainerrors.CodeOf(err),
-		Message: domainerrors.SafeMessageOf(err),
-		Details: domainerrors.DetailsOf(err),
-	})
+func isSafeMethod(method string) bool {
+	switch method {
+	case fiber.MethodGet, fiber.MethodHead, fiber.MethodOptions:
+		return true
+	default:
+		return false
+	}
 }

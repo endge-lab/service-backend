@@ -1,18 +1,11 @@
 package domain
 
-import (
-	"github.com/endge-lab/service-backend/internal/api/http/middleware"
-	"github.com/gofiber/fiber/v2"
-)
+import "github.com/gofiber/fiber/v2"
 
-type DHandler interface{ DomainHandler }
-
-type DomainHandler interface {
-	ListUsages(*fiber.Ctx) error
-}
-
-func RegisterRoutes(api fiber.Router, handler DHandler, workspaceMiddleware *middleware.WorkspaceContextMiddleware) {
-	routes := api.Group("/v1/domain")
-	routes.Use(workspaceMiddleware.RequireWorkspace())
-	routes.Get("/usages", middleware.TraceMiddleware("handler.domain.list_usages"), handler.ListUsages)
+// RegisterRoutes регистрирует HTTP-маршруты ресурса.
+func RegisterRoutes(router fiber.Router, handler *Handler) {
+	router.Get("/domain", handler.Live)
+	router.Get("/domain/export", handler.Export)
+	router.Post("/domain/import/plan", handler.PlanImport)
+	router.Post("/domain/import", handler.Import)
 }

@@ -1,213 +1,158 @@
 package project
 
 import (
-	httpobservability "github.com/endge-lab/service-backend/internal/api/http/observability"
-	respond "github.com/endge-lab/service-backend/internal/api/http/respond"
-	"github.com/endge-lab/service-backend/internal/observability"
-	"github.com/endge-lab/service-backend/internal/usecase/projects"
-	"github.com/endge-lab/service-kit-go/pkg/logging"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/shared"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
-	"go.uber.org/zap"
 )
 
-type ErrorResponse = respond.ErrorResponse
-
+// Handler обслуживает HTTP-операции ресурса и зависит только от application-порта.
 type Handler struct {
-	projectService UseCase
-	validator      appvalidator.Validator
-	observer       observability.Observer
+	usecase   UseCase
+	validator appvalidator.Validator
 }
 
-func NewHandler(
-	service UseCase,
-	validator appvalidator.Validator,
-	core *observability.Core,
-	metrics *httpobservability.HandlerMetrics,
-) *Handler {
-	observer := core.For(observability.LayerHandler, "project_http_handler").WithRecorder(metrics)
-	return &Handler{
-		projectService: service,
-		validator:      validator,
-		observer:       observer,
-	}
+// NewHandler создаёт HTTP-обработчик ресурса.
+func NewHandler(usecase UseCase, validator appvalidator.Validator) *Handler {
+	return &Handler{usecase: usecase, validator: validator}
 }
 
-// CreateProject godoc
+// List возвращает список документов ресурса с фильтрацией и пагинацией.
+// @Summary Получить список проектов
+// @Description Возвращает список проектов текущего рабочего пространства с фильтрацией и пагинацией.
+// @ID listProjects
+// @Tags Проекты
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param includeDeleted query bool false "Включить мягко удалённые документы" default(false)
+// @Param folderIdentity query string false "Identity папки" maxlength(160)
+// @Param active query bool false "Фильтр по активности"
+// @Param limit query int false "Размер страницы" default(100) minimum(1) maximum(500)
+// @Param offset query int false "Смещение" default(0) minimum(0)
+// @Success 200 {object} ListResponse "Список проектов"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/projects [get]
+func (h *Handler) List(c *fiber.Ctx) error {
+	return shared.ListDocuments(c, h.usecase.List, NewResponse)
+}
+
+// Create проверяет запрос и создаёт документ ресурса.
 // @Summary Создать проект
-// @Description Создает новый проект.
-// @Tags projects
+// @Description Создаёт проект в текущем рабочем пространстве.
+// @ID createProject
+// @Tags Проекты
 // @Accept json
 // @Produce json
-// @Param request body CreateProjectRequest true "Параметры проекта"
-// @Success 201 {object} ProjectResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 409 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param request body CreateRequest true "Данные нового документа"
+// @Success 201 {object} Response "Документ создан"
+// @Header 201 {string} ETag "Текущая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
 // @Router /api/v1/projects [post]
-func (h *Handler) CreateProject(c *fiber.Ctx) error {
-	logger := logging.WithContext(c.UserContext(), h.observer.Logger()).With(zap.String("handler", "create_project"))
-
-	var request CreateProjectRequest
-	if err := c.BodyParser(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrInvalidBody)
-	}
-	if err := h.validator.Validate(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrValidationError)
-	}
-
-	project, err := h.projectService.Create(c.UserContext(), projects.CreateProjectInput{
-		Identity:    request.Identity,
-		DisplayName: request.DisplayName,
-		Description: request.Description,
-		Active:      request.Active,
-		Meta:        request.Meta,
-	})
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-
-	logger.Debug("create project handler completed", zap.String("project_id", project.ID.String()))
-	return c.Status(fiber.StatusCreated).JSON(NewProjectResponse(project))
+func (h *Handler) Create(c *fiber.Ctx) error {
+	return shared.CreateDocument[CreateRequest](c, h.validator, h.usecase.Create, NewResponse)
 }
 
-// ListProjects godoc
-// @Summary Список проектов
-// @Description Возвращает список неудаленных проектов.
-// @Tags projects
-// @Produce json
-// @Success 200 {object} ProjectsListResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects [get]
-func (h *Handler) ListProjects(c *fiber.Ctx) error {
-	projects, err := h.projectService.List(c.UserContext())
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-
-	return c.Status(fiber.StatusOK).JSON(NewProjectsListResponse(projects))
-}
-
-// GetProjectByIdentity godoc
+// Get возвращает документ ресурса по identity.
 // @Summary Получить проект
 // @Description Возвращает проект по identity.
-// @Tags projects
+// @ID getProject
+// @Tags Проекты
 // @Produce json
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Success 200 {object} ProjectResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity} [get]
-func (h *Handler) GetProjectByIdentity(c *fiber.Ctx) error {
-	project, err := h.projectService.GetByIdentity(c.UserContext(), c.Params("project_identity"))
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-
-	return c.Status(fiber.StatusOK).JSON(NewProjectResponse(project))
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param includeDeleted query bool false "Разрешить получение мягко удалённого документа" default(false)
+// @Success 200 {object} Response "Найденный документ"
+// @Header 200 {string} ETag "Текущая revision документа"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/projects/{identity} [get]
+func (h *Handler) Get(c *fiber.Ctx) error {
+	return shared.GetDocument(c, h.usecase.Get, NewResponse)
 }
 
-// UpdateProject godoc
-// @Summary Обновить проект
-// @Description Обновляет проект по identity.
-// @Tags projects
+// Patch проверяет If-Match и частично изменяет документ ресурса.
+// @Summary Изменить проект
+// @Description Частично изменяет проект; актуальная revision передаётся в If-Match.
+// @ID patchProject
+// @Tags Проекты
 // @Accept json
 // @Produce json
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param request body UpdateProjectRequest true "Параметры обновления проекта"
-// @Success 200 {object} ProjectResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity} [patch]
-func (h *Handler) UpdateProject(c *fiber.Ctx) error {
-	var request UpdateProjectRequest
-	if err := c.BodyParser(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrInvalidBody)
-	}
-	if err := h.validator.Validate(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrValidationError)
-	}
-
-	project, err := h.projectService.Update(c.UserContext(), projects.UpdateProjectInput{
-		Identity:    c.Params("project_identity"),
-		DisplayName: request.DisplayName,
-		Description: request.Description,
-		Active:      request.Active,
-		Meta:        request.Meta,
-	})
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-
-	return c.Status(fiber.StatusOK).JSON(NewProjectResponse(project))
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param If-Match header string true "Текущая revision документа" example("3")
+// @Param request body PatchRequest true "Изменяемые поля документа"
+// @Success 200 {object} Response "Документ изменён"
+// @Header 200 {string} ETag "Новая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 428 {object} shared.ErrorResponse "Требуется заголовок If-Match"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/projects/{identity} [patch]
+func (h *Handler) Patch(c *fiber.Ctx) error {
+	return shared.PatchDocument[PatchRequest](c, h.validator, h.usecase.Patch, NewResponse)
 }
 
-// SoftDeleteProject godoc
+// Delete выполняет мягкое удаление документа ресурса.
 // @Summary Удалить проект
-// @Description Выполняет soft delete проекта по identity.
-// @Tags projects
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Success 204
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity} [delete]
-func (h *Handler) SoftDeleteProject(c *fiber.Ctx) error {
-	if err := h.projectService.SoftDelete(c.UserContext(), c.Params("project_identity")); err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-
-	return c.SendStatus(fiber.StatusNoContent)
+// @Description Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.
+// @ID deleteProject
+// @Tags Проекты
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param If-Match header string true "Текущая revision документа" example("3")
+// @Success 200 {object} Response "Документ мягко удалён"
+// @Header 200 {string} ETag "Новая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 428 {object} shared.ErrorResponse "Требуется заголовок If-Match"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/projects/{identity} [delete]
+func (h *Handler) Delete(c *fiber.Ctx) error {
+	return shared.MutateDocument(c, h.usecase.Delete, NewResponse)
 }
 
-// RestoreProject godoc
+// Restore восстанавливает мягко удалённый документ ресурса.
 // @Summary Восстановить проект
-// @Description Восстанавливает soft-deleted проект по identity.
-// @Tags projects
-// @Param project_identity path string true "Project identity" example(restore-project)
-// @Success 204
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity}/restore [post]
-func (h *Handler) RestoreProject(c *fiber.Ctx) error {
-	if err := h.projectService.Restore(c.UserContext(), c.Params("project_identity")); err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-
-	return c.SendStatus(fiber.StatusNoContent)
-}
-
-// HardDeleteProject godoc
-// @Summary Удалить проект физически
-// @Description Выполняет hard delete проекта по identity.
-// @Tags projects
-// @Param project_identity path string true "Project identity" example(hard-delete-project)
-// @Success 204
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity}/hard [delete]
-func (h *Handler) HardDeleteProject(c *fiber.Ctx) error {
-	if err := h.projectService.HardDelete(c.UserContext(), c.Params("project_identity")); err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-
-	return c.SendStatus(fiber.StatusNoContent)
+// @Description Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.
+// @ID restoreProject
+// @Tags Проекты
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param If-Match header string true "Текущая revision документа" example("3")
+// @Success 200 {object} Response "Документ восстановлен"
+// @Header 200 {string} ETag "Новая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 428 {object} shared.ErrorResponse "Требуется заголовок If-Match"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/projects/{identity}/restore [post]
+func (h *Handler) Restore(c *fiber.Ctx) error {
+	return shared.MutateDocument(c, h.usecase.Restore, NewResponse)
 }

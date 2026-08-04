@@ -2,65 +2,40 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
-	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/observability"
-	"github.com/endge-lab/service-backend/internal/repo/postgres/mappers"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
-	"github.com/endge-lab/service-kit-go/pkg/logging"
-	"github.com/endge-lab/service-kit-go/pkg/telemetry"
-
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/zap"
 )
 
-type UserRepository struct {
-	*baseRepository
+type UserRepository struct{ queries *sqlc.Queries }
+
+func NewUserRepository(queries *sqlc.Queries) *UserRepository {
+	return &UserRepository{queries: queries}
 }
 
-func NewUserRepository(queries *sqlc.Queries, core *observability.Core, metrics *RepositoryMetrics) *UserRepository {
-	return &UserRepository{
-		baseRepository: newBaseRepository(queries, core, metrics, "user"),
+func (r *UserRepository) SyncUserFromIdentity(ctx context.Context, input ports.SyncUserInput) (*entities.User, error) {
+	authID := strings.TrimSpace(input.AuthUserID)
+	if authID == "" {
+		return nil, fmt.Errorf("auth user id is required")
 	}
-}
-
-func (r *UserRepository) SyncUserFromIdentity(ctx context.Context, input ports.SyncUserInput) (user *entities.User, err error) {
-	ctx, step := telemetry.StartTrace(
-		ctx,
-		r.observer.Tracer(),
-		r.observer.Logger(),
-		"repo.user.sync_from_identity",
-		attribute.String("repository", "user"),
-		attribute.String("auth.user_id", strings.TrimSpace(input.AuthUserID)),
-	)
-	defer func() {
-		step.End(err)
-	}()
-
-	logger := logging.WithContext(ctx, r.observer.Logger())
-	authUserID := strings.TrimSpace(input.AuthUserID)
-	if authUserID == "" {
-		return nil, domainerrors.ErrAuthUserIDRequired
-	}
-
-	logger.Debug("syncing service user from identity", zap.String("auth_user_id", authUserID))
-
-	record, err := r.queries(ctx).UpsertServiceUserFromIdentity(ctx, sqlc.UpsertServiceUserFromIdentityParams{
-		ID:          uuid.New(),
-		AuthUserID:  authUserID,
-		Username:    strings.TrimSpace(input.Username),
-		DisplayName: strings.TrimSpace(input.DisplayName),
-		Role:        strings.TrimSpace(input.Role),
-	})
+	user, err := r.UpsertCurrentUser(ctx, ports.UpsertCurrentUserInput{ProviderID: "legacy", Subject: authID, Issuer: "urn:endge:legacy", Username: input.Username, DisplayName: input.DisplayName})
 	if err != nil {
-		return nil, mapPostgresError(err, "user.sync_from_identity")
+		return nil, err
 	}
-
-	user = mappers.ServiceUser(record)
-	logger.Debug("service user synced", zap.String("service_user_id", user.ID))
+	user.Role = strings.TrimSpace(input.Role)
 	return user, nil
+}
+func (r *UserRepository) UpsertCurrentUser(ctx context.Context, input ports.UpsertCurrentUserInput) (*entities.User, error) {
+	queries := r.queries
+	if tx, ok := txFromContext(ctx); ok {
+		queries = queries.WithTx(tx)
+	}
+	row, err := queries.UpsertCurrentUser(ctx, sqlc.UpsertCurrentUserParams{ProviderID: strings.TrimSpace(input.ProviderID), Subject: strings.TrimSpace(input.Subject), Issuer: strings.TrimSpace(input.Issuer), Username: strings.TrimSpace(input.Username), DisplayName: strings.TrimSpace(input.DisplayName)})
+	if err != nil {
+		return nil, err
+	}
+	return &entities.User{ID: row.ID.String(), ProviderID: row.ProviderID, Subject: row.Subject, Issuer: row.Issuer, AuthUserID: row.Subject, Username: row.Username, DisplayName: row.DisplayName, Active: row.Active, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt, LastSeenAt: row.LastSeenAt}, nil
 }

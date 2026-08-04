@@ -10,19 +10,43 @@ type Config struct {
 }
 
 func RegisterRoutes(app *fiber.App, cfg Config) {
-	app.Get("/health", func(c *fiber.Ctx) error {
+	app.Get("/health", healthHandler(cfg))
+	app.Get("/version", versionHandler(cfg))
+}
+
+// healthHandler возвращает состояние работоспособности сервиса.
+// @Summary Проверить работоспособность сервиса
+// @Description Публичный liveness endpoint с именем сервиса, версией и окружением запуска.
+// @ID getHealth
+// @Tags Сервис
+// @Produce json
+// @Success 200 {object} HealthResponse "Сервис работает"
+// @Router /health [get]
+func healthHandler(cfg Config) fiber.Handler {
+	return func(c *fiber.Ctx) error {
 		return c.JSON(HealthResponse{
 			Status:  "ok",
 			Service: cfg.Service,
 			Version: cfg.Version,
 			Env:     cfg.Env,
 		})
-	})
-	app.Get("/version", func(c *fiber.Ctx) error {
+	}
+}
+
+// versionHandler возвращает сведения о версии сервиса.
+// @Summary Получить версию сервиса
+// @Description Публичный endpoint с именем сервиса, версией сборки и окружением запуска.
+// @ID getVersion
+// @Tags Сервис
+// @Produce json
+// @Success 200 {object} VersionResponse "Версия сервиса"
+// @Router /version [get]
+func versionHandler(cfg Config) fiber.Handler {
+	return func(c *fiber.Ctx) error {
 		return c.JSON(VersionResponse{
 			Service: cfg.Service,
 			Version: cfg.Version,
 			Env:     cfg.Env,
 		})
-	})
+	}
 }

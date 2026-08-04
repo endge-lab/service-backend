@@ -1,26 +1,14 @@
 package tenant
 
-import (
-	"github.com/endge-lab/service-backend/internal/api/http/middleware"
-	"github.com/gofiber/fiber/v2"
-)
+import "github.com/gofiber/fiber/v2"
 
-type THandler interface{ TenantHandler }
-
-type TenantHandler interface {
-	CreateTenant(*fiber.Ctx) error
-	ListTenants(*fiber.Ctx) error
-	GetTenantByIdentity(*fiber.Ctx) error
-	UpdateTenant(*fiber.Ctx) error
-	HardDeleteTenant(*fiber.Ctx) error
-}
-
-func RegisterRoutes(api fiber.Router, handler THandler, workspaceMiddleware *middleware.WorkspaceContextMiddleware) {
-	r := api.Group("/v1/tenants")
-	r.Use(workspaceMiddleware.RequireWorkspace())
-	r.Post("/", middleware.TraceMiddleware("handler.tenant.create"), handler.CreateTenant)
-	r.Get("/", middleware.TraceMiddleware("handler.tenant.list"), handler.ListTenants)
-	r.Get("/:tenant_identity", middleware.TraceMiddleware("handler.tenant.get_by_identity"), handler.GetTenantByIdentity)
-	r.Patch("/:tenant_identity", middleware.TraceMiddleware("handler.tenant.update"), handler.UpdateTenant)
-	r.Delete("/:tenant_identity", middleware.TraceMiddleware("handler.tenant.hard_delete"), handler.HardDeleteTenant)
+// RegisterRoutes регистрирует HTTP-маршруты ресурса.
+func RegisterRoutes(router fiber.Router, handler *Handler) {
+	resource := router.Group("/tenants")
+	resource.Post("/", handler.Create)
+	resource.Get("/", handler.List)
+	resource.Get("/:identity", handler.Get)
+	resource.Patch("/:identity", handler.Patch)
+	resource.Delete("/:identity", handler.Delete)
+	resource.Post("/:identity/restore", handler.Restore)
 }

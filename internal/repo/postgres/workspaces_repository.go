@@ -2,192 +2,187 @@ package postgres
 
 import (
 	"context"
-	stderrors "errors"
+	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
-	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/observability"
-	"github.com/endge-lab/service-backend/internal/repo/postgres/mappers"
-	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
-	"github.com/endge-lab/service-backend/internal/usecase/ports"
-	"github.com/endge-lab/service-kit-go/pkg/telemetry"
-
-	"github.com/jackc/pgx/v5"
-	"go.uber.org/zap"
 )
 
-var _ ports.WorkspacesRepository = (*WorkspacesRepository)(nil)
-
-// WorkspacesRepository persists root workspace scopes in PostgreSQL.
-type WorkspacesRepository struct{ *baseRepository }
-
-func NewWorkspacesRepository(queries *sqlc.Queries, core *observability.Core, metrics *RepositoryMetrics) *WorkspacesRepository {
-	return &WorkspacesRepository{baseRepository: newBaseRepository(queries, core, metrics, "workspaces")}
-}
-
-// Create сохраняет новый корневой workspace с полной configuration.
-//
-// Параметры:
-//
-//	ctx - контекст выполнения, содержащий при необходимости транзакцию;
-//	workspace - доменная сущность с identity, displayName и полной configuration.
-//
-// Что делает функция:
-//
-//	Сериализует полную nested configuration в JSONB без разложения по legacy
-//	колонкам. Выполняет CreateWorkspace через SQLC и преобразует сохранённую
-//	строку обратно в RWorkspace. Ошибки сериализации и десериализации не
-//	скрываются пустой configuration; ошибка уникальности identity маппится в
-//	безопасный domain conflict. Secret-поля configuration не добавляются в логи
-//	или trace fields.
-//
-// Возвращаемые значения:
-//
-//	*entities.RWorkspace - созданный workspace с ID и timestamps;
-//	error - domain error валидации/конфликта либо внутренняя ошибка хранения.
-func (r *WorkspacesRepository) Create(ctx context.Context, workspace *entities.RWorkspace) (result *entities.RWorkspace, err error) {
-	const op = "repo.workspaces.create"
-	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), op)
-	defer func() { step.End(err) }()
-
-	params, err := mappers.CreateWorkspaceParams(workspace)
-	if err != nil {
-		r.observer.Logger().Error("serialize workspace configuration failed", zap.Error(err))
-		return nil, domainerrors.Internal("internal_error", "failed to save workspace")
+func (r *EndgeRepository) ListWorkspaces(ctx context.Context, userID string, platform bool) ([]entities.Workspace, error) {
+	where := "WHERE w.identity='default' OR m.user_id=$1"
+	if platform {
+		where = "WHERE TRUE"
 	}
-
-	value, err := r.queries(ctx).CreateWorkspace(ctx, params)
+	rows, err := r.executor(ctx).Query(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.configuration,w.meta,w.active,w.generation::text,w.head_sequence,w.revision,
+		`+actorScan("cu")+`,`+actorScan("uu")+`,w.created_at,w.updated_at FROM workspaces w
+		LEFT JOIN workspace_memberships m ON m.workspace_id=w.id AND m.user_id=$1
+		JOIN service_users cu ON cu.id=w.created_by JOIN service_users uu ON uu.id=w.updated_by `+where+` ORDER BY w.identity`, userID)
 	if err != nil {
-		r.observer.Logger().Error("create workspace failed", zap.Error(err))
-		return nil, mapStorageError(err, workspaceStorageErrorMapping)
+		return nil, err
 	}
-
-	return r.mapWorkspace(value)
-}
-
-// List возвращает все workspace без фильтрации по пользователю.
-//
-// Параметры:
-//
-//	ctx - контекст выполнения, содержащий при необходимости транзакцию.
-//
-// Что делает функция:
-//
-//	Выполняет ListWorkspaces, упорядоченный SQLC-запросом по createdAt. Для
-//	каждой строки десериализует полную JSONB configuration и формирует доменную
-//	сущность. В задаче 04 authentication, memberships и roles отсутствуют,
-//	поэтому repository намеренно не применяет фильтр доступа.
-//
-// Возвращаемые значения:
-//
-//	[]*entities.RWorkspace - список всех workspace;
-//	error - внутренняя ошибка чтения или безопасная ошибка JSONB-маппинга.
-func (r *WorkspacesRepository) List(ctx context.Context) (result []*entities.RWorkspace, err error) {
-	const op = "repo.workspaces.list"
-	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), op)
-	defer func() { step.End(err) }()
-
-	values, err := r.queries(ctx).ListWorkspaces(ctx)
-	if err != nil {
-		r.observer.Logger().Error("list workspaces failed", zap.Error(err))
-		return nil, domainerrors.Internal("internal_error", "failed to list workspaces")
-	}
-
-	result = make([]*entities.RWorkspace, 0, len(values))
-	for _, value := range values {
-		workspace, mapErr := r.mapWorkspace(value)
-		if mapErr != nil {
-			return nil, mapErr
+	defer rows.Close()
+	result := []entities.Workspace{}
+	for rows.Next() {
+		value, err := scanWorkspace(rows)
+		if err != nil {
+			return nil, err
 		}
-		result = append(result, workspace)
+		result = append(result, *value)
 	}
-
-	return result, nil
+	return result, rows.Err()
 }
 
-// GetByIdentity возвращает workspace по его стабильному root identity.
-//
-// Параметры:
-//
-//	ctx - контекст выполнения, содержащий при необходимости транзакцию;
-//	identity - нормализованный человекочитаемый identity workspace.
-//
-// Что делает функция:
-//
-//	Выполняет GetWorkspaceByIdentity через SQLC. Отсутствующая строка
-//	преобразуется в безопасную domain not-found ошибку; найденная JSONB
-//	configuration десериализуется в полную EndgeConfiguration.
-//
-// Возвращаемые значения:
-//
-//	*entities.RWorkspace - найденный workspace;
-//	error - not_found, ошибка JSONB-маппинга либо внутренняя ошибка хранения.
-func (r *WorkspacesRepository) GetByIdentity(ctx context.Context, identity string) (result *entities.RWorkspace, err error) {
-	const op = "repo.workspaces.get_by_identity"
-	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), op)
-	defer func() { step.End(err) }()
+func (r *EndgeRepository) GetWorkspace(ctx context.Context, identity string) (*entities.Workspace, error) {
+	row := r.executor(ctx).QueryRow(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.configuration,w.meta,w.active,w.generation::text,w.head_sequence,w.revision,
+		`+actorScan("cu")+`,`+actorScan("uu")+`,w.created_at,w.updated_at FROM workspaces w JOIN service_users cu ON cu.id=w.created_by JOIN service_users uu ON uu.id=w.updated_by WHERE w.identity=$1`, identity)
+	return scanWorkspace(row)
+}
 
-	value, err := r.queries(ctx).GetWorkspaceByIdentity(ctx, identity)
+type scanner interface{ Scan(...any) error }
+
+func scanWorkspace(row scanner) (*entities.Workspace, error) {
+	value := &entities.Workspace{}
+	var created, updated []byte
+	if err := row.Scan(&value.ID, &value.Identity, &value.DisplayName, &value.Description, &value.DataMode, &value.Configuration, &value.Meta, &value.Active, &value.Generation, &value.HeadSequence, &value.Revision, &created, &updated, &value.CreatedAt, &value.UpdatedAt); err != nil {
+		return nil, repositoryError(err)
+	}
+	_ = json.Unmarshal(created, &value.CreatedBy)
+	_ = json.Unmarshal(updated, &value.UpdatedBy)
+	return value, nil
+}
+
+func (r *EndgeRepository) CreateWorkspace(ctx context.Context, value entities.Workspace, actor string) (*entities.Workspace, error) {
+	_, err := r.executor(ctx).Exec(ctx, `INSERT INTO workspaces(id,identity,display_name,description,data_mode,configuration,meta,active,created_by,updated_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)`, value.ID, value.Identity, value.DisplayName, value.Description, value.DataMode, value.Configuration, value.Meta, value.Active, actor)
 	if err != nil {
-		if stderrors.Is(err, pgx.ErrNoRows) {
-			return nil, domainerrors.NotFound("not_found", "workspace not found")
+		return nil, err
+	}
+	return r.GetWorkspace(ctx, value.Identity)
+}
+
+func (r *EndgeRepository) UpdateWorkspace(ctx context.Context, identity string, patch map[string]any, revision int, actor string) (*entities.Workspace, error) {
+	current, err := r.GetWorkspace(ctx, identity)
+	if err != nil {
+		return nil, err
+	}
+	if v, ok := patch["identity"].(string); ok {
+		current.Identity = strings.TrimSpace(v)
+	}
+	if v, ok := patch["displayName"].(string); ok {
+		current.DisplayName = v
+	}
+	if _, ok := patch["description"]; ok {
+		if v, isString := patch["description"].(string); isString {
+			current.Description = &v
+		} else {
+			current.Description = nil
 		}
-		r.observer.Logger().Error("get workspace by identity failed", zap.Error(err))
-		return nil, domainerrors.Internal("internal_error", "failed to get workspace")
 	}
-
-	return r.mapWorkspace(value)
+	if v, ok := patch["dataMode"].(string); ok {
+		current.DataMode = v
+	}
+	if v, ok := patch["configuration"]; ok {
+		current.Configuration = mustJSON(v)
+	}
+	if v, ok := patch["meta"]; ok {
+		current.Meta = mustJSON(v)
+	}
+	if v, ok := patch["active"].(bool); ok {
+		current.Active = v
+	}
+	tag, err := r.executor(ctx).Exec(ctx, `UPDATE workspaces SET identity=$1,display_name=$2,description=$3,data_mode=$4,configuration=$5,meta=$6,active=$7,updated_by=$8,updated_at=NOW(),revision=revision+1 WHERE id=$9 AND revision=$10`, current.Identity, current.DisplayName, current.Description, current.DataMode, current.Configuration, current.Meta, current.Active, actor, current.ID, revision)
+	if err != nil {
+		return nil, err
+	}
+	if tag.RowsAffected() != 1 {
+		return nil, fmt.Errorf("revision conflict")
+	}
+	return r.GetWorkspace(ctx, current.Identity)
 }
 
-// Update сохраняет разрешённые поля workspace и полную замену configuration.
-//
-// Параметры:
-//
-//	ctx - контекст выполнения, содержащий при необходимости транзакцию;
-//	workspace - уже разрешённая доменная сущность с неизменяемыми ID/identity и
-//	обновлёнными displayName и/или полной configuration.
-//
-// Что делает функция:
-//
-//	Сериализует переданную полную configuration в JSONB и выполняет
-//	UpdateWorkspace по техническому UUID. Repository не выполняет partial JSON
-//	merge: usecase передаёт либо сохранённую configuration, либо уже
-//	валидированную полную replacement configuration. Отсутствующая запись
-//	маппится в not_found, а constraint-ошибки — в безопасные domain errors.
-//
-// Возвращаемые значения:
-//
-//	*entities.RWorkspace - обновлённый workspace с новым updatedAt;
-//	error - not_found, conflict/validation либо внутренняя ошибка хранения.
-func (r *WorkspacesRepository) Update(ctx context.Context, workspace *entities.RWorkspace) (result *entities.RWorkspace, err error) {
-	const op = "repo.workspaces.update"
-	ctx, step := telemetry.StartTrace(ctx, r.observer.Tracer(), r.observer.Logger(), op)
-	defer func() { step.End(err) }()
-
-	params, err := mappers.UpdateWorkspaceParams(workspace)
-	if err != nil {
-		r.observer.Logger().Error("serialize workspace configuration failed", zap.Error(err))
-		return nil, domainerrors.Internal("internal_error", "failed to save workspace")
+func (r *EndgeRepository) WorkspaceRole(ctx context.Context, workspaceID, userID string, platform bool) (string, error) {
+	if platform {
+		return "platform_admin", nil
 	}
-
-	value, err := r.queries(ctx).UpdateWorkspace(ctx, params)
+	var identity, role string
+	err := r.executor(ctx).QueryRow(ctx, `SELECT w.identity,COALESCE(m.role,'') FROM workspaces w LEFT JOIN workspace_memberships m ON m.workspace_id=w.id AND m.user_id=$2 WHERE w.id=$1`, workspaceID, userID).Scan(&identity, &role)
 	if err != nil {
-		if stderrors.Is(err, pgx.ErrNoRows) {
-			return nil, domainerrors.NotFound("not_found", "workspace not found")
+		return "", repositoryError(err)
+	}
+	if role != "" {
+		return role, nil
+	}
+	if identity == "default" {
+		return "editor", nil
+	}
+	return "", nil
+}
+
+func (r *EndgeRepository) ListMemberships(ctx context.Context, workspaceID string) ([]entities.Membership, error) {
+	rows, err := r.executor(ctx).Query(ctx, `SELECT m.workspace_id::text,m.user_id::text,m.role,u.username,u.display_name,m.created_at,m.updated_at FROM workspace_memberships m JOIN service_users u ON u.id=m.user_id WHERE m.workspace_id=$1 ORDER BY u.username,u.id`, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := []entities.Membership{}
+	for rows.Next() {
+		var v entities.Membership
+		if err := rows.Scan(&v.WorkspaceID, &v.UserID, &v.Role, &v.Username, &v.DisplayName, &v.CreatedAt, &v.UpdatedAt); err != nil {
+			return nil, err
 		}
-		r.observer.Logger().Error("update workspace failed", zap.Error(err))
-		return nil, mapStorageError(err, workspaceStorageErrorMapping)
+		result = append(result, v)
 	}
-
-	return r.mapWorkspace(value)
+	return result, rows.Err()
+}
+func (r *EndgeRepository) PutMembership(ctx context.Context, workspaceID, userID, role, actor string) (*entities.Membership, error) {
+	_, err := r.executor(ctx).Exec(ctx, `INSERT INTO workspace_memberships(workspace_id,user_id,role,created_by) VALUES($1,$2,$3,$4) ON CONFLICT(workspace_id,user_id) DO UPDATE SET role=EXCLUDED.role,updated_at=NOW()`, workspaceID, userID, role, actor)
+	if err != nil {
+		return nil, err
+	}
+	var v entities.Membership
+	err = r.executor(ctx).QueryRow(ctx, `SELECT m.workspace_id::text,m.user_id::text,m.role,u.username,u.display_name,m.created_at,m.updated_at FROM workspace_memberships m JOIN service_users u ON u.id=m.user_id WHERE m.workspace_id=$1 AND m.user_id=$2`, workspaceID, userID).Scan(&v.WorkspaceID, &v.UserID, &v.Role, &v.Username, &v.DisplayName, &v.CreatedAt, &v.UpdatedAt)
+	return &v, repositoryError(err)
+}
+func (r *EndgeRepository) DeleteMembership(ctx context.Context, workspaceID, userID string) error {
+	_, err := r.executor(ctx).Exec(ctx, `DELETE FROM workspace_memberships WHERE workspace_id=$1 AND user_id=$2`, workspaceID, userID)
+	return err
+}
+func (r *EndgeRepository) ReplaceWorkspaceIntegrations(ctx context.Context, workspaceID string, items []map[string]any, actor string) error {
+	if _, err := r.executor(ctx).Exec(ctx, `DELETE FROM workspace_integrations WHERE workspace_id=$1`, workspaceID); err != nil {
+		return err
+	}
+	for _, item := range items {
+		identity := stringValue(item["identity"])
+		version := stringValue(item["version"])
+		if identity == "" || version == "" {
+			return fmt.Errorf("integration identity and version are required")
+		}
+		configuration := mustJSON(item["configuration"])
+		tag, err := r.executor(ctx).Exec(ctx, `INSERT INTO workspace_integrations(workspace_id,integration_id,version,configuration,created_by) SELECT $1,id,$3,$4,$5 FROM integrations WHERE identity=$2 AND deleted_at IS NULL`, workspaceID, identity, version, configuration, actor)
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() != 1 {
+			return fmt.Errorf("integration %s not found", identity)
+		}
+	}
+	return nil
 }
 
-func (r *WorkspacesRepository) mapWorkspace(value sqlc.Workspace) (*entities.RWorkspace, error) {
-	workspace, err := mappers.Workspace(value)
+func (r *EndgeRepository) ListWorkspaceIntegrations(ctx context.Context, workspaceID string) ([]map[string]any, error) {
+	rows, err := r.executor(ctx).Query(ctx, `SELECT i.identity,wi.version,wi.configuration FROM workspace_integrations wi JOIN integrations i ON i.id=wi.integration_id WHERE wi.workspace_id=$1 ORDER BY i.identity`, workspaceID)
 	if err != nil {
-		r.observer.Logger().Error("decode workspace configuration failed", zap.Error(err))
-		return nil, domainerrors.Internal("internal_error", "failed to read workspace")
+		return nil, err
 	}
-
-	return workspace, nil
+	defer rows.Close()
+	result := []map[string]any{}
+	for rows.Next() {
+		var identity, version string
+		var configuration json.RawMessage
+		if err = rows.Scan(&identity, &version, &configuration); err != nil {
+			return nil, err
+		}
+		result = append(result, map[string]any{"identity": identity, "version": version, "configuration": configuration})
+	}
+	return result, rows.Err()
 }

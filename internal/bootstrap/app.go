@@ -2,8 +2,10 @@ package bootstrap
 
 import "go.uber.org/fx"
 
-func NewApp() *fx.App {
-	return fx.New(appOptions()...)
+// NewApp собирает приложение и допускает test-only overrides зависимостей.
+// Production-вызов без аргументов сохраняет обычную конфигурацию сервиса.
+func NewApp(overrides ...fx.Option) *fx.App {
+	return fx.New(append(appOptions(), overrides...)...)
 }
 
 func appOptions() []fx.Option {
@@ -11,7 +13,6 @@ func appOptions() []fx.Option {
 		CommonModules(),
 		RepositoryModules(),
 		UseCaseModules(),
-		WorkspaceContextModules(),
 		HandlerModules(),
 		InvokeModules(),
 	}

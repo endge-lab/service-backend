@@ -1,21 +1,39 @@
 package bootstrap
 
 import (
-	httpapi "github.com/endge-lab/service-backend/internal/api/http"
+	configuratorauth "github.com/endge-lab/service-backend/internal/api/http/configurator_auth"
 	httpmiddleware "github.com/endge-lab/service-backend/internal/api/http/middleware"
-	httpobservability "github.com/endge-lab/service-backend/internal/api/http/observability"
-	"github.com/endge-lab/service-backend/internal/api/http/session"
-	"github.com/endge-lab/service-backend/internal/api/http/v1/component_legacy"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/action"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/auth_profile"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/backup"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/commit"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/component"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/composition"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/computation"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/converter"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/data_view"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/domain"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/environment"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/filter"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/folder"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/i18n_bundle"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/integration"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/mock"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/navigation"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/project"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/query"
-	workspace "github.com/endge-lab/service-backend/internal/api/http/v1/workspace"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/release"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/revision"
+	httpsession "github.com/endge-lab/service-backend/internal/api/http/v1/session"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/store"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/stream"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/style"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/tenant"
+	domain_type "github.com/endge-lab/service-backend/internal/api/http/v1/type"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/update"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/vocab"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/workspace"
 	"github.com/endge-lab/service-backend/internal/auth"
-	"github.com/endge-lab/service-backend/internal/usecase/dependencies"
-
 	"go.uber.org/fx"
 )
 
@@ -23,20 +41,73 @@ func HandlerModules() fx.Option {
 	return fx.Options(
 		fx.Invoke(httpmiddleware.ConfigureTraceMiddleware),
 		fx.Provide(
-			httpobservability.NewHandlerMetrics,
 			auth.NewResolver,
-			func(service *dependencies.Dependencies) domain.UseCase { return service },
+			auth.NewOIDCAdapter,
+			auth.NewLoginAdapterRegistry,
+			auth.NewSessionManager,
 			fx.Annotate(httpmiddleware.NewAuthMiddleware, fx.As(new(httpmiddleware.AuthMiddleware))),
-			fx.Annotate(session.NewHandler, fx.As(new(session.SHandler))),
-			fx.Annotate(project.NewHandler, fx.As(new(project.PHandler))),
-			fx.Annotate(folder.NewHandler, fx.As(new(folder.FHandler))),
-			fx.Annotate(component_legacy.NewHandler, fx.As(new(component_legacy.CHandler))),
-			fx.Annotate(converter.NewHandler, fx.As(new(converter.ConvHandler))),
-			fx.Annotate(query.NewHandler, fx.As(new(query.QHandler))),
-			fx.Annotate(data_view.NewHandler, fx.As(new(data_view.DVHandler))),
-			fx.Annotate(domain.NewHandler, fx.As(new(domain.DHandler))),
-			fx.Annotate(workspace.NewHandler, fx.As(new(workspace.WHandler))),
-			httpapi.NewHandler,
+			httpmiddleware.NewCurrentUserMiddleware,
+			configuratorauth.NewHandler,
+			workspace.BindUseCase,
+			backup.BindUseCase,
+			httpsession.BindUseCase,
+			integration.BindUseCase,
+			project.BindUseCase,
+			tenant.BindUseCase,
+			environment.BindUseCase,
+			folder.BindUseCase,
+			domain_type.BindUseCase,
+			query.BindUseCase,
+			data_view.BindUseCase,
+			composition.BindUseCase,
+			store.BindUseCase,
+			stream.BindUseCase,
+			update.BindUseCase,
+			mock.BindUseCase,
+			component.BindUseCase,
+			action.BindUseCase,
+			filter.BindUseCase,
+			converter.BindUseCase,
+			computation.BindUseCase,
+			vocab.BindUseCase,
+			i18n_bundle.BindUseCase,
+			auth_profile.BindUseCase,
+			navigation.BindUseCase,
+			style.BindUseCase,
+			revision.BindUseCase,
+			commit.BindUseCase,
+			domain.BindUseCase,
+			release.BindUseCase,
+			workspace.NewHandler,
+			backup.NewHandler,
+			httpsession.NewHandler,
+			integration.NewHandler,
+			project.NewHandler,
+			tenant.NewHandler,
+			environment.NewHandler,
+			folder.NewHandler,
+			domain_type.NewHandler,
+			query.NewHandler,
+			data_view.NewHandler,
+			composition.NewHandler,
+			store.NewHandler,
+			stream.NewHandler,
+			update.NewHandler,
+			mock.NewHandler,
+			component.NewHandler,
+			action.NewHandler,
+			filter.NewHandler,
+			converter.NewHandler,
+			computation.NewHandler,
+			vocab.NewHandler,
+			i18n_bundle.NewHandler,
+			auth_profile.NewHandler,
+			navigation.NewHandler,
+			style.NewHandler,
+			revision.NewHandler,
+			commit.NewHandler,
+			domain.NewHandler,
+			release.NewHandler,
 		),
 	)
 }

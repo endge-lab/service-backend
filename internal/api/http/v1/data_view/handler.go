@@ -1,188 +1,158 @@
 package data_view
 
 import (
-	httpobservability "github.com/endge-lab/service-backend/internal/api/http/observability"
-	respond "github.com/endge-lab/service-backend/internal/api/http/respond"
-	"github.com/endge-lab/service-backend/internal/observability"
-	"github.com/endge-lab/service-backend/internal/usecase/data_views"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/shared"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
+// Handler обслуживает HTTP-операции ресурса и зависит только от application-порта.
 type Handler struct {
-	service   UseCase
+	usecase   UseCase
 	validator appvalidator.Validator
-	observer  observability.Observer
 }
 
-func NewHandler(s UseCase, v appvalidator.Validator, core *observability.Core, metrics *httpobservability.HandlerMetrics) *Handler {
-	observer := core.For(observability.LayerHandler, "data_view_http_handler").WithRecorder(metrics)
-	return &Handler{service: s, validator: v, observer: observer}
+// NewHandler создаёт HTTP-обработчик ресурса.
+func NewHandler(usecase UseCase, validator appvalidator.Validator) *Handler {
+	return &Handler{usecase: usecase, validator: validator}
 }
 
-// Create godoc
-// @Summary Создать DataView
-// @Description Создает DataView в папке проекта и связывает его с активной Query этого же проекта. Source и schema хранятся как authoring configuration и не компилируются и не выполняются.
-// @Tags data-views
-// @Accept json
+// List возвращает список документов ресурса с фильтрацией и пагинацией.
+// @Summary Получить список представлений данных
+// @Description Возвращает список представлений данных текущего рабочего пространства с фильтрацией и пагинацией.
+// @ID listDataViews
+// @Tags Представления данных
 // @Produce json
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param request body CreateDataViewRequest true "Параметры DataView"
-// @Success 201 {object} DataViewResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 409 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity}/data-views [post]
-func (h *Handler) Create(c *fiber.Ctx) error {
-	var request CreateDataViewRequest
-	if err := c.BodyParser(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrInvalidBody)
-	}
-	if err := h.validator.Validate(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrValidationError)
-	}
-	project := c.Params("project_identity")
-	value, err := h.service.Create(c.UserContext(), data_views.CreateDataViewInput{ProjectIdentity: project, FolderIdentity: request.FolderIdentity, QueryIdentity: request.QueryIdentity, Identity: request.Identity, DisplayName: request.DisplayName, Description: request.Description, ViewType: request.ViewType, Source: request.Source, InputSchema: request.InputSchema, OutputSchema: request.OutputSchema, Meta: request.Meta, Active: request.Active})
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-	return c.Status(fiber.StatusCreated).JSON(h.response(value, project))
-}
-
-// List godoc
-// @Summary Список DataView
-// @Description Возвращает активные DataView проекта с optional фильтрами папки и Query. DataView, связанные с soft-deleted Query, не возвращаются.
-// @Tags data-views
-// @Produce json
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param folder_identity query string false "Folder identity" example(shared-data-views)
-// @Param query_identity query string false "Query identity" example(users-list)
-// @Success 200 {object} DataViewsListResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity}/data-views [get]
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param includeDeleted query bool false "Включить мягко удалённые документы" default(false)
+// @Param folderIdentity query string false "Identity папки" maxlength(160)
+// @Param active query bool false "Фильтр по активности"
+// @Param limit query int false "Размер страницы" default(100) minimum(1) maximum(500)
+// @Param offset query int false "Смещение" default(0) minimum(0)
+// @Success 200 {object} ListResponse "Список представлений данных"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/data-views [get]
 func (h *Handler) List(c *fiber.Ctx) error {
-	project := c.Params("project_identity")
-	var folder, queryIdentity *string
-	if value := c.Query("folder_identity"); value != "" {
-		folder = &value
-	}
-	if value := c.Query("query_identity"); value != "" {
-		queryIdentity = &value
-	}
-	values, err := h.service.List(c.UserContext(), data_views.ListDataViewsInput{ProjectIdentity: project, FolderIdentity: folder, QueryIdentity: queryIdentity})
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-	items := make([]*DataViewResponse, 0, len(values))
-	for _, value := range values {
-		items = append(items, h.response(value, project))
-	}
-	return c.JSON(DataViewsListResponse{Items: items})
+	return shared.ListDocuments(c, h.usecase.List, NewResponse)
 }
 
-// GetByIdentity godoc
-// @Summary Получить DataView
-// @Description Возвращает активный DataView по identity в пределах проекта вместе с identity папки и связанной Query.
-// @Tags data-views
-// @Produce json
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param data_view_identity path string true "DataView identity" example(users-table)
-// @Success 200 {object} DataViewResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity}/data-views/{data_view_identity} [get]
-func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
-	project := c.Params("project_identity")
-	value, err := h.service.GetByIdentity(c.UserContext(), data_views.GetDataViewInput{ProjectIdentity: project, DataViewIdentity: c.Params("data_view_identity")})
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-	return c.JSON(h.response(value, project))
-}
-
-// Update godoc
-// @Summary Обновить DataView
-// @Description Полностью заменяет editable payload DataView, включая папку, связанную Query и authoring configuration. Поля id, identity, createdAt и deletedAt сохраняются.
-// @Tags data-views
+// Create проверяет запрос и создаёт документ ресурса.
+// @Summary Создать представление данных
+// @Description Создаёт представление данных в текущем рабочем пространстве.
+// @ID createDataView
+// @Tags Представления данных
 // @Accept json
 // @Produce json
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param data_view_identity path string true "DataView identity" example(users-table)
-// @Param request body UpdateDataViewRequest true "Параметры обновления DataView"
-// @Success 200 {object} DataViewResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity}/data-views/{data_view_identity} [patch]
-func (h *Handler) Update(c *fiber.Ctx) error {
-	var request UpdateDataViewRequest
-	if err := c.BodyParser(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrInvalidBody)
-	}
-	if err := h.validator.Validate(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrValidationError)
-	}
-	project := c.Params("project_identity")
-	value, err := h.service.Update(c.UserContext(), data_views.UpdateDataViewInput{ProjectIdentity: project, DataViewIdentity: c.Params("data_view_identity"), FolderIdentity: request.FolderIdentity, QueryIdentity: request.QueryIdentity, DisplayName: request.DisplayName, Description: request.Description, ViewType: request.ViewType, Source: request.Source, InputSchema: request.InputSchema, OutputSchema: request.OutputSchema, Meta: request.Meta, Active: request.Active})
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-	return c.JSON(h.response(value, project))
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param request body CreateRequest true "Данные нового документа"
+// @Success 201 {object} Response "Документ создан"
+// @Header 201 {string} ETag "Текущая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/data-views [post]
+func (h *Handler) Create(c *fiber.Ctx) error {
+	return shared.CreateDocument[CreateRequest](c, h.validator, h.usecase.Create, NewResponse)
 }
 
-// SoftDelete godoc
-// @Summary Удалить DataView
-// @Description Выполняет soft-delete DataView по identity в пределах проекта.
-// @Tags data-views
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param data_view_identity path string true "DataView identity" example(users-table)
-// @Success 204
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity}/data-views/{data_view_identity} [delete]
-func (h *Handler) SoftDelete(c *fiber.Ctx) error { return h.change(c, h.service.SoftDelete) }
+// Get возвращает документ ресурса по identity.
+// @Summary Получить представление данных
+// @Description Возвращает представление данных по identity.
+// @ID getDataView
+// @Tags Представления данных
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param includeDeleted query bool false "Разрешить получение мягко удалённого документа" default(false)
+// @Success 200 {object} Response "Найденный документ"
+// @Header 200 {string} ETag "Текущая revision документа"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/data-views/{identity} [get]
+func (h *Handler) Get(c *fiber.Ctx) error {
+	return shared.GetDocument(c, h.usecase.Get, NewResponse)
+}
 
-// Restore godoc
-// @Summary Восстановить DataView
-// @Description Восстанавливает soft-deleted DataView по identity в пределах проекта.
-// @Tags data-views
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param data_view_identity path string true "DataView identity" example(restore-users-table)
-// @Success 204
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity}/data-views/{data_view_identity}/restore [post]
-func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Restore) }
+// Patch проверяет If-Match и частично изменяет документ ресурса.
+// @Summary Изменить представление данных
+// @Description Частично изменяет представление данных; актуальная revision передаётся в If-Match.
+// @ID patchDataView
+// @Tags Представления данных
+// @Accept json
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param If-Match header string true "Текущая revision документа" example("3")
+// @Param request body PatchRequest true "Изменяемые поля документа"
+// @Success 200 {object} Response "Документ изменён"
+// @Header 200 {string} ETag "Новая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 428 {object} shared.ErrorResponse "Требуется заголовок If-Match"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/data-views/{identity} [patch]
+func (h *Handler) Patch(c *fiber.Ctx) error {
+	return shared.PatchDocument[PatchRequest](c, h.validator, h.usecase.Patch, NewResponse)
+}
 
-// HardDelete godoc
-// @Summary Физически удалить DataView
-// @Description Выполняет hard-delete soft-deleted DataView по identity в пределах проекта.
-// @Tags data-views
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param data_view_identity path string true "DataView identity" example(hard-delete-users-table)
-// @Success 204
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity}/data-views/{data_view_identity}/hard [delete]
-func (h *Handler) HardDelete(c *fiber.Ctx) error { return h.change(c, h.service.HardDelete) }
+// Delete выполняет мягкое удаление документа ресурса.
+// @Summary Удалить представление данных
+// @Description Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.
+// @ID deleteDataView
+// @Tags Представления данных
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param If-Match header string true "Текущая revision документа" example("3")
+// @Success 200 {object} Response "Документ мягко удалён"
+// @Header 200 {string} ETag "Новая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 428 {object} shared.ErrorResponse "Требуется заголовок If-Match"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/data-views/{identity} [delete]
+func (h *Handler) Delete(c *fiber.Ctx) error {
+	return shared.MutateDocument(c, h.usecase.Delete, NewResponse)
+}
+
+// Restore восстанавливает мягко удалённый документ ресурса.
+// @Summary Восстановить представление данных
+// @Description Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.
+// @ID restoreDataView
+// @Tags Представления данных
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param If-Match header string true "Текущая revision документа" example("3")
+// @Success 200 {object} Response "Документ восстановлен"
+// @Header 200 {string} ETag "Новая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 428 {object} shared.ErrorResponse "Требуется заголовок If-Match"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/data-views/{identity}/restore [post]
+func (h *Handler) Restore(c *fiber.Ctx) error {
+	return shared.MutateDocument(c, h.usecase.Restore, NewResponse)
+}

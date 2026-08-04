@@ -10,8 +10,9 @@ import (
 	"go.uber.org/zap"
 )
 
+// TestNewRedpandaClientDisabled проверяет безопасное отключение необязательного клиента.
 func TestNewRedpandaClientDisabled(t *testing.T) {
-	client := NewRedpandaClient(&config.Config{}, zap.NewNop())
+	client := NewRedpandaClient(&config.Config{ServiceConfig: &config.BaseConfig{}}, zap.NewNop())
 
 	if client.Enabled() {
 		t.Fatal("expected client to be disabled")
@@ -26,16 +27,17 @@ func TestNewRedpandaClientDisabled(t *testing.T) {
 	}
 }
 
+// TestNewRedpandaClientBuildsReaderAndWriter проверяет настройки reader и writer без подключения к broker.
 func TestNewRedpandaClientBuildsReaderAndWriter(t *testing.T) {
 	client := NewRedpandaClient(&config.Config{
-		Redpanda: config.RedpandaConfig{
+		ServiceConfig: &config.BaseConfig{Redpanda: config.RedpandaConfig{
 			Enabled:          true,
 			Brokers:          "broker-a:9092, broker-b:9092",
 			ClientID:         "template-service",
 			DialTimeout:      4 * time.Second,
 			ReadBatchTimeout: 1500 * time.Millisecond,
 			WriteTimeout:     12 * time.Second,
-		},
+		}},
 	}, zap.NewNop())
 
 	reader, err := client.NewReader("engagement.in-app.commands", "service-template")

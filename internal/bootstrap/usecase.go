@@ -1,163 +1,76 @@
 package bootstrap
 
 import (
-	httpsession "github.com/endge-lab/service-backend/internal/api/http/session"
-	httpcomponentlegacy "github.com/endge-lab/service-backend/internal/api/http/v1/component_legacy"
-	httpconverter "github.com/endge-lab/service-backend/internal/api/http/v1/converter"
-	httpdataview "github.com/endge-lab/service-backend/internal/api/http/v1/data_view"
-	httpfolder "github.com/endge-lab/service-backend/internal/api/http/v1/folder"
-	httpproject "github.com/endge-lab/service-backend/internal/api/http/v1/project"
-	httpquery "github.com/endge-lab/service-backend/internal/api/http/v1/query"
-	httptenant "github.com/endge-lab/service-backend/internal/api/http/v1/tenant"
-	httpworkspace "github.com/endge-lab/service-backend/internal/api/http/v1/workspace"
-	"github.com/endge-lab/service-backend/internal/observability"
-	"github.com/endge-lab/service-backend/internal/usecase/components_legacy"
+	"github.com/endge-lab/service-backend/internal/usecase/actions"
+	"github.com/endge-lab/service-backend/internal/usecase/auth_profiles"
+	"github.com/endge-lab/service-backend/internal/usecase/backups"
+	"github.com/endge-lab/service-backend/internal/usecase/commits"
+	"github.com/endge-lab/service-backend/internal/usecase/components"
+	"github.com/endge-lab/service-backend/internal/usecase/compositions"
+	"github.com/endge-lab/service-backend/internal/usecase/computations"
 	"github.com/endge-lab/service-backend/internal/usecase/converters"
 	"github.com/endge-lab/service-backend/internal/usecase/data_views"
-	"github.com/endge-lab/service-backend/internal/usecase/dependencies"
+	"github.com/endge-lab/service-backend/internal/usecase/documents"
+	"github.com/endge-lab/service-backend/internal/usecase/environments"
+	"github.com/endge-lab/service-backend/internal/usecase/filters"
 	"github.com/endge-lab/service-backend/internal/usecase/folders"
-	"github.com/endge-lab/service-backend/internal/usecase/ports"
+	"github.com/endge-lab/service-backend/internal/usecase/history"
+	"github.com/endge-lab/service-backend/internal/usecase/i18n_bundles"
+	"github.com/endge-lab/service-backend/internal/usecase/integrations"
+	"github.com/endge-lab/service-backend/internal/usecase/mocks"
+	"github.com/endge-lab/service-backend/internal/usecase/navigations"
+	"github.com/endge-lab/service-backend/internal/usecase/portable"
 	"github.com/endge-lab/service-backend/internal/usecase/projects"
 	"github.com/endge-lab/service-backend/internal/usecase/queries"
-	"github.com/endge-lab/service-backend/internal/usecase/relations"
-	usecasesession "github.com/endge-lab/service-backend/internal/usecase/session"
-	"github.com/endge-lab/service-backend/internal/usecase/shared"
+	"github.com/endge-lab/service-backend/internal/usecase/releases"
+	"github.com/endge-lab/service-backend/internal/usecase/revisions"
+	"github.com/endge-lab/service-backend/internal/usecase/session"
+	"github.com/endge-lab/service-backend/internal/usecase/stores"
+	"github.com/endge-lab/service-backend/internal/usecase/streams"
+	"github.com/endge-lab/service-backend/internal/usecase/styles"
 	"github.com/endge-lab/service-backend/internal/usecase/tenants"
+	"github.com/endge-lab/service-backend/internal/usecase/types"
+	"github.com/endge-lab/service-backend/internal/usecase/updates"
+	"github.com/endge-lab/service-backend/internal/usecase/vocabs"
+	"github.com/endge-lab/service-backend/internal/usecase/workspace_state"
 	"github.com/endge-lab/service-backend/internal/usecase/workspaces"
-
 	"go.uber.org/fx"
 )
 
 func UseCaseModules() fx.Option {
-	return fx.Options(
-		fx.Provide(
-			shared.NewUseCaseMetrics,
-			newDependenciesUseCase,
-			relations.NewResolver,
-			fx.Annotate(usecasesession.NewLoadSessionUseCase, fx.As(new(httpsession.UseCase))),
-			fx.Annotate(newProjectUseCase, fx.As(new(httpproject.UseCase))),
-			fx.Annotate(newFolderUseCase, fx.As(new(httpfolder.UseCase))),
-			fx.Annotate(newComponentLegacyUseCase, fx.As(new(httpcomponentlegacy.UseCase))),
-			fx.Annotate(newConverterUseCase, fx.As(new(httpconverter.UseCase))),
-			fx.Annotate(newQueryUseCase, fx.As(new(httpquery.UseCase))),
-			fx.Annotate(newDataViewUseCase, fx.As(new(httpdataview.UseCase))),
-			fx.Annotate(newWorkspaceUseCase, fx.As(new(httpworkspace.UseCase))),
-			fx.Annotate(newTenantUseCase, fx.As(new(httptenant.UseCase))),
-			fx.Annotate(httptenant.NewHandler, fx.As(new(httptenant.THandler))),
-		),
-	)
-}
-
-func newDependenciesUseCase(repository ports.DomainDependenciesRepository, txManager ports.TxManager, core *observability.Core, metrics *shared.UseCaseMetrics) *dependencies.Dependencies {
-	return dependencies.NewDependenciesService(dependencies.DependenciesParams{Repository: repository, TxManager: txManager, Observability: core, Metrics: metrics})
-}
-
-func newWorkspaceUseCase(repository ports.WorkspacesRepository, folderRepository ports.FoldersRepository, txManager ports.TxManager, core *observability.Core, metrics *shared.UseCaseMetrics) *workspaces.Workspace {
-	return workspaces.NewWorkspaceService(workspaces.WorkspaceParams{Repository: repository, FolderRepository: folderRepository, TxManager: txManager, Observability: core, Metrics: metrics})
-}
-
-func newTenantUseCase(repository ports.TenantsRepository, folderRepository ports.FoldersRepository, txManager ports.TxManager, resolver *relations.Resolver, core *observability.Core, metrics *shared.UseCaseMetrics) *tenants.Tenant {
-	return tenants.NewTenantService(tenants.TenantParams{Repository: repository, FolderRepository: folderRepository, TxManager: txManager, Relations: resolver, Observability: core, Metrics: metrics})
-}
-
-func newProjectUseCase(
-	projectRepository ports.ProjectsRepository,
-	folderRepository ports.FoldersRepository,
-	txManager ports.TxManager,
-	core *observability.Core,
-	metrics *shared.UseCaseMetrics,
-) *projects.Project {
-	return projects.NewProjectService(projects.ProjectParams{
-		ProjectRepository: projectRepository,
-		FolderRepository:  folderRepository,
-		TxManager:         txManager,
-		Observability:     core,
-		Metrics:           metrics,
-	})
-}
-
-func newFolderUseCase(
-	folderRepository ports.FoldersRepository,
-	projectRepository ports.ProjectsRepository,
-	core *observability.Core,
-	metrics *shared.UseCaseMetrics,
-) *folders.Folder {
-	return folders.NewFolderService(folders.FolderParams{
-		FolderRepository:  folderRepository,
-		ProjectRepository: projectRepository,
-		Observability:     core,
-		Metrics:           metrics,
-	})
-}
-
-func newComponentLegacyUseCase(
-	componentRepository ports.ComponentsLegacyRepository,
-	folderRepository ports.FoldersRepository,
-	projectRepository ports.ProjectsRepository,
-	core *observability.Core,
-	metrics *shared.UseCaseMetrics,
-) *components_legacy.ComponentLegacy {
-	return components_legacy.NewComponentLegacyService(components_legacy.ComponentLegacyParams{
-		ComponentLegacyRepository: componentRepository,
-		FolderRepository:          folderRepository,
-		ProjectRepository:         projectRepository,
-		Observability:             core,
-		Metrics:                   metrics,
-	})
-}
-
-func newConverterUseCase(
-	converterRepository ports.ConvertersRepository,
-	folderRepository ports.FoldersRepository,
-	projectRepository ports.ProjectsRepository,
-	resolver *relations.Resolver,
-	core *observability.Core,
-	metrics *shared.UseCaseMetrics,
-) *converters.Converter {
-	return converters.NewConverterService(converters.ConverterParams{
-		ConverterRepository: converterRepository,
-		FolderRepository:    folderRepository,
-		ProjectRepository:   projectRepository,
-		Relations:           resolver,
-		Observability:       core,
-		Metrics:             metrics,
-	})
-}
-
-func newQueryUseCase(
-	queryRepository ports.QueriesRepository,
-	folderRepository ports.FoldersRepository,
-	projectRepository ports.ProjectsRepository,
-	resolver *relations.Resolver,
-	core *observability.Core,
-	metrics *shared.UseCaseMetrics,
-) *queries.Query {
-	return queries.NewQueryService(queries.QueryParams{
-		QueryRepository:   queryRepository,
-		FolderRepository:  folderRepository,
-		ProjectRepository: projectRepository,
-		Relations:         resolver,
-		Observability:     core,
-		Metrics:           metrics,
-	})
-}
-
-func newDataViewUseCase(
-	dataViewRepository ports.DataViewsRepository,
-	queryRepository ports.QueriesRepository,
-	folderRepository ports.FoldersRepository,
-	projectRepository ports.ProjectsRepository,
-	resolver *relations.Resolver,
-	core *observability.Core,
-	metrics *shared.UseCaseMetrics,
-) *data_views.DataView {
-	return data_views.NewDataViewService(data_views.DataViewParams{
-		DataViewRepository: dataViewRepository,
-		QueryRepository:    queryRepository,
-		FolderRepository:   folderRepository,
-		ProjectRepository:  projectRepository,
-		Relations:          resolver,
-		Observability:      core,
-		Metrics:            metrics,
-	})
+	return fx.Options(fx.Provide(
+		workspace_state.NewCoordinator,
+		history.NewRecorder,
+		documents.NewLifecycle,
+		workspaces.NewUseCase,
+		integrations.NewUseCase,
+		session.NewUseCase,
+		projects.NewUseCase,
+		tenants.NewUseCase,
+		environments.NewUseCase,
+		folders.NewUseCase,
+		types.NewUseCase,
+		queries.NewUseCase,
+		data_views.NewUseCase,
+		compositions.NewUseCase,
+		stores.NewUseCase,
+		streams.NewUseCase,
+		updates.NewUseCase,
+		mocks.NewUseCase,
+		components.NewUseCase,
+		actions.NewUseCase,
+		filters.NewUseCase,
+		converters.NewUseCase,
+		computations.NewUseCase,
+		vocabs.NewUseCase,
+		i18n_bundles.NewUseCase,
+		auth_profiles.NewUseCase,
+		navigations.NewUseCase,
+		styles.NewUseCase,
+		revisions.NewUseCase,
+		commits.NewUseCase,
+		portable.NewUseCase,
+		releases.NewUseCase,
+		backups.NewUseCase,
+	))
 }

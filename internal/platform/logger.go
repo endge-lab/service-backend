@@ -8,10 +8,10 @@ import (
 )
 
 func NewLogger(logLevel, logFormat, logColor, serviceName, appEnv, appVersion string, additionalCores ...zapcore.Core) *zap.Logger {
+	_ = logFormat
+	_ = logColor
 	logger, err := servicelogging.NewLogger(servicelogging.Config{
 		Level:       logLevel,
-		Format:      logFormat,
-		Color:       logColor,
 		ServiceName: serviceName,
 		Environment: appEnv,
 		Version:     appVersion,
@@ -21,8 +21,6 @@ func NewLogger(logLevel, logFormat, logColor, serviceName, appEnv, appVersion st
 	}
 
 	logger, _ = servicelogging.NewLogger(servicelogging.Config{
-		Format:      "json",
-		Color:       "never",
 		ServiceName: serviceName,
 		Environment: appEnv,
 		Version:     appVersion,

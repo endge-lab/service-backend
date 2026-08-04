@@ -23,6 +23,7 @@ SQLC_VERSION ?= v1.31.1
 SQLC ?= go run github.com/sqlc-dev/sqlc/cmd/sqlc@$(SQLC_VERSION)
 SWAG_VERSION ?= v1.16.6
 SWAGGER2OPENAPI_VERSION ?= 7.0.8
+FUZZ_TIME ?= 30s
 OPENAPI_TMP_DIR := ./tmp/openapi
 OPENAPI_SPEC := ./docs/openapi3.yaml
 OPENAPI_GENERATED_GO := ./internal/api/http/openapi/openapi.gen.go
@@ -73,7 +74,7 @@ mod-update:
 docs:
 	rm -rf $(OPENAPI_TMP_DIR)
 	mkdir -p $(OPENAPI_TMP_DIR)
-	go run github.com/swaggo/swag/cmd/swag@$(SWAG_VERSION) init --parseInternal --parseDepth 5 --outputTypes json --output $(OPENAPI_TMP_DIR) -g ./cmd/main.go
+	go run github.com/swaggo/swag/cmd/swag@$(SWAG_VERSION) init --dir ./cmd,./internal/api/http,./internal/domain/entities --generalInfo main.go --parseInternal --parseDepth 5 --outputTypes json --output $(OPENAPI_TMP_DIR)
 	npx --yes swagger2openapi@$(SWAGGER2OPENAPI_VERSION) $(OPENAPI_TMP_DIR)/swagger.json -o $(OPENAPI_SPEC)
 	go run ./internal/tools/openapiembed -input $(OPENAPI_SPEC) -output $(OPENAPI_GENERATED_GO)
 	rm -rf $(OPENAPI_TMP_DIR)
@@ -98,6 +99,40 @@ lint:
 test:
 	@echo "Running tests..."
 	go test -v ./...
+
+.PHONY: test-unit
+test-unit:
+	@echo "Running unit, architecture, contract and fuzz seed tests without Docker..."
+	go test ./...
+
+.PHONY: test-integration
+test-integration:
+	@echo "Running isolated PostgreSQL integration tests..."
+	go test -tags=integration -count=1 ./test/integration ./test/support
+
+.PHONY: test-e2e
+test-e2e:
+	@echo "Running full HTTP pipeline against isolated PostgreSQL..."
+	go test -tags=e2e -count=1 ./test/e2e
+
+.PHONY: test-critical
+test-critical: test-unit test-integration test-e2e
+
+.PHONY: fuzz-transport
+fuzz-transport:
+	go test ./internal/api/http/v1/shared -run='^$$' -fuzz=Fuzz -fuzztime=$(FUZZ_TIME)
+
+.PHONY: fuzz-documents
+fuzz-documents:
+	go test ./internal/usecase/documents -run='^$$' -fuzz=Fuzz -fuzztime=$(FUZZ_TIME)
+
+.PHONY: fuzz-import
+fuzz-import:
+	go test ./internal/usecase/workspace_state -run='^$$' -fuzz=Fuzz -fuzztime=$(FUZZ_TIME)
+
+.PHONY: fuzz-auth
+fuzz-auth:
+	go test ./internal/auth -run='^$$' -fuzz=FuzzResolveMalformedTokens -fuzztime=$(FUZZ_TIME)
 
 .PHONY: test-race
 test-race:

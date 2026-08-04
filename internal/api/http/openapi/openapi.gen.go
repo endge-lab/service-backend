@@ -5,8 +5,8 @@ package openapi
 var openAPI3YAML = []byte(
 	"openapi: 3.0.0\n" +
 		"info:\n" +
-		"  description: Production-ready backend Endge-сервиса с эталонными\n" +
-		"    RedPanda-обёртками и строгими архитектурными границами.\n" +
+		"  description: Source-first API для рабочих пространств Endge, доменных\n" +
+		"    документов, истории, коммитов и релизов.\n" +
 		"  title: Endge Service Backend API\n" +
 		"  contact: {}\n" +
 		"  version: 1.0.20\n" +
@@ -15,140 +15,7825 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает информацию о JWT-сессии и локальной user-проекции сервиса.\n" +
+		"      description: Возвращает локальную проекцию пользователя, признак администратору\n" +
+		"        платформы и доступные рабочие пространства.\n" +
 		"      tags:\n" +
-		"        - session\n" +
+		"        - Сессия\n" +
 		"      summary: Получить текущую сессию\n" +
+		"      operationId: getCurrentSession\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
-		"          description: OK\n" +
+		"          description: Текущая сессия\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/session.SessionResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/session.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/session.Response\"\n" +
 		"        \"401\":\n" +
-		"          description: Unauthorized\n" +
+		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/session.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
+		"          description: Внутренняя ошибка сервера\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/session.ErrorResponse\"\n" +
-		"  /api/v1/domain/usages:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"  /api/v1/actions:\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Возвращает документы текущего workspace, которые ссылаются на\n" +
-		"        dependency identity внутри source или authoring JSON. Dependency index\n" +
-		"        является derived projection и через API не редактируется.\n" +
+		"      description: Возвращает список действий текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
-		"        - domain\n" +
-		"      summary: Получить usages domain identity\n" +
+		"        - Действия\n" +
+		"      summary: Получить список действий\n" +
+		"      operationId: listActions\n" +
 		"      parameters:\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - example: type\n" +
-		"          description: Dependency type\n" +
-		"          name: dependency_type\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
 		"          in: query\n" +
-		"          required: true\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - example: Orders\n" +
-		"          description: Dependency identity\n" +
-		"          name: dependency_identity\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
 		"          in: query\n" +
-		"          required: true\n" +
 		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: \"Размер страницы: от 1 до 200, по умолчанию 50\"\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
 		"          name: limit\n" +
 		"          in: query\n" +
 		"          schema:\n" +
 		"            type: integer\n" +
-		"            default: 50\n" +
-		"        - description: Смещение, по умолчанию 0\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
 		"          name: offset\n" +
 		"          in: query\n" +
 		"          schema:\n" +
 		"            type: integer\n" +
+		"            minimum: 0\n" +
 		"            default: 0\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
-		"          description: OK\n" +
+		"          description: Список действий\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/domain.UsagesListResponse\"\n" +
+		"                $ref: \"#/components/schemas/action.ListResponse\"\n" +
 		"        \"400\":\n" +
-		"          description: Bad Request\n" +
+		"          description: Некорректный запрос\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
+		"          description: Внутренняя ошибка сервера\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт действие в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Действия\n" +
+		"      summary: Создать действие\n" +
+		"      operationId: createAction\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/action.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/action.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/actions/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает действие по identity.\n" +
+		"      tags:\n" +
+		"        - Действия\n" +
+		"      summary: Получить действие\n" +
+		"      operationId: getAction\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/action.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Действия\n" +
+		"      summary: Удалить действие\n" +
+		"      operationId: deleteAction\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/action.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет действие; актуальная revision передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Действия\n" +
+		"      summary: Изменить действие\n" +
+		"      operationId: patchAction\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/action.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/action.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/actions/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Действия\n" +
+		"      summary: Восстановить действие\n" +
+		"      operationId: restoreAction\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/action.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/auth-profiles:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список профилей аутентификации текущего рабочего\n" +
+		"        пространства с фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Профили аутентификации\n" +
+		"      summary: Получить список профилей аутентификации\n" +
+		"      operationId: listAuthProfiles\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список профилей аутентификации\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/auth_profile.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт профиль аутентификации в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Профили аутентификации\n" +
+		"      summary: Создать профиль аутентификации\n" +
+		"      operationId: createAuthProfile\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/auth_profile.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/auth_profile.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/auth-profiles/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает профиль аутентификации по identity.\n" +
+		"      tags:\n" +
+		"        - Профили аутентификации\n" +
+		"      summary: Получить профиль аутентификации\n" +
+		"      operationId: getAuthProfile\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/auth_profile.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Профили аутентификации\n" +
+		"      summary: Удалить профиль аутентификации\n" +
+		"      operationId: deleteAuthProfile\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/auth_profile.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет профиль аутентификации; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Профили аутентификации\n" +
+		"      summary: Изменить профиль аутентификации\n" +
+		"      operationId: patchAuthProfile\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/auth_profile.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/auth_profile.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/auth-profiles/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Профили аутентификации\n" +
+		"      summary: Восстановить профиль аутентификации\n" +
+		"      operationId: restoreAuthProfile\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/auth_profile.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/commits:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает коммиты текущего рабочего пространства.\n" +
+		"      tags:\n" +
+		"        - Коммиты\n" +
+		"      summary: Получить историю коммитов\n" +
+		"      operationId: listCommits\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: История коммитов\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/commit.ListResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Фиксирует ревизии рабочего пространства, ожидающие фиксации с\n" +
+		"        политикой preserve или squash.\n" +
+		"      tags:\n" +
+		"        - Коммиты\n" +
+		"      summary: Создать коммит\n" +
+		"      operationId: createCommit\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/commit.CreateRequest\"\n" +
+		"        description: Параметры commit\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Коммит создан\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/commit.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт состояния\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/commits/plan:\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает ревизии, ожидающие фиксации, и их авторов без изменения\n" +
+		"        состояния.\n" +
+		"      tags:\n" +
+		"        - Коммиты\n" +
+		"      summary: Предварительно рассчитать коммит\n" +
+		"      operationId: planCommit\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: План коммита\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/commit.PlanResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/commits/{id}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает коммит и связанные с ним изменения.\n" +
+		"      tags:\n" +
+		"        - Коммиты\n" +
+		"      summary: Получить коммит\n" +
+		"      operationId: getCommit\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: UUID commit\n" +
+		"          name: id\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            format: uuid\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Commit\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/commit.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Ресурс не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/commits/{id}/diff\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает коммит с полным списком входящих в него изменений документов.\n" +
+		"      tags:\n" +
+		"        - Коммиты\n" +
+		"      summary: Получить изменения коммита\n" +
+		"      operationId: getCommitDiff\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: UUID commit\n" +
+		"          name: id\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            format: uuid\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Коммит и изменения\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/commit.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Ресурс не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/commits/{id}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает состояние как новые ревизии и создаёт новый коммит,\n" +
+		"        не переписывая историю.\n" +
+		"      tags:\n" +
+		"        - Коммиты\n" +
+		"      summary: Восстановить коммит\n" +
+		"      operationId: restoreCommit\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: UUID commit\n" +
+		"          name: id\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            format: uuid\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/commit.RestoreRequest\"\n" +
+		"        description: Ожидаемая head sequence\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Коммит восстановления\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/commit.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Ресурс не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт состояния\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/commits/{id}/restore/plan\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает план восстановления рабочего пространства до выбранного\n" +
+		"        коммита без записи изменений.\n" +
+		"      tags:\n" +
+		"        - Коммиты\n" +
+		"      summary: Рассчитать восстановление коммита\n" +
+		"      operationId: planCommitRestore\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: UUID commit\n" +
+		"          name: id\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            format: uuid\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: План восстановления\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/commit.RestorePlanResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Ресурс не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт состояния\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/components:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список компонентов текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Компоненты\n" +
+		"      summary: Получить список компонентов\n" +
+		"      operationId: listComponents\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список компонентов\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/component.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт компонент в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Компоненты\n" +
+		"      summary: Создать компонент\n" +
+		"      operationId: createComponent\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/component.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/component.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/components/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает компонент по identity.\n" +
+		"      tags:\n" +
+		"        - Компоненты\n" +
+		"      summary: Получить компонент\n" +
+		"      operationId: getComponent\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/component.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Компоненты\n" +
+		"      summary: Удалить компонент\n" +
+		"      operationId: deleteComponent\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/component.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет компонент; актуальная revision передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Компоненты\n" +
+		"      summary: Изменить компонент\n" +
+		"      operationId: patchComponent\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/component.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/component.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/components/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Компоненты\n" +
+		"      summary: Восстановить компонент\n" +
+		"      operationId: restoreComponent\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/component.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/compositions:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список композиций текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Композиции\n" +
+		"      summary: Получить список композиций\n" +
+		"      operationId: listCompositions\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список композиций\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/composition.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт композицию в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Композиции\n" +
+		"      summary: Создать композицию\n" +
+		"      operationId: createComposition\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/composition.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/composition.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/compositions/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает композицию по identity.\n" +
+		"      tags:\n" +
+		"        - Композиции\n" +
+		"      summary: Получить композицию\n" +
+		"      operationId: getComposition\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/composition.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Композиции\n" +
+		"      summary: Удалить композицию\n" +
+		"      operationId: deleteComposition\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/composition.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет композицию; актуальная revision передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Композиции\n" +
+		"      summary: Изменить композицию\n" +
+		"      operationId: patchComposition\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/composition.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/composition.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/compositions/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Композиции\n" +
+		"      summary: Восстановить композицию\n" +
+		"      operationId: restoreComposition\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/composition.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/computations:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список вычислений текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Вычисления\n" +
+		"      summary: Получить список вычислений\n" +
+		"      operationId: listComputations\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список вычислений\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/computation.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт вычисление в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Вычисления\n" +
+		"      summary: Создать вычисление\n" +
+		"      operationId: createComputation\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/computation.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/computation.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/computations/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает вычисление по identity.\n" +
+		"      tags:\n" +
+		"        - Вычисления\n" +
+		"      summary: Получить вычисление\n" +
+		"      operationId: getComputation\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/computation.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Вычисления\n" +
+		"      summary: Удалить вычисление\n" +
+		"      operationId: deleteComputation\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/computation.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет вычисление; актуальная revision передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Вычисления\n" +
+		"      summary: Изменить вычисление\n" +
+		"      operationId: patchComputation\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/computation.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/computation.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/computations/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Вычисления\n" +
+		"      summary: Восстановить вычисление\n" +
+		"      operationId: restoreComputation\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/computation.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/converters:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список конвертеров текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Конвертеры\n" +
+		"      summary: Получить список конвертеров\n" +
+		"      operationId: listConverters\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список конвертеров\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/converter.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт конвертер в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Конвертеры\n" +
+		"      summary: Создать конвертер\n" +
+		"      operationId: createConverter\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/converter.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/converter.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/converters/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает конвертер по identity.\n" +
+		"      tags:\n" +
+		"        - Конвертеры\n" +
+		"      summary: Получить конвертер\n" +
+		"      operationId: getConverter\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/converter.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Конвертеры\n" +
+		"      summary: Удалить конвертер\n" +
+		"      operationId: deleteConverter\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/converter.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет конвертер; актуальная revision передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Конвертеры\n" +
+		"      summary: Изменить конвертер\n" +
+		"      operationId: patchConverter\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/converter.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/converter.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/converters/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Конвертеры\n" +
+		"      summary: Восстановить конвертер\n" +
+		"      operationId: restoreConverter\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/converter.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/data-views:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список представлений данных текущего рабочего\n" +
+		"        пространства с фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Представления данных\n" +
+		"      summary: Получить список представлений данных\n" +
+		"      operationId: listDataViews\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список представлений данных\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/data_view.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт представление данных в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Представления данных\n" +
+		"      summary: Создать представление данных\n" +
+		"      operationId: createDataView\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/data_view.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/data_view.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/data-views/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает представление данных по identity.\n" +
+		"      tags:\n" +
+		"        - Представления данных\n" +
+		"      summary: Получить представление данных\n" +
+		"      operationId: getDataView\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/data_view.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Представления данных\n" +
+		"      summary: Удалить представление данных\n" +
+		"      operationId: deleteDataView\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/data_view.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет представление данных; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Представления данных\n" +
+		"      summary: Изменить представление данных\n" +
+		"      operationId: patchDataView\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/data_view.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/data_view.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/data-views/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Представления данных\n" +
+		"      summary: Восстановить представление данных\n" +
+		"      operationId: restoreDataView\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/data_view.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/domain:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает текущий workspace и все его документы одним JSON с\n" +
+		"        локальными state-полями.\n" +
+		"      tags:\n" +
+		"        - Домен\n" +
+		"      summary: Получить актуальное состояние workspace\n" +
+		"      operationId: getLiveDomain\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Рабочий snapshot\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Generation и head sequence workspace\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/domain.ExportResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/domain/backups:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает manual и pre-import backups без тяжёлого snapshot data.\n" +
+		"      tags:\n" +
+		"        - Backups\n" +
+		"      summary: Получить backups workspace\n" +
+		"      operationId: listDomainBackups\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Тип backup\n" +
+		"          name: kind\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            enum:\n" +
+		"              - manual\n" +
+		"              - pre_import\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список backups\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/backup.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный фильтр\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Требуются права workspace admin\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Сохраняет бессрочный переносимый snapshot текущего workspace с\n" +
+		"        опциональным описанием.\n" +
+		"      tags:\n" +
+		"        - Backups\n" +
+		"      summary: Создать backup workspace\n" +
+		"      operationId: createDomainBackup\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/backup.CreateRequest\"\n" +
+		"        description: Опциональное описание backup\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Backup создан\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/backup.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Требуются права workspace admin\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/domain/backups/archive:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Формирует ZIP с manifest.json и snapshots; опционально фильтрует по kind.\n" +
+		"      tags:\n" +
+		"        - Backups\n" +
+		"      summary: Скачать backups в ZIP\n" +
+		"      operationId: archiveDomainBackups\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Тип backup\n" +
+		"          name: kind\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            enum:\n" +
+		"              - manual\n" +
+		"              - pre_import\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: ZIP архив\n" +
+		"          content:\n" +
+		"            application/zip:\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"                format: binary\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный фильтр\n" +
+		"          content:\n" +
+		"            application/zip:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/zip:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Требуются права workspace admin\n" +
+		"          content:\n" +
+		"            application/zip:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/domain/backups/{id}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает metadata backup; id=last выбирает последний успешно\n" +
+		"        сохранённый backup.\n" +
+		"      tags:\n" +
+		"        - Backups\n" +
+		"      summary: Получить backup\n" +
+		"      operationId: getDomainBackup\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: UUID backup или last\n" +
+		"          name: id\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Backup\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/backup.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Требуются права workspace admin\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Backup не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/domain/backups/{id}/export\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает backup по UUID или alias last в каноническом workspace\n" +
+		"        snapshot формате.\n" +
+		"      tags:\n" +
+		"        - Backups\n" +
+		"      summary: Экспортировать backup\n" +
+		"      operationId: exportDomainBackup\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: UUID backup или last\n" +
+		"          name: id\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Скачать JSON как файл\n" +
+		"          name: download\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Workspace snapshot\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Checksum backup\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/backup.ExportResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Требуются права workspace admin\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Backup не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/domain/documents/{type}/{identity}/revisions\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает неизменяемую историю ревизий выбранного документа.\n" +
+		"      tags:\n" +
+		"        - Ревизии\n" +
+		"      summary: Получить ревизии документа\n" +
+		"      operationId: listDocumentRevisions\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Тип документа\n" +
+		"          name: type\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: История ревизий\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/revision.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Ресурс не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/domain/documents/{type}/{identity}/revisions/{revisionId}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает снимок конкретной ревизии.\n" +
+		"      tags:\n" +
+		"        - Ревизии\n" +
+		"      summary: Получить ревизию документа\n" +
+		"      operationId: getDocumentRevision\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Тип документа\n" +
+		"          name: type\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: UUID revision\n" +
+		"          name: revisionId\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            format: uuid\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Ревизия\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/revision.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Ресурс не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/domain/documents/{type}/{identity}/revisions/{revisionId}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Применяет снимок выбранной ревизии поверх текущего документа и\n" +
+		"        добавляет новую ревизию.\n" +
+		"      tags:\n" +
+		"        - Ревизии\n" +
+		"      summary: Восстановить ревизию документа\n" +
+		"      operationId: restoreDocumentRevision\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Тип документа\n" +
+		"          name: type\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: UUID revision\n" +
+		"          name: revisionId\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            format: uuid\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Восстановленный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/revision.RestoreResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Ресурс не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт состояния\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/domain/export:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает переносимый пакет без UUID-связей, пользователей,\n" +
+		"        назначения ролей, истории и секретов.\n" +
+		"      tags:\n" +
+		"        - Перенос домена\n" +
+		"      summary: Экспортировать рабочее пространство\n" +
+		"      operationId: exportDomain\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Скачать JSON как файл\n" +
+		"          name: download\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Переносимый пакет\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/domain.ExportResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/domain/import:\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт backup, удаляет старое domain state и атомарно загружает\n" +
+		"        ранее проверенный snapshot.\n" +
+		"      tags:\n" +
+		"        - Перенос домена\n" +
+		"      summary: Импортировать домен\n" +
+		"      operationId: importDomain\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - example: '\"generation:42\"'\n" +
+		"          description: ETag workspace из import plan\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/domain.ImportRequest\"\n" +
+		"        description: Подтверждение destructive import\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Результат импорта и страховочный backup\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/domain.ImportResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт состояния\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/domain/import/plan:\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Валидирует переносимый пакет и возвращает план импорта без\n" +
+		"        изменения данных.\n" +
+		"      tags:\n" +
+		"        - Перенос домена\n" +
+		"      summary: Проверить импорт домена\n" +
+		"      operationId: planDomainImport\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/domain.ImportPlanRequest\"\n" +
+		"        description: Полный workspace snapshot\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: План импорта\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/domain.ImportPlanResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт состояния\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/environments:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список окружений текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Окружения\n" +
+		"      summary: Получить список окружений\n" +
+		"      operationId: listEnvironments\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список окружений\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/environment.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт окружение в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Окружения\n" +
+		"      summary: Создать окружение\n" +
+		"      operationId: createEnvironment\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/environment.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/environment.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/environments/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает окружение по identity.\n" +
+		"      tags:\n" +
+		"        - Окружения\n" +
+		"      summary: Получить окружение\n" +
+		"      operationId: getEnvironment\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/environment.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Окружения\n" +
+		"      summary: Удалить окружение\n" +
+		"      operationId: deleteEnvironment\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/environment.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет окружение; актуальная revision передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Окружения\n" +
+		"      summary: Изменить окружение\n" +
+		"      operationId: patchEnvironment\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/environment.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/environment.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/environments/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Окружения\n" +
+		"      summary: Восстановить окружение\n" +
+		"      operationId: restoreEnvironment\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/environment.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/filters:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список фильтров текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Фильтры\n" +
+		"      summary: Получить список фильтров\n" +
+		"      operationId: listFilters\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список фильтров\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/filter.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт фильтр в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Фильтры\n" +
+		"      summary: Создать фильтр\n" +
+		"      operationId: createFilter\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/filter.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/filter.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/filters/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает фильтр по identity.\n" +
+		"      tags:\n" +
+		"        - Фильтры\n" +
+		"      summary: Получить фильтр\n" +
+		"      operationId: getFilter\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/filter.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Фильтры\n" +
+		"      summary: Удалить фильтр\n" +
+		"      operationId: deleteFilter\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/filter.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет фильтр; актуальная revision передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Фильтры\n" +
+		"      summary: Изменить фильтр\n" +
+		"      operationId: patchFilter\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/filter.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/filter.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/filters/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Фильтры\n" +
+		"      summary: Восстановить фильтр\n" +
+		"      operationId: restoreFilter\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/filter.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/folders:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список папок текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Папки\n" +
+		"      summary: Получить список папок\n" +
+		"      operationId: listFolders\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список папок\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/folder.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт папку в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Папки\n" +
+		"      summary: Создать папку\n" +
+		"      operationId: createFolder\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/folder.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/folder.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/folders/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает папку по identity.\n" +
+		"      tags:\n" +
+		"        - Папки\n" +
+		"      summary: Получить папку\n" +
+		"      operationId: getFolder\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/folder.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Папки\n" +
+		"      summary: Удалить папку\n" +
+		"      operationId: deleteFolder\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/folder.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет папку; актуальная revision передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Папки\n" +
+		"      summary: Изменить папку\n" +
+		"      operationId: patchFolder\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/folder.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/folder.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/folders/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Папки\n" +
+		"      summary: Восстановить папку\n" +
+		"      operationId: restoreFolder\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/folder.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/i18n-bundles:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список пакетов локализации текущего рабочего\n" +
+		"        пространства с фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Пакеты локализации\n" +
+		"      summary: Получить список пакетов локализации\n" +
+		"      operationId: listI18nBundles\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список пакетов локализации\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/i18n_bundle.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт пакет локализации в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Пакеты локализации\n" +
+		"      summary: Создать пакет локализации\n" +
+		"      operationId: createI18nBundle\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/i18n_bundle.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/i18n_bundle.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/i18n-bundles/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает пакет локализации по identity.\n" +
+		"      tags:\n" +
+		"        - Пакеты локализации\n" +
+		"      summary: Получить пакет локализации\n" +
+		"      operationId: getI18nBundle\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/i18n_bundle.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Пакеты локализации\n" +
+		"      summary: Удалить пакет локализации\n" +
+		"      operationId: deleteI18nBundle\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/i18n_bundle.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет пакет локализации; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Пакеты локализации\n" +
+		"      summary: Изменить пакет локализации\n" +
+		"      operationId: patchI18nBundle\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/i18n_bundle.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/i18n_bundle.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/i18n-bundles/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Пакеты локализации\n" +
+		"      summary: Восстановить пакет локализации\n" +
+		"      operationId: restoreI18nBundle\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/i18n_bundle.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/integrations:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает глобальный каталог интеграций платформы.\n" +
+		"      tags:\n" +
+		"        - Интеграции\n" +
+		"      summary: Получить каталог интеграций\n" +
+		"      operationId: listIntegrations\n" +
+		"      parameters:\n" +
+		"        - description: Включить мягко удалённые интеграции\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Каталог интеграций\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/integration.ListResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Добавляет интеграцию в глобальный каталог. Операция доступна\n" +
+		"        администратору платформы.\n" +
+		"      tags:\n" +
+		"        - Интеграции\n" +
+		"      summary: Создать интеграцию\n" +
+		"      operationId: createIntegration\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/integration.CreateRequest\"\n" +
+		"        description: Данные интеграции\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Интеграция создана\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/integration.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/integrations/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает интеграцию глобального каталога по identity.\n" +
+		"      tags:\n" +
+		"        - Интеграции\n" +
+		"      summary: Получить интеграцию\n" +
+		"      operationId: getIntegration\n" +
+		"      parameters:\n" +
+		"        - description: Identity интеграции\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение удалённой интеграции\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Интеграция\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/integration.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Интеграция не найдена\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление интеграции глобального каталога.\n" +
+		"      tags:\n" +
+		"        - Интеграции\n" +
+		"      summary: Удалить интеграцию\n" +
+		"      operationId: deleteIntegration\n" +
+		"      parameters:\n" +
+		"        - description: Identity интеграции\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Интеграция удалена\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/integration.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Интеграция не найдена\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет интеграцию глобального каталога.\n" +
+		"      tags:\n" +
+		"        - Интеграции\n" +
+		"      summary: Изменить интеграцию\n" +
+		"      operationId: patchIntegration\n" +
+		"      parameters:\n" +
+		"        - description: Identity интеграции\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/integration.PatchRequest\"\n" +
+		"        description: Изменяемые поля\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Интеграция изменена\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/integration.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Интеграция не найдена\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/integrations/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённую интеграцию глобального каталога.\n" +
+		"      tags:\n" +
+		"        - Интеграции\n" +
+		"      summary: Восстановить интеграцию\n" +
+		"      operationId: restoreIntegration\n" +
+		"      parameters:\n" +
+		"        - description: Identity интеграции\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Интеграция восстановлена\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/integration.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Интеграция не найдена\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/mocks:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список моков текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Моки\n" +
+		"      summary: Получить список моков\n" +
+		"      operationId: listMocks\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список моков\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/mock.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт мок в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Моки\n" +
+		"      summary: Создать мок\n" +
+		"      operationId: createMock\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/mock.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/mock.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/mocks/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает мок по identity.\n" +
+		"      tags:\n" +
+		"        - Моки\n" +
+		"      summary: Получить мок\n" +
+		"      operationId: getMock\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/mock.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Моки\n" +
+		"      summary: Удалить мок\n" +
+		"      operationId: deleteMock\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/mock.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет мок; актуальная revision передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Моки\n" +
+		"      summary: Изменить мок\n" +
+		"      operationId: patchMock\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/mock.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/mock.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/mocks/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Моки\n" +
+		"      summary: Восстановить мок\n" +
+		"      operationId: restoreMock\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/mock.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/navigations:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список навигаций текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Навигации\n" +
+		"      summary: Получить список навигаций\n" +
+		"      operationId: listNavigations\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список навигаций\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/navigation.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт навигацию в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Навигации\n" +
+		"      summary: Создать навигацию\n" +
+		"      operationId: createNavigation\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/navigation.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/navigation.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/navigations/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает навигацию по identity.\n" +
+		"      tags:\n" +
+		"        - Навигации\n" +
+		"      summary: Получить навигацию\n" +
+		"      operationId: getNavigation\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/navigation.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Навигации\n" +
+		"      summary: Удалить навигацию\n" +
+		"      operationId: deleteNavigation\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/navigation.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет навигацию; актуальная revision передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Навигации\n" +
+		"      summary: Изменить навигацию\n" +
+		"      operationId: patchNavigation\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/navigation.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/navigation.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/navigations/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Навигации\n" +
+		"      summary: Восстановить навигацию\n" +
+		"      operationId: restoreNavigation\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/navigation.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /api/v1/projects:\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Возвращает список неудаленных проектов.\n" +
+		"      description: Возвращает список проектов текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
-		"        - projects\n" +
-		"      summary: Список проектов\n" +
+		"        - Проекты\n" +
+		"      summary: Получить список проектов\n" +
+		"      operationId: listProjects\n" +
 		"      parameters:\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
-		"          description: OK\n" +
+		"          description: Список проектов\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/project.ProjectsListResponse\"\n" +
+		"                $ref: \"#/components/schemas/project.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
+		"          description: Внутренняя ошибка сервера\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Создает новый проект.\n" +
+		"      description: Создаёт проект в текущем рабочем пространстве.\n" +
 		"      tags:\n" +
-		"        - projects\n" +
+		"        - Проекты\n" +
 		"      summary: Создать проект\n" +
+		"      operationId: createProject\n" +
 		"      parameters:\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -158,146 +7843,228 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/project.CreateProjectRequest\"\n" +
-		"        description: Параметры проекта\n" +
+		"              $ref: \"#/components/schemas/project.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
 		"        \"201\":\n" +
-		"          description: Created\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/project.ProjectResponse\"\n" +
+		"                $ref: \"#/components/schemas/project.Response\"\n" +
 		"        \"400\":\n" +
-		"          description: Bad Request\n" +
+		"          description: Некорректный запрос\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"409\":\n" +
-		"          description: Conflict\n" +
+		"          description: Конфликт identity или revision\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
+		"          description: Внутренняя ошибка сервера\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}\":\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/projects/{identity}\":\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
 		"      description: Возвращает проект по identity.\n" +
 		"      tags:\n" +
-		"        - projects\n" +
+		"        - Проекты\n" +
 		"      summary: Получить проект\n" +
+		"      operationId: getProject\n" +
 		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
-		"          description: OK\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/project.ProjectResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
+		"                $ref: \"#/components/schemas/project.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"404\":\n" +
-		"          description: Not Found\n" +
+		"          description: Документ не найден\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
+		"          description: Внутренняя ошибка сервера\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Выполняет soft delete проекта по identity.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
 		"      tags:\n" +
-		"        - projects\n" +
+		"        - Проекты\n" +
 		"      summary: Удалить проект\n" +
+		"      operationId: deleteProject\n" +
 		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/project.Response\"\n" +
 		"        \"400\":\n" +
-		"          description: Bad Request\n" +
+		"          description: Некорректный запрос\n" +
 		"          content:\n" +
-		"            \"*/*\":\n" +
+		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"404\":\n" +
-		"          description: Not Found\n" +
+		"          description: Документ не найден\n" +
 		"          content:\n" +
-		"            \"*/*\":\n" +
+		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
+		"          description: Внутренняя ошибка сервера\n" +
 		"          content:\n" +
-		"            \"*/*\":\n" +
+		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Обновляет проект по identity.\n" +
+		"      description: Частично изменяет проект; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
-		"        - projects\n" +
-		"      summary: Обновить проект\n" +
+		"        - Проекты\n" +
+		"      summary: Изменить проект\n" +
+		"      operationId: patchProject\n" +
 		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
 		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
@@ -306,2253 +8073,2503 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/project.UpdateProjectRequest\"\n" +
-		"        description: Параметры обновления проекта\n" +
+		"              $ref: \"#/components/schemas/project.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
-		"          description: OK\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/project.ProjectResponse\"\n" +
+		"                $ref: \"#/components/schemas/project.Response\"\n" +
 		"        \"400\":\n" +
-		"          description: Bad Request\n" +
+		"          description: Некорректный запрос\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"404\":\n" +
-		"          description: Not Found\n" +
+		"          description: Документ не найден\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/components-legacy\":\n" +
-		"    get:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Возвращает неудаленные компоненты проекта с optional фильтрами\n" +
-		"        папки и типа.\n" +
-		"      tags:\n" +
-		"        - components-legacy\n" +
-		"      summary: Список компонентов\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: shared-components-legacy\n" +
-		"          description: Folder identity\n" +
-		"          name: folder_identity\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: component-sfc\n" +
-		"          description: Legacy component type\n" +
-		"          name: component_type\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            enum:\n" +
-		"              - component-sfc\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: OK\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/component_legacy.ComponentsLegacyListResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Создает component-sfc в папке проекта. Source хранится как\n" +
-		"        authoring source и не компилируется и не выполняется.\n" +
-		"      tags:\n" +
-		"        - components-legacy\n" +
-		"      summary: Создать компонент\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      requestBody:\n" +
-		"        content:\n" +
-		"          application/json:\n" +
-		"            schema:\n" +
-		"              $ref: \"#/components/schemas/component_legacy.CreateComponentLegacyRequest\"\n" +
-		"        description: Параметры компонента\n" +
-		"        required: true\n" +
-		"      responses:\n" +
-		"        \"201\":\n" +
-		"          description: Created\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/component_legacy.ComponentLegacyResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"409\":\n" +
-		"          description: Conflict\n" +
+		"          description: Конфликт identity или revision\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
+		"          description: Внутренняя ошибка сервера\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/components-legacy/{component_identity}\":\n" +
-		"    get:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Возвращает активный компонент по identity в пределах проекта.\n" +
-		"      tags:\n" +
-		"        - components-legacy\n" +
-		"      summary: Получить компонент\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: user-card\n" +
-		"          description: Legacy component identity\n" +
-		"          name: component_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: OK\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/component_legacy.ComponentLegacyResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"    delete:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Выполняет soft-delete компонента по identity.\n" +
-		"      tags:\n" +
-		"        - components-legacy\n" +
-		"      summary: Удалить компонент\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: user-card\n" +
-		"          description: Legacy component identity\n" +
-		"          name: component_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"    patch:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Заменяет editable payload компонента, сохраняя id, identity,\n" +
-		"        createdAt и deletedAt.\n" +
-		"      tags:\n" +
-		"        - components-legacy\n" +
-		"      summary: Обновить компонент\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: user-card\n" +
-		"          description: Legacy component identity\n" +
-		"          name: component_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      requestBody:\n" +
-		"        content:\n" +
-		"          application/json:\n" +
-		"            schema:\n" +
-		"              $ref: \"#/components/schemas/component_legacy.UpdateComponentLegacyRequest\"\n" +
-		"        description: Параметры обновления компонента\n" +
-		"        required: true\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: OK\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/component_legacy.ComponentLegacyResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/components-legacy/{component_identity}/hard\":\n" +
-		"    delete:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Выполняет hard-delete компонента по identity.\n" +
-		"      tags:\n" +
-		"        - components-legacy\n" +
-		"      summary: Физически удалить компонент\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: hard-delete-user-card\n" +
-		"          description: Legacy component identity\n" +
-		"          name: component_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/components-legacy/{component_identity}/restore\":\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/projects/{identity}/restore\":\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Восстанавливает soft-deleted компонент по identity.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
 		"      tags:\n" +
-		"        - components-legacy\n" +
-		"      summary: Восстановить компонент\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: restore-user-card\n" +
-		"          description: Legacy component identity\n" +
-		"          name: component_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/converters\":\n" +
-		"    get:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Возвращает неудаленные конвертеры проекта с optional фильтром папки.\n" +
-		"      tags:\n" +
-		"        - converters\n" +
-		"      summary: Список конвертеров\n" +
-		"      parameters:\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: shared-converters\n" +
-		"          description: Folder identity\n" +
-		"          name: folder_identity\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: OK\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/converter.ConvertersListResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Создает конвертер с JSON source/config. Source не исполняется.\n" +
-		"      tags:\n" +
-		"        - converters\n" +
-		"      summary: Создать конвертер\n" +
-		"      parameters:\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      requestBody:\n" +
-		"        content:\n" +
-		"          application/json:\n" +
-		"            schema:\n" +
-		"              $ref: \"#/components/schemas/converter.CreateConverterRequest\"\n" +
-		"        description: Параметры конвертера\n" +
-		"        required: true\n" +
-		"      responses:\n" +
-		"        \"201\":\n" +
-		"          description: Created\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/converter.ConverterResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Conflict\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/converters/{converter_identity}\":\n" +
-		"    get:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Возвращает активный конвертер по identity.\n" +
-		"      tags:\n" +
-		"        - converters\n" +
-		"      summary: Получить конвертер\n" +
-		"      parameters:\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: date-to-string\n" +
-		"          description: Converter identity\n" +
-		"          name: converter_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: OK\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/converter.ConverterResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"    delete:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Выполняет soft-delete конвертера.\n" +
-		"      tags:\n" +
-		"        - converters\n" +
-		"      summary: Удалить конвертер\n" +
-		"      parameters:\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: date-to-string\n" +
-		"          description: Converter identity\n" +
-		"          name: converter_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"    patch:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Заменяет editable payload конвертера, сохраняя id, identity,\n" +
-		"        createdAt и deletedAt.\n" +
-		"      tags:\n" +
-		"        - converters\n" +
-		"      summary: Обновить конвертер\n" +
-		"      parameters:\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: date-to-string\n" +
-		"          description: Converter identity\n" +
-		"          name: converter_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      requestBody:\n" +
-		"        content:\n" +
-		"          application/json:\n" +
-		"            schema:\n" +
-		"              $ref: \"#/components/schemas/converter.UpdateConverterRequest\"\n" +
-		"        description: Параметры обновления конвертера\n" +
-		"        required: true\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: OK\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/converter.ConverterResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/converters/{converter_identity}/hard\":\n" +
-		"    delete:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Выполняет hard-delete конвертера; system converter удалить нельзя.\n" +
-		"      tags:\n" +
-		"        - converters\n" +
-		"      summary: Физически удалить конвертер\n" +
-		"      parameters:\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: hard-delete-date-to-string\n" +
-		"          description: Converter identity\n" +
-		"          name: converter_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Conflict\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/converters/{converter_identity}/restore\":\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Восстанавливает soft-deleted конвертер.\n" +
-		"      tags:\n" +
-		"        - converters\n" +
-		"      summary: Восстановить конвертер\n" +
-		"      parameters:\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: restore-date-to-string\n" +
-		"          description: Converter identity\n" +
-		"          name: converter_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/data-views\":\n" +
-		"    get:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Возвращает активные DataView проекта с optional фильтрами папки и\n" +
-		"        Query. DataView, связанные с soft-deleted Query, не возвращаются.\n" +
-		"      tags:\n" +
-		"        - data-views\n" +
-		"      summary: Список DataView\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: shared-data-views\n" +
-		"          description: Folder identity\n" +
-		"          name: folder_identity\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: users-list\n" +
-		"          description: Query identity\n" +
-		"          name: query_identity\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: OK\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/data_view.DataViewsListResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Создает DataView в папке проекта и связывает его с активной Query\n" +
-		"        этого же проекта. Source и schema хранятся как authoring configuration и\n" +
-		"        не компилируются и не выполняются.\n" +
-		"      tags:\n" +
-		"        - data-views\n" +
-		"      summary: Создать DataView\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      requestBody:\n" +
-		"        content:\n" +
-		"          application/json:\n" +
-		"            schema:\n" +
-		"              $ref: \"#/components/schemas/data_view.CreateDataViewRequest\"\n" +
-		"        description: Параметры DataView\n" +
-		"        required: true\n" +
-		"      responses:\n" +
-		"        \"201\":\n" +
-		"          description: Created\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/data_view.DataViewResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Conflict\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/data-views/{data_view_identity}\":\n" +
-		"    get:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Возвращает активный DataView по identity в пределах проекта вместе\n" +
-		"        с identity папки и связанной Query.\n" +
-		"      tags:\n" +
-		"        - data-views\n" +
-		"      summary: Получить DataView\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: users-table\n" +
-		"          description: DataView identity\n" +
-		"          name: data_view_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: OK\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/data_view.DataViewResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"    delete:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Выполняет soft-delete DataView по identity в пределах проекта.\n" +
-		"      tags:\n" +
-		"        - data-views\n" +
-		"      summary: Удалить DataView\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: users-table\n" +
-		"          description: DataView identity\n" +
-		"          name: data_view_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"    patch:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Полностью заменяет editable payload DataView, включая папку,\n" +
-		"        связанную Query и authoring configuration. Поля id, identity, createdAt\n" +
-		"        и deletedAt сохраняются.\n" +
-		"      tags:\n" +
-		"        - data-views\n" +
-		"      summary: Обновить DataView\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: users-table\n" +
-		"          description: DataView identity\n" +
-		"          name: data_view_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      requestBody:\n" +
-		"        content:\n" +
-		"          application/json:\n" +
-		"            schema:\n" +
-		"              $ref: \"#/components/schemas/data_view.UpdateDataViewRequest\"\n" +
-		"        description: Параметры обновления DataView\n" +
-		"        required: true\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: OK\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/data_view.DataViewResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/data-views/{data_view_identity}/hard\":\n" +
-		"    delete:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Выполняет hard-delete soft-deleted DataView по identity в пределах\n" +
-		"        проекта.\n" +
-		"      tags:\n" +
-		"        - data-views\n" +
-		"      summary: Физически удалить DataView\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: hard-delete-users-table\n" +
-		"          description: DataView identity\n" +
-		"          name: data_view_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/data-views/{data_view_identity}/restore\":\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Восстанавливает soft-deleted DataView по identity в пределах проекта.\n" +
-		"      tags:\n" +
-		"        - data-views\n" +
-		"      summary: Восстановить DataView\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: restore-users-table\n" +
-		"          description: DataView identity\n" +
-		"          name: data_view_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/folders\":\n" +
-		"    get:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Возвращает неудаленные папки проекта для указанного entity type.\n" +
-		"      tags:\n" +
-		"        - folders\n" +
-		"      summary: Список папок\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: components-legacy\n" +
-		"          description: Entity type\n" +
-		"          name: entity_type\n" +
-		"          in: query\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            enum:\n" +
-		"              - components-legacy\n" +
-		"              - converters\n" +
-		"              - queries\n" +
-		"              - data-views\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: OK\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/folder.FoldersListResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Создает папку внутри проекта и дерева указанного entity type.\n" +
-		"      tags:\n" +
-		"        - folders\n" +
-		"      summary: Создать папку\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      requestBody:\n" +
-		"        content:\n" +
-		"          application/json:\n" +
-		"            schema:\n" +
-		"              $ref: \"#/components/schemas/folder.CreateFolderRequest\"\n" +
-		"        description: Параметры папки\n" +
-		"        required: true\n" +
-		"      responses:\n" +
-		"        \"201\":\n" +
-		"          description: Created\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/folder.FolderResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Conflict\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/folders/{folder_identity}\":\n" +
-		"    get:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Возвращает папку по project identity, folder identity и entity type.\n" +
-		"      tags:\n" +
-		"        - folders\n" +
-		"      summary: Получить папку\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: shared-components-legacy\n" +
-		"          description: Folder identity\n" +
-		"          name: folder_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: components-legacy\n" +
-		"          description: Entity type\n" +
-		"          name: entity_type\n" +
-		"          in: query\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            enum:\n" +
-		"              - components-legacy\n" +
-		"              - converters\n" +
-		"              - queries\n" +
-		"              - data-views\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: OK\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/folder.FolderResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"    delete:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Выполняет soft delete папки.\n" +
-		"      tags:\n" +
-		"        - folders\n" +
-		"      summary: Удалить папку\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: shared-components-legacy\n" +
-		"          description: Folder identity\n" +
-		"          name: folder_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: components-legacy\n" +
-		"          description: Entity type\n" +
-		"          name: entity_type\n" +
-		"          in: query\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            enum:\n" +
-		"              - components-legacy\n" +
-		"              - converters\n" +
-		"              - queries\n" +
-		"              - data-views\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"    patch:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Обновляет папку и при необходимости перемещает ее по parent identity.\n" +
-		"      tags:\n" +
-		"        - folders\n" +
-		"      summary: Обновить папку\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: shared-components-legacy\n" +
-		"          description: Folder identity\n" +
-		"          name: folder_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: components-legacy\n" +
-		"          description: Entity type\n" +
-		"          name: entity_type\n" +
-		"          in: query\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            enum:\n" +
-		"              - components-legacy\n" +
-		"              - converters\n" +
-		"              - queries\n" +
-		"              - data-views\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      requestBody:\n" +
-		"        content:\n" +
-		"          application/json:\n" +
-		"            schema:\n" +
-		"              $ref: \"#/components/schemas/folder.UpdateFolderRequest\"\n" +
-		"        description: Параметры обновления папки\n" +
-		"        required: true\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: OK\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/folder.FolderResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Conflict\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/folders/{folder_identity}/hard\":\n" +
-		"    delete:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Выполняет hard delete папки, кроме system root folders.\n" +
-		"      tags:\n" +
-		"        - folders\n" +
-		"      summary: Удалить папку физически\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: hard-delete-components-legacy\n" +
-		"          description: Folder identity\n" +
-		"          name: folder_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: components-legacy\n" +
-		"          description: Entity type\n" +
-		"          name: entity_type\n" +
-		"          in: query\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            enum:\n" +
-		"              - components-legacy\n" +
-		"              - converters\n" +
-		"              - queries\n" +
-		"              - data-views\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Conflict\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/folders/{folder_identity}/restore\":\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Восстанавливает soft-deleted папку.\n" +
-		"      tags:\n" +
-		"        - folders\n" +
-		"      summary: Восстановить папку\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: restore-components-legacy\n" +
-		"          description: Folder identity\n" +
-		"          name: folder_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: components-legacy\n" +
-		"          description: Entity type\n" +
-		"          name: entity_type\n" +
-		"          in: query\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            enum:\n" +
-		"              - components-legacy\n" +
-		"              - converters\n" +
-		"              - queries\n" +
-		"              - data-views\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/hard\":\n" +
-		"    delete:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Выполняет hard delete проекта по identity.\n" +
-		"      tags:\n" +
-		"        - projects\n" +
-		"      summary: Удалить проект физически\n" +
-		"      parameters:\n" +
-		"        - example: hard-delete-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/queries\":\n" +
-		"    get:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Возвращает активные Query проекта. Можно отфильтровать записи по\n" +
-		"        identity папки и query type; soft-deleted Query не возвращаются.\n" +
-		"      tags:\n" +
-		"        - queries\n" +
-		"      summary: Список Query\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: shared-queries\n" +
-		"          description: Folder identity\n" +
-		"          name: folder_identity\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: http\n" +
-		"          description: Query type\n" +
-		"          name: query_type\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: OK\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/query.QueriesListResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Создает конфигурацию Query в папке проекта. Query source, headers,\n" +
-		"        параметры и mock data только хранятся и не исполняются сервисом.\n" +
-		"      tags:\n" +
-		"        - queries\n" +
-		"      summary: Создать Query\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      requestBody:\n" +
-		"        content:\n" +
-		"          application/json:\n" +
-		"            schema:\n" +
-		"              $ref: \"#/components/schemas/query.CreateQueryRequest\"\n" +
-		"        description: Параметры Query\n" +
-		"        required: true\n" +
-		"      responses:\n" +
-		"        \"201\":\n" +
-		"          description: Created\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/query.QueryResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Conflict\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/queries/{query_identity}\":\n" +
-		"    get:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Возвращает активную Query по identity в пределах проекта вместе с\n" +
-		"        identity ее папки.\n" +
-		"      tags:\n" +
-		"        - queries\n" +
-		"      summary: Получить Query\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: users-list\n" +
-		"          description: Query identity\n" +
-		"          name: query_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: OK\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/query.QueryResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"    delete:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Выполняет soft-delete Query. Связанные DataView физически не\n" +
-		"        удаляются, но не попадают в обычные query-based сценарии.\n" +
-		"      tags:\n" +
-		"        - queries\n" +
-		"      summary: Удалить Query\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: users-list\n" +
-		"          description: Query identity\n" +
-		"          name: query_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"    patch:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Полностью заменяет editable payload Query, включая папку, source,\n" +
-		"        параметры, headers, auth и mock data. Поля id, identity, createdAt и\n" +
-		"        deletedAt сохраняются.\n" +
-		"      tags:\n" +
-		"        - queries\n" +
-		"      summary: Обновить Query\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: users-list\n" +
-		"          description: Query identity\n" +
-		"          name: query_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      requestBody:\n" +
-		"        content:\n" +
-		"          application/json:\n" +
-		"            schema:\n" +
-		"              $ref: \"#/components/schemas/query.UpdateQueryRequest\"\n" +
-		"        description: Параметры обновления Query\n" +
-		"        required: true\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: OK\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/query.QueryResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/queries/{query_identity}/hard\":\n" +
-		"    delete:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Выполняет hard-delete soft-deleted Query. Связанные DataView\n" +
-		"        удаляются каскадно на уровне базы данных.\n" +
-		"      tags:\n" +
-		"        - queries\n" +
-		"      summary: Физически удалить Query\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: hard-delete-users-list\n" +
-		"          description: Query identity\n" +
-		"          name: query_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/queries/{query_identity}/restore\":\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Восстанавливает soft-deleted Query по identity в пределах проекта.\n" +
-		"      tags:\n" +
-		"        - queries\n" +
-		"      summary: Восстановить Query\n" +
-		"      parameters:\n" +
-		"        - example: demo-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: restore-users-list\n" +
-		"          description: Query identity\n" +
-		"          name: query_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{project_identity}/restore\":\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Восстанавливает soft-deleted проект по identity.\n" +
-		"      tags:\n" +
-		"        - projects\n" +
+		"        - Проекты\n" +
 		"      summary: Восстановить проект\n" +
+		"      operationId: restoreProject\n" +
 		"      parameters:\n" +
-		"        - example: restore-project\n" +
-		"          description: Project identity\n" +
-		"          name: project_identity\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/project.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/queries:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список запросов текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Запросы\n" +
+		"      summary: Получить список запросов\n" +
+		"      operationId: listQuerys\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список запросов\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/query.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт запрос в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Запросы\n" +
+		"      summary: Создать запрос\n" +
+		"      operationId: createQuery\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/query.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/query.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/queries/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает запрос по identity.\n" +
+		"      tags:\n" +
+		"        - Запросы\n" +
+		"      summary: Получить запрос\n" +
+		"      operationId: getQuery\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/query.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Запросы\n" +
+		"      summary: Удалить запрос\n" +
+		"      operationId: deleteQuery\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/query.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет запрос; актуальная revision передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Запросы\n" +
+		"      summary: Изменить запрос\n" +
+		"      operationId: patchQuery\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/query.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/query.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/queries/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Запросы\n" +
+		"      summary: Восстановить запрос\n" +
+		"      operationId: restoreQuery\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/query.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/releases:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает неизменяемые релизы текущего рабочего пространства.\n" +
+		"      tags:\n" +
+		"        - Релизы\n" +
+		"      summary: Получить релизы\n" +
+		"      operationId: listReleases\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
 		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
+		"        \"200\":\n" +
+		"          description: Список релизов\n" +
 		"          content:\n" +
-		"            \"*/*\":\n" +
+		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
+		"                $ref: \"#/components/schemas/release.ListResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
-		"            \"*/*\":\n" +
+		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
+		"          description: Внутренняя ошибка сервера\n" +
 		"          content:\n" +
-		"            \"*/*\":\n" +
+		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт неизменяемый переносимый снимок из существующего коммита.\n" +
+		"      tags:\n" +
+		"        - Релизы\n" +
+		"      summary: Создать релиз\n" +
+		"      operationId: createRelease\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/release.CreateRequest\"\n" +
+		"        description: Данные release\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Релиз создан\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/release.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Ресурс не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт состояния\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/releases/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает метаданные релиза по identity.\n" +
+		"      tags:\n" +
+		"        - Релизы\n" +
+		"      summary: Получить релиз\n" +
+		"      operationId: getRelease\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity release\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Релиз\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/release.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Ресурс не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/releases/{identity}/export\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает сохранённый переносимый JSON релиза без replay истории;\n" +
+		"        identity=last выбирает последний релиз.\n" +
+		"      tags:\n" +
+		"        - Релизы\n" +
+		"      summary: Экспортировать релиз\n" +
+		"      operationId: exportRelease\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity release или last\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Скачать JSON как файл\n" +
+		"          name: download\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Portable snapshot\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Checksum релиза\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/release.ExportResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Ресурс не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/releases/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Применяет переносимый снимок как новые ревизии и создаёт коммит\n" +
+		"        восстановления.\n" +
+		"      tags:\n" +
+		"        - Релизы\n" +
+		"      summary: Восстановить релиз\n" +
+		"      operationId: restoreRelease\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity release\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/release.RestoreRequest\"\n" +
+		"        description: Ожидаемая head sequence\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Коммит восстановления\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/release.RestoreResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Ресурс не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт состояния\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/releases/{identity}/restore/plan\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает план восстановления релиза без записи изменений.\n" +
+		"      tags:\n" +
+		"        - Релизы\n" +
+		"      summary: Рассчитать восстановление релиза\n" +
+		"      operationId: planReleaseRestore\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity release\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: План восстановления\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/release.RestorePlanResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Ресурс не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт состояния\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/stores:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список хранилищ текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Хранилища\n" +
+		"      summary: Получить список хранилищ\n" +
+		"      operationId: listStores\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список хранилищ\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/store.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт хранилище в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Хранилища\n" +
+		"      summary: Создать хранилище\n" +
+		"      operationId: createStore\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/store.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/store.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/stores/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает хранилище по identity.\n" +
+		"      tags:\n" +
+		"        - Хранилища\n" +
+		"      summary: Получить хранилище\n" +
+		"      operationId: getStore\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/store.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Хранилища\n" +
+		"      summary: Удалить хранилище\n" +
+		"      operationId: deleteStore\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/store.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет хранилище; актуальная revision передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Хранилища\n" +
+		"      summary: Изменить хранилище\n" +
+		"      operationId: patchStore\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/store.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/store.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/stores/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Хранилища\n" +
+		"      summary: Восстановить хранилище\n" +
+		"      operationId: restoreStore\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/store.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/streams:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список потоков текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Потоки\n" +
+		"      summary: Получить список потоков\n" +
+		"      operationId: listStreams\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список потоков\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/stream.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт поток в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Потоки\n" +
+		"      summary: Создать поток\n" +
+		"      operationId: createStream\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/stream.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/stream.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/streams/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает поток по identity.\n" +
+		"      tags:\n" +
+		"        - Потоки\n" +
+		"      summary: Получить поток\n" +
+		"      operationId: getStream\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/stream.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Потоки\n" +
+		"      summary: Удалить поток\n" +
+		"      operationId: deleteStream\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/stream.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет поток; актуальная revision передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Потоки\n" +
+		"      summary: Изменить поток\n" +
+		"      operationId: patchStream\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/stream.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/stream.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/streams/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Потоки\n" +
+		"      summary: Восстановить поток\n" +
+		"      operationId: restoreStream\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/stream.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/styles:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список стилей текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Стили\n" +
+		"      summary: Получить список стилей\n" +
+		"      operationId: listStyles\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список стилей\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/style.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт стиль в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Стили\n" +
+		"      summary: Создать стиль\n" +
+		"      operationId: createStyle\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/style.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/style.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/styles/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает стиль по identity.\n" +
+		"      tags:\n" +
+		"        - Стили\n" +
+		"      summary: Получить стиль\n" +
+		"      operationId: getStyle\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/style.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Стили\n" +
+		"      summary: Удалить стиль\n" +
+		"      operationId: deleteStyle\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/style.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет стиль; актуальная revision передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Стили\n" +
+		"      summary: Изменить стиль\n" +
+		"      operationId: patchStyle\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/style.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/style.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/styles/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Стили\n" +
+		"      summary: Восстановить стиль\n" +
+		"      operationId: restoreStyle\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/style.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /api/v1/tenants:\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Возвращает tenants текущего workspace; folder_identity ограничивает\n" +
-		"        список папкой типа tenants.\n" +
+		"      description: Возвращает список тенантов текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
-		"        - tenants\n" +
-		"      summary: Список tenants\n" +
+		"        - Тенанты\n" +
+		"      summary: Получить список тенантов\n" +
+		"      operationId: listTenants\n" +
 		"      parameters:\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - example: root-tenants\n" +
-		"          description: Tenant folder identity\n" +
-		"          name: folder_identity\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
 		"          in: query\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
-		"          description: OK\n" +
+		"          description: Список тенантов\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/tenant.TenantsListResponse\"\n" +
+		"                $ref: \"#/components/schemas/tenant.ListResponse\"\n" +
 		"        \"400\":\n" +
-		"          description: Bad Request\n" +
+		"          description: Некорректный запрос\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
+		"          description: Внутренняя ошибка сервера\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Создаёт final configuration layer Tenant в workspace из\n" +
-		"        X-Endge-Workspace. При отсутствии folderIdentity используется\n" +
-		"        root-tenants.\n" +
+		"      description: Создаёт тенант в текущем рабочем пространстве.\n" +
 		"      tags:\n" +
-		"        - tenants\n" +
-		"      summary: Создать tenant\n" +
+		"        - Тенанты\n" +
+		"      summary: Создать тенант\n" +
+		"      operationId: createTenant\n" +
 		"      parameters:\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
@@ -2562,154 +10579,229 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/tenant.CreateTenantRequest\"\n" +
-		"        description: Данные tenant\n" +
+		"              $ref: \"#/components/schemas/tenant.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
 		"        \"201\":\n" +
-		"          description: Created\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/tenant.TenantResponse\"\n" +
+		"                $ref: \"#/components/schemas/tenant.Response\"\n" +
 		"        \"400\":\n" +
-		"          description: Bad Request\n" +
+		"          description: Некорректный запрос\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"409\":\n" +
-		"          description: Conflict\n" +
+		"          description: Конфликт identity или revision\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
+		"          description: Внутренняя ошибка сервера\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/tenants/{tenant_identity}\":\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/tenants/{identity}\":\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Возвращает tenant по identity только из workspace X-Endge-Workspace.\n" +
+		"      description: Возвращает тенант по identity.\n" +
 		"      tags:\n" +
-		"        - tenants\n" +
-		"      summary: Получить tenant\n" +
+		"        - Тенанты\n" +
+		"      summary: Получить тенант\n" +
+		"      operationId: getTenant\n" +
 		"      parameters:\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - example: tenant-default\n" +
-		"          description: Tenant identity\n" +
-		"          name: tenant_identity\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
 		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/tenant.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Тенанты\n" +
+		"      summary: Удалить тенант\n" +
+		"      operationId: deleteTenant\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
-		"          description: OK\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/tenant.TenantResponse\"\n" +
+		"                $ref: \"#/components/schemas/tenant.Response\"\n" +
 		"        \"400\":\n" +
-		"          description: Bad Request\n" +
+		"          description: Некорректный запрос\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"404\":\n" +
-		"          description: Not Found\n" +
+		"          description: Документ не найден\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"    delete:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Физически удаляет tenant по identity в workspace X-Endge-Workspace.\n" +
-		"      tags:\n" +
-		"        - tenants\n" +
-		"      summary: Удалить tenant\n" +
-		"      parameters:\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - example: tenant-default\n" +
-		"          description: Tenant identity\n" +
-		"          name: tenant_identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"204\":\n" +
-		"          description: No Content\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
 		"          content:\n" +
-		"            \"*/*\":\n" +
+		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Not Found\n" +
-		"          content:\n" +
-		"            \"*/*\":\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
+		"          description: Внутренняя ошибка сервера\n" +
 		"          content:\n" +
-		"            \"*/*\":\n" +
+		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"          WorkspaceAuth: []\n" +
-		"      description: Частично обновляет tenant. folderIdentity:null перемещает tenant в\n" +
-		"        root-tenants; переданная configuration полностью заменяет contribution.\n" +
+		"      description: Частично изменяет тенант; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
-		"        - tenants\n" +
-		"      summary: Обновить tenant\n" +
+		"        - Тенанты\n" +
+		"      summary: Изменить тенант\n" +
+		"      operationId: patchTenant\n" +
 		"      parameters:\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
 		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
-		"        - example: tenant-default\n" +
-		"          description: Tenant identity\n" +
-		"          name: tenant_identity\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
 		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
@@ -2717,163 +10809,1732 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/tenant.UpdateTenantRequest\"\n" +
-		"        description: Поля PATCH tenant\n" +
+		"              $ref: \"#/components/schemas/tenant.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
-		"          description: OK\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/tenant.TenantResponse\"\n" +
+		"                $ref: \"#/components/schemas/tenant.Response\"\n" +
 		"        \"400\":\n" +
-		"          description: Bad Request\n" +
+		"          description: Некорректный запрос\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"404\":\n" +
-		"          description: Not Found\n" +
+		"          description: Документ не найден\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"409\":\n" +
-		"          description: Conflict\n" +
+		"          description: Конфликт identity или revision\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
+		"          description: Внутренняя ошибка сервера\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/tenants/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Тенанты\n" +
+		"      summary: Восстановить тенант\n" +
+		"      operationId: restoreTenant\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/tenant.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/types:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список типов текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Типы\n" +
+		"      summary: Получить список типов\n" +
+		"      operationId: listTypes\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список типов\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/domain_type.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт тип в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Типы\n" +
+		"      summary: Создать тип\n" +
+		"      operationId: createType\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/domain_type.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/domain_type.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/types/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает тип по identity.\n" +
+		"      tags:\n" +
+		"        - Типы\n" +
+		"      summary: Получить тип\n" +
+		"      operationId: getType\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/domain_type.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Типы\n" +
+		"      summary: Удалить тип\n" +
+		"      operationId: deleteType\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/domain_type.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет тип; актуальная revision передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Типы\n" +
+		"      summary: Изменить тип\n" +
+		"      operationId: patchType\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/domain_type.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/domain_type.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/types/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Типы\n" +
+		"      summary: Восстановить тип\n" +
+		"      operationId: restoreType\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/domain_type.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/updates:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список обновлений состояния текущего рабочего\n" +
+		"        пространства с фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Обновления состояния\n" +
+		"      summary: Получить список обновлений состояния\n" +
+		"      operationId: listUpdates\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список обновлений состояния\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/update.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт обновление состояния в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Обновления состояния\n" +
+		"      summary: Создать обновление состояния\n" +
+		"      operationId: createUpdate\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/update.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/update.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/updates/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает обновление состояния по identity.\n" +
+		"      tags:\n" +
+		"        - Обновления состояния\n" +
+		"      summary: Получить обновление состояния\n" +
+		"      operationId: getUpdate\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/update.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Обновления состояния\n" +
+		"      summary: Удалить обновление состояния\n" +
+		"      operationId: deleteUpdate\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/update.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет обновление состояния; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Обновления состояния\n" +
+		"      summary: Изменить обновление состояния\n" +
+		"      operationId: patchUpdate\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/update.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/update.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/updates/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Обновления состояния\n" +
+		"      summary: Восстановить обновление состояния\n" +
+		"      operationId: restoreUpdate\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/update.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/vocabs:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список справочников текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Справочники\n" +
+		"      summary: Получить список справочников\n" +
+		"      operationId: listVocabs\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список справочников\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/vocab.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт справочник в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Справочники\n" +
+		"      summary: Создать справочник\n" +
+		"      operationId: createVocab\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/vocab.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/vocab.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/vocabs/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает справочник по identity.\n" +
+		"      tags:\n" +
+		"        - Справочники\n" +
+		"      summary: Получить справочник\n" +
+		"      operationId: getVocab\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/vocab.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Справочники\n" +
+		"      summary: Удалить справочник\n" +
+		"      operationId: deleteVocab\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/vocab.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет справочник; актуальная revision передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Справочники\n" +
+		"      summary: Изменить справочник\n" +
+		"      operationId: patchVocab\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/vocab.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/vocab.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/vocabs/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Справочники\n" +
+		"      summary: Восстановить справочник\n" +
+		"      operationId: restoreVocab\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/vocab.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /api/v1/workspaces:\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает все workspaces без user/membership filtering. Endpoint\n" +
-		"        не требует X-Endge-Workspace; sse.manualToken redacted.\n" +
+		"      description: Возвращает рабочие пространства, в которых текущий пользователь\n" +
+		"        имеет назначение роли.\n" +
 		"      tags:\n" +
-		"        - workspaces\n" +
-		"      summary: Список workspaces\n" +
+		"        - Рабочие пространства\n" +
+		"      summary: Получить доступные рабочие пространства\n" +
+		"      operationId: listWorkspaces\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
-		"          description: OK\n" +
+		"          description: Список рабочих пространств\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                type: object\n" +
-		"                additionalProperties:\n" +
-		"                  type: array\n" +
-		"                  items:\n" +
-		"                    $ref: \"#/components/schemas/http.Response\"\n" +
+		"                $ref: \"#/components/schemas/workspace.ListResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
+		"          description: Внутренняя ошибка сервера\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: \"Создаёт корневой workspace. Configuration необязательна: при\n" +
-		"        отсутствии backend применяет system default. Endpoint не требует\n" +
-		"        X-Endge-Workspace.\"\n" +
+		"      description: Создаёт рабочее пространство. Операция доступна администратору платформы.\n" +
 		"      tags:\n" +
-		"        - workspaces\n" +
-		"      summary: Создать workspace\n" +
+		"        - Рабочие пространства\n" +
+		"      summary: Создать рабочее пространство\n" +
+		"      operationId: createWorkspace\n" +
 		"      requestBody:\n" +
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/http.CreateRequest\"\n" +
-		"        description: Данные workspace\n" +
+		"              $ref: \"#/components/schemas/workspace.CreateRequest\"\n" +
+		"        description: Данные рабочего пространства\n" +
 		"        required: true\n" +
 		"      responses:\n" +
 		"        \"201\":\n" +
-		"          description: Created\n" +
+		"          description: Рабочее пространство создано\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision\n" +
+		"              schema:\n" +
+		"                type: string\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/http.Response\"\n" +
+		"                $ref: \"#/components/schemas/workspace.Response\"\n" +
 		"        \"400\":\n" +
-		"          description: Bad Request\n" +
+		"          description: Некорректный запрос\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Требуются права администратору платформы\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"409\":\n" +
-		"          description: Conflict\n" +
+		"          description: Identity уже занят\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
+		"          description: Внутренняя ошибка сервера\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
-		"  \"/api/v1/workspaces/{workspace_identity}\":\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/workspaces/{identity}\":\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает workspace по identity с полной root configuration.\n" +
-		"        sse.manualToken не возвращается.\n" +
+		"      description: Возвращает доступное текущему пользователю рабочее пространство по\n" +
+		"        identity.\n" +
 		"      tags:\n" +
-		"        - workspaces\n" +
-		"      summary: Получить workspace\n" +
+		"        - Рабочие пространства\n" +
+		"      summary: Получить рабочее пространство\n" +
+		"      operationId: getWorkspace\n" +
 		"      parameters:\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: workspace_identity\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: identity\n" +
 		"          in: path\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"            maxLength: 160\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
-		"          description: OK\n" +
+		"          description: Рабочее пространство\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision\n" +
+		"              schema:\n" +
+		"                type: string\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/http.Response\"\n" +
-		"        \"400\":\n" +
-		"          description: Bad Request\n" +
+		"                $ref: \"#/components/schemas/workspace.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Нет доступа\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"404\":\n" +
-		"          description: Not Found\n" +
+		"          description: Рабочее пространство не найдено\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
+		"          description: Внутренняя ошибка сервера\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Частично обновляет верхнеуровневые поля. Переданная configuration\n" +
-		"        полностью заменяет root configuration; JSON merge не выполняется.\n" +
-		"        sse.manualToken redacted в response.\n" +
+		"      description: Частично изменяет рабочее пространство; revision передаётся в If-Match.\n" +
 		"      tags:\n" +
-		"        - workspaces\n" +
-		"      summary: Обновить workspace\n" +
+		"        - Рабочие пространства\n" +
+		"      summary: Изменить рабочее пространство\n" +
+		"      operationId: patchWorkspace\n" +
 		"      parameters:\n" +
-		"        - example: demo-workspace\n" +
-		"          description: Workspace identity\n" +
-		"          name: workspace_identity\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: identity\n" +
 		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
 		"          required: true\n" +
 		"          schema:\n" +
 		"            type: string\n" +
@@ -2881,34 +12542,330 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/http.UpdateRequest\"\n" +
-		"        description: Изменяемые поля workspace\n" +
+		"              $ref: \"#/components/schemas/workspace.PatchRequest\"\n" +
+		"        description: Изменяемые поля\n" +
 		"        required: true\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
-		"          description: OK\n" +
+		"          description: Рабочее пространство изменено\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision\n" +
+		"              schema:\n" +
+		"                type: string\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/http.Response\"\n" +
+		"                $ref: \"#/components/schemas/workspace.Response\"\n" +
 		"        \"400\":\n" +
-		"          description: Bad Request\n" +
+		"          description: Некорректный запрос\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Нет прав на изменение\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"404\":\n" +
-		"          description: Not Found\n" +
+		"          description: Рабочее пространство не найдено\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт revision или identity\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"500\":\n" +
-		"          description: Internal Server Error\n" +
+		"          description: Внутренняя ошибка сервера\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
-		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/workspaces/{identity}/members\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает явно назначенные роли пользователей.\n" +
+		"      tags:\n" +
+		"        - Участники рабочего пространства\n" +
+		"      summary: Получить назначения ролей рабочего пространства\n" +
+		"      operationId: listWorkspaceMembers\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список назначения ролей\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/workspace.MembershipListResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Нет доступа\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Рабочее пространство не найдено\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/workspaces/{identity}/members/{userId}\":\n" +
+		"    put:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт назначение роли или полностью заменяет роль указанного\n" +
+		"        пользователя.\n" +
+		"      tags:\n" +
+		"        - Участники рабочего пространства\n" +
+		"      summary: Назначить роль пользователю\n" +
+		"      operationId: putWorkspaceMember\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: UUID пользователя\n" +
+		"          name: userId\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            format: uuid\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/workspace.MembershipRequest\"\n" +
+		"        description: Назначаемая роль\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Membership обновлён\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/workspace.MembershipResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Нет прав на управление назначения ролей\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Рабочее пространство или пользователь не найдены\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Удаляет явно назначеную роль пользователя в рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Участники рабочего пространства\n" +
+		"      summary: Удалить назначение роли пользователя\n" +
+		"      operationId: deleteWorkspaceMember\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: UUID пользователя\n" +
+		"          name: userId\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            format: uuid\n" +
+		"      responses:\n" +
+		"        \"204\":\n" +
+		"          description: Membership удалён\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Нет прав на управление назначения ролей\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Membership не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /auth/callback:\n" +
+		"    get:\n" +
+		"      description: Обменивает authorization code, сохраняет серверную сессию и\n" +
+		"        устанавливает HttpOnly cookie.\n" +
+		"      tags:\n" +
+		"        - Авторизация\n" +
+		"      summary: Завершить вход в Configurator\n" +
+		"      operationId: configuratorAuthCallback\n" +
+		"      parameters:\n" +
+		"        - description: OIDC state\n" +
+		"          name: state\n" +
+		"          in: query\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Authorization code\n" +
+		"          name: code\n" +
+		"          in: query\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Ошибка внешнего провайдера\n" +
+		"          name: error\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"303\":\n" +
+		"          description: Перенаправление в Configurator\n" +
+		"        \"401\":\n" +
+		"          description: Вход отклонён\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                type: object\n" +
+		"                additionalProperties:\n" +
+		"                  type: string\n" +
+		"  /auth/login:\n" +
+		"    get:\n" +
+		"      description: Перенаправляет браузер на внешний OIDC-провайдер или dev-адаптер.\n" +
+		"      tags:\n" +
+		"        - Авторизация\n" +
+		"      summary: Начать вход в Configurator\n" +
+		"      operationId: configuratorLogin\n" +
+		"      parameters:\n" +
+		"        - description: Безопасный URL возврата после входа\n" +
+		"          name: returnTo\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"302\":\n" +
+		"          description: Перенаправление на провайдера\n" +
+		"        \"503\":\n" +
+		"          description: Провайдер временно недоступен\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                type: object\n" +
+		"                additionalProperties:\n" +
+		"                  type: string\n" +
+		"  /auth/logout:\n" +
+		"    post:\n" +
+		"      description: Удаляет серверную сессию и при поддержке уведомляет внешний провайдер.\n" +
+		"      tags:\n" +
+		"        - Авторизация\n" +
+		"      summary: Выйти из Configurator\n" +
+		"      operationId: configuratorLogout\n" +
+		"      responses:\n" +
+		"        \"204\":\n" +
+		"          description: Сессия завершена\n" +
+		"  /health:\n" +
+		"    get:\n" +
+		"      description: Публичный liveness endpoint с именем сервиса, версией и окружением\n" +
+		"        запуска.\n" +
+		"      tags:\n" +
+		"        - Сервис\n" +
+		"      summary: Проверить работоспособность сервиса\n" +
+		"      operationId: getHealth\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Сервис работает\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/health.HealthResponse\"\n" +
+		"  /version:\n" +
+		"    get:\n" +
+		"      description: Публичный endpoint с именем сервиса, версией сборки и окружением запуска.\n" +
+		"      tags:\n" +
+		"        - Сервис\n" +
+		"      summary: Получить версию сервиса\n" +
+		"      operationId: getVersion\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Версия сервиса\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/health.VersionResponse\"\n" +
 		"servers:\n" +
 		"  - url: /\n" +
 		"components:\n" +
@@ -2917,556 +12874,4411 @@ var openAPI3YAML = []byte(
 		"      type: apiKey\n" +
 		"      name: Authorization\n" +
 		"      in: header\n" +
-		"    WorkspaceAuth:\n" +
-		"      type: apiKey\n" +
-		"      name: X-Endge-Workspace\n" +
-		"      in: header\n" +
 		"  schemas:\n" +
-		"    component_legacy.ComponentLegacyResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        bindings:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        componentType:\n" +
-		"          enum:\n" +
-		"            - component-sfc\n" +
-		"          allOf:\n" +
-		"            - $ref: \"#/components/schemas/entities.RComponentLegacyType\"\n" +
-		"          example: component-sfc\n" +
-		"        createdAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-23T10:00:00Z\n" +
-		"        deletedAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-23T10:00:00Z\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Displays a user card\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          example: User card\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          example: shared-components-legacy\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"          example: 00000000-0000-4000-8000-000000000051\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          example: user-card\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        projectIdentity:\n" +
-		"          type: string\n" +
-		"          example: demo-project\n" +
-		"        propsSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        source:\n" +
-		"          type: string\n" +
-		"          example: <template><article>{{ user.name }}</article></template>\n" +
-		"        sourceFormat:\n" +
-		"          allOf:\n" +
-		"            - $ref: \"#/components/schemas/entities.RComponentLegacySourceFormat\"\n" +
-		"          example: vue\n" +
-		"        updatedAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-23T10:00:00Z\n" +
-		"    component_legacy.ComponentsLegacyListResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        items:\n" +
-		"          type: array\n" +
-		"          items:\n" +
-		"            $ref: \"#/components/schemas/component_legacy.ComponentLegacyResponse\"\n" +
-		"    component_legacy.CreateComponentLegacyRequest:\n" +
+		"    action.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
-		"        - componentType\n" +
 		"        - displayName\n" +
-		"        - folderIdentity\n" +
-		"        - identity\n" +
-		"        - source\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        bindings:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        componentType:\n" +
-		"          enum:\n" +
-		"            - component-sfc\n" +
-		"          allOf:\n" +
-		"            - $ref: \"#/components/schemas/entities.RComponentLegacyType\"\n" +
-		"          example: component-sfc\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Displays a user card\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"          example: Example user card\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: shared-components-legacy\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: example-user-card\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        propsSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        source:\n" +
-		"          type: string\n" +
-		"          minLength: 1\n" +
-		"          example: <template><article>{{ user.name }}</article></template>\n" +
-		"    component_legacy.UpdateComponentLegacyRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - componentType\n" +
-		"        - displayName\n" +
-		"        - folderIdentity\n" +
-		"        - source\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        bindings:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        componentType:\n" +
-		"          enum:\n" +
-		"            - component-sfc\n" +
-		"          allOf:\n" +
-		"            - $ref: \"#/components/schemas/entities.RComponentLegacyType\"\n" +
-		"          example: component-sfc\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Displays a user card\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"          example: User card\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: shared-components-legacy\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        propsSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        source:\n" +
-		"          type: string\n" +
-		"          minLength: 1\n" +
-		"          example: <template><article>{{ user.name }}</article></template>\n" +
-		"    converter.ConverterResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        converterType:\n" +
-		"          type: string\n" +
-		"          example: javascript\n" +
-		"        createdAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-23T10:00:00Z\n" +
-		"        deletedAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-23T10:00:00Z\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Formats an ISO date\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          example: Date to string\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          example: shared-converters\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"          example: 00000000-0000-4000-8000-000000000021\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          example: date-to-string\n" +
-		"        isSystem:\n" +
-		"          type: boolean\n" +
-		"          example: false\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        projectIdentity:\n" +
-		"          type: string\n" +
-		"          example: demo-project\n" +
-		"        source:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        updatedAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-23T10:00:00Z\n" +
-		"    converter.ConvertersListResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        items:\n" +
-		"          type: array\n" +
-		"          items:\n" +
-		"            $ref: \"#/components/schemas/converter.ConverterResponse\"\n" +
-		"    converter.CreateConverterRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - converterType\n" +
-		"        - displayName\n" +
-		"        - folderIdentity\n" +
 		"        - identity\n" +
 		"      properties:\n" +
 		"        active:\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
-		"        converterType:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: javascript\n" +
+		"        defaultImplementation:\n" +
+		"          type: object\n" +
+		"        definition:\n" +
+		"          type: object\n" +
 		"        description:\n" +
 		"          type: string\n" +
-		"          example: Formats an ISO date\n" +
+		"          example: Описание объекта\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"          example: Example date to string\n" +
+		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: shared-converters\n" +
+		"          example: root-projects\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: example-date-to-string\n" +
-		"        isSystem:\n" +
-		"          type: boolean\n" +
-		"          example: false\n" +
+		"          example: main\n" +
+		"        input:\n" +
+		"          type: object\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
-		"        source:\n" +
+		"        output:\n" +
 		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"    converter.UpdateConverterRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - converterType\n" +
-		"        - displayName\n" +
-		"        - folderIdentity\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        converterType:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: javascript\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Formats an ISO date\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"          example: Date to string\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: shared-converters\n" +
-		"        isSystem:\n" +
-		"          type: boolean\n" +
-		"          example: false\n" +
-		"        meta:\n" +
+		"        owner:\n" +
 		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        source:\n" +
+		"        target:\n" +
 		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"    data_view.CreateDataViewRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - displayName\n" +
-		"        - folderIdentity\n" +
-		"        - identity\n" +
-		"        - queryIdentity\n" +
-		"        - source\n" +
-		"        - viewType\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Table view for users\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"          example: Example users table\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: shared-data-views\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: example-users-table\n" +
-		"        inputSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        outputSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        queryIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: users-list\n" +
-		"        source:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        viewType:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: table\n" +
-		"    data_view.DataViewResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        createdAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-23T10:00:00Z\n" +
-		"        deletedAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-23T10:00:00Z\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Table view for users\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          example: Users table\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          example: shared-data-views\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"          example: 00000000-0000-4000-8000-000000000041\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          example: users-table\n" +
-		"        inputSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        outputSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        projectIdentity:\n" +
-		"          type: string\n" +
-		"          example: demo-project\n" +
-		"        queryIdentity:\n" +
-		"          type: string\n" +
-		"          example: users-list\n" +
-		"        source:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        updatedAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-23T10:00:00Z\n" +
-		"        viewType:\n" +
-		"          type: string\n" +
-		"          example: table\n" +
-		"    data_view.DataViewsListResponse:\n" +
+		"    action.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
 		"          type: array\n" +
 		"          items:\n" +
-		"            $ref: \"#/components/schemas/data_view.DataViewResponse\"\n" +
-		"    data_view.UpdateDataViewRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - displayName\n" +
-		"        - folderIdentity\n" +
-		"        - queryIdentity\n" +
-		"        - source\n" +
-		"        - viewType\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Table view for users\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"          example: Users table\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: shared-data-views\n" +
-		"        inputSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        outputSchema:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        queryIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: users-list\n" +
-		"        source:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        viewType:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: table\n" +
-		"    domain.UsageResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        ownerId:\n" +
-		"          type: string\n" +
-		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
-		"        ownerIdentity:\n" +
-		"          type: string\n" +
-		"          example: OrderList\n" +
-		"        ownerType:\n" +
-		"          type: string\n" +
-		"          example: type\n" +
-		"        sourcePath:\n" +
-		"          type: string\n" +
-		"          example: schema.fields[0].type\n" +
-		"        verificationState:\n" +
-		"          type: string\n" +
-		"          example: verified\n" +
-		"    domain.UsagesListResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        items:\n" +
-		"          type: array\n" +
-		"          items:\n" +
-		"            $ref: \"#/components/schemas/domain.UsageResponse\"\n" +
+		"            $ref: \"#/components/schemas/action.Response\"\n" +
 		"        limit:\n" +
 		"          type: integer\n" +
-		"          example: 50\n" +
+		"          example: 100\n" +
 		"        offset:\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
-		"    entities.EndgeConfiguration:\n" +
+		"    action.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
-		"        defaultAuthProfileIdentity:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        defaultImplementation:\n" +
+		"          type: object\n" +
+		"        definition:\n" +
+		"          type: object\n" +
+		"        description:\n" +
 		"          type: string\n" +
-		"          example: default-auth\n" +
-		"        defaultLocale:\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
 		"          type: string\n" +
-		"          example: ru\n" +
-		"        defaultSfcAdapterId:\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: native-vue\n" +
-		"        defaultTheme:\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
 		"          type: string\n" +
-		"          example: light\n" +
-		"        fallbackLocale:\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        input:\n" +
+		"          type: object\n" +
+		"        managedBy:\n" +
 		"          type: string\n" +
-		"          example: ru\n" +
-		"        locales:\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        output:\n" +
+		"          type: object\n" +
+		"        owner:\n" +
+		"          type: object\n" +
+		"        target:\n" +
+		"          type: object\n" +
+		"    action.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        defaultImplementation:\n" +
+		"          type: object\n" +
+		"        definition:\n" +
+		"          type: object\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        input:\n" +
+		"          type: object\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        output:\n" +
+		"          type: object\n" +
+		"        owner:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        target:\n" +
+		"          type: object\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    auth_profile.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - adapterId\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"        - persist\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        adapterId:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: example\n" +
+		"        config:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        credentialRefs:\n" +
+		"          type: object\n" +
+		"          additionalProperties:\n" +
+		"            type: string\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        persist:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - localStorage\n" +
+		"            - sessionStorage\n" +
+		"            - memory\n" +
+		"          example: example\n" +
+		"    auth_profile.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
 		"          type: array\n" +
 		"          items:\n" +
-		"            $ref: \"#/components/schemas/entities.EndgeLocale\"\n" +
-		"        sfcAdapterIds:\n" +
+		"            $ref: \"#/components/schemas/auth_profile.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    auth_profile.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        adapterId:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: example\n" +
+		"        config:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        credentialRefs:\n" +
+		"          type: object\n" +
+		"          additionalProperties:\n" +
+		"            type: string\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        persist:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - localStorage\n" +
+		"            - sessionStorage\n" +
+		"            - memory\n" +
+		"          example: example\n" +
+		"    auth_profile.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        adapterId:\n" +
+		"          type: string\n" +
+		"          example: example\n" +
+		"        config:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        credentialRefs:\n" +
+		"          type: object\n" +
+		"          additionalProperties:\n" +
+		"            type: string\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        persist:\n" +
+		"          type: string\n" +
+		"          example: example\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    backup.CreateRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          maxLength: 1000\n" +
+		"          example: Перед обновлением production-конфигурации\n" +
+		"    backup.ExportResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        documents:\n" +
+		"          type: object\n" +
+		"          additionalProperties:\n" +
+		"            type: array\n" +
+		"            items:\n" +
+		"              type: object\n" +
+		"              additionalProperties: {}\n" +
+		"        installedIntegrations:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: object\n" +
+		"            additionalProperties: {}\n" +
+		"        kind:\n" +
+		"          type: string\n" +
+		"        schemaVersion:\n" +
+		"          type: integer\n" +
+		"        workspace:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    backup.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/backup.Response\"\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"    backup.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        checksum:\n" +
+		"          type: string\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"        expiresAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"        kind:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - manual\n" +
+		"            - pre_import\n" +
+		"        schemaVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"        sizeBytes:\n" +
+		"          type: integer\n" +
+		"        workspaceId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"    commit.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - expectedHeadSequence\n" +
+		"        - message\n" +
+		"      properties:\n" +
+		"        expectedHeadSequence:\n" +
+		"          type: integer\n" +
+		"          minimum: 0\n" +
+		"          example: 42\n" +
+		"        message:\n" +
+		"          type: string\n" +
+		"          maxLength: 1000\n" +
+		"          example: Сохранена конфигурация проекта\n" +
+		"        revisionPolicy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - preserve\n" +
+		"            - squash\n" +
+		"          example: preserve\n" +
+		"    commit.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/commit.Response\"\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    commit.PlanResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        baseSequence:\n" +
+		"          type: integer\n" +
+		"          example: 21\n" +
+		"        contributors:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        documentCount:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"        headSequence:\n" +
+		"          type: integer\n" +
+		"          example: 42\n" +
+		"        revisionCount:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        shared:\n" +
+		"          type: boolean\n" +
+		"          example: false\n" +
+		"    commit.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        baseSequence:\n" +
+		"          type: integer\n" +
+		"          example: 21\n" +
+		"        changes:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/entities.CommitChange\"\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        headSequence:\n" +
+		"          type: integer\n" +
+		"          example: 42\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        message:\n" +
+		"          type: string\n" +
+		"          example: Сохранена конфигурация проекта\n" +
+		"        operation:\n" +
+		"          type: string\n" +
+		"          example: update\n" +
+		"        parentCommitId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: example\n" +
+		"        revisionPolicy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - preserve\n" +
+		"            - squash\n" +
+		"          example: preserve\n" +
+		"        workspaceId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440001\n" +
+		"    commit.RestorePlanResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        conflicts:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        creates:\n" +
+		"          type: integer\n" +
+		"        expectedHeadSequence:\n" +
+		"          type: integer\n" +
+		"        expiresAt:\n" +
+		"          type: string\n" +
+		"        incoming:\n" +
+		"          $ref: \"#/components/schemas/entities.SnapshotCounts\"\n" +
+		"        missingIntegrations:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        planId:\n" +
+		"          type: string\n" +
+		"        snapshotChecksum:\n" +
+		"          type: string\n" +
+		"        targetETag:\n" +
+		"          type: string\n" +
+		"        targetWorkspace:\n" +
+		"          type: string\n" +
+		"        unsupportedCollections:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        updates:\n" +
+		"          type: integer\n" +
+		"        valid:\n" +
+		"          type: boolean\n" +
+		"        validationErrors:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        warnings:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        willRemove:\n" +
+		"          $ref: \"#/components/schemas/entities.SnapshotStateCounts\"\n" +
+		"    commit.RestoreRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - expectedHeadSequence\n" +
+		"      properties:\n" +
+		"        expectedHeadSequence:\n" +
+		"          type: integer\n" +
+		"          minimum: 0\n" +
+		"          example: 42\n" +
+		"    component.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"        - modelVersion\n" +
+		"        - source\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        modelVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        supportedTargets:\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
 		"          example:\n" +
-		"            - native-vue\n" +
-		"        sse:\n" +
-		"          $ref: \"#/components/schemas/entities.EndgeSSEConfiguration\"\n" +
-		"        themes:\n" +
+		"            - vue\n" +
+		"            - web-component\n" +
+		"        tag:\n" +
+		"          type: string\n" +
+		"          example: main-component\n" +
+		"    component.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
 		"          type: array\n" +
 		"          items:\n" +
-		"            $ref: \"#/components/schemas/entities.EndgeTheme\"\n" +
-		"        vars:\n" +
+		"            $ref: \"#/components/schemas/component.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    component.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        modelVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        supportedTargets:\n" +
 		"          type: array\n" +
 		"          items:\n" +
-		"            $ref: \"#/components/schemas/entities.EndgeVariable\"\n" +
-		"    entities.EndgeConfigurationContributionMode:\n" +
-		"      type: string\n" +
-		"      enum:\n" +
-		"        - inherit\n" +
-		"        - replace\n" +
-		"      x-enum-varnames:\n" +
-		"        - EndgeConfigurationContributionModeInherit\n" +
-		"        - EndgeConfigurationContributionModeReplace\n" +
-		"    entities.EndgeLocale:\n" +
+		"            type: string\n" +
+		"        tag:\n" +
+		"          type: string\n" +
+		"          example: main-component\n" +
+		"    component.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        modelVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          example: export default {}\n" +
+		"        supportedTargets:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"          example:\n" +
+		"            - vue\n" +
+		"            - web-component\n" +
+		"        tag:\n" +
+		"          type: string\n" +
+		"          example: main-component\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    composition.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"        - source\n" +
+		"        - sourceVersion\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        kind:\n" +
+		"          type: string\n" +
+		"          example: component\n" +
+		"        kindIdentity:\n" +
+		"          type: string\n" +
+		"          example: main-component\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    composition.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/composition.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    composition.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        kind:\n" +
+		"          type: string\n" +
+		"          example: component\n" +
+		"        kindIdentity:\n" +
+		"          type: string\n" +
+		"          example: main-component\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    composition.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        kind:\n" +
+		"          type: string\n" +
+		"          example: component\n" +
+		"        kindIdentity:\n" +
+		"          type: string\n" +
+		"          example: main-component\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    computation.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - contractVersion\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"        - source\n" +
+		"        - sourceVersion\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        contractVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    computation.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/computation.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    computation.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        contractVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    computation.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        contractVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    converter.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    converter.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/converter.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    converter.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    converter.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    data_view.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"        - source\n" +
+		"        - sourceVersion\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    data_view.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/data_view.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    data_view.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    data_view.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    domain.ExportResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        documents:\n" +
+		"          type: object\n" +
+		"          additionalProperties:\n" +
+		"            type: array\n" +
+		"            items:\n" +
+		"              type: object\n" +
+		"              additionalProperties: {}\n" +
+		"        installedIntegrations:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: object\n" +
+		"            additionalProperties: {}\n" +
+		"        kind:\n" +
+		"          type: string\n" +
+		"        schemaVersion:\n" +
+		"          type: integer\n" +
+		"        workspace:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    domain.ImportBackupResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        checksum:\n" +
+		"          type: string\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"        expiresAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"        kind:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - pre_import\n" +
+		"        schemaVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"        sizeBytes:\n" +
+		"          type: integer\n" +
+		"    domain.ImportPlanRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - snapshot\n" +
+		"      properties:\n" +
+		"        snapshot:\n" +
+		"          $ref: \"#/components/schemas/entities.PortableBundle\"\n" +
+		"    domain.ImportPlanResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        conflicts:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        creates:\n" +
+		"          type: integer\n" +
+		"        expectedHeadSequence:\n" +
+		"          type: integer\n" +
+		"        expiresAt:\n" +
+		"          type: string\n" +
+		"        incoming:\n" +
+		"          $ref: \"#/components/schemas/entities.SnapshotCounts\"\n" +
+		"        missingIntegrations:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        planId:\n" +
+		"          type: string\n" +
+		"        snapshotChecksum:\n" +
+		"          type: string\n" +
+		"        targetETag:\n" +
+		"          type: string\n" +
+		"        targetWorkspace:\n" +
+		"          type: string\n" +
+		"        unsupportedCollections:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        updates:\n" +
+		"          type: integer\n" +
+		"        valid:\n" +
+		"          type: boolean\n" +
+		"        validationErrors:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        warnings:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        willRemove:\n" +
+		"          $ref: \"#/components/schemas/entities.SnapshotStateCounts\"\n" +
+		"    domain.ImportRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - confirmation\n" +
+		"        - planId\n" +
+		"      properties:\n" +
+		"        confirmation:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: default\n" +
+		"        planId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440006\n" +
+		"    domain.ImportResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        backup:\n" +
+		"          $ref: \"#/components/schemas/domain.ImportBackupResponse\"\n" +
+		"        imported:\n" +
+		"          $ref: \"#/components/schemas/entities.SnapshotCounts\"\n" +
+		"        initialCommitId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"        workspace:\n" +
+		"          type: string\n" +
+		"    domain_type.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"        - source\n" +
+		"        - sourceVersion\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        isPrimitive:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    domain_type.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/domain_type.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    domain_type.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        isPrimitive:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    domain_type.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        isPrimitive:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    entities.Actor:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"        username:\n" +
+		"          type: string\n" +
+		"    entities.CommitChange:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        afterRevisionId:\n" +
+		"          type: string\n" +
+		"        beforeRevisionId:\n" +
+		"          type: string\n" +
+		"        documentId:\n" +
+		"          type: string\n" +
+		"        documentType:\n" +
+		"          type: string\n" +
+		"        operation:\n" +
+		"          type: string\n" +
+		"    entities.PortableBundle:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        documents:\n" +
+		"          type: object\n" +
+		"          additionalProperties:\n" +
+		"            type: array\n" +
+		"            items:\n" +
+		"              type: object\n" +
+		"              additionalProperties: {}\n" +
+		"        installedIntegrations:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: object\n" +
+		"            additionalProperties: {}\n" +
+		"        kind:\n" +
+		"          type: string\n" +
+		"        schemaVersion:\n" +
+		"          type: integer\n" +
+		"        workspace:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    entities.SnapshotCounts:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        documents:\n" +
+		"          type: integer\n" +
+		"        integrations:\n" +
+		"          type: integer\n" +
+		"    entities.SnapshotStateCounts:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        commits:\n" +
+		"          type: integer\n" +
+		"        documents:\n" +
+		"          type: integer\n" +
+		"        releases:\n" +
+		"          type: integer\n" +
+		"        revisions:\n" +
+		"          type: integer\n" +
+		"    environment.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        configuration:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    environment.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/environment.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    environment.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        configuration:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    environment.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        configuration:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    filter.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        fields:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: object\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    filter.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/filter.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    filter.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        fields:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: object\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    filter.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        fields:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: object\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    folder.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - entityType\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        entityType:\n" +
+		"          type: string\n" +
+		"          example: projects\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        parentIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"    folder.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/folder.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    folder.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        entityType:\n" +
+		"          type: string\n" +
+		"          example: projects\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        parentIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"    folder.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        entityType:\n" +
+		"          type: string\n" +
+		"          example: projects\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        parentIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    health.HealthResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        env:\n" +
+		"          type: string\n" +
+		"          example: development\n" +
+		"        service:\n" +
+		"          type: string\n" +
+		"          example: service-backend\n" +
+		"        status:\n" +
+		"          type: string\n" +
+		"          example: ok\n" +
+		"        version:\n" +
+		"          type: string\n" +
+		"          example: 1.0.0\n" +
+		"    health.VersionResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        env:\n" +
+		"          type: string\n" +
+		"          example: development\n" +
+		"        service:\n" +
+		"          type: string\n" +
+		"          example: service-backend\n" +
+		"        version:\n" +
+		"          type: string\n" +
+		"          example: 1.0.0\n" +
+		"    i18n_bundle.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        locales:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    i18n_bundle.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/i18n_bundle.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    i18n_bundle.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        locales:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    i18n_bundle.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        locales:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    integration.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"        - version\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        version:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: 1.0.0\n" +
+		"    integration.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/integration.Response\"\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    integration.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        version:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: 1.0.0\n" +
+		"    integration.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        version:\n" +
+		"          type: string\n" +
+		"          example: 1.0.0\n" +
+		"    mock.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        codeRef:\n" +
+		"          type: string\n" +
+		"          example: fixtures/example.json\n" +
+		"        contentSource:\n" +
+		"          type: string\n" +
+		"          example: inline\n" +
+		"        contentType:\n" +
+		"          type: string\n" +
+		"          example: application/json\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"    mock.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/mock.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    mock.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        codeRef:\n" +
+		"          type: string\n" +
+		"          example: fixtures/example.json\n" +
+		"        contentSource:\n" +
+		"          type: string\n" +
+		"          example: inline\n" +
+		"        contentType:\n" +
+		"          type: string\n" +
+		"          example: application/json\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"    mock.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        codeRef:\n" +
+		"          type: string\n" +
+		"          example: fixtures/example.json\n" +
+		"        contentSource:\n" +
+		"          type: string\n" +
+		"          example: inline\n" +
+		"        contentType:\n" +
+		"          type: string\n" +
+		"          example: application/json\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          example: export default {}\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    navigation.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        tree:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: object\n" +
+		"    navigation.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/navigation.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    navigation.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        tree:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: object\n" +
+		"    navigation.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        tree:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: object\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    project.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        allowedEnvironments:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"          example:\n" +
+		"            - development\n" +
+		"            - production\n" +
+		"        configuration:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    project.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/project.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    project.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        allowedEnvironments:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        configuration:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    project.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        allowedEnvironments:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"          example:\n" +
+		"            - development\n" +
+		"            - production\n" +
+		"        configuration:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    query.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"        - source\n" +
+		"        - sourceVersion\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    query.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/query.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    query.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    query.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    release.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"        - sourceCommitId\n" +
+		"      properties:\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        sourceCommitId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440006\n" +
+		"    release.ExportResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        documents:\n" +
+		"          type: object\n" +
+		"          additionalProperties:\n" +
+		"            type: array\n" +
+		"            items:\n" +
+		"              type: object\n" +
+		"              additionalProperties: {}\n" +
+		"        installedIntegrations:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: object\n" +
+		"            additionalProperties: {}\n" +
+		"        kind:\n" +
+		"          type: string\n" +
+		"        schemaVersion:\n" +
+		"          type: integer\n" +
+		"        workspace:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    release.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/release.Response\"\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    release.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        checksum:\n" +
+		"          type: string\n" +
+		"          example: sha256:0123456789abcdef\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        headSequence:\n" +
+		"          type: integer\n" +
+		"          example: 42\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        schemaVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"        sourceCommitId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440006\n" +
+		"        workspaceId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440001\n" +
+		"    release.RestorePlanResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        conflicts:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        creates:\n" +
+		"          type: integer\n" +
+		"        expectedHeadSequence:\n" +
+		"          type: integer\n" +
+		"        expiresAt:\n" +
+		"          type: string\n" +
+		"        incoming:\n" +
+		"          $ref: \"#/components/schemas/entities.SnapshotCounts\"\n" +
+		"        missingIntegrations:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        planId:\n" +
+		"          type: string\n" +
+		"        snapshotChecksum:\n" +
+		"          type: string\n" +
+		"        targetETag:\n" +
+		"          type: string\n" +
+		"        targetWorkspace:\n" +
+		"          type: string\n" +
+		"        unsupportedCollections:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        updates:\n" +
+		"          type: integer\n" +
+		"        valid:\n" +
+		"          type: boolean\n" +
+		"        validationErrors:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        warnings:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"        willRemove:\n" +
+		"          $ref: \"#/components/schemas/entities.SnapshotStateCounts\"\n" +
+		"    release.RestoreRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - expectedHeadSequence\n" +
+		"      properties:\n" +
+		"        expectedHeadSequence:\n" +
+		"          type: integer\n" +
+		"          minimum: 0\n" +
+		"          example: 42\n" +
+		"    release.RestoreResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        baseSequence:\n" +
+		"          type: integer\n" +
+		"        changes:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/entities.CommitChange\"\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        headSequence:\n" +
+		"          type: integer\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"        message:\n" +
+		"          type: string\n" +
+		"        operation:\n" +
+		"          type: string\n" +
+		"        parentCommitId:\n" +
+		"          type: string\n" +
+		"        revisionPolicy:\n" +
+		"          type: string\n" +
+		"        workspaceId:\n" +
+		"          type: string\n" +
+		"    respond.ErrorResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        code:\n" +
 		"          type: string\n" +
-		"          example: ru\n" +
-		"        direction:\n" +
+		"          example: validation_error\n" +
+		"        details:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        message:\n" +
 		"          type: string\n" +
-		"          enum:\n" +
-		"            - ltr\n" +
-		"            - rtl\n" +
-		"          example: ltr\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          example: Русский\n" +
-		"        shortLabel:\n" +
-		"          type: string\n" +
-		"          example: RU\n" +
-		"    entities.EndgeSSEConfiguration:\n" +
+		"          example: Запрос не прошёл валидацию\n" +
+		"    revision.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/revision.Response\"\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    revision.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        checksum:\n" +
+		"          type: string\n" +
+		"          example: sha256:0123456789abcdef\n" +
+		"        committedInCommitId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: example\n" +
+		"        contributors:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        documentId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440003\n" +
+		"        documentIdentity:\n" +
+		"          type: string\n" +
+		"          example: example\n" +
+		"        documentType:\n" +
+		"          type: string\n" +
+		"          example: example\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        mutationBatchId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440005\n" +
+		"        operation:\n" +
+		"          type: string\n" +
+		"          example: update\n" +
+		"        parentRevisionId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: example\n" +
+		"        restoredFromRevisionId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: example\n" +
+		"        revisionNumber:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        snapshot:\n" +
+		"          type: object\n" +
+		"        snapshotVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"        workspaceId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440001\n" +
+		"        workspaceSequence:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    revision.RestoreResponse:\n" +
+		"      type: object\n" +
+		"      additionalProperties: {}\n" +
+		"    session.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        platformAdmin:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        user:\n" +
+		"          $ref: \"#/components/schemas/session.UserResponse\"\n" +
+		"        workspaces:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/session.WorkspaceResponse\"\n" +
+		"    session.UserResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        issuer:\n" +
+		"          type: string\n" +
+		"          example: https://id.example.com/realms/endge\n" +
+		"        lastSeenAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        providerId:\n" +
+		"          type: string\n" +
+		"          example: keycloak\n" +
+		"        role:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - viewer\n" +
+		"            - editor\n" +
+		"            - admin\n" +
+		"          example: admin\n" +
+		"        subject:\n" +
+		"          type: string\n" +
+		"          example: user-subject\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        username:\n" +
+		"          type: string\n" +
+		"          example: egor\n" +
+		"    session.WorkspaceResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        configuration:\n" +
+		"          type: object\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        dataMode:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - development\n" +
+		"            - production\n" +
+		"          example: development\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        headSequence:\n" +
+		"          type: integer\n" +
+		"          example: 42\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    shared.ErrorResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        code:\n" +
+		"          type: string\n" +
+		"          example: validation_error\n" +
+		"        details:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        message:\n" +
+		"          type: string\n" +
+		"          example: Запрос не прошёл валидацию\n" +
+		"    store.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"        - source\n" +
+		"        - sourceVersion\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    store.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/store.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    store.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    store.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    stream.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"        - source\n" +
+		"        - sourceVersion\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    stream.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/stream.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    stream.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    stream.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    style.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"        - source\n" +
+		"        - sourceVersion\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    style.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/style.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    style.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    style.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    tenant.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - code\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        code:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: tenant-main\n" +
+		"        configuration:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    tenant.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/tenant.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    tenant.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        code:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: tenant-main\n" +
+		"        configuration:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    tenant.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        code:\n" +
+		"          type: string\n" +
+		"          example: tenant-main\n" +
+		"        configuration:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    update.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"        - source\n" +
+		"        - sourceVersion\n" +
+		"        - storeIdentity\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"        storeIdentity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: application-store\n" +
+		"    update.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/update.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    update.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"        storeIdentity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: application-store\n" +
+		"    update.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          example: export default {}\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"        storeIdentity:\n" +
+		"          type: string\n" +
+		"          example: application-store\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    vocab.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
 		"        authMode:\n" +
 		"          type: string\n" +
 		"          enum:\n" +
@@ -3474,640 +17286,384 @@ var openAPI3YAML = []byte(
 		"            - profile\n" +
 		"            - manual\n" +
 		"            - none\n" +
-		"          example: inherit\n" +
+		"          example: example\n" +
 		"        authProfileIdentity:\n" +
 		"          type: string\n" +
 		"          example: default-auth\n" +
-		"        manualToken:\n" +
+		"        baseApiUrl:\n" +
 		"          type: string\n" +
-		"          example: secret-token\n" +
-		"        url:\n" +
+		"          example: example\n" +
+		"        collectionSlug:\n" +
 		"          type: string\n" +
-		"          example: https://sse.example.com/events\n" +
-		"    entities.EndgeTheme:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          example: Светлая\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          example: light\n" +
-		"    entities.EndgeVariable:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - name\n" +
-		"      properties:\n" +
-		"        defaultValue:\n" +
-		"          type: string\n" +
-		"          example: https://api.example.com\n" +
-		"        name:\n" +
-		"          type: string\n" +
-		"          minLength: 1\n" +
-		"          example: API_URL\n" +
-		"    entities.FolderEntityType:\n" +
-		"      type: string\n" +
-		"      enum:\n" +
-		"        - components-legacy\n" +
-		"        - converters\n" +
-		"        - queries\n" +
-		"        - data-views\n" +
-		"        - tenants\n" +
-		"      x-enum-varnames:\n" +
-		"        - FolderEntityTypeComponentsLegacy\n" +
-		"        - FolderEntityTypeConverters\n" +
-		"        - FolderEntityTypeQueries\n" +
-		"        - FolderEntityTypeDataViews\n" +
-		"        - FolderEntityTypeTenants\n" +
-		"    entities.RComponentLegacySourceFormat:\n" +
-		"      type: string\n" +
-		"      enum:\n" +
-		"        - sfc\n" +
-		"      x-enum-varnames:\n" +
-		"        - RComponentLegacySourceFormatSFC\n" +
-		"    entities.RComponentLegacyType:\n" +
-		"      type: string\n" +
-		"      enum:\n" +
-		"        - component-sfc\n" +
-		"      x-enum-varnames:\n" +
-		"        - RComponentLegacyTypeSFC\n" +
-		"    folder.CreateFolderRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - displayName\n" +
-		"        - entityType\n" +
-		"        - identity\n" +
-		"      properties:\n" +
+		"          example: example\n" +
 		"        description:\n" +
 		"          type: string\n" +
-		"          example: Reusable components\n" +
+		"          example: Описание объекта\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"          example: Example components folder\n" +
-		"        entityType:\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
 		"          enum:\n" +
-		"            - components-legacy\n" +
-		"            - converters\n" +
-		"            - queries\n" +
-		"            - data-views\n" +
-		"          allOf:\n" +
-		"            - $ref: \"#/components/schemas/entities.FolderEntityType\"\n" +
-		"          example: components-legacy\n" +
-		"        identity:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
 		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: example-components-folder\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"        parentIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: root-components-legacy\n" +
-		"    folder.FolderResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        createdAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-08T10:00:00Z\n" +
-		"        deletedAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-08T10:00:00Z\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Reusable components\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          example: Shared legacy components\n" +
-		"        entityType:\n" +
-		"          enum:\n" +
-		"            - components-legacy\n" +
-		"            - converters\n" +
-		"            - queries\n" +
-		"            - data-views\n" +
-		"          allOf:\n" +
-		"            - $ref: \"#/components/schemas/entities.FolderEntityType\"\n" +
-		"          example: components-legacy\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"          example: 00000000-0000-4000-8000-000000000011\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          example: shared-components-legacy\n" +
-		"        isRoot:\n" +
-		"          type: boolean\n" +
-		"          example: false\n" +
-		"        isSystem:\n" +
-		"          type: boolean\n" +
-		"          example: false\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"        parentIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-components-legacy\n" +
-		"        projectIdentity:\n" +
-		"          type: string\n" +
-		"          example: demo-project\n" +
-		"        updatedAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-08T10:00:00Z\n" +
-		"    folder.FoldersListResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        items:\n" +
-		"          type: array\n" +
-		"          items:\n" +
-		"            $ref: \"#/components/schemas/folder.FolderResponse\"\n" +
-		"    folder.UpdateFolderRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - displayName\n" +
-		"      properties:\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Reusable components\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"          example: Shared legacy components\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"        parentIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: root-components-legacy\n" +
-		"    http.CreateRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - displayName\n" +
-		"        - identity\n" +
-		"      properties:\n" +
-		"        configuration:\n" +
-		"          $ref: \"#/components/schemas/entities.EndgeConfiguration\"\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"          example: Example Workspace\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: example-workspace\n" +
-		"    http.Response:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        configuration:\n" +
-		"          $ref: \"#/components/schemas/entities.EndgeConfiguration\"\n" +
-		"        createdAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-23T10:00:00Z\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          example: Demo Workspace\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"          example: 00000000-0000-4000-8000-000000000001\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          example: demo-workspace\n" +
-		"        updatedAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-23T10:00:00Z\n" +
-		"    http.UpdateRequest:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        configuration:\n" +
-		"          $ref: \"#/components/schemas/entities.EndgeConfiguration\"\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          example: Updated Demo Workspace\n" +
-		"    project.CreateProjectRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - displayName\n" +
-		"        - identity\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Project for local configuration\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"          example: Example Project\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: example-project\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"    project.ProjectResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        createdAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-08T10:00:00Z\n" +
-		"        deletedAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-08T10:00:00Z\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Project for local configuration\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          example: Demo Project\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"          example: 00000000-0000-4000-8000-000000000001\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          example: demo-project\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"        updatedAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-08T10:00:00Z\n" +
-		"    project.ProjectsListResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        items:\n" +
-		"          type: array\n" +
-		"          items:\n" +
-		"            $ref: \"#/components/schemas/project.ProjectResponse\"\n" +
-		"    project.UpdateProjectRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - displayName\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Updated description\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"          example: Demo Project\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"    query.CreateQueryRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - displayName\n" +
-		"        - folderIdentity\n" +
-		"        - identity\n" +
-		"        - queryType\n" +
-		"        - source\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        auth:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Loads active users\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"          example: Example users list\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: shared-queries\n" +
-		"        headers:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: example-users-list\n" +
+		"          example: endge-core\n" +
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
-		"        mockData:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        mockDataEnabled:\n" +
-		"          type: boolean\n" +
-		"          example: false\n" +
-		"        params:\n" +
-		"          type: array\n" +
-		"          items: {}\n" +
-		"        queryType:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: http\n" +
-		"        source:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        timeoutMs:\n" +
-		"          type: integer\n" +
-		"          minimum: 1\n" +
-		"          example: 5000\n" +
-		"    query.QueriesListResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        items:\n" +
-		"          type: array\n" +
-		"          items:\n" +
-		"            $ref: \"#/components/schemas/query.QueryResponse\"\n" +
-		"    query.QueryResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        auth:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        createdAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-23T10:00:00Z\n" +
-		"        deletedAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-23T10:00:00Z\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Loads active users\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          example: Users list\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          example: shared-queries\n" +
-		"        headers:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"          example: 00000000-0000-4000-8000-000000000031\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          example: users-list\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        mockData:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        mockDataEnabled:\n" +
-		"          type: boolean\n" +
-		"          example: false\n" +
-		"        params:\n" +
-		"          type: array\n" +
-		"          items: {}\n" +
-		"        projectIdentity:\n" +
-		"          type: string\n" +
-		"          example: demo-project\n" +
-		"        queryType:\n" +
-		"          type: string\n" +
-		"          example: http\n" +
-		"        source:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        timeoutMs:\n" +
-		"          type: integer\n" +
-		"          example: 5000\n" +
-		"        updatedAt:\n" +
-		"          type: string\n" +
-		"          example: 2026-07-23T10:00:00Z\n" +
-		"    query.UpdateQueryRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - displayName\n" +
-		"        - folderIdentity\n" +
-		"        - queryType\n" +
-		"        - source\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        auth:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Loads active users\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"          example: Users list\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: shared-queries\n" +
-		"        headers:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        mockData:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        mockDataEnabled:\n" +
-		"          type: boolean\n" +
-		"          example: false\n" +
-		"        params:\n" +
-		"          type: array\n" +
-		"          items: {}\n" +
-		"        queryType:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: http\n" +
-		"        source:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        timeoutMs:\n" +
-		"          type: integer\n" +
-		"          minimum: 1\n" +
-		"          example: 5000\n" +
-		"    respond.ErrorResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        code:\n" +
-		"          type: string\n" +
-		"        details:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        message:\n" +
-		"          type: string\n" +
-		"    session.ErrorResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        code:\n" +
-		"          type: string\n" +
-		"        details:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        message:\n" +
-		"          type: string\n" +
-		"    session.SessionInfoResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        app:\n" +
-		"          type: string\n" +
-		"        expiresAt:\n" +
-		"          type: string\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"        platform:\n" +
-		"          type: string\n" +
-		"        scope:\n" +
-		"          type: array\n" +
-		"          items:\n" +
-		"            type: string\n" +
-		"        sessionId:\n" +
-		"          type: string\n" +
-		"    session.SessionResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        session:\n" +
-		"          $ref: \"#/components/schemas/session.SessionInfoResponse\"\n" +
-		"        user:\n" +
-		"          $ref: \"#/components/schemas/session.UserResponse\"\n" +
-		"    session.UserResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        authUserId:\n" +
-		"          type: string\n" +
-		"        createdAt:\n" +
-		"          type: string\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"        role:\n" +
-		"          type: string\n" +
-		"        updatedAt:\n" +
-		"          type: string\n" +
-		"        username:\n" +
-		"          type: string\n" +
-		"    tenant.ConfigurationContribution:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
 		"        mode:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - external_payload\n" +
+		"            - internal\n" +
+		"          example: example\n" +
+		"    vocab.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/vocab.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    vocab.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        authMode:\n" +
+		"          type: string\n" +
 		"          enum:\n" +
 		"            - inherit\n" +
-		"            - replace\n" +
-		"          allOf:\n" +
-		"            - $ref: \"#/components/schemas/entities.EndgeConfigurationContributionMode\"\n" +
-		"          example: inherit\n" +
-		"        patch:\n" +
-		"          type: object\n" +
-		"        value:\n" +
-		"          $ref: \"#/components/schemas/entities.EndgeConfiguration\"\n" +
-		"    tenant.CreateTenantRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - code\n" +
-		"        - displayName\n" +
-		"        - identity\n" +
-		"      properties:\n" +
-		"        code:\n" +
+		"            - profile\n" +
+		"            - manual\n" +
+		"            - none\n" +
+		"          example: example\n" +
+		"        authProfileIdentity:\n" +
 		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: TENANT_DEFAULT\n" +
-		"        configuration:\n" +
-		"          $ref: \"#/components/schemas/tenant.ConfigurationContribution\"\n" +
+		"          example: default-auth\n" +
+		"        baseApiUrl:\n" +
+		"          type: string\n" +
+		"          example: example\n" +
+		"        collectionSlug:\n" +
+		"          type: string\n" +
+		"          example: example\n" +
 		"        description:\n" +
 		"          type: string\n" +
-		"          example: Main business tenant\n" +
+		"          example: Описание объекта\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"          example: Default tenant\n" +
+		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: root-tenants\n" +
+		"          example: root-projects\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: tenant-default\n" +
-		"    tenant.TenantResponse:\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        mode:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - external_payload\n" +
+		"            - internal\n" +
+		"          example: example\n" +
+		"    vocab.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
-		"        code:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        authMode:\n" +
 		"          type: string\n" +
-		"          example: TENANT_DEFAULT\n" +
-		"        configuration:\n" +
-		"          $ref: \"#/components/schemas/tenant.ConfigurationContribution\"\n" +
+		"          example: example\n" +
+		"        authProfileIdentity:\n" +
+		"          type: string\n" +
+		"          example: default-auth\n" +
+		"        baseApiUrl:\n" +
+		"          type: string\n" +
+		"          example: example\n" +
+		"        collectionSlug:\n" +
+		"          type: string\n" +
+		"          example: example\n" +
 		"        createdAt:\n" +
 		"          type: string\n" +
-		"          example: 2026-07-25T10:00:00Z\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
 		"          type: string\n" +
-		"          example: Main business tenant\n" +
+		"          example: Описание объекта\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
-		"          example: Default tenant\n" +
+		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-tenants\n" +
+		"          example: root-projects\n" +
 		"        id:\n" +
 		"          type: string\n" +
-		"          example: 00000000-0000-4000-8000-000000000071\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
 		"          type: string\n" +
-		"          example: tenant-default\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        mode:\n" +
+		"          type: string\n" +
+		"          example: example\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
 		"        updatedAt:\n" +
 		"          type: string\n" +
-		"          example: 2026-07-25T10:00:00Z\n" +
-		"    tenant.TenantsListResponse:\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    workspace.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        configuration:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        dataMode:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - development\n" +
+		"            - production\n" +
+		"          example: development\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        installedIntegrations:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/workspace.InstalledIntegration\"\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    workspace.InstalledIntegration:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - identity\n" +
+		"        - version\n" +
+		"      properties:\n" +
+		"        configuration:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        version:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: 1.0.0\n" +
+		"    workspace.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
 		"          type: array\n" +
 		"          items:\n" +
-		"            $ref: \"#/components/schemas/tenant.TenantResponse\"\n" +
-		"    tenant.UpdateTenantRequest:\n" +
+		"            $ref: \"#/components/schemas/workspace.Response\"\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    workspace.MembershipListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
-		"        code:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/workspace.MembershipResponse\"\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    workspace.MembershipRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - role\n" +
+		"      properties:\n" +
+		"        role:\n" +
 		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          minLength: 1\n" +
-		"          example: TENANT_RENAMED\n" +
+		"          enum:\n" +
+		"            - viewer\n" +
+		"            - editor\n" +
+		"            - admin\n" +
+		"          example: admin\n" +
+		"    workspace.MembershipResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        role:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - viewer\n" +
+		"            - editor\n" +
+		"            - admin\n" +
+		"          example: admin\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        userId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440002\n" +
+		"        username:\n" +
+		"          type: string\n" +
+		"          example: egor\n" +
+		"        workspaceId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440001\n" +
+		"    workspace.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
 		"        configuration:\n" +
-		"          $ref: \"#/components/schemas/tenant.ConfigurationContribution\"\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        dataMode:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - development\n" +
+		"            - production\n" +
+		"          example: development\n" +
 		"        description:\n" +
 		"          type: string\n" +
-		"          example: Updated business tenant\n" +
+		"          example: Описание объекта\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
-		"          minLength: 1\n" +
-		"          example: Renamed tenant\n" +
-		"        folderIdentity:\n" +
+		"          example: Основной объект\n" +
+		"        identity:\n" +
 		"          type: string\n" +
-		"          example: root-tenants\n",
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        installedIntegrations:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/workspace.InstalledIntegration\"\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    workspace.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        configuration:\n" +
+		"          type: object\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        dataMode:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - development\n" +
+		"            - production\n" +
+		"          example: development\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        headSequence:\n" +
+		"          type: integer\n" +
+		"          example: 42\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n",
 )

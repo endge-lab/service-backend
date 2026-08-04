@@ -3,16 +3,20 @@ package data_view
 import (
 	"context"
 
-	"github.com/endge-lab/service-backend/internal/usecase/data_views"
+	"github.com/endge-lab/service-backend/internal/domain/entities"
+	resourceusecase "github.com/endge-lab/service-backend/internal/usecase/data_views"
+	"github.com/endge-lab/service-backend/internal/usecase/documents"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 )
 
-// UseCase is the application contract consumed by the data view HTTP adapter.
 type UseCase interface {
-	Create(ctx context.Context, input data_views.CreateDataViewInput) (*data_views.DataViewWithRelations, error)
-	Update(ctx context.Context, input data_views.UpdateDataViewInput) (*data_views.DataViewWithRelations, error)
-	GetByIdentity(ctx context.Context, input data_views.GetDataViewInput) (*data_views.DataViewWithRelations, error)
-	List(ctx context.Context, input data_views.ListDataViewsInput) ([]*data_views.DataViewWithRelations, error)
-	SoftDelete(ctx context.Context, input data_views.DataViewIdentityInput) error
-	Restore(ctx context.Context, input data_views.DataViewIdentityInput) error
-	HardDelete(ctx context.Context, input data_views.DataViewIdentityInput) error
+	List(context.Context, ports.DocumentFilter) ([]entities.Document, error)
+	Get(context.Context, string, bool) (*entities.Document, error)
+	Create(context.Context, documents.CreateInput) (*entities.Document, error)
+	Patch(context.Context, string, documents.PatchInput, int) (*entities.Document, error)
+	Delete(context.Context, string, int) (*entities.Document, error)
+	Restore(context.Context, string, int) (*entities.Document, error)
 }
+
+// BindUseCase предоставляет concrete application use case как HTTP-порт ресурса.
+func BindUseCase(useCase *resourceusecase.UseCase) UseCase { return useCase }

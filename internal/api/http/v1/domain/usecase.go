@@ -2,12 +2,18 @@ package domain
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
-	"github.com/endge-lab/service-backend/internal/usecase/dependencies"
+	resourceusecase "github.com/endge-lab/service-backend/internal/usecase/portable"
 )
 
-// UseCase — application contract, который использует HTTP adapter domain.
 type UseCase interface {
-	ListUsages(context.Context, dependencies.ListUsagesInput) (entities.DomainDependencyUsages, error)
+	Live(context.Context) (json.RawMessage, error)
+	Export(context.Context) (json.RawMessage, error)
+	PlanImport(context.Context, entities.PortableBundle) (*entities.ImportPlan, error)
+	Import(context.Context, string, string, string) (*entities.SnapshotImportResult, error)
 }
+
+// BindUseCase предоставляет concrete application use case как HTTP-порт.
+func BindUseCase(useCase *resourceusecase.UseCase) UseCase { return useCase }

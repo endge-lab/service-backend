@@ -4,16 +4,19 @@ import (
 	"context"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
-	"github.com/endge-lab/service-backend/internal/usecase/projects"
+	"github.com/endge-lab/service-backend/internal/usecase/documents"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
+	resourceusecase "github.com/endge-lab/service-backend/internal/usecase/projects"
 )
 
-// UseCase is the application contract consumed by the project HTTP adapter.
 type UseCase interface {
-	Create(ctx context.Context, input projects.CreateProjectInput) (*entities.RProject, error)
-	Update(ctx context.Context, input projects.UpdateProjectInput) (*entities.RProject, error)
-	GetByIdentity(ctx context.Context, identity string) (*entities.RProject, error)
-	List(ctx context.Context) ([]*entities.RProject, error)
-	SoftDelete(ctx context.Context, identity string) error
-	Restore(ctx context.Context, identity string) error
-	HardDelete(ctx context.Context, identity string) error
+	List(context.Context, ports.DocumentFilter) ([]entities.Document, error)
+	Get(context.Context, string, bool) (*entities.Document, error)
+	Create(context.Context, documents.CreateInput) (*entities.Document, error)
+	Patch(context.Context, string, documents.PatchInput, int) (*entities.Document, error)
+	Delete(context.Context, string, int) (*entities.Document, error)
+	Restore(context.Context, string, int) (*entities.Document, error)
 }
+
+// BindUseCase предоставляет concrete application use case как HTTP-порт ресурса.
+func BindUseCase(useCase *resourceusecase.UseCase) UseCase { return useCase }

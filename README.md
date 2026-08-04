@@ -1,301 +1,208 @@
-# Endge Service Backend
+# Endge Backend
 
-`service-backend` — пример Go-сервиса, который показывает, как подключать `github.com/endge-lab/service-kit-go` и строить backend с HTTP API, PostgreSQL, миграциями и чистыми слоями.
+Backend визуального конфигуратора Endge. Сервис хранит source-first документы,
+workspace-историю и portable releases; frontend подключается к API через
+отдельный adapter.
 
-Шаблон по умолчанию подходит для простого монолита/API:
+## Архитектура
 
-- HTTP на Fiber;
-- PostgreSQL через `pgx`;
-- миграции через `goose`;
-- DI через `fx`;
-- health/version endpoints;
-- OpenAPI-файл в `docs/openapi3.yaml`;
-- auth выключен по умолчанию;
-- telemetry выключена по умолчанию;
-- Redpanda/Kafka выключены по умолчанию.
+Запрос проходит через authentication, current-user projection и workspace
+authorization. HTTP handlers вызывают usecase, usecase управляет транзакцией и
+работает с PostgreSQL только через ports/repositories.
 
-## Как использовать
-
-1. Скопируйте репозиторий или создайте новый сервис на его основе.
-2. Замените module path в `go.mod`:
-
-   ```go
-   module github.com/your-org/your-service
-   ```
-
-3. Замените импорты `github.com/endge-lab/service-backend/internal/...` на module path нового сервиса.
-4. Скопируйте env-файл:
-
-   ```bash
-   cp .env.development.example .env.development
-   ```
-
-5. Настройте `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DATABASE`, `APP_NAME`, `PUBLIC_URL`, `CORS_ALLOWED_ORIGINS`.
-6. Запустите тесты:
-
-   ```bash
-   go test ./...
-   ```
-
-7. Запустите сервис:
-
-   ```bash
-   make run
-   ```
-
-## Локальная разработка с service-kit-go
-
-Для разработки рядом с локальной версией kit используйте `go.work`. Это аналог workspace в frontend-проектах.
-
-Пример структуры:
+Каждый HTTP resource владеет своим адаптером:
 
 ```text
-workspace/
-├── service-kit-go/
-└── service-backend/
+internal/api/http/v1/<resource>/
+├── handler.go
+├── routes.go
+├── transport.go
+└── usecase.go
 ```
 
-Команда:
+`shared` содержит только общие HTTP-примитивы и stateless operation-функции:
+strict decoding, декларативную validation, ETag/`If-Match`, list filters и
+единое формирование ответа. Resource DTO, маршруты, usecase-порты и stateful
+handlers в `shared` не размещаются.
+
+Request DTO используют `validate`-теги из `service-kit-go`. Неизвестные JSON-поля
+отклоняются, а ошибки полей возвращаются единообразно как
+`400 validation_error` в `details.fields`. HTTP handlers зависят от локального
+`UseCase` interface; concrete application use cases подключаются только в
+bootstrap. В `internal/usecase/<resource>` реализация называется `UseCase`,
+общий document-механизм — `documents.Lifecycle`, а координация полного состояния
+workspace — `workspace_state.Coordinator`. Голое имя `Service` для application
+use case не используется.
+
+Согласованные коллекции:
+
+```text
+projects, tenants, environments, folders,
+types, queries, data-views, compositions,
+stores, streams, updates, mocks, components,
+actions, filters, converters, computations,
+vocabs, i18n-bundles, auth-profiles, navigations, styles
+```
+
+`parameters`, `pages`, `page-templates`, `policies`, `versions`, legacy
+components, hard-delete, release tags и channels намеренно отсутствуют в MVP.
+
+## Локальный запуск
 
 ```bash
-cd workspace
-go work init ./service-kit-go ./service-backend
+cp .env.development.example .env.development
+make migrate-up
+make run
 ```
 
-В `service-backend/go.mod` при этом остаётся обычная published-зависимость:
-
-```go
-require github.com/endge-lab/service-kit-go v0.1.0
-```
-
-Локально Go подставит папку `./service-kit-go`, а без `go.work` скачает tagged-версию из GitHub.
-
-До публикации первого тега `github.com/endge-lab/service-kit-go@v0.1.0` команды `go mod tidy` и `go test` в template могут пытаться скачать ещё несуществующую версию. Для bootstrap-проверки можно временно добавить:
-
-```go
-replace github.com/endge-lab/service-kit-go => ../service-kit-go
-```
-
-Этот `replace` не нужно коммитить в публичный template. После публикации тега он больше не нужен.
-
-## Auth
-
-Auth опционален. По умолчанию:
+Development разрешает явно включённый фиксированный actor:
 
 ```env
-AUTH_ENABLED=false
+APP_ENV=development
+AUTH_MODE=dev
+AUTH_DEV_SUBJECT=developer
+AUTH_DEV_USERNAME=developer
+AUTH_DEV_DISPLAY_NAME=Local Developer
+AUTH_DEV_PLATFORM_ADMIN=true
 ```
 
-В этом режиме публичные API регистрируются без JWT middleware, а `/api/session/me` не регистрируется.
+`AUTH_MODE=dev` запрещён при `APP_ENV=production`.
 
-Чтобы включить JWT/JWKS auth:
+## Production OIDC
+
+Production запускается только с валидной OIDC/JWKS-конфигурацией:
 
 ```env
-AUTH_ENABLED=true
-AUTH_SERVICE_URL=https://auth.example.com
-AUTH_ISSUER=https://auth.example.com
-AUTH_ALLOWED_AUDIENCES=your-audience
+APP_ENV=production
+AUTH_MODE=oidc
+AUTH_PROVIDER_ID=primary
+AUTH_ISSUER=https://keycloak.example/realms/endge
+AUTH_JWKS_URL=https://keycloak.example/realms/endge/protocol/openid-connect/certs
+AUTH_ALLOWED_AUDIENCES=endge-configurator
+AUTH_ALLOWED_ALGORITHMS=RS256
+AUTH_USERNAME_CLAIM=preferred_username
+AUTH_DISPLAY_NAME_CLAIM=name
+AUTH_GROUPS_CLAIM=groups
+AUTH_PLATFORM_ADMIN_GROUPS=endge-platform-admins
+AUTH_LOGIN_ADAPTER=oidc
+AUTH_AUTHORIZATION_URL=https://keycloak.example/realms/endge/protocol/openid-connect/auth
+AUTH_TOKEN_URL=https://keycloak.example/realms/endge/protocol/openid-connect/token
+AUTH_LOGOUT_URL=https://keycloak.example/realms/endge/protocol/openid-connect/logout
+AUTH_CLIENT_ID=endge-configurator
+AUTH_REDIRECT_URL=https://backend.example.com/auth/callback
+AUTH_RETURN_URL=https://configurator.example.com
+AUTH_SESSION_COOKIE_NAME=endge_configurator_session
+AUTH_SESSION_ENCRYPTION_KEY=<base64-encoded-32-byte-key>
+AUTH_COOKIE_SECURE=true
 ```
 
-## Redpanda/Kafka
+Keycloak-специфического кода нет: любой совместимый OIDC provider подключается
+этими переменными. Первый валидный запрос создаёт локальную проекцию пользователя
+в `service_users`; следующие запросы сохраняют тот же UUID и обновляют публичные
+имя/username.
 
-Redpanda опциональна. По умолчанию:
+Browser flow не раскрывает provider tokens Конфигуратору:
 
-```env
-REDPANDA_ENABLED=false
+```text
+GET  /auth/login
+GET  /auth/callback
+GET  /auth/session
+POST /auth/logout
 ```
 
-Включайте её только в event-driven сервисах:
+Callback хранит provider tokens в зашифрованной PostgreSQL session и выдаёт
+браузеру только opaque `HttpOnly` cookie. `GET /health` публичен. Весь `/api`
+принимает эту cookie или bearer token, кроме development с явным `AUTH_MODE=dev`.
 
-```env
-REDPANDA_ENABLED=true
-REDPANDA_BROKERS=redpanda:9092
-REDPANDA_CLIENT_ID=your-service
+## Workspace и конкурентная запись
+
+Workspace выбирается заголовком:
+
+```http
+X-Endge-Workspace: default
 ```
 
-## Telemetry
+Активный пользователь имеет implicit `editor` в `default`. Для остальных
+workspace нужен membership `viewer`, `editor` или `admin`. Явный membership в
+`default` переопределяет implicit роль.
 
-Telemetry опциональна. По умолчанию:
+PATCH, DELETE и restore требуют ETag предыдущего ответа:
 
-```env
-TELEMETRY_ENABLED=false
-OTEL_EXPORTER_OTLP_ENDPOINT=
+```http
+If-Match: "3"
 ```
 
-В этом режиме сервис не подключается к OTLP collector. Если нужен OpenTelemetry export:
+Без заголовка API отвечает `428 precondition_required`, при устаревшей revision —
+`409 revision_conflict`. DELETE всегда выполняет soft-delete.
 
-```env
-TELEMETRY_ENABLED=true
-OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
-OTEL_EXPORTER_OTLP_INSECURE=true
+## История
+
+- Каждая фактическая запись создаёт полный JSON snapshot в `document_revisions`.
+- Одно серверное действие связывает затронутые документы одним `mutation_batch`.
+- Commit фиксирует pending revisions всего workspace с policy `preserve` или
+  `squash`.
+- Release является immutable portable snapshot существующего Commit и скачивается
+  без replay истории.
+- Restore revision/commit/release добавляет новую историю и не переписывает старую.
+- Export/import не содержит UUID-связей, пользователей, memberships, истории и
+  секретов.
+
+## Snapshot, перенос и backups
+
+`GET /api/v1/domain` возвращает live workspace со всеми документами и
+server-only полем `state`. `GET /api/v1/domain/export` отдаёт тот же переносимый
+контракт без локальных UUID, истории и времён хранения. Оба export endpoint
+возвращают JSON inline; `?download=true` включает скачивание файла.
+
+Полная замена domain state выполняется в два шага:
+
+```text
+POST /api/v1/domain/import/plan
+POST /api/v1/domain/import
 ```
 
-## Prometheus metrics
+Второй запрос требует `planId`, подтверждение identity текущего workspace и
+`If-Match` из плана. В одной транзакции backend блокирует workspace, создаёт
+`pre_import` backup, очищает документы и историю, импортирует snapshot и создаёт
+начальный commit. Пользователи, memberships, сам workspace и глобальный catalog
+интеграций не удаляются.
 
-Prometheus включается отдельно от основного HTTP API и отдаёт все OTel-метрики
-на выделенном listener. По умолчанию listener выключен; после включения
-Prometheus забирает один endpoint, а не отдельные endpoint для handler, use
-case и repository.
+Backups доступны через `/api/v1/domain/backups`: manual backup принимает
+опциональное описание, `last` выбирает последнюю копию, `/archive` возвращает ZIP
+всех доступных snapshots. Срок хранения автоматических `pre_import` backups
+задаётся `IMPORT_BACKUP_RETENTION_DAYS`; manual backups бессрочны.
 
-```env
-METRICS_ENABLED=true
-METRICS_BIND_ADDRESS=:9090
-METRICS_HANDLER_PATH=/metrics
-```
+Последний release экспортируется через
+`GET /api/v1/releases/last/export`; по умолчанию это JSON, а
+`?download=true` возвращает attachment.
 
-При `METRICS_ENABLED=true` traces продолжают уходить в OTLP при включённой
-telemetry, а метрики отдаются Prometheus pull exporter’ом. Не публикуйте порт
-metrics в интернет: ограничьте доступ сетью кластера или reverse proxy.
+Полный HTTP-контракт генерируется из Swagger-аннотаций handler-методов и
+transport DTO командой `make docs`. Результат сохраняется в
+[`docs/openapi3.yaml`](docs/openapi3.yaml) и встраивается в binary. В development Scalar
+доступен на `/swagger`.
 
-Минимальный scrape-конфиг Prometheus:
-
-```yaml
-scrape_configs:
-  - job_name: service-backend
-    static_configs:
-      - targets: ["service-backend.observability:9090"]
-```
-
-Для общего Prometheus готовый file-SD target лежит в
-`observability/prometheus/targets/service-backend.yml`. Подключите каталог с
-такими файлами к конфигурации центрального Prometheus:
-
-```yaml
-scrape_configs:
-  - job_name: services
-    file_sd_configs:
-      - files: ["/etc/prometheus/targets/*.yml"]
-```
-
-## Logging
-
-Шаблон использует `service-kit-go/logging`, но это не обязательное правило для всех сервисов. В собственном сервисе можно:
-
-- оставить kit-логгер для JSON logs;
-- заменить на стандартный `log/slog`;
-- передавать noop logger там, где логи не нужны.
-
-Формат stdout не смешивается с окружением приложения: `APP_ENV` определяет
-runtime-режим, а `LOGGER_FORMAT` — только отображение одной строки лога.
-Если формат не задан, development использует `console`, остальные окружения —
-`json`. Для локального Docker Compose используйте цветной вывод:
-
-```env
-LOGGER_FORMAT=console
-LOGGER_COLOR=always
-```
-
-Доступные значения: `LOGGER_FORMAT=json|console` и
-`LOGGER_COLOR=auto|always|never`. OpenSearch exporter всегда получает чистый
-JSON без ANSI-цветов.
-
-По умолчанию логи пишутся только в stdout. Для прямой пакетной отправки JSON-логов
-в OpenSearch Bulk API включите exporter:
-
-```env
-LOGGER_OPENSEARCH_ENABLED=true
-LOGGER_OPENSEARCH_ENDPOINT=https://opensearch.example
-LOGGER_OPENSEARCH_INDEX=service-logs
-LOGGER_OPENSEARCH_USERNAME=writer
-LOGGER_OPENSEARCH_PASSWORD=change-me
-LOGGER_OPENSEARCH_FLUSH_INTERVAL=1s
-LOGGER_OPENSEARCH_BATCH_SIZE=100
-LOGGER_OPENSEARCH_QUEUE_SIZE=1000
-LOGGER_OPENSEARCH_REQUEST_TIMEOUT=5s
-```
-
-При остановке сервис сначала flush-ит Zap logger, затем завершает OpenSearch
-exporter и только после этого закрывает trace/meter providers.
-
-## Grafana
-
-Наблюдаемость развёртывается отдельно от приложения. Это исключает дублирование
-Grafana и backend при локальном запуске и позволяет позже вынести тот же стек в
-CI/CD. `docker-compose.observability.yml` создаёт сеть
-`service-observability`; базовый Compose приложения подключается к ней как к
-внешней.
-
-Локальный стек включает OpenSearch для логов, Tempo для трейсов, OTel Collector,
-Prometheus и Grafana. В нём сознательно отключены TLS и OpenSearch Security
-Plugin: он
-предназначен только для локальной Docker-сети и не должен публиковаться в
-интернет.
-
-Сначала поднимите инфраструктуру:
+## Миграции и проверки
 
 ```bash
-docker compose --env-file .env.development -f docker-compose.observability.yml up -d
+make migrate-up
+make migrate-down
+make sqlc
 ```
 
-Затем запустите приложение. Для локальной разработки второй файл только
-переопределяет `service-backend` (Air, исходники в volume и локальный Postgres):
+Полная стратегия тестирования, Docker-наборы и защитный механизм тестовой БД
+описаны в [`docs/Тестирование.md`](docs/%D0%A2%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.md).
+
+Недокерные проверки:
 
 ```bash
-docker compose --env-file .env.development \
-  -f docker-compose.yml \
-  -f docker-compose.dev.yml \
-  up --build
+make test-unit
 ```
 
-Для базового контейнера используйте только `docker-compose.yml`. В production
-сеть `service-edge` по-прежнему должна существовать и управляется внешним
-reverse proxy/платформой.
-
-Параметры локальной observability-сборки в `.env.development`:
-
-```env
-TELEMETRY_ENABLED=true
-OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
-OTEL_EXPORTER_OTLP_INSECURE=true
-LOGGER_OPENSEARCH_ENABLED=true
-LOGGER_OPENSEARCH_ENDPOINT=http://opensearch:9200
-GRAFANA_ADMIN_USER=admin
-GRAFANA_ADMIN_PASSWORD=admin
-PROMETHEUS_URL=http://prometheus:9090
-OPENSEARCH_URL=http://opensearch:9200
-OPENSEARCH_LOG_INDEX=service-logs
-OPENSEARCH_VERSION=2.19.1
-TEMPO_URL=http://tempo:3200
-```
-
-Откройте Grafana на `http://localhost:3000`. Provisioning автоматически создаёт
-Prometheus, OpenSearch Logs и Tempo datasource, а также dashboard
-**Service overview**. Логи остаются одновременно в stdout (`docker compose
-logs -f service-backend`) и в OpenSearch. Трейсы проходят цепочку
-`backend -> OTel Collector -> Tempo`; в Grafana Explore выберите **Tempo** и
-найдите конкретный trace по `traceId`.
-
-Метрики включены во всех Compose-окружениях. Они доступны на внутреннем
-порту `9090`, а Prometheus собирает их через
-`service-backend.observability:9090`.
-
-## Публикация
-
-Template и kit публикуются как обычные GitHub-репозитории. Версия kit становится доступной для `go get` после тега:
+Интеграционные и E2E-наборы сами создают PostgreSQL 17 через Testcontainers.
+Внешний DSN намеренно не поддерживается:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+make test-integration
+make test-e2e
+make test-critical
 ```
-
-Обновление template на новую версию kit:
-
-```bash
-go get github.com/endge-lab/service-kit-go@v0.1.0
-go mod tidy
-```
-
-## Проверки
-
-```bash
-go test ./...
-docker compose --env-file .env.development config
-```
-
-Для проверки поведения без локального workspace:
-
-```bash
-GOWORK=off go test ./...
-```
-
-Эта команда начнёт работать после публикации `github.com/endge-lab/service-kit-go` с версией, указанной в `go.mod`.

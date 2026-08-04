@@ -1,14 +1,14 @@
 package health
 
 type HealthResponse struct {
-	Status  string `json:"status"`
-	Service string `json:"service"`
-	Version string `json:"version"`
-	Env     string `json:"env"`
+	Status  string `json:"status" example:"ok"`
+	Service string `json:"service" example:"service-backend"`
+	Version string `json:"version" example:"1.0.0"`
+	Env     string `json:"env" example:"development"`
 }
 
 type VersionResponse struct {
-	Service string `json:"service"`
-	Version string `json:"version"`
-	Env     string `json:"env"`
+	Service string `json:"service" example:"service-backend"`
+	Version string `json:"version" example:"1.0.0"`
+	Env     string `json:"env" example:"development"`
 }

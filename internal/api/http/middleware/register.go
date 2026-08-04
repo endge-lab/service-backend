@@ -17,8 +17,9 @@ import (
 func Register(app *fiber.App, cfg *config.Config, meter metric.Meter, logger *zap.Logger) {
 	app.Use(fibercors.New(fibercors.Config{
 		AllowCredentials: true,
-		AllowMethods:     "GET,POST,PATCH,DELETE,OPTIONS",
-		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Requested-With, X-Endge-Workspace, traceparent, tracestate, baggage",
+		AllowMethods:     "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, If-Match, X-Requested-With, X-Endge-Workspace, traceparent, tracestate, baggage",
+		ExposeHeaders:    "ETag",
 		AllowOriginsFunc: func(origin string) bool {
 			return isOriginAllowed(origin, cfg.HTTP.CORSAllowedOrigins)
 		},

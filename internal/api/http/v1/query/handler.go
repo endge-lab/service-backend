@@ -1,188 +1,158 @@
 package query
 
 import (
-	httpobservability "github.com/endge-lab/service-backend/internal/api/http/observability"
-	respond "github.com/endge-lab/service-backend/internal/api/http/respond"
-	"github.com/endge-lab/service-backend/internal/observability"
-	"github.com/endge-lab/service-backend/internal/usecase/queries"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/shared"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
+// Handler обслуживает HTTP-операции ресурса и зависит только от application-порта.
 type Handler struct {
-	service   UseCase
+	usecase   UseCase
 	validator appvalidator.Validator
-	observer  observability.Observer
 }
 
-func NewHandler(s UseCase, v appvalidator.Validator, core *observability.Core, metrics *httpobservability.HandlerMetrics) *Handler {
-	observer := core.For(observability.LayerHandler, "query_http_handler").WithRecorder(metrics)
-	return &Handler{service: s, validator: v, observer: observer}
+// NewHandler создаёт HTTP-обработчик ресурса.
+func NewHandler(usecase UseCase, validator appvalidator.Validator) *Handler {
+	return &Handler{usecase: usecase, validator: validator}
 }
 
-// Create godoc
-// @Summary Создать Query
-// @Description Создает конфигурацию Query в папке проекта. Query source, headers, параметры и mock data только хранятся и не исполняются сервисом.
-// @Tags queries
-// @Accept json
+// List возвращает список документов ресурса с фильтрацией и пагинацией.
+// @Summary Получить список запросов
+// @Description Возвращает список запросов текущего рабочего пространства с фильтрацией и пагинацией.
+// @ID listQuerys
+// @Tags Запросы
 // @Produce json
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param request body CreateQueryRequest true "Параметры Query"
-// @Success 201 {object} QueryResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 409 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity}/queries [post]
-func (h *Handler) Create(c *fiber.Ctx) error {
-	var request CreateQueryRequest
-	if err := c.BodyParser(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrInvalidBody)
-	}
-	if err := h.validator.Validate(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrValidationError)
-	}
-	project := c.Params("project_identity")
-	value, err := h.service.Create(c.UserContext(), queries.CreateQueryInput{ProjectIdentity: project, FolderIdentity: request.FolderIdentity, Identity: request.Identity, DisplayName: request.DisplayName, Description: request.Description, QueryType: request.QueryType, Source: request.Source, Params: request.Params, Headers: request.Headers, Auth: request.Auth, TimeoutMS: request.TimeoutMS, MockData: request.MockData, MockDataEnabled: request.MockDataEnabled, Meta: request.Meta, Active: request.Active})
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-	return c.Status(fiber.StatusCreated).JSON(h.response(value, project))
-}
-
-// List godoc
-// @Summary Список Query
-// @Description Возвращает активные Query проекта. Можно отфильтровать записи по identity папки и query type; soft-deleted Query не возвращаются.
-// @Tags queries
-// @Produce json
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param folder_identity query string false "Folder identity" example(shared-queries)
-// @Param query_type query string false "Query type" example(http)
-// @Success 200 {object} QueriesListResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity}/queries [get]
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param includeDeleted query bool false "Включить мягко удалённые документы" default(false)
+// @Param folderIdentity query string false "Identity папки" maxlength(160)
+// @Param active query bool false "Фильтр по активности"
+// @Param limit query int false "Размер страницы" default(100) minimum(1) maximum(500)
+// @Param offset query int false "Смещение" default(0) minimum(0)
+// @Success 200 {object} ListResponse "Список запросов"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/queries [get]
 func (h *Handler) List(c *fiber.Ctx) error {
-	project := c.Params("project_identity")
-	var folder, queryType *string
-	if value := c.Query("folder_identity"); value != "" {
-		folder = &value
-	}
-	if value := c.Query("query_type"); value != "" {
-		queryType = &value
-	}
-	values, err := h.service.List(c.UserContext(), queries.ListQueriesInput{ProjectIdentity: project, FolderIdentity: folder, QueryType: queryType})
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-	items := make([]*QueryResponse, 0, len(values))
-	for _, value := range values {
-		items = append(items, h.response(value, project))
-	}
-	return c.JSON(QueriesListResponse{Items: items})
+	return shared.ListDocuments(c, h.usecase.List, NewResponse)
 }
 
-// GetByIdentity godoc
-// @Summary Получить Query
-// @Description Возвращает активную Query по identity в пределах проекта вместе с identity ее папки.
-// @Tags queries
-// @Produce json
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param query_identity path string true "Query identity" example(users-list)
-// @Success 200 {object} QueryResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity}/queries/{query_identity} [get]
-func (h *Handler) GetByIdentity(c *fiber.Ctx) error {
-	project := c.Params("project_identity")
-	value, err := h.service.GetByIdentity(c.UserContext(), queries.GetQueryInput{ProjectIdentity: project, QueryIdentity: c.Params("query_identity")})
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-	return c.JSON(h.response(value, project))
-}
-
-// Update godoc
-// @Summary Обновить Query
-// @Description Полностью заменяет editable payload Query, включая папку, source, параметры, headers, auth и mock data. Поля id, identity, createdAt и deletedAt сохраняются.
-// @Tags queries
+// Create проверяет запрос и создаёт документ ресурса.
+// @Summary Создать запрос
+// @Description Создаёт запрос в текущем рабочем пространстве.
+// @ID createQuery
+// @Tags Запросы
 // @Accept json
 // @Produce json
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param query_identity path string true "Query identity" example(users-list)
-// @Param request body UpdateQueryRequest true "Параметры обновления Query"
-// @Success 200 {object} QueryResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity}/queries/{query_identity} [patch]
-func (h *Handler) Update(c *fiber.Ctx) error {
-	var request UpdateQueryRequest
-	if err := c.BodyParser(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrInvalidBody)
-	}
-	if err := h.validator.Validate(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrValidationError)
-	}
-	project := c.Params("project_identity")
-	value, err := h.service.Update(c.UserContext(), queries.UpdateQueryInput{ProjectIdentity: project, QueryIdentity: c.Params("query_identity"), FolderIdentity: request.FolderIdentity, DisplayName: request.DisplayName, Description: request.Description, QueryType: request.QueryType, Source: request.Source, Params: request.Params, Headers: request.Headers, Auth: request.Auth, TimeoutMS: request.TimeoutMS, MockData: request.MockData, MockDataEnabled: request.MockDataEnabled, Meta: request.Meta, Active: request.Active})
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-	return c.JSON(h.response(value, project))
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param request body CreateRequest true "Данные нового документа"
+// @Success 201 {object} Response "Документ создан"
+// @Header 201 {string} ETag "Текущая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/queries [post]
+func (h *Handler) Create(c *fiber.Ctx) error {
+	return shared.CreateDocument[CreateRequest](c, h.validator, h.usecase.Create, NewResponse)
 }
 
-// SoftDelete godoc
-// @Summary Удалить Query
-// @Description Выполняет soft-delete Query. Связанные DataView физически не удаляются, но не попадают в обычные query-based сценарии.
-// @Tags queries
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param query_identity path string true "Query identity" example(users-list)
-// @Success 204
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity}/queries/{query_identity} [delete]
-func (h *Handler) SoftDelete(c *fiber.Ctx) error { return h.change(c, h.service.SoftDelete) }
+// Get возвращает документ ресурса по identity.
+// @Summary Получить запрос
+// @Description Возвращает запрос по identity.
+// @ID getQuery
+// @Tags Запросы
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param includeDeleted query bool false "Разрешить получение мягко удалённого документа" default(false)
+// @Success 200 {object} Response "Найденный документ"
+// @Header 200 {string} ETag "Текущая revision документа"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/queries/{identity} [get]
+func (h *Handler) Get(c *fiber.Ctx) error {
+	return shared.GetDocument(c, h.usecase.Get, NewResponse)
+}
 
-// Restore godoc
-// @Summary Восстановить Query
-// @Description Восстанавливает soft-deleted Query по identity в пределах проекта.
-// @Tags queries
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param query_identity path string true "Query identity" example(restore-users-list)
-// @Success 204
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity}/queries/{query_identity}/restore [post]
-func (h *Handler) Restore(c *fiber.Ctx) error { return h.change(c, h.service.Restore) }
+// Patch проверяет If-Match и частично изменяет документ ресурса.
+// @Summary Изменить запрос
+// @Description Частично изменяет запрос; актуальная revision передаётся в If-Match.
+// @ID patchQuery
+// @Tags Запросы
+// @Accept json
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param If-Match header string true "Текущая revision документа" example("3")
+// @Param request body PatchRequest true "Изменяемые поля документа"
+// @Success 200 {object} Response "Документ изменён"
+// @Header 200 {string} ETag "Новая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 428 {object} shared.ErrorResponse "Требуется заголовок If-Match"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/queries/{identity} [patch]
+func (h *Handler) Patch(c *fiber.Ctx) error {
+	return shared.PatchDocument[PatchRequest](c, h.validator, h.usecase.Patch, NewResponse)
+}
 
-// HardDelete godoc
-// @Summary Физически удалить Query
-// @Description Выполняет hard-delete soft-deleted Query. Связанные DataView удаляются каскадно на уровне базы данных.
-// @Tags queries
-// @Param project_identity path string true "Project identity" example(demo-project)
-// @Param query_identity path string true "Query identity" example(hard-delete-users-list)
-// @Success 204
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/projects/{project_identity}/queries/{query_identity}/hard [delete]
-func (h *Handler) HardDelete(c *fiber.Ctx) error { return h.change(c, h.service.HardDelete) }
+// Delete выполняет мягкое удаление документа ресурса.
+// @Summary Удалить запрос
+// @Description Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.
+// @ID deleteQuery
+// @Tags Запросы
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param If-Match header string true "Текущая revision документа" example("3")
+// @Success 200 {object} Response "Документ мягко удалён"
+// @Header 200 {string} ETag "Новая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 428 {object} shared.ErrorResponse "Требуется заголовок If-Match"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/queries/{identity} [delete]
+func (h *Handler) Delete(c *fiber.Ctx) error {
+	return shared.MutateDocument(c, h.usecase.Delete, NewResponse)
+}
+
+// Restore восстанавливает мягко удалённый документ ресурса.
+// @Summary Восстановить запрос
+// @Description Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.
+// @ID restoreQuery
+// @Tags Запросы
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param If-Match header string true "Текущая revision документа" example("3")
+// @Success 200 {object} Response "Документ восстановлен"
+// @Header 200 {string} ETag "Новая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 428 {object} shared.ErrorResponse "Требуется заголовок If-Match"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/queries/{identity}/restore [post]
+func (h *Handler) Restore(c *fiber.Ctx) error {
+	return shared.MutateDocument(c, h.usecase.Restore, NewResponse)
+}

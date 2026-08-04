@@ -1,0 +1,8 @@
+app:
+  name: service_backend
+  public_url: https://api.example.com
+http:
+  cors_allowed_origins: https://example.com
+postgres:
+  user: postgres
+  database: service_backend

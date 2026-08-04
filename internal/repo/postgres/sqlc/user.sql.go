@@ -7,64 +7,64 @@ package sqlc
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
 
-const upsertServiceUserFromIdentity = `-- name: UpsertServiceUserFromIdentity :one
-INSERT INTO service_users (
-  id,
-  auth_user_id,
-  username,
-  display_name,
-  role,
-  created_at,
-  updated_at
-)
-VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-ON CONFLICT (auth_user_id) DO UPDATE
-SET
-  username = CASE
-    WHEN EXCLUDED.username <> '' THEN EXCLUDED.username
-    ELSE service_users.username
-  END,
-  display_name = CASE
-    WHEN EXCLUDED.display_name <> '' THEN EXCLUDED.display_name
-    ELSE service_users.display_name
-  END,
-  role = CASE
-    WHEN EXCLUDED.role <> '' THEN EXCLUDED.role
-    ELSE service_users.role
-  END,
-  updated_at = NOW()
-RETURNING id, auth_user_id, username, display_name, role, created_at, updated_at
+const upsertCurrentUser = `-- name: UpsertCurrentUser :one
+INSERT INTO service_users (provider_id, subject, issuer, username, display_name)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (provider_id, subject) DO UPDATE SET
+  issuer = EXCLUDED.issuer,
+  username = CASE WHEN EXCLUDED.username <> '' THEN EXCLUDED.username ELSE service_users.username END,
+  display_name = CASE WHEN EXCLUDED.display_name <> '' THEN EXCLUDED.display_name ELSE service_users.display_name END,
+  updated_at = NOW(),
+  last_seen_at = NOW()
+RETURNING id, provider_id, subject, issuer, username, display_name, active, created_at, updated_at, last_seen_at
 `
 
-type UpsertServiceUserFromIdentityParams struct {
-	ID          uuid.UUID `json:"id"`
-	AuthUserID  string    `json:"auth_user_id"`
-	Username    string    `json:"username"`
-	DisplayName string    `json:"display_name"`
-	Role        string    `json:"role"`
+type UpsertCurrentUserParams struct {
+	ProviderID  string `json:"provider_id"`
+	Subject     string `json:"subject"`
+	Issuer      string `json:"issuer"`
+	Username    string `json:"username"`
+	DisplayName string `json:"display_name"`
 }
 
-func (q *Queries) UpsertServiceUserFromIdentity(ctx context.Context, arg UpsertServiceUserFromIdentityParams) (ServiceUser, error) {
-	row := q.db.QueryRow(ctx, upsertServiceUserFromIdentity,
-		arg.ID,
-		arg.AuthUserID,
+type UpsertCurrentUserRow struct {
+	ID          uuid.UUID `json:"id"`
+	ProviderID  string    `json:"provider_id"`
+	Subject     string    `json:"subject"`
+	Issuer      string    `json:"issuer"`
+	Username    string    `json:"username"`
+	DisplayName string    `json:"display_name"`
+	Active      bool      `json:"active"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	LastSeenAt  time.Time `json:"last_seen_at"`
+}
+
+func (q *Queries) UpsertCurrentUser(ctx context.Context, arg UpsertCurrentUserParams) (UpsertCurrentUserRow, error) {
+	row := q.db.QueryRow(ctx, upsertCurrentUser,
+		arg.ProviderID,
+		arg.Subject,
+		arg.Issuer,
 		arg.Username,
 		arg.DisplayName,
-		arg.Role,
 	)
-	var i ServiceUser
+	var i UpsertCurrentUserRow
 	err := row.Scan(
 		&i.ID,
-		&i.AuthUserID,
+		&i.ProviderID,
+		&i.Subject,
+		&i.Issuer,
 		&i.Username,
 		&i.DisplayName,
-		&i.Role,
+		&i.Active,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastSeenAt,
 	)
 	return i, err
 }

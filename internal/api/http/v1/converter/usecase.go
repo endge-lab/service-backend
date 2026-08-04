@@ -3,16 +3,20 @@ package converter
 import (
 	"context"
 
-	"github.com/endge-lab/service-backend/internal/usecase/converters"
+	"github.com/endge-lab/service-backend/internal/domain/entities"
+	resourceusecase "github.com/endge-lab/service-backend/internal/usecase/converters"
+	"github.com/endge-lab/service-backend/internal/usecase/documents"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 )
 
-// UseCase is the application contract consumed by the converter HTTP adapter.
 type UseCase interface {
-	Create(ctx context.Context, input converters.CreateConverterInput) (*converters.ConverterWithFolder, error)
-	Update(ctx context.Context, input converters.UpdateConverterInput) (*converters.ConverterWithFolder, error)
-	GetByIdentity(ctx context.Context, input converters.GetConverterInput) (*converters.ConverterWithFolder, error)
-	List(ctx context.Context, input converters.ListConvertersInput) ([]*converters.ConverterWithFolder, error)
-	SoftDelete(ctx context.Context, input converters.ConverterIdentityInput) error
-	Restore(ctx context.Context, input converters.ConverterIdentityInput) error
-	HardDelete(ctx context.Context, input converters.ConverterIdentityInput) error
+	List(context.Context, ports.DocumentFilter) ([]entities.Document, error)
+	Get(context.Context, string, bool) (*entities.Document, error)
+	Create(context.Context, documents.CreateInput) (*entities.Document, error)
+	Patch(context.Context, string, documents.PatchInput, int) (*entities.Document, error)
+	Delete(context.Context, string, int) (*entities.Document, error)
+	Restore(context.Context, string, int) (*entities.Document, error)
 }
+
+// BindUseCase предоставляет concrete application use case как HTTP-порт ресурса.
+func BindUseCase(useCase *resourceusecase.UseCase) UseCase { return useCase }

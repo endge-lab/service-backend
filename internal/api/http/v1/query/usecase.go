@@ -3,16 +3,20 @@ package query
 import (
 	"context"
 
-	"github.com/endge-lab/service-backend/internal/usecase/queries"
+	"github.com/endge-lab/service-backend/internal/domain/entities"
+	"github.com/endge-lab/service-backend/internal/usecase/documents"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
+	resourceusecase "github.com/endge-lab/service-backend/internal/usecase/queries"
 )
 
-// UseCase is the application contract consumed by the query HTTP adapter.
 type UseCase interface {
-	Create(ctx context.Context, input queries.CreateQueryInput) (*queries.QueryWithFolder, error)
-	Update(ctx context.Context, input queries.UpdateQueryInput) (*queries.QueryWithFolder, error)
-	GetByIdentity(ctx context.Context, input queries.GetQueryInput) (*queries.QueryWithFolder, error)
-	List(ctx context.Context, input queries.ListQueriesInput) ([]*queries.QueryWithFolder, error)
-	SoftDelete(ctx context.Context, input queries.QueryIdentityInput) error
-	Restore(ctx context.Context, input queries.QueryIdentityInput) error
-	HardDelete(ctx context.Context, input queries.QueryIdentityInput) error
+	List(context.Context, ports.DocumentFilter) ([]entities.Document, error)
+	Get(context.Context, string, bool) (*entities.Document, error)
+	Create(context.Context, documents.CreateInput) (*entities.Document, error)
+	Patch(context.Context, string, documents.PatchInput, int) (*entities.Document, error)
+	Delete(context.Context, string, int) (*entities.Document, error)
+	Restore(context.Context, string, int) (*entities.Document, error)
 }
+
+// BindUseCase предоставляет concrete application use case как HTTP-порт ресурса.
+func BindUseCase(useCase *resourceusecase.UseCase) UseCase { return useCase }

@@ -4,62 +4,68 @@ import (
 	"github.com/endge-lab/service-backend/internal/repo/postgres"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
-
+	"github.com/endge-lab/service-backend/internal/usecase/workspace_state"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/fx"
 )
 
+type endgeRepositoryPorts struct {
+	fx.Out
+
+	WorkspaceState workspace_state.Repository
+	Workspaces     ports.WorkspaceRepository
+	Integrations   ports.IntegrationRepository
+	Documents      ports.DocumentRepository
+	Revisions      ports.RevisionRepository
+	Commits        ports.CommitRepository
+	Releases       ports.ReleaseRepository
+	Portable       ports.PortableRepository
+	Snapshots      ports.SnapshotRepository
+}
+
+func exposeEndgeRepository(store *postgres.EndgeRepository) endgeRepositoryPorts {
+	return endgeRepositoryPorts{
+		WorkspaceState: store,
+		Workspaces:     store,
+		Integrations:   store,
+		Documents:      store,
+		Revisions:      store,
+		Commits:        store,
+		Releases:       store,
+		Portable:       store,
+		Snapshots:      store,
+	}
+}
+
 func RepositoryModules() fx.Option {
-	return fx.Options(
-		fx.Provide(
-			postgres.NewRepositoryMetrics,
-			func(db *pgxpool.Pool) *sqlc.Queries {
-				return sqlc.New(db)
-			},
-			fx.Annotate(
-				postgres.NewUserRepository,
-				fx.As(new(ports.UserRepository)),
-			),
-			fx.Annotate(
-				postgres.NewProjectsRepository,
-				fx.As(new(ports.ProjectsRepository)),
-			),
-			fx.Annotate(
-				postgres.NewWorkspacesRepository,
-				fx.As(new(ports.WorkspacesRepository)),
-			),
-			fx.Annotate(
-				postgres.NewTenantsRepository,
-				fx.As(new(ports.TenantsRepository)),
-			),
-			fx.Annotate(
-				postgres.NewFoldersRepository,
-				fx.As(new(ports.FoldersRepository)),
-			),
-			fx.Annotate(
-				postgres.NewComponentsLegacyRepository,
-				fx.As(new(ports.ComponentsLegacyRepository)),
-			),
-			fx.Annotate(
-				postgres.NewConvertersRepository,
-				fx.As(new(ports.ConvertersRepository)),
-			),
-			fx.Annotate(
-				postgres.NewQueriesRepository,
-				fx.As(new(ports.QueriesRepository)),
-			),
-			fx.Annotate(
-				postgres.NewDataViewsRepository,
-				fx.As(new(ports.DataViewsRepository)),
-			),
-			fx.Annotate(
-				postgres.NewDomainDependenciesRepository,
-				fx.As(new(ports.DomainDependenciesRepository)),
-			),
-			fx.Annotate(
-				postgres.NewTxManager,
-				fx.As(new(ports.TxManager)),
-			),
-		),
-	)
+	return fx.Options(fx.Provide(
+		postgres.NewRepositoryMetrics,
+		func(db *pgxpool.Pool) *sqlc.Queries { return sqlc.New(db) },
+		fx.Annotate(postgres.NewUserRepository, fx.As(new(ports.UserRepository))),
+		postgres.NewEndgeRepository,
+		exposeEndgeRepository,
+		postgres.NewProjectRepository,
+		postgres.NewTenantRepository,
+		postgres.NewEnvironmentRepository,
+		postgres.NewFolderRepository,
+		postgres.NewTypeRepository,
+		postgres.NewQueryRepository,
+		postgres.NewDataViewRepository,
+		postgres.NewCompositionRepository,
+		postgres.NewStoreRepository,
+		postgres.NewStreamRepository,
+		postgres.NewUpdateRepository,
+		postgres.NewMockRepository,
+		postgres.NewComponentRepository,
+		postgres.NewActionRepository,
+		postgres.NewFilterRepository,
+		postgres.NewConverterRepository,
+		postgres.NewComputationRepository,
+		postgres.NewVocabRepository,
+		postgres.NewI18nBundleRepository,
+		postgres.NewAuthProfileRepository,
+		postgres.NewNavigationRepository,
+		postgres.NewStyleRepository,
+		fx.Annotate(postgres.NewTxManager, fx.As(new(ports.TxManager))),
+	))
 }

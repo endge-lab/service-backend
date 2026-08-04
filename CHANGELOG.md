@@ -1,6 +1,46 @@
 # CHANGELOG
 
-Краткий changelog для `service-backend`.
+## 0.2.0 — 2026-08-04
+
+### Добавлено
+
+- Универсальная production-аутентификация через OIDC/JWKS, совместимая с Keycloak и другими OIDC-провайдерами.
+- Автоматическое создание и обновление локальной проекции пользователя при первом аутентифицированном запросе.
+- Workspace RBAC с ролями `viewer`, `editor`, `admin`, Platform Admin и implicit-доступом `editor` к workspace `default`.
+- Полный CRUD согласованных MVP-документов с ETag/`If-Match`, soft-delete, restore и optimistic concurrency control.
+- Полные document revisions, атомарные mutation batches и восстановление документа через добавление новой revision.
+- Workspace commits с режимами `preserve` и optional `squash`, contributors и восстановлением полного состояния workspace.
+- Immutable releases, привязанные к commit и содержащие готовый portable JSON snapshot без replay истории.
+- Единый live workspace snapshot для загрузки Configurator одним запросом.
+- Двухфазный destructive import (`plan` + подтверждение с `If-Match`), который полностью заменяет domain state и создаёт новый начальный commit без переноса старой истории.
+- Автоматические `pre_import` backups, ручные backups с описанием, экспорт последнего backup и ZIP-архив всех страховочных копий.
+- Inline JSON export по умолчанию и опциональная выдача attachment через `download=true`; read-only alias `last` для последнего release.
+- Типизированные composite FK по `workspace_id` для `Update.store` и `Vocab.authProfile`, а также отдельная many-to-many таблица `project_environments`.
+- System root folders, защита от циклов и перенос содержимого при soft-delete папки.
+- Декларативная transport validation через `service-kit-go` с единым `validation_error.details.fields` и запретом неизвестных JSON-полей.
+- Focused contract tests для strict decoding, validation, ETag и обязательного `If-Match`.
+
+### Изменено
+
+- Полностью переписана миграционная цепочка для развёртывания на пустой PostgreSQL.
+- Документные HTTP handlers, usecases, repository ports и PostgreSQL adapters разделены по ресурсам; общими оставлены только transaction/history механизмы.
+- Каждый HTTP resource разделён на `handler.go`, `routes.go`, `transport.go` и `usecase.go`; универсальный `shared.DocumentHandler` удалён, request/response DTO принадлежат конкретным ресурсам.
+- Монолитные packages `internal/usecase/mvp` и `internal/api/http/v1/mvp` удалены, а агрегат `entities/mvp.go` разделён на доменные сущности по назначению.
+- Production теперь запускается только с полной OIDC-конфигурацией; `AUTH_MODE=dev` разрешён только вне production.
+- Query переведён на source-first контракт с обязательным `sourceVersion=2`.
+- Из Project удалена неиспользуемая связь с Navigation.
+- Contributors сжатой revision хранятся непосредственно в `document_revisions.contributor_user_ids` без отдельной relation-таблицы.
+- Canonical Component хранится только в SFC-формате; старый `componentSFCs` нормализуется при portable import.
+- OpenAPI и документация запуска обновлены под новый backend-контракт.
+- Generic Scalar paths заменены на отдельные CRUD paths и типизированные request/response schemas всех 22 MVP-коллекций.
+- HTTP handlers переведены на локальные `UseCase` interfaces, application write inputs стали типизированными, а panic-based response mapping удалён.
+
+### Breaking changes
+
+- База должна быть создана заново миграциями `000001`–`000036`.
+- Старый Payload API напрямую не совместим с новым контрактом; frontend должен использовать adapter.
+- Весь `/api` требует Current User, а workspace-scoped endpoints — заголовок `X-Endge-Workspace`.
+- PATCH, DELETE и restore требуют актуальный `If-Match`.
 
 ## 0.1.0
 

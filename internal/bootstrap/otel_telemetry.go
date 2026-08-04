@@ -32,7 +32,6 @@ func newTelemetryProviders(cfg *config.Config, logger *zap.Logger) (*servicetele
 		ServiceName:       cfg.App.Name,
 		ServiceVersion:    cfg.App.Version,
 		Environment:       cfg.App.Env,
-		OTLPEnabled:       cfg.Telemetry.Enabled,
 		OTLPEndpoint:      endpoint,
 		OTLPInsecure:      cfg.Telemetry.OTLPInsecure,
 		MetricsInterval:   15 * time.Second,
@@ -45,7 +44,6 @@ func newTelemetryProviders(cfg *config.Config, logger *zap.Logger) (*servicetele
 			ServiceName:       cfg.App.Name,
 			ServiceVersion:    cfg.App.Version,
 			Environment:       cfg.App.Env,
-			OTLPEnabled:       false,
 			PrometheusEnabled: cfg.Metrics.Enabled,
 			TraceSampleMode:   traceSampleModeNever,
 		}, logger)

@@ -1,159 +1,158 @@
 package tenant
 
 import (
-	httpobservability "github.com/endge-lab/service-backend/internal/api/http/observability"
-	respond "github.com/endge-lab/service-backend/internal/api/http/respond"
-	"github.com/endge-lab/service-backend/internal/domain/entities"
-	"github.com/endge-lab/service-backend/internal/observability"
-	"github.com/endge-lab/service-backend/internal/usecase/tenants"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/shared"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
+// Handler обслуживает HTTP-операции ресурса и зависит только от application-порта.
 type Handler struct {
-	service   UseCase
+	usecase   UseCase
 	validator appvalidator.Validator
-	observer  observability.Observer
 }
 
-func NewHandler(service UseCase, validator appvalidator.Validator, core *observability.Core, metrics *httpobservability.HandlerMetrics) *Handler {
-	return &Handler{service: service, validator: validator, observer: core.For(observability.LayerHandler, "tenant_http_handler").WithRecorder(metrics)}
+// NewHandler создаёт HTTP-обработчик ресурса.
+func NewHandler(usecase UseCase, validator appvalidator.Validator) *Handler {
+	return &Handler{usecase: usecase, validator: validator}
 }
 
-// CreateTenant godoc
-// @Summary Создать tenant
-// @Description Создаёт final configuration layer Tenant в workspace из X-Endge-Workspace. При отсутствии folderIdentity используется root-tenants.
-// @Tags tenants
-// @Accept json
+// List возвращает список документов ресурса с фильтрацией и пагинацией.
+// @Summary Получить список тенантов
+// @Description Возвращает список тенантов текущего рабочего пространства с фильтрацией и пагинацией.
+// @ID listTenants
+// @Tags Тенанты
 // @Produce json
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Param request body CreateTenantRequest true "Данные tenant"
-// @Success 201 {object} TenantResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 409 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/tenants [post]
-func (h *Handler) CreateTenant(c *fiber.Ctx) error {
-	var request CreateTenantRequest
-	if err := c.BodyParser(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrInvalidBody)
-	}
-	if err := h.validator.Validate(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrValidationError)
-	}
-	var configuration *entities.EndgeConfigurationContribution
-	if request.Configuration != nil {
-		var err error
-		configuration, err = request.Configuration.domain()
-		if err != nil {
-			return respond.WriteErrorResponse(c, respond.ErrInvalidBody)
-		}
-	}
-	value, err := h.service.Create(c.UserContext(), tenants.CreateTenantInput{Identity: request.Identity, DisplayName: request.DisplayName, Code: request.Code, Description: request.Description, FolderIdentity: request.FolderIdentity, Configuration: configuration})
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-	return c.Status(fiber.StatusCreated).JSON(response(value))
-}
-
-// ListTenants godoc
-// @Summary Список tenants
-// @Description Возвращает tenants текущего workspace; folder_identity ограничивает список папкой типа tenants.
-// @Tags tenants
-// @Produce json
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Param folder_identity query string false "Tenant folder identity" example(root-tenants)
-// @Success 200 {object} TenantsListResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth && WorkspaceAuth
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param includeDeleted query bool false "Включить мягко удалённые документы" default(false)
+// @Param folderIdentity query string false "Identity папки" maxlength(160)
+// @Param active query bool false "Фильтр по активности"
+// @Param limit query int false "Размер страницы" default(100) minimum(1) maximum(500)
+// @Param offset query int false "Смещение" default(0) minimum(0)
+// @Success 200 {object} ListResponse "Список тенантов"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
 // @Router /api/v1/tenants [get]
-func (h *Handler) ListTenants(c *fiber.Ctx) error {
-	var folderIdentity *string
-	if value, ok := c.Queries()["folder_identity"]; ok {
-		folderIdentity = &value
-	}
-	items, err := h.service.List(c.UserContext(), tenants.ListTenantsInput{FolderIdentity: folderIdentity})
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-	return c.JSON(listResponse(items))
+func (h *Handler) List(c *fiber.Ctx) error {
+	return shared.ListDocuments(c, h.usecase.List, NewResponse)
 }
 
-// GetTenantByIdentity godoc
-// @Summary Получить tenant
-// @Description Возвращает tenant по identity только из workspace X-Endge-Workspace.
-// @Tags tenants
-// @Produce json
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Param tenant_identity path string true "Tenant identity" example(tenant-default)
-// @Success 200 {object} TenantResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/tenants/{tenant_identity} [get]
-func (h *Handler) GetTenantByIdentity(c *fiber.Ctx) error {
-	value, err := h.service.GetByIdentity(c.UserContext(), c.Params("tenant_identity"))
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-	return c.JSON(response(value))
-}
-
-// UpdateTenant godoc
-// @Summary Обновить tenant
-// @Description Частично обновляет tenant. folderIdentity:null перемещает tenant в root-tenants; переданная configuration полностью заменяет contribution.
-// @Tags tenants
+// Create проверяет запрос и создаёт документ ресурса.
+// @Summary Создать тенант
+// @Description Создаёт тенант в текущем рабочем пространстве.
+// @ID createTenant
+// @Tags Тенанты
 // @Accept json
 // @Produce json
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Param tenant_identity path string true "Tenant identity" example(tenant-default)
-// @Param request body UpdateTenantRequest true "Поля PATCH tenant"
-// @Success 200 {object} TenantResponse
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 409 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/tenants/{tenant_identity} [patch]
-func (h *Handler) UpdateTenant(c *fiber.Ctx) error {
-	var request UpdateTenantRequest
-	if err := c.BodyParser(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrInvalidBody)
-	}
-	if err := h.validator.Validate(&request); err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrValidationError)
-	}
-	input, err := request.input(c.Params("tenant_identity"))
-	if err != nil {
-		return respond.WriteErrorResponse(c, respond.ErrInvalidBody)
-	}
-	value, err := h.service.Update(c.UserContext(), input)
-	if err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-	return c.JSON(response(value))
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param request body CreateRequest true "Данные нового документа"
+// @Success 201 {object} Response "Документ создан"
+// @Header 201 {string} ETag "Текущая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/tenants [post]
+func (h *Handler) Create(c *fiber.Ctx) error {
+	return shared.CreateDocument[CreateRequest](c, h.validator, h.usecase.Create, NewResponse)
 }
 
-// HardDeleteTenant godoc
-// @Summary Удалить tenant
-// @Description Физически удаляет tenant по identity в workspace X-Endge-Workspace.
-// @Tags tenants
-// @Param X-Endge-Workspace header string true "Workspace identity" example(demo-workspace)
-// @Param tenant_identity path string true "Tenant identity" example(tenant-default)
-// @Success 204
-// @Failure 400 {object} respond.ErrorResponse
-// @Failure 404 {object} respond.ErrorResponse
-// @Failure 500 {object} respond.ErrorResponse
-// @Security BearerAuth && WorkspaceAuth
-// @Router /api/v1/tenants/{tenant_identity} [delete]
-func (h *Handler) HardDeleteTenant(c *fiber.Ctx) error {
-	if err := h.service.HardDelete(c.UserContext(), c.Params("tenant_identity")); err != nil {
-		return respond.RespondDomainError(c, h.observer.Logger(), err)
-	}
-	return c.SendStatus(fiber.StatusNoContent)
+// Get возвращает документ ресурса по identity.
+// @Summary Получить тенант
+// @Description Возвращает тенант по identity.
+// @ID getTenant
+// @Tags Тенанты
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param includeDeleted query bool false "Разрешить получение мягко удалённого документа" default(false)
+// @Success 200 {object} Response "Найденный документ"
+// @Header 200 {string} ETag "Текущая revision документа"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/tenants/{identity} [get]
+func (h *Handler) Get(c *fiber.Ctx) error {
+	return shared.GetDocument(c, h.usecase.Get, NewResponse)
+}
+
+// Patch проверяет If-Match и частично изменяет документ ресурса.
+// @Summary Изменить тенант
+// @Description Частично изменяет тенант; актуальная revision передаётся в If-Match.
+// @ID patchTenant
+// @Tags Тенанты
+// @Accept json
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param If-Match header string true "Текущая revision документа" example("3")
+// @Param request body PatchRequest true "Изменяемые поля документа"
+// @Success 200 {object} Response "Документ изменён"
+// @Header 200 {string} ETag "Новая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 428 {object} shared.ErrorResponse "Требуется заголовок If-Match"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/tenants/{identity} [patch]
+func (h *Handler) Patch(c *fiber.Ctx) error {
+	return shared.PatchDocument[PatchRequest](c, h.validator, h.usecase.Patch, NewResponse)
+}
+
+// Delete выполняет мягкое удаление документа ресурса.
+// @Summary Удалить тенант
+// @Description Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.
+// @ID deleteTenant
+// @Tags Тенанты
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param If-Match header string true "Текущая revision документа" example("3")
+// @Success 200 {object} Response "Документ мягко удалён"
+// @Header 200 {string} ETag "Новая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 428 {object} shared.ErrorResponse "Требуется заголовок If-Match"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/tenants/{identity} [delete]
+func (h *Handler) Delete(c *fiber.Ctx) error {
+	return shared.MutateDocument(c, h.usecase.Delete, NewResponse)
+}
+
+// Restore восстанавливает мягко удалённый документ ресурса.
+// @Summary Восстановить тенант
+// @Description Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.
+// @ID restoreTenant
+// @Tags Тенанты
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Param identity path string true "Identity документа" maxlength(160)
+// @Param If-Match header string true "Текущая revision документа" example("3")
+// @Success 200 {object} Response "Документ восстановлен"
+// @Header 200 {string} ETag "Новая revision документа"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Failure 404 {object} shared.ErrorResponse "Документ не найден"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт identity или revision"
+// @Failure 428 {object} shared.ErrorResponse "Требуется заголовок If-Match"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/tenants/{identity}/restore [post]
+func (h *Handler) Restore(c *fiber.Ctx) error {
+	return shared.MutateDocument(c, h.usecase.Restore, NewResponse)
 }

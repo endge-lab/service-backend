@@ -46,6 +46,18 @@ func NewTxManager(pool *pgxpool.Pool, core *observability.Core, metrics *Reposit
 //
 //	error - ошибка callback, открытия, commit или rollback транзакции
 func (m *TxManager) WithinTransaction(ctx context.Context, fn func(ctx context.Context) error) (err error) {
+	return m.withinTransaction(ctx, pgx.TxOptions{}, fn)
+}
+
+// WithinReadTransaction выполняет консистентное read-only чтение в REPEATABLE READ snapshot.
+func (m *TxManager) WithinReadTransaction(ctx context.Context, fn func(ctx context.Context) error) error {
+	if _, exists := txFromContext(ctx); exists {
+		return fn(ctx)
+	}
+	return m.withinTransaction(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, fn)
+}
+
+func (m *TxManager) withinTransaction(ctx context.Context, options pgx.TxOptions, fn func(ctx context.Context) error) (err error) {
 	ctx, step := telemetry.StartTrace(
 		ctx,
 		m.observer.Tracer(),
@@ -60,7 +72,7 @@ func (m *TxManager) WithinTransaction(ctx context.Context, fn func(ctx context.C
 	logger := logging.WithContext(ctx, m.observer.Logger())
 	logger.Debug("opening postgres transaction")
 
-	tx, err := m.pool.BeginTx(ctx, pgx.TxOptions{})
+	tx, err := m.pool.BeginTx(ctx, options)
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
