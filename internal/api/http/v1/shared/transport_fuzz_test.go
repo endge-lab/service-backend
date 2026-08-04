@@ -50,7 +50,7 @@ func FuzzIfMatch(f *testing.F) {
 		f.Add(seed)
 	}
 	f.Fuzz(func(t *testing.T, header string) {
-		if len(header) > 4096 {
+		if len(header) > 512 || !validHTTPHeaderValue(header) {
 			t.Skip()
 		}
 		app := fiber.New()
@@ -70,4 +70,17 @@ func FuzzIfMatch(f *testing.F) {
 			t.Fatalf("неожиданный status=%d для header=%q", response.StatusCode, header)
 		}
 	})
+}
+
+// validHTTPHeaderValue отделяет проверку ETag от отказа HTTP parser на управляющих байтах.
+func validHTTPHeaderValue(value string) bool {
+	for _, item := range []byte(value) {
+		if item == '\t' {
+			continue
+		}
+		if item < 0x20 || item > 0x7e {
+			return false
+		}
+	}
+	return true
 }

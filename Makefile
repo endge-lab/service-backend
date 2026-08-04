@@ -120,19 +120,21 @@ test-critical: test-unit test-integration test-e2e
 
 .PHONY: fuzz-transport
 fuzz-transport:
-	go test ./internal/api/http/v1/shared -run='^$$' -fuzz=Fuzz -fuzztime=$(FUZZ_TIME)
+	go test ./internal/api/http/v1/shared -run='^$$' -fuzz='^FuzzDecodeAndValidate$$' -fuzztime=$(FUZZ_TIME)
+	go test ./internal/api/http/v1/shared -run='^$$' -fuzz='^FuzzIfMatch$$' -fuzztime=$(FUZZ_TIME)
 
 .PHONY: fuzz-documents
 fuzz-documents:
-	go test ./internal/usecase/documents -run='^$$' -fuzz=Fuzz -fuzztime=$(FUZZ_TIME)
+	go test ./internal/usecase/documents -run='^$$' -fuzz='^FuzzDocumentInputs$$' -fuzztime=$(FUZZ_TIME)
+	go test ./internal/usecase/documents -run='^$$' -fuzz='^FuzzSecretValidation$$' -fuzztime=$(FUZZ_TIME)
 
 .PHONY: fuzz-import
 fuzz-import:
-	go test ./internal/usecase/workspace_state -run='^$$' -fuzz=Fuzz -fuzztime=$(FUZZ_TIME)
+	go test ./internal/usecase/workspace_state -run='^$$' -fuzz='^FuzzPortableBundleStructure$$' -fuzztime=$(FUZZ_TIME)
 
 .PHONY: fuzz-auth
 fuzz-auth:
-	go test ./internal/auth -run='^$$' -fuzz=FuzzResolveMalformedTokens -fuzztime=$(FUZZ_TIME)
+	go test ./internal/auth -run='^$$' -fuzz='^FuzzOIDCResolverMalformedToken$$' -fuzztime=$(FUZZ_TIME)
 
 .PHONY: test-race
 test-race:

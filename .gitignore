@@ -10,3 +10,10 @@ main
 /configs/production.yaml
 /configs/local.yaml
 /config/local.yaml
+
+# Go test artifacts
+**/testdata/fuzz/
+*.test
+coverage.out
+*.coverprofile
+*.prof
