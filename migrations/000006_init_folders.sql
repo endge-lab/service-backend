@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS folders (
     ON DELETE CASCADE,
 
     CONSTRAINT folders_entity_type_check
-    CHECK (entity_type IN ('components-legacy', 'converters', 'queries', 'data-views', 'tenants')),
+    CHECK (entity_type IN ('components-legacy', 'converters', 'queries', 'data-views', 'tenants', 'environments')),
 
     CONSTRAINT folders_identity_not_empty_check
     CHECK (btrim(identity) <> ''),

@@ -25,7 +25,7 @@
   каскадно удаляются вместе с state.
 - Схема добавлена отдельной migration
   `000022_init_domain_dependencies.sql`. Следующая и последняя migration
-  `000023_seed_swagger_demo_data.sql` содержит только demo/Swagger data.
+  `000024_seed_swagger_demo_data.sql` содержит только demo/Swagger data.
 - Repository и usecase поддерживают replace, delete, usages и
   `EnsureNotReferenced`; update projection выполняется в transaction context.
 - Dependency extractor типизирован, нормализует и дедуплицирует references,
