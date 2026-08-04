@@ -23,6 +23,22 @@ func TestValidateSecretsAllowsCredentialRefsAndTokenEndpoint(t *testing.T) {
 	}
 }
 
+func TestAuthProfileAllowsAdapterCredentialConfig(t *testing.T) {
+	input := map[string]any{
+		"identity":    "form-auth",
+		"displayName": "Form auth",
+		"config":      map[string]any{"password": "configured-at-workspace-level"},
+	}
+	if err := validateDocument("auth-profiles", input); err != nil {
+		t.Fatalf("AuthProfile adapter config rejected: %v", err)
+	}
+
+	input["clientSecret"] = "outside-adapter-config"
+	if err := validateDocument("auth-profiles", input); err == nil {
+		t.Fatal("top-level AuthProfile secret was accepted")
+	}
+}
+
 // TestQueryRequiresSourceVersionTwo проверяет фиксированную версию Query source-контракта.
 func TestQueryRequiresSourceVersionTwo(t *testing.T) {
 	input := map[string]any{"identity": "q", "displayName": "Q", "source": "query {}", "sourceVersion": float64(1)}

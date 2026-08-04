@@ -315,11 +315,6 @@ func validateDocument(kind string, input map[string]any) error {
 		if !slices.Contains([]string{"localStorage", "sessionStorage", "memory"}, stringField(input, "persist")) {
 			return domainerrors.InvalidInput("auth_profile_persist_invalid", "persist must be localStorage, sessionStorage or memory")
 		}
-		if config, exists := input["config"]; exists {
-			if err := validateSecrets(config); err != nil {
-				return err
-			}
-		}
 		if references, exists := input["credentialRefs"]; exists {
 			if err := validateCredentialRefs(references, "credentialRefs"); err != nil {
 				return err
@@ -604,10 +599,18 @@ func integrationItems(input map[string]any) ([]map[string]any, error) {
 	return result, nil
 }
 
-// normalizePortableBundle нормализует и проверяет структуру переносимого пакета.
-func normalizePortableBundle(bundle *entities.PortableBundle) {
+type portableBundleNormalization struct {
+	IgnoredIntegrations        int
+	IgnoredDeletedDocuments    int
+	IgnoredLegacyFolders       int
+	NormalizedFolderReferences int
+}
+
+// normalizePortableBundle переводит legacy portable-артефакты в контракт backend import.
+func normalizePortableBundle(bundle *entities.PortableBundle) portableBundleNormalization {
+	result := portableBundleNormalization{}
 	if bundle == nil {
-		return
+		return result
 	}
 	if bundle.Documents == nil {
 		bundle.Documents = map[string][]map[string]any{}
@@ -616,20 +619,63 @@ func normalizePortableBundle(bundle *entities.PortableBundle) {
 		bundle.Kind = "workspace-snapshot"
 	}
 	delete(bundle.Workspace, "state")
+	result.IgnoredIntegrations = len(bundle.InstalledIntegrations)
+	bundle.InstalledIntegrations = []map[string]any{}
 	if legacy, ok := bundle.Documents["componentSFCs"]; ok {
 		bundle.Documents["components"] = append(bundle.Documents["components"], legacy...)
 		delete(bundle.Documents, "componentSFCs")
 	}
-	for _, item := range bundle.InstalledIntegrations {
-		if _, ok := item["configuration"]; !ok {
-			item["configuration"] = map[string]any{}
+
+	ignoredDeletedFolders := map[string]bool{"soft-deleted": true}
+	folderTypes := map[string]string{}
+	for _, folder := range bundle.Documents["folders"] {
+		folderTypes[stringField(folder, "identity")] = stringField(folder, "entityType")
+	}
+	for changed := true; changed; {
+		changed = false
+		for _, folder := range bundle.Documents["folders"] {
+			identity := stringField(folder, "identity")
+			if identity != "" && ignoredDeletedFolders[stringField(folder, "parentIdentity")] && !ignoredDeletedFolders[identity] {
+				ignoredDeletedFolders[identity] = true
+				changed = true
+			}
 		}
 	}
-	for _, items := range bundle.Documents {
+
+	for kind, items := range bundle.Documents {
+		filtered := make([]map[string]any, 0, len(items))
 		for _, item := range items {
 			delete(item, "state")
+			if kind == "folders" {
+				identity := stringField(item, "identity")
+				if ignoredDeletedFolders[identity] || identity == "no-folder" || identity == "root-bindings" {
+					result.IgnoredLegacyFolders++
+					continue
+				}
+			}
+			if kind != "folders" && ignoredDeletedFolders[stringField(item, "folderIdentity")] {
+				result.IgnoredDeletedDocuments++
+				continue
+			}
+			if kind != "folders" {
+				folderIdentity := stringField(item, "folderIdentity")
+				switch folderIdentity {
+				case "no-folder", "root-bindings":
+					delete(item, "folderIdentity")
+					result.NormalizedFolderReferences++
+				default:
+					folderType, hasFolderType := folderTypes[folderIdentity]
+					if folderIdentity != "" && ((strings.HasPrefix(folderIdentity, "root-") && folderIdentity != "root-"+kind) || (hasFolderType && folderType != kind)) {
+						item["folderIdentity"] = "root-" + kind
+						result.NormalizedFolderReferences++
+					}
+				}
+			}
+			filtered = append(filtered, item)
 		}
+		bundle.Documents[kind] = filtered
 	}
+	return result
 }
 
 // orderPortableItems упорядочивает элементы пакета с учётом зависимостей.

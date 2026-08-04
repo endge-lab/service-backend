@@ -26,13 +26,25 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 	if !canAdmin(scope.Role) {
 		return nil, domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
 	}
-	normalizePortableBundle(&bundle)
+	normalization := normalizePortableBundle(&bundle)
 	plan := &entities.ImportPlan{
 		Valid: true, TargetWorkspace: scope.Workspace.Identity,
 		TargetETag:           workspaceETag(scope.Workspace.Generation, scope.Workspace.HeadSequence),
 		ExpectedHeadSequence: scope.Workspace.HeadSequence,
 		MissingIntegrations:  []string{}, Unsupported: []string{}, ValidationErrors: []string{},
 		Warnings: []string{"Existing workspace documents and history will be removed"},
+	}
+	if normalization.IgnoredIntegrations > 0 {
+		plan.Warnings = append(plan.Warnings, fmt.Sprintf("Installed integrations from snapshot were ignored: %d; target workspace integrations will be preserved", normalization.IgnoredIntegrations))
+	}
+	if normalization.IgnoredDeletedDocuments > 0 {
+		plan.Warnings = append(plan.Warnings, fmt.Sprintf("%d soft-deleted documents were ignored", normalization.IgnoredDeletedDocuments))
+	}
+	if normalization.IgnoredLegacyFolders > 0 {
+		plan.Warnings = append(plan.Warnings, fmt.Sprintf("%d legacy system folders were ignored", normalization.IgnoredLegacyFolders))
+	}
+	if normalization.NormalizedFolderReferences > 0 {
+		plan.Warnings = append(plan.Warnings, fmt.Sprintf("%d legacy folder references were normalized", normalization.NormalizedFolderReferences))
 	}
 	if bundle.Kind != "workspace-snapshot" {
 		plan.Valid = false
@@ -190,7 +202,7 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 	if err = json.Unmarshal(plan.Snapshot, &bundle); err != nil {
 		return nil, domainerrors.Internal("import_plan_corrupted", "Stored import plan is corrupted")
 	}
-	result = &entities.SnapshotImportResult{WorkspaceIdentity: scope.Workspace.Identity, Imported: entities.SnapshotCounts{Integrations: len(bundle.InstalledIntegrations)}}
+	result = &entities.SnapshotImportResult{WorkspaceIdentity: scope.Workspace.Identity}
 	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
 		if txErr := s.repository.LockWorkspaceSnapshot(txctx, scope.Workspace.ID); txErr != nil {
 			return txErr
@@ -219,11 +231,15 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 		if txErr != nil {
 			return txErr
 		}
+		existingIntegrations, txErr := s.repository.ListWorkspaceIntegrations(txctx, live.ID)
+		if txErr != nil {
+			return txErr
+		}
 		reset, txErr := s.repository.ResetWorkspaceSnapshotState(txctx, live.ID, bundle.Workspace, current.User.ID)
 		if txErr != nil {
 			return txErr
 		}
-		if txErr = s.repository.ReplaceWorkspaceIntegrations(txctx, reset.ID, bundle.InstalledIntegrations, current.User.ID); txErr != nil {
+		if txErr = s.repository.ReplaceWorkspaceIntegrations(txctx, reset.ID, existingIntegrations, current.User.ID); txErr != nil {
 			return txErr
 		}
 		batch, txErr := s.repository.CreateMutationBatch(txctx, &reset.ID, "bootstrap_import", current.User.ID)
@@ -252,24 +268,24 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 		for _, kind := range restoreOrder() {
 			items, orderErr := orderPortableItems(kind, bundle.Documents[kind])
 			if orderErr != nil {
-				return orderErr
+				return fmt.Errorf("order imported %s: %w", kind, orderErr)
 			}
 			for _, item := range items {
 				document := documentFromInput(kind, reset.ID, item, current.User.ID)
 				document.Revision = nextImportedRevision(baselines, kind, document.Identity)
 				folderID, resolveErr := s.resolveFolder(txctx, importScope, kind, item)
 				if resolveErr != nil {
-					return resolveErr
+					return fmt.Errorf("resolve imported %s:%s folder: %w", kind, document.Identity, resolveErr)
 				}
 				created, insertErr := s.repository.InsertDocument(txctx, document, folderID)
 				if insertErr != nil {
-					return insertErr
+					return fmt.Errorf("insert imported %s:%s: %w", kind, document.Identity, insertErr)
 				}
 				if insertErr = s.replaceStructuredRelations(txctx, *created); insertErr != nil {
-					return insertErr
+					return fmt.Errorf("relate imported %s:%s: %w", kind, document.Identity, insertErr)
 				}
 				if _, insertErr = s.recordRevision(txctx, *created, "create", nil); insertErr != nil {
-					return insertErr
+					return fmt.Errorf("record imported %s:%s revision: %w", kind, document.Identity, insertErr)
 				}
 				result.Imported.Documents++
 			}
