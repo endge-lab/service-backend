@@ -47,21 +47,31 @@ type IdentityConfig struct {
 // ConfiguratorAuthConfig owns the browser login flow and the server-side
 // Configurator session. Provider tokens never leave the backend.
 type ConfiguratorAuthConfig struct {
-	Adapter              string
-	AuthorizationURL     string
-	TokenURL             string
-	LogoutURL            string
-	ClientID             string
-	ClientSecret         string
-	Scopes               []string
-	RedirectURL          string
-	ReturnURL            string
-	SessionCookieName    string
-	SessionEncryptionKey string
-	SessionTTL           time.Duration
-	TransactionTTL       time.Duration
-	CookieSecure         bool
-	CookieDomain         string
+	Adapter                       string
+	AuthorizationURL              string
+	TokenURL                      string
+	LogoutURL                     string
+	ClientID                      string
+	ClientSecret                  string
+	Scopes                        []string
+	RedirectURL                   string
+	ReturnURL                     string
+	SessionCookieName             string
+	SessionEncryptionKeyID        string
+	SessionEncryptionKey          string
+	SessionPreviousEncryptionKeys []SessionEncryptionKeyConfig
+	SessionTTL                    time.Duration
+	TransactionTTL                time.Duration
+	SessionCleanupInterval        time.Duration
+	CookieSecure                  bool
+	CookieDomain                  string
+}
+
+// SessionEncryptionKeyConfig описывает предыдущий ключ, оставленный только
+// для расшифровки уже существующих login transactions и browser sessions.
+type SessionEncryptionKeyConfig struct {
+	ID  string
+	Key string
 }
 
 type Config struct {
@@ -102,22 +112,29 @@ func Load() (*Config, error) {
 	if err := identity.Validate(base.App.IsProduction()); err != nil {
 		return nil, err
 	}
+	previousSessionKeys, err := parseSessionEncryptionKeys(os.Getenv("AUTH_SESSION_PREVIOUS_ENCRYPTION_KEYS"))
+	if err != nil {
+		return nil, err
+	}
 	configuratorAuth := ConfiguratorAuthConfig{
-		Adapter:              env("AUTH_LOGIN_ADAPTER", loginAdapterDefault(identity.Mode)),
-		AuthorizationURL:     env("AUTH_AUTHORIZATION_URL", ""),
-		TokenURL:             env("AUTH_TOKEN_URL", ""),
-		LogoutURL:            env("AUTH_LOGOUT_URL", ""),
-		ClientID:             env("AUTH_CLIENT_ID", ""),
-		ClientSecret:         strings.TrimSpace(os.Getenv("AUTH_CLIENT_SECRET")),
-		Scopes:               csv(env("AUTH_SCOPES", "openid,profile,email")),
-		RedirectURL:          env("AUTH_REDIRECT_URL", strings.TrimRight(base.App.PublicURL, "/")+"/auth/callback"),
-		ReturnURL:            env("AUTH_RETURN_URL", strings.TrimRight(base.App.PublicURL, "/")),
-		SessionCookieName:    env("AUTH_SESSION_COOKIE_NAME", "endge_configurator_session"),
-		SessionEncryptionKey: strings.TrimSpace(os.Getenv("AUTH_SESSION_ENCRYPTION_KEY")),
-		SessionTTL:           envDuration("AUTH_SESSION_TTL", 8*time.Hour),
-		TransactionTTL:       envDuration("AUTH_TRANSACTION_TTL", 10*time.Minute),
-		CookieSecure:         envBool("AUTH_COOKIE_SECURE", base.App.IsProduction()),
-		CookieDomain:         strings.TrimSpace(os.Getenv("AUTH_COOKIE_DOMAIN")),
+		Adapter:                       env("AUTH_LOGIN_ADAPTER", loginAdapterDefault(identity.Mode)),
+		AuthorizationURL:              env("AUTH_AUTHORIZATION_URL", ""),
+		TokenURL:                      env("AUTH_TOKEN_URL", ""),
+		LogoutURL:                     env("AUTH_LOGOUT_URL", ""),
+		ClientID:                      env("AUTH_CLIENT_ID", ""),
+		ClientSecret:                  strings.TrimSpace(os.Getenv("AUTH_CLIENT_SECRET")),
+		Scopes:                        csv(env("AUTH_SCOPES", "openid,profile,email")),
+		RedirectURL:                   env("AUTH_REDIRECT_URL", strings.TrimRight(base.App.PublicURL, "/")+"/auth/callback"),
+		ReturnURL:                     env("AUTH_RETURN_URL", strings.TrimRight(base.App.PublicURL, "/")),
+		SessionCookieName:             env("AUTH_SESSION_COOKIE_NAME", "endge_configurator_session"),
+		SessionEncryptionKeyID:        env("AUTH_SESSION_ENCRYPTION_KEY_ID", "v1"),
+		SessionEncryptionKey:          strings.TrimSpace(os.Getenv("AUTH_SESSION_ENCRYPTION_KEY")),
+		SessionPreviousEncryptionKeys: previousSessionKeys,
+		SessionTTL:                    envDuration("AUTH_SESSION_TTL", 8*time.Hour),
+		TransactionTTL:                envDuration("AUTH_TRANSACTION_TTL", 10*time.Minute),
+		SessionCleanupInterval:        envDuration("AUTH_SESSION_CLEANUP_INTERVAL", 15*time.Minute),
+		CookieSecure:                  envBool("AUTH_COOKIE_SECURE", base.App.IsProduction()),
+		CookieDomain:                  strings.TrimSpace(os.Getenv("AUTH_COOKIE_DOMAIN")),
 	}
 	if err := configuratorAuth.Validate(base.App.IsProduction()); err != nil {
 		return nil, err
@@ -163,13 +180,59 @@ func (c ConfiguratorAuthConfig) Validate(production bool) error {
 	if err != nil || len(key) != 32 {
 		return fmt.Errorf("AUTH_SESSION_ENCRYPTION_KEY must be a base64-encoded 32-byte key")
 	}
-	if c.SessionTTL <= 0 || c.TransactionTTL <= 0 {
+	if !validEncryptionKeyID(c.SessionEncryptionKeyID) {
+		return fmt.Errorf("AUTH_SESSION_ENCRYPTION_KEY_ID must contain only letters, digits, dot, underscore or hyphen")
+	}
+	seen := map[string]struct{}{c.SessionEncryptionKeyID: {}}
+	for _, previous := range c.SessionPreviousEncryptionKeys {
+		if !validEncryptionKeyID(previous.ID) {
+			return fmt.Errorf("previous Configurator session encryption key id %q is invalid", previous.ID)
+		}
+		if _, exists := seen[previous.ID]; exists {
+			return fmt.Errorf("Configurator session encryption key id %q is duplicated", previous.ID)
+		}
+		seen[previous.ID] = struct{}{}
+		decoded, decodeErr := base64.StdEncoding.DecodeString(previous.Key)
+		if decodeErr != nil || len(decoded) != 32 {
+			return fmt.Errorf("previous Configurator session encryption key %q must be a base64-encoded 32-byte key", previous.ID)
+		}
+	}
+	if c.SessionTTL <= 0 || c.TransactionTTL <= 0 || c.SessionCleanupInterval <= 0 {
 		return fmt.Errorf("auth session durations must be positive")
 	}
 	if production && !c.CookieSecure {
 		return fmt.Errorf("AUTH_COOKIE_SECURE must be true in production")
 	}
 	return nil
+}
+
+func parseSessionEncryptionKeys(value string) ([]SessionEncryptionKeyConfig, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil, nil
+	}
+	result := make([]SessionEncryptionKeyConfig, 0)
+	for _, raw := range strings.Split(value, ",") {
+		parts := strings.SplitN(strings.TrimSpace(raw), ":", 2)
+		if len(parts) != 2 || strings.TrimSpace(parts[0]) == "" || strings.TrimSpace(parts[1]) == "" {
+			return nil, fmt.Errorf("AUTH_SESSION_PREVIOUS_ENCRYPTION_KEYS must use key-id:base64-key entries")
+		}
+		result = append(result, SessionEncryptionKeyConfig{ID: strings.TrimSpace(parts[0]), Key: strings.TrimSpace(parts[1])})
+	}
+	return result, nil
+}
+
+func validEncryptionKeyID(value string) bool {
+	if len(value) == 0 || len(value) > 64 {
+		return false
+	}
+	for _, char := range value {
+		if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9') || char == '.' || char == '_' || char == '-' {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func legacyJWKSURL(value kitconfig.ServiceAuthConfig) string {

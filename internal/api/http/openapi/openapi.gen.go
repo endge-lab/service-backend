@@ -15802,6 +15802,14 @@ var openAPI3YAML = []byte(
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
+		"        navigationIdentity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"        order:\n" +
+		"          type: integer\n" +
+		"        slug:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
 		"    project.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -15858,6 +15866,14 @@ var openAPI3YAML = []byte(
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
+		"        navigationIdentity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"        order:\n" +
+		"          type: integer\n" +
+		"        slug:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
 		"    project.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -15912,9 +15928,15 @@ var openAPI3YAML = []byte(
 		"          example: endge-core\n" +
 		"        meta:\n" +
 		"          type: object\n" +
+		"        navigationIdentity:\n" +
+		"          type: string\n" +
+		"        order:\n" +
+		"          type: integer\n" +
 		"        revision:\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
+		"        slug:\n" +
+		"          type: string\n" +
 		"        updatedAt:\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
@@ -16441,6 +16463,13 @@ var openAPI3YAML = []byte(
 		"        revision:\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
+		"        role:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - viewer\n" +
+		"            - editor\n" +
+		"            - admin\n" +
+		"          example: editor\n" +
 		"        updatedAt:\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +

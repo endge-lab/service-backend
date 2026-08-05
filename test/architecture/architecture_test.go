@@ -150,6 +150,8 @@ func TestDomainMigrationOrder(t *testing.T) {
 		"000035_bootstrap.sql",
 		"000036_workspace_snapshots.sql",
 		"000037_configurator_auth_sessions.sql",
+		"000038_default_workspace_configuration.sql",
+		"000039_bootstrap_default_domain.sql",
 	}
 
 	entries, err := os.ReadDir(filepath.Join(root, "migrations"))

@@ -9,6 +9,7 @@ import (
 func InvokeModules() fx.Option {
 	return fx.Options(
 		fx.Invoke(
+			registerAuthSessionCleanup,
 			httpapi.SetupRoutes,
 		),
 	)

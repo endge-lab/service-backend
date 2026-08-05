@@ -57,6 +57,16 @@ func TestMigrationSchemaGuards(t *testing.T) {
 			t.Fatalf("исключённая таблица %s присутствует в MVP schema", table)
 		}
 	}
+
+	var accessTokenColumn, identityRefreshColumn bool
+	if err := database.Pool.QueryRow(ctx, `SELECT
+		EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='configurator_auth_sessions' AND column_name='access_token_encrypted'),
+		EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='configurator_auth_sessions' AND column_name='identity_refresh_at')`).Scan(&accessTokenColumn, &identityRefreshColumn); err != nil {
+		t.Fatalf("проверить auth session schema: %v", err)
+	}
+	if accessTokenColumn || !identityRefreshColumn {
+		t.Fatalf("неверная auth session schema: access_token_encrypted=%t identity_refresh_at=%t", accessTokenColumn, identityRefreshColumn)
+	}
 }
 
 func assertMigrationState(t *testing.T, database interface {
@@ -67,8 +77,8 @@ func assertMigrationState(t *testing.T, database interface {
 	if err != nil {
 		t.Fatalf("получить migration status: %v", err)
 	}
-	if len(statuses) != 37 {
-		t.Fatalf("миграций = %d, ожидалось 37", len(statuses))
+	if len(statuses) != 41 {
+		t.Fatalf("миграций = %d, ожидалось 41", len(statuses))
 	}
 	for index, status := range statuses {
 		if status.Source == nil || status.Source.Version != int64(index+1) {

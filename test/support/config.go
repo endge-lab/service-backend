@@ -23,7 +23,7 @@ func DevConfig() *config.Config {
 	return &config.Config{
 		ServiceConfig:    base,
 		Identity:         config.IdentityConfig{Mode: "dev", DevSubject: "e2e-user", DevUsername: "e2e", DevDisplayName: "E2E User", DevPlatformAdmin: true},
-		ConfiguratorAuth: config.ConfiguratorAuthConfig{Adapter: "dev", ReturnURL: "http://configurator.test", SessionCookieName: "endge_test_session", SessionTTL: time.Hour, TransactionTTL: time.Minute},
+		ConfiguratorAuth: config.ConfiguratorAuthConfig{Adapter: "dev", ReturnURL: "http://configurator.test", SessionCookieName: "endge_test_session", SessionTTL: time.Hour, TransactionTTL: time.Minute, SessionCleanupInterval: time.Minute},
 		Snapshots:        config.SnapshotConfig{ImportBackupRetentionDays: 7},
 	}
 }

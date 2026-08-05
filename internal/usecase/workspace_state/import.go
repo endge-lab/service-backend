@@ -82,6 +82,10 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 	}
 	for kind, items := range bundle.Documents {
 		if slices.Contains(UnsupportedCollections, kind) || !slices.Contains(Collections, kind) {
+			if len(items) == 0 {
+				delete(bundle.Documents, kind)
+				continue
+			}
 			plan.Valid = false
 			plan.Unsupported = append(plan.Unsupported, kind)
 			continue

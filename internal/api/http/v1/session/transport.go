@@ -38,6 +38,7 @@ type WorkspaceResponse struct {
 	UpdatedBy     entities.Actor  `json:"updatedBy"`
 	CreatedAt     time.Time       `json:"createdAt" example:"2026-08-04T10:00:00Z" format:"date-time"`
 	UpdatedAt     time.Time       `json:"updatedAt" example:"2026-08-04T10:05:00Z" format:"date-time"`
+	Role          string          `json:"role" example:"editor" enums:"viewer,editor,admin"`
 }
 
 type Response struct {
@@ -48,5 +49,18 @@ type Response struct {
 
 // NewResponse безопасно преобразует application-результат в HTTP-ответ.
 func NewResponse(value resourceusecase.Result) (Response, error) {
-	return shared.DecodeValue[Response](value)
+	user, err := shared.DecodeValue[UserResponse](value.User)
+	if err != nil {
+		return Response{}, err
+	}
+	workspaces := make([]WorkspaceResponse, 0, len(value.Workspaces))
+	for _, access := range value.Workspaces {
+		workspace, mapErr := shared.DecodeValue[WorkspaceResponse](access.Workspace)
+		if mapErr != nil {
+			return Response{}, mapErr
+		}
+		workspace.Role = access.Role
+		workspaces = append(workspaces, workspace)
+	}
+	return Response{User: &user, PlatformAdmin: value.PlatformAdmin, Workspaces: workspaces}, nil
 }

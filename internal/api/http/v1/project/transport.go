@@ -8,18 +8,27 @@ import (
 type CreateRequest struct {
 	shared.CreateDocumentRequest
 	Configuration       map[string]any `json:"configuration,omitempty"`
+	Slug                *string        `json:"slug,omitempty" validate:"omitempty,max=160"`
+	Order               *int           `json:"order,omitempty"`
+	NavigationIdentity  *string        `json:"navigationIdentity,omitempty" validate:"omitempty,max=160"`
 	AllowedEnvironments []string       `json:"allowedEnvironments,omitempty" validate:"omitempty,dive,min=1,max=160" example:"development,production"`
 }
 
 type PatchRequest struct {
 	shared.PatchDocumentRequest
 	Configuration       *map[string]any `json:"configuration,omitempty"`
+	Slug                *string         `json:"slug,omitempty" validate:"omitempty,max=160"`
+	Order               *int            `json:"order,omitempty"`
+	NavigationIdentity  *string         `json:"navigationIdentity,omitempty" validate:"omitempty,max=160"`
 	AllowedEnvironments *[]string       `json:"allowedEnvironments,omitempty" validate:"omitempty,dive,min=1,max=160"`
 }
 
 type Response struct {
 	shared.DocumentMetadata
 	Configuration       map[string]any `json:"configuration"`
+	Slug                *string        `json:"slug,omitempty"`
+	Order               *int           `json:"order,omitempty"`
+	NavigationIdentity  *string        `json:"navigationIdentity,omitempty"`
 	AllowedEnvironments []string       `json:"allowedEnvironments" example:"development,production"`
 }
 

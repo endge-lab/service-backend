@@ -51,7 +51,8 @@ func OIDCConfig(provider *IdentityProvider) *config.Config {
 		LogoutURL: provider.URL() + "/logout", ClientID: "endge-configurator", RedirectURL: "http://backend.test/auth/callback",
 		ReturnURL: "http://configurator.test", SessionCookieName: "endge_test_session",
 		SessionEncryptionKey: base64.StdEncoding.EncodeToString(make([]byte, 32)), SessionTTL: time.Hour,
-		TransactionTTL: time.Minute, Scopes: []string{"openid", "profile"},
+		SessionEncryptionKeyID: "test-v1", TransactionTTL: time.Minute, SessionCleanupInterval: time.Minute,
+		Scopes: []string{"openid", "profile"},
 	}
 	return value
 }

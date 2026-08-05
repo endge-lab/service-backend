@@ -352,14 +352,9 @@ func validateProjectContract(kind string, input map[string]any) error {
 	if kind != "projects" {
 		return nil
 	}
-	for _, field := range []string{"slug", "order", "sortOrder", "sort_order"} {
+	for _, field := range []string{"navigation", "navigationId", "sortOrder", "sort_order"} {
 		if _, exists := input[field]; exists {
-			return domainerrors.InvalidInput("project_ordering_unsupported", "Project does not contain slug or ordering fields")
-		}
-	}
-	for _, field := range []string{"navigation", "navigationId", "navigationIdentity"} {
-		if _, exists := input[field]; exists {
-			return domainerrors.InvalidInput("project_navigation_unsupported", "Project does not contain a navigation relation")
+			return domainerrors.InvalidInput("project_legacy_field", "Project must use order and navigationIdentity")
 		}
 	}
 	return nil
@@ -646,6 +641,11 @@ func normalizePortableBundle(bundle *entities.PortableBundle) portableBundleNorm
 		filtered := make([]map[string]any, 0, len(items))
 		for _, item := range items {
 			delete(item, "state")
+			if kind == "queries" {
+				if sourceVersion, ok := numberField(item, "sourceVersion"); ok && sourceVersion == 1 {
+					item["sourceVersion"] = 2
+				}
+			}
 			if kind == "folders" {
 				identity := stringField(item, "identity")
 				if ignoredDeletedFolders[identity] || identity == "no-folder" || identity == "root-bindings" {
@@ -735,6 +735,7 @@ func applyStructuredIdentityMap(kind string, item map[string]any, identityMap ma
 	case "vocabs":
 		mapField("authProfileIdentity", "auth-profiles")
 	case "projects":
+		mapField("navigationIdentity", "navigations")
 		for _, field := range []string{"allowedEnvironments", "allowedEnvironmentIdentities"} {
 			values, ok := item[field].([]any)
 			if !ok {

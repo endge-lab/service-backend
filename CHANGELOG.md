@@ -19,6 +19,8 @@
 - System root folders, защита от циклов и перенос содержимого при soft-delete папки.
 - Декларативная transport validation через `service-kit-go` с единым `validation_error.details.fields` и запретом неизвестных JSON-полей.
 - Focused contract tests для strict decoding, validation, ETag и обязательного `If-Match`.
+- Versioned encryption keyring для безопасной ротации refresh token и временных OIDC-данных без принудительного завершения активных сессий.
+- Lifecycle-очистка просроченных login transactions и browser sessions.
 
 ### Изменено
 
@@ -34,10 +36,11 @@
 - OpenAPI и документация запуска обновлены под новый backend-контракт.
 - Generic Scalar paths заменены на отдельные CRUD paths и типизированные request/response schemas всех 22 MVP-коллекций.
 - HTTP handlers переведены на локальные `UseCase` interfaces, application write inputs стали типизированными, а panic-based response mapping удалён.
+- Browser sessions больше не сохраняют access token; обычная проверка сессии не блокирует строку PostgreSQL, а `FOR UPDATE` используется только во время refresh identity.
 
 ### Breaking changes
 
-- База должна быть создана заново миграциями `000001`–`000036`.
+- База должна быть создана заново миграциями `000001`–`000039`.
 - Старый Payload API напрямую не совместим с новым контрактом; frontend должен использовать adapter.
 - Весь `/api` требует Current User, а workspace-scoped endpoints — заголовок `X-Endge-Workspace`.
 - PATCH, DELETE и restore требуют актуальный `If-Match`.

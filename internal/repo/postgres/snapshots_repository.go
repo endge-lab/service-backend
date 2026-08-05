@@ -32,7 +32,7 @@ func (r *EndgeRepository) ExportLiveWorkspace(ctx context.Context, workspaceID s
 	}
 	sort.Strings(kinds)
 	for _, kind := range kinds {
-		documents, listErr := r.listAllActiveDocuments(ctx, workspaceID, kind)
+		documents, listErr := r.listAllDocuments(ctx, workspaceID, kind, true)
 		if listErr != nil {
 			return nil, listErr
 		}
@@ -48,7 +48,7 @@ func (r *EndgeRepository) ExportLiveWorkspace(ctx context.Context, workspaceID s
 			item["managedById"] = document.ManagedByID
 			item["meta"] = json.RawMessage(document.Meta)
 			item["active"] = document.Active
-			item["state"] = map[string]any{"id": document.ID, "revision": document.Revision, "createdBy": document.CreatedBy, "updatedBy": document.UpdatedBy, "createdAt": document.CreatedAt, "updatedAt": document.UpdatedAt}
+			item["state"] = map[string]any{"id": document.ID, "revision": document.Revision, "deletedAt": document.DeletedAt, "createdBy": document.CreatedBy, "updatedBy": document.UpdatedBy, "createdAt": document.CreatedAt, "updatedAt": document.UpdatedAt}
 			items = append(items, item)
 		}
 		bundle.Documents[kind] = items

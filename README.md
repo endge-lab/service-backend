@@ -92,7 +92,10 @@ AUTH_CLIENT_ID=endge-configurator
 AUTH_REDIRECT_URL=https://backend.example.com/auth/callback
 AUTH_RETURN_URL=https://configurator.example.com
 AUTH_SESSION_COOKIE_NAME=endge_configurator_session
+AUTH_SESSION_ENCRYPTION_KEY_ID=v1
 AUTH_SESSION_ENCRYPTION_KEY=<base64-encoded-32-byte-key>
+AUTH_SESSION_PREVIOUS_ENCRYPTION_KEYS=
+AUTH_SESSION_CLEANUP_INTERVAL=15m
 AUTH_COOKIE_SECURE=true
 ```
 
@@ -110,9 +113,24 @@ GET  /auth/session
 POST /auth/logout
 ```
 
-Callback хранит provider tokens в зашифрованной PostgreSQL session и выдаёт
-браузеру только opaque `HttpOnly` cookie. `GET /health` публичен. Весь `/api`
+Callback хранит в PostgreSQL только зашифрованный refresh token (если provider
+его выдал) и выдаёт браузеру opaque `HttpOnly` cookie. Access token после
+проверки не сохраняется. `GET /health` публичен. Весь `/api`
 принимает эту cookie или bearer token, кроме development с явным `AUTH_MODE=dev`.
+
+Зашифрованные auth-значения содержат версию ключа. Для ротации сначала задайте
+новые `AUTH_SESSION_ENCRYPTION_KEY_ID` и `AUTH_SESSION_ENCRYPTION_KEY`, а старый
+ключ перенесите в список вида
+`AUTH_SESSION_PREVIOUS_ENCRYPTION_KEYS=v1:<base64>,v0:<base64>`. Новые и
+обновляемые sessions шифруются текущим ключом; предыдущие используются только
+для чтения. Старые ключи можно убрать после истечения большего из
+`AUTH_SESSION_TTL` и `AUTH_TRANSACTION_TTL` для данных, созданных до ротации. Просроченные login
+transactions и sessions удаляются фоновым процессом с интервалом
+`AUTH_SESSION_CLEANUP_INTERVAL`, а не внутри login request.
+
+Таблицы `configurator_auth_transactions` и `configurator_auth_sessions` являются
+внутренним security-state сервиса и не входят в workspace snapshot, export,
+backup или release.
 
 ## Workspace и конкурентная запись
 

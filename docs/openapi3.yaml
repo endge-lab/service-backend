@@ -15797,6 +15797,14 @@ components:
         meta:
           type: object
           additionalProperties: {}
+        navigationIdentity:
+          type: string
+          maxLength: 160
+        order:
+          type: integer
+        slug:
+          type: string
+          maxLength: 160
     project.ListResponse:
       type: object
       properties:
@@ -15853,6 +15861,14 @@ components:
         meta:
           type: object
           additionalProperties: {}
+        navigationIdentity:
+          type: string
+          maxLength: 160
+        order:
+          type: integer
+        slug:
+          type: string
+          maxLength: 160
     project.Response:
       type: object
       properties:
@@ -15907,9 +15923,15 @@ components:
           example: endge-core
         meta:
           type: object
+        navigationIdentity:
+          type: string
+        order:
+          type: integer
         revision:
           type: integer
           example: 3
+        slug:
+          type: string
         updatedAt:
           type: string
           format: date-time
@@ -16436,6 +16458,13 @@ components:
         revision:
           type: integer
           example: 3
+        role:
+          type: string
+          enum:
+            - viewer
+            - editor
+            - admin
+          example: editor
         updatedAt:
           type: string
           format: date-time

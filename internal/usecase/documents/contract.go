@@ -67,15 +67,11 @@ func validateDocument(kind string, input map[string]any) error {
 		return domainerrors.InvalidInput("update_store_required", "storeIdentity is required")
 	}
 	if kind == "projects" {
-		for _, field := range []string{"slug", "order", "sortOrder", "sort_order"} {
-			if _, exists := input[field]; exists {
-				return domainerrors.InvalidInput("project_ordering_unsupported", "Project does not contain slug or ordering fields")
-			}
+		if _, exists := input["navigation"]; exists {
+			return domainerrors.InvalidInput("project_navigation_legacy", "Project navigation must use navigationIdentity")
 		}
-		for _, field := range []string{"navigation", "navigationId", "navigationIdentity"} {
-			if _, exists := input[field]; exists {
-				return domainerrors.InvalidInput("project_navigation_unsupported", "Project does not contain a navigation relation")
-			}
+		if _, exists := input["navigationId"]; exists {
+			return domainerrors.InvalidInput("project_navigation_legacy", "Project navigation must use navigationIdentity")
 		}
 	}
 	if kind == "folders" {

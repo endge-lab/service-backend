@@ -73,3 +73,14 @@ func TestNormalizePortableBundleIgnoresLegacyImportState(t *testing.T) {
 		t.Fatalf("cross-collection folder was not normalized: %q", folder)
 	}
 }
+
+func TestNormalizePortableBundleMigratesQueryV1(t *testing.T) {
+	bundle := entities.PortableBundle{Documents: map[string][]map[string]any{
+		"queries": {{"identity": "query-a", "displayName": "Query A", "source": "query {}", "sourceVersion": float64(1)}},
+		"pages":   {},
+	}}
+	normalizePortableBundle(&bundle)
+	if version, ok := numberField(bundle.Documents["queries"][0], "sourceVersion"); !ok || version != 2 {
+		t.Fatalf("query sourceVersion was not migrated to v2: %#v", bundle.Documents["queries"][0])
+	}
+}

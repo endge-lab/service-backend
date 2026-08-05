@@ -2,8 +2,6 @@ package auth
 
 import (
 	"context"
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
@@ -37,7 +35,7 @@ type SessionManager struct {
 	pool     *pgxpool.Pool
 	registry *LoginAdapterRegistry
 	resolver Resolver
-	aead     cipher.AEAD
+	keyring  *sessionEncryptionKeyring
 	loginURL string
 }
 
@@ -49,17 +47,10 @@ func NewSessionManager(cfg *config.Config, pool *pgxpool.Pool, registry *LoginAd
 	if cfg.ConfiguratorAuth.Adapter == "dev" {
 		return manager, nil
 	}
-	key, err := base64.StdEncoding.DecodeString(cfg.ConfiguratorAuth.SessionEncryptionKey)
+	var err error
+	manager.keyring, err = newSessionEncryptionKeyring(cfg.ConfiguratorAuth)
 	if err != nil {
-		return nil, fmt.Errorf("decode Configurator session encryption key: %w", err)
-	}
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, fmt.Errorf("initialize Configurator session encryption: %w", err)
-	}
-	manager.aead, err = cipher.NewGCM(block)
-	if err != nil {
-		return nil, fmt.Errorf("initialize Configurator session AEAD: %w", err)
+		return nil, err
 	}
 	return manager, nil
 }
@@ -68,14 +59,15 @@ func (m *SessionManager) CookieName() string        { return m.config.SessionCoo
 func (m *SessionManager) CookieSecure() bool        { return m.config.CookieSecure }
 func (m *SessionManager) CookieDomain() string      { return m.config.CookieDomain }
 func (m *SessionManager) SessionTTL() time.Duration { return m.config.SessionTTL }
-func (m *SessionManager) LoginURL() string          { return m.loginURL }
+func (m *SessionManager) CleanupInterval() time.Duration {
+	return m.config.SessionCleanupInterval
+}
+func (m *SessionManager) LoginURL() string { return m.loginURL }
 
 func (m *SessionManager) Begin(ctx context.Context, requestedReturnURL string) (LoginStart, error) {
 	if m.config.Adapter == "dev" {
 		return LoginStart{Location: m.safeReturnURL(requestedReturnURL)}, nil
 	}
-	_, _ = m.pool.Exec(ctx, `DELETE FROM configurator_auth_transactions WHERE expires_at<=NOW()`)
-	_, _ = m.pool.Exec(ctx, `DELETE FROM configurator_auth_sessions WHERE expires_at<=NOW() OR revoked_at<=NOW()-INTERVAL '1 day'`)
 	adapter, err := m.registry.Current()
 	if err != nil {
 		return LoginStart{}, err
@@ -169,10 +161,6 @@ func (m *SessionManager) Complete(ctx context.Context, state, code, browserNonce
 	if err != nil {
 		return "", "", time.Time{}, err
 	}
-	accessEncrypted, err := m.encrypt(tokens.AccessToken)
-	if err != nil {
-		return "", "", time.Time{}, err
-	}
 	refreshEncrypted, err := m.encryptOptional(tokens.RefreshToken)
 	if err != nil {
 		return "", "", time.Time{}, err
@@ -187,10 +175,10 @@ func (m *SessionManager) Complete(ctx context.Context, state, code, browserNonce
 	_, err = m.pool.Exec(ctx, `
 		INSERT INTO configurator_auth_sessions(
 			token_hash,provider_id,subject,issuer,username,display_name,groups_json,platform_admin,
-			access_token_encrypted,refresh_token_encrypted,access_expires_at,expires_at)
-		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+			refresh_token_encrypted,identity_refresh_at,expires_at)
+		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
 		hashToken(cookieToken), claims.ProviderID, claims.Subject, claims.Issuer, claims.Username, claims.DisplayName,
-		groups, claims.PlatformAdmin, accessEncrypted, nullableBytes(refreshEncrypted), accessExpiresAt, sessionExpiresAt)
+		groups, claims.PlatformAdmin, nullableBytes(refreshEncrypted), accessExpiresAt, sessionExpiresAt)
 	if err != nil {
 		return "", "", time.Time{}, fmt.Errorf("create Configurator session: %w", err)
 	}
@@ -201,29 +189,29 @@ func (m *SessionManager) Resolve(ctx context.Context, cookieToken string) (Sessi
 	if strings.TrimSpace(cookieToken) == "" {
 		return SessionIdentity{}, fmt.Errorf("Configurator session cookie is required")
 	}
+	record, err := scanSessionRecord(m.pool.QueryRow(ctx, sessionSelect(false), hashToken(cookieToken)))
+	if err != nil {
+		return SessionIdentity{}, err
+	}
+	if !record.identityRefreshDue(time.Now()) {
+		return record.identity(), nil
+	}
+	return m.resolveWithRefresh(ctx, cookieToken)
+}
+
+func (m *SessionManager) resolveWithRefresh(ctx context.Context, cookieToken string) (SessionIdentity, error) {
 	tx, err := m.pool.Begin(ctx)
 	if err != nil {
 		return SessionIdentity{}, fmt.Errorf("begin Configurator session resolution: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
-	var record sessionRecord
-	var groupsJSON []byte
-	err = tx.QueryRow(ctx, `
-		SELECT id::text,provider_id,subject,issuer,username,display_name,groups_json,platform_admin,
-			access_token_encrypted,refresh_token_encrypted,access_expires_at,expires_at
-		FROM configurator_auth_sessions
-		WHERE token_hash=$1 AND revoked_at IS NULL AND expires_at>NOW()
-		FOR UPDATE`, hashToken(cookieToken)).Scan(
-		&record.ID, &record.ProviderID, &record.Subject, &record.Issuer, &record.Username, &record.DisplayName,
-		&groupsJSON, &record.PlatformAdmin, &record.AccessTokenEncrypted, &record.RefreshTokenEncrypted,
-		&record.AccessExpiresAt, &record.ExpiresAt)
+	record, err := scanSessionRecord(tx.QueryRow(ctx, sessionSelect(true), hashToken(cookieToken)))
 	if err != nil {
-		return SessionIdentity{}, fmt.Errorf("Configurator session is invalid")
+		return SessionIdentity{}, err
 	}
-	if err = json.Unmarshal(groupsJSON, &record.Groups); err != nil {
-		return SessionIdentity{}, fmt.Errorf("decode Configurator session groups: %w", err)
-	}
-	if record.AccessExpiresAt.Before(time.Now().Add(30 * time.Second)) {
+	// После получения блокировки состояние перечитывается: другой запрос мог
+	// успеть обновить identity claims, пока этот запрос ожидал FOR UPDATE.
+	if record.identityRefreshDue(time.Now()) {
 		identity, refreshErr := m.refresh(ctx, tx, cookieToken, record)
 		if refreshErr != nil {
 			_, _ = tx.Exec(ctx, `UPDATE configurator_auth_sessions SET revoked_at=NOW(),updated_at=NOW() WHERE token_hash=$1`, hashToken(cookieToken))
@@ -235,10 +223,42 @@ func (m *SessionManager) Resolve(ctx context.Context, cookieToken string) (Sessi
 		}
 		return identity, nil
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return SessionIdentity{}, fmt.Errorf("commit Configurator session resolution: %w", err)
 	}
 	return record.identity(), nil
+}
+
+func sessionSelect(forUpdate bool) string {
+	query := `
+		SELECT id::text,provider_id,subject,issuer,username,display_name,groups_json,platform_admin,
+			refresh_token_encrypted,identity_refresh_at,expires_at
+		FROM configurator_auth_sessions
+		WHERE token_hash=$1 AND revoked_at IS NULL AND expires_at>NOW()`
+	if forUpdate {
+		query += ` FOR UPDATE`
+	}
+	return query
+}
+
+type sessionRow interface {
+	Scan(dest ...any) error
+}
+
+func scanSessionRecord(row sessionRow) (sessionRecord, error) {
+	var record sessionRecord
+	var groupsJSON []byte
+	if err := row.Scan(
+		&record.ID, &record.ProviderID, &record.Subject, &record.Issuer, &record.Username, &record.DisplayName,
+		&groupsJSON, &record.PlatformAdmin, &record.RefreshTokenEncrypted, &record.IdentityRefreshAt,
+		&record.ExpiresAt,
+	); err != nil {
+		return sessionRecord{}, fmt.Errorf("Configurator session is invalid")
+	}
+	if err := json.Unmarshal(groupsJSON, &record.Groups); err != nil {
+		return sessionRecord{}, fmt.Errorf("decode Configurator session groups: %w", err)
+	}
+	return record, nil
 }
 
 func (m *SessionManager) Revoke(ctx context.Context, cookieToken string) error {
@@ -291,26 +311,42 @@ func (m *SessionManager) refresh(ctx context.Context, tx pgx.Tx, cookieToken str
 	if tokens.RefreshToken == "" {
 		tokens.RefreshToken = refreshToken
 	}
-	accessEncrypted, err := m.encrypt(tokens.AccessToken)
-	if err != nil {
-		return SessionIdentity{}, err
-	}
 	refreshEncrypted, err := m.encryptOptional(tokens.RefreshToken)
 	if err != nil {
 		return SessionIdentity{}, err
 	}
 	groups, _ := json.Marshal(claims.Groups)
-	accessExpiresAt := tokenExpiry(time.Now(), tokens.ExpiresIn, claims.ExpiresAt)
+	identityRefreshAt := tokenExpiry(time.Now(), tokens.ExpiresIn, claims.ExpiresAt)
 	_, err = tx.Exec(ctx, `
 		UPDATE configurator_auth_sessions SET username=$1,display_name=$2,groups_json=$3,platform_admin=$4,
-			access_token_encrypted=$5,refresh_token_encrypted=$6,access_expires_at=$7,updated_at=NOW()
-		WHERE token_hash=$8 AND revoked_at IS NULL`, claims.Username, claims.DisplayName, groups, claims.PlatformAdmin,
-		accessEncrypted, nullableBytes(refreshEncrypted), accessExpiresAt, hashToken(cookieToken))
+			refresh_token_encrypted=$5,identity_refresh_at=$6,updated_at=NOW()
+		WHERE token_hash=$7 AND revoked_at IS NULL`, claims.Username, claims.DisplayName, groups, claims.PlatformAdmin,
+		nullableBytes(refreshEncrypted), identityRefreshAt, hashToken(cookieToken))
 	if err != nil {
 		return SessionIdentity{}, fmt.Errorf("update refreshed Configurator session: %w", err)
 	}
-	claims.ExpiresAt = accessExpiresAt
+	claims.ExpiresAt = identityRefreshAt
 	return SessionIdentity{Claims: claims, SessionID: record.ID}, nil
+}
+
+// Cleanup удаляет одноразовые login transactions и browser sessions, которые
+// больше нельзя использовать. Метод вызывается фоновым lifecycle-процессом.
+func (m *SessionManager) Cleanup(ctx context.Context) error {
+	tx, err := m.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin Configurator auth cleanup: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if _, err = tx.Exec(ctx, `DELETE FROM configurator_auth_transactions WHERE expires_at<=NOW()`); err != nil {
+		return fmt.Errorf("delete expired Configurator auth transactions: %w", err)
+	}
+	if _, err = tx.Exec(ctx, `DELETE FROM configurator_auth_sessions WHERE expires_at<=NOW() OR revoked_at<=NOW()-INTERVAL '1 day'`); err != nil {
+		return fmt.Errorf("delete expired Configurator auth sessions: %w", err)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit Configurator auth cleanup: %w", err)
+	}
+	return nil
 }
 
 func (m *SessionManager) safeReturnURL(candidate string) string {
@@ -332,26 +368,11 @@ func (m *SessionManager) safeReturnURL(candidate string) string {
 }
 
 func (m *SessionManager) encrypt(value string) ([]byte, error) {
-	if m.aead == nil {
-		return nil, fmt.Errorf("Configurator session encryption is unavailable")
-	}
-	nonce := make([]byte, m.aead.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
-		return nil, fmt.Errorf("generate encryption nonce: %w", err)
-	}
-	return m.aead.Seal(nonce, nonce, []byte(value), nil), nil
+	return m.keyring.encrypt(value)
 }
 
 func (m *SessionManager) decrypt(value []byte) (string, error) {
-	if m.aead == nil || len(value) < m.aead.NonceSize() {
-		return "", fmt.Errorf("Configurator session encrypted value is invalid")
-	}
-	nonce := value[:m.aead.NonceSize()]
-	plain, err := m.aead.Open(nil, nonce, value[m.aead.NonceSize():], nil)
-	if err != nil {
-		return "", fmt.Errorf("decrypt Configurator session value: %w", err)
-	}
-	return string(plain), nil
+	return m.keyring.decrypt(value)
 }
 
 func (m *SessionManager) encryptOptional(value string) ([]byte, error) {
@@ -377,15 +398,18 @@ type sessionRecord struct {
 	DisplayName           string
 	Groups                []string
 	PlatformAdmin         bool
-	AccessTokenEncrypted  []byte
 	RefreshTokenEncrypted []byte
-	AccessExpiresAt       time.Time
+	IdentityRefreshAt     time.Time
 	ExpiresAt             time.Time
 }
 
 func (r sessionRecord) identity() SessionIdentity {
 	return SessionIdentity{Claims: Claims{ProviderID: r.ProviderID, Subject: r.Subject, Issuer: r.Issuer, Username: r.Username,
-		DisplayName: r.DisplayName, Groups: r.Groups, PlatformAdmin: r.PlatformAdmin, ExpiresAt: r.AccessExpiresAt}, SessionID: r.ID}
+		DisplayName: r.DisplayName, Groups: r.Groups, PlatformAdmin: r.PlatformAdmin, ExpiresAt: r.IdentityRefreshAt}, SessionID: r.ID}
+}
+
+func (r sessionRecord) identityRefreshDue(now time.Time) bool {
+	return !r.IdentityRefreshAt.After(now.Add(30 * time.Second))
 }
 
 func secureRandom(size int) (string, error) {
@@ -409,8 +433,12 @@ func nullableBytes(value []byte) any {
 }
 
 func tokenExpiry(now time.Time, expiresIn int64, claimsExpiry time.Time) time.Time {
+	var result time.Time
 	if expiresIn > 0 {
-		return now.Add(time.Duration(expiresIn) * time.Second)
+		result = now.Add(time.Duration(expiresIn) * time.Second)
 	}
-	return claimsExpiry
+	if !claimsExpiry.IsZero() && (result.IsZero() || claimsExpiry.Before(result)) {
+		result = claimsExpiry
+	}
+	return result
 }

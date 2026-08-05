@@ -236,7 +236,7 @@ func assertPortableBundle(t *testing.T, value map[string]any) {
 		t.Fatalf("documents отсутствуют в portable bundle: %#v", value)
 	}
 	raw, _ := json.Marshal(value)
-	for _, forbidden := range []string{`"memberships"`, `"revisions"`, `"commits"`, `"releases"`, `"password"`, `"clientSecret"`, `"accessToken"`} {
+	for _, forbidden := range []string{`"memberships"`, `"revisions"`, `"commits"`, `"releases"`, `"configurator_auth_sessions"`, `"refreshToken"`, `"password"`, `"clientSecret"`, `"accessToken"`} {
 		if bytes.Contains(raw, []byte(forbidden)) {
 			t.Fatalf("portable bundle содержит запрещённое поле %s", forbidden)
 		}

@@ -9,9 +9,9 @@ import (
 
 // Result содержит проекцию текущей пользовательской сессии.
 type Result struct {
-	User          *entities.User       `json:"user"`
-	PlatformAdmin bool                 `json:"platformAdmin"`
-	Workspaces    []entities.Workspace `json:"workspaces"`
+	User          *entities.User             `json:"user"`
+	PlatformAdmin bool                       `json:"platformAdmin"`
+	Workspaces    []entities.WorkspaceAccess `json:"workspaces"`
 }
 
 // UseCase координирует сценарии работы с текущей пользовательской сессией.
@@ -25,7 +25,7 @@ func NewUseCase(workspaceUseCase *workspaces.UseCase) *UseCase {
 // Current возвращает текущую сессию пользователя и доступные рабочие пространства.
 func (s *UseCase) Current(ctx context.Context) (*Result, error) {
 	actor, _ := entities.CurrentActorFromContext(ctx)
-	items, err := s.workspaces.List(ctx)
+	items, err := s.workspaces.ListAccess(ctx)
 	if err != nil {
 		return nil, err
 	}

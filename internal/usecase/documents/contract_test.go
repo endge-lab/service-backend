@@ -47,11 +47,15 @@ func TestQueryRequiresSourceVersionTwo(t *testing.T) {
 	}
 }
 
-// TestProjectRejectsNavigationRelation проверяет удалённую из MVP Project-навигацию.
-func TestProjectRejectsNavigationRelation(t *testing.T) {
+// TestProjectAcceptsCanonicalNavigationRelation проверяет identity-based Project-навигацию.
+func TestProjectAcceptsCanonicalNavigationRelation(t *testing.T) {
 	input := map[string]any{"identity": "p", "displayName": "Project", "navigationIdentity": "main"}
+	if err := validateDocument("projects", input); err != nil {
+		t.Fatalf("canonical Project navigation relation rejected: %v", err)
+	}
+	input["navigationId"] = 42
 	if err := validateDocument("projects", input); err == nil {
-		t.Fatal("Project navigation relation was accepted")
+		t.Fatal("legacy Project navigationId was accepted")
 	}
 }
 

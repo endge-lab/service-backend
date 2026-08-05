@@ -79,9 +79,9 @@ func TestCookieAuthenticationRequiresAllowedOrigin(t *testing.T) {
 	_, err := database.Pool.Exec(t.Context(), `
 		INSERT INTO configurator_auth_sessions(
 			token_hash,provider_id,subject,issuer,username,display_name,groups_json,platform_admin,
-			access_token_encrypted,access_expires_at,expires_at)
-		VALUES($1,'cookie-test','cookie-user','urn:endge:test','cookie-user','Cookie User','[]',TRUE,$2,$3,$4)`,
-		tokenHash[:], []byte{1}, time.Now().Add(time.Hour), time.Now().Add(2*time.Hour))
+			identity_refresh_at,expires_at)
+		VALUES($1,'cookie-test','cookie-user','urn:endge:test','cookie-user','Cookie User','[]',TRUE,$2,$3)`,
+		tokenHash[:], time.Now().Add(time.Hour), time.Now().Add(2*time.Hour))
 	if err != nil {
 		t.Fatalf("создать тестовую browser session: %v", err)
 	}
@@ -164,6 +164,13 @@ func TestAllDocumentHTTPContracts(t *testing.T) {
 			assertStatus(t, hidden, fiber.StatusNotFound)
 			included := perform(t, app, http.MethodGet, baseURL+"?includeDeleted=true", nil, headers)
 			assertStatus(t, included, fiber.StatusOK)
+			included.Body.Close()
+			if testCase.collection == "queries" {
+				live := decodeObject(t, perform(t, app, http.MethodGet, "/api/v1/domain", nil, headers))
+				assertPortableDocumentDeletedState(t, live, "queries", testCase.identity, true)
+				exported := decodeObject(t, perform(t, app, http.MethodGet, "/api/v1/domain/export", nil, headers))
+				assertPortableDocumentDeletedState(t, exported, "queries", testCase.identity, false)
+			}
 
 			restoreHeaders := cloneHeaders(headers)
 			restoreHeaders["If-Match"] = `"3"`
@@ -173,6 +180,24 @@ func TestAllDocumentHTTPContracts(t *testing.T) {
 				t.Fatalf("restore ETag=%q, ожидался \"4\"", restored.Header.Get("ETag"))
 			}
 		})
+	}
+}
+
+func assertPortableDocumentDeletedState(t *testing.T, bundle map[string]any, collection, identity string, expected bool) {
+	t.Helper()
+	documents, _ := bundle["documents"].(map[string]any)
+	items, _ := documents[collection].([]any)
+	found := false
+	for _, raw := range items {
+		item, _ := raw.(map[string]any)
+		if fmt.Sprint(item["identity"]) != identity {
+			continue
+		}
+		state, _ := item["state"].(map[string]any)
+		found = state != nil && state["deletedAt"] != nil
+	}
+	if found != expected {
+		t.Fatalf("documents.%s/%s deleted state=%t, ожидалось %t", collection, identity, found, expected)
 	}
 }
 

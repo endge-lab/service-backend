@@ -27,6 +27,9 @@ func TestWorkspaceRBACAndDefaultFallback(t *testing.T) {
 	assertStatus(t, workspace, fiber.StatusCreated)
 	putMembership(t, app, adminHeaders, "restricted", viewerID, "viewer")
 	putMembership(t, app, adminHeaders, "restricted", editorID, "editor")
+	assertSessionWorkspaceRole(t, app, viewerHeaders, "restricted", "viewer")
+	assertSessionWorkspaceRole(t, app, editorHeaders, "restricted", "editor")
+	assertSessionWorkspaceRole(t, app, adminHeaders, "restricted", "admin")
 
 	viewerRestricted := cloneHeaders(viewerHeaders)
 	viewerRestricted["X-Endge-Workspace"] = "restricted"
@@ -76,6 +79,23 @@ func currentUserID(t *testing.T, app *fiber.App, headers map[string]string) stri
 	response := perform(t, app, http.MethodGet, "/api/session/me", nil, headers)
 	assertStatus(t, response, fiber.StatusOK)
 	return stringField(t, objectField(t, decodeObject(t, response), "user"), "id")
+}
+
+func assertSessionWorkspaceRole(t *testing.T, app *fiber.App, headers map[string]string, identity, expectedRole string) {
+	t.Helper()
+	response := perform(t, app, http.MethodGet, "/api/session/me", nil, headers)
+	assertStatus(t, response, fiber.StatusOK)
+	workspaces, _ := decodeObject(t, response)["workspaces"].([]any)
+	for _, raw := range workspaces {
+		workspace, _ := raw.(map[string]any)
+		if workspace["identity"] == identity {
+			if role := stringField(t, workspace, "role"); role != expectedRole {
+				t.Fatalf("workspace %s role=%q, ожидалась %q", identity, role, expectedRole)
+			}
+			return
+		}
+	}
+	t.Fatalf("workspace %s отсутствует в session projection", identity)
 }
 
 func putMembership(t *testing.T, app *fiber.App, headers map[string]string, workspace, userID, role string) {
