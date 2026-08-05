@@ -40,6 +40,32 @@ func TestLoadHonorsPostgresDatabaseEnvironment(t *testing.T) {
 	}
 }
 
+// TestLoadFromEnvironmentWithoutYAML проверяет container-first конфигурацию:
+// все средовые значения могут прийти через process environment без config file.
+func TestLoadFromEnvironmentWithoutYAML(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("CONFIG_PATH", "")
+	t.Setenv("APP_ENV", "development")
+	t.Setenv("APP_NAME", "endge-service-backend")
+	t.Setenv("PUBLIC_URL", "https://backend.example.test")
+	t.Setenv("CORS_ALLOWED_ORIGINS", "https://configurator.example.test")
+	t.Setenv("POSTGRES_HOST", "postgres.example.test")
+	t.Setenv("POSTGRES_DATABASE", "endge_service_backend")
+	t.Setenv("AUTH_MODE", "dev")
+	t.Setenv("AUTH_LOGIN_ADAPTER", "dev")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.App.Name != "endge-service-backend" {
+		t.Fatalf("app name=%q, want environment value", cfg.App.Name)
+	}
+	if cfg.Postgres.Host != "postgres.example.test" || cfg.Postgres.Database != "endge_service_backend" {
+		t.Fatalf("postgres config mismatch: %#v", cfg.Postgres)
+	}
+}
+
 // TestConfiguratorAuthConfigAcceptsEncryptionKeyRotation проверяет валидную
 // конфигурацию текущего и предыдущего ключей server-side sessions.
 func TestConfiguratorAuthConfigAcceptsEncryptionKeyRotation(t *testing.T) {
