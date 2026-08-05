@@ -152,6 +152,8 @@ func TestDomainMigrationOrder(t *testing.T) {
 		"000037_configurator_auth_sessions.sql",
 		"000038_default_workspace_configuration.sql",
 		"000039_bootstrap_default_domain.sql",
+		"000040_project_navigation.sql",
+		"000041_configurator_auth_session_identity.sql",
 	}
 
 	entries, err := os.ReadDir(filepath.Join(root, "migrations"))
