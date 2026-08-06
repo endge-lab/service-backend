@@ -87,6 +87,20 @@ func TestConfiguratorAuthConfigRejectsDuplicateEncryptionKeyID(t *testing.T) {
 	}
 }
 
+func TestReleaseArtifactCacheConfigRejectsInvalidEnabledLimits(t *testing.T) {
+	value := ReleaseArtifactCacheConfig{Enabled: true, MaxBytes: 0, MaxItemBytes: 1}
+	if err := value.Validate(); err == nil {
+		t.Fatal("enabled cache accepted zero total limit")
+	}
+	value = ReleaseArtifactCacheConfig{Enabled: true, MaxBytes: 1, MaxItemBytes: 0}
+	if err := value.Validate(); err == nil {
+		t.Fatal("enabled cache accepted zero item limit")
+	}
+	if err := (ReleaseArtifactCacheConfig{Enabled: false}).Validate(); err != nil {
+		t.Fatalf("disabled cache rejected: %v", err)
+	}
+}
+
 func validConfiguratorAuthConfig() ConfiguratorAuthConfig {
 	return ConfiguratorAuthConfig{
 		Adapter: "oidc", AuthorizationURL: "https://issuer.example/authorize", TokenURL: "https://issuer.example/token",

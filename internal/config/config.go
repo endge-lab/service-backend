@@ -76,14 +76,36 @@ type SessionEncryptionKeyConfig struct {
 
 type Config struct {
 	*kitconfig.ServiceConfig
-	Identity         IdentityConfig
-	ConfiguratorAuth ConfiguratorAuthConfig
-	Snapshots        SnapshotConfig
+	Identity             IdentityConfig
+	ConfiguratorAuth     ConfiguratorAuthConfig
+	Snapshots            SnapshotConfig
+	ReleaseArtifactCache ReleaseArtifactCacheConfig
 }
 
 // SnapshotConfig задаёт срок хранения временных страховочных копий импорта.
 type SnapshotConfig struct {
 	ImportBackupRetentionDays int
+}
+
+// ReleaseArtifactCacheConfig ограничивает локальный кеш immutable JSON релизов.
+// Каждая реплика приложения использует собственный кеш.
+type ReleaseArtifactCacheConfig struct {
+	Enabled      bool
+	MaxBytes     int
+	MaxItemBytes int
+}
+
+func (c ReleaseArtifactCacheConfig) Validate() error {
+	if !c.Enabled {
+		return nil
+	}
+	if c.MaxBytes <= 0 {
+		return fmt.Errorf("RELEASE_ARTIFACT_CACHE_MAX_BYTES must be positive when cache is enabled")
+	}
+	if c.MaxItemBytes <= 0 {
+		return fmt.Errorf("RELEASE_ARTIFACT_CACHE_MAX_ITEM_BYTES must be positive when cache is enabled")
+	}
+	return nil
 }
 
 func Load() (*Config, error) {
@@ -139,10 +161,19 @@ func Load() (*Config, error) {
 	if err := configuratorAuth.Validate(base.App.IsProduction()); err != nil {
 		return nil, err
 	}
+	releaseArtifactCache := ReleaseArtifactCacheConfig{
+		Enabled:      envBool("RELEASE_ARTIFACT_CACHE_ENABLED", true),
+		MaxBytes:     envIntAllowZero("RELEASE_ARTIFACT_CACHE_MAX_BYTES", 64*1024*1024),
+		MaxItemBytes: envIntAllowZero("RELEASE_ARTIFACT_CACHE_MAX_ITEM_BYTES", 16*1024*1024),
+	}
+	if err := releaseArtifactCache.Validate(); err != nil {
+		return nil, err
+	}
 	return &Config{
-		ServiceConfig:    base,
-		Identity:         identity,
-		ConfiguratorAuth: configuratorAuth,
+		ServiceConfig:        base,
+		Identity:             identity,
+		ConfiguratorAuth:     configuratorAuth,
+		ReleaseArtifactCache: releaseArtifactCache,
 		Snapshots: SnapshotConfig{
 			ImportBackupRetentionDays: envInt("IMPORT_BACKUP_RETENTION_DAYS", 7),
 		},
@@ -316,6 +347,18 @@ func envInt(key string, fallback int) int {
 		return fallback
 	}
 	return value
+}
+
+func envIntAllowZero(key string, fallback int) int {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }
 
 func envDuration(key string, fallback time.Duration) time.Duration {

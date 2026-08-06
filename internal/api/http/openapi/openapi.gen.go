@@ -8878,6 +8878,12 @@ var openAPI3YAML = []byte(
 		"          schema:\n" +
 		"            type: string\n" +
 		"            maxLength: 160\n" +
+		"        - example: '\"\\\"sha256:0123456789abcdef\\\"\"'\n" +
+		"          description: ETag ранее полученного release\n" +
+		"          name: If-None-Match\n" +
+		"          in: header\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"        - description: Скачать JSON как файл\n" +
 		"          name: download\n" +
 		"          in: query\n" +
@@ -8888,14 +8894,37 @@ var openAPI3YAML = []byte(
 		"        \"200\":\n" +
 		"          description: Portable snapshot\n" +
 		"          headers:\n" +
+		"            Cache-Control:\n" +
+		"              description: private, no-cache\n" +
+		"              schema:\n" +
+		"                type: string\n" +
 		"            ETag:\n" +
 		"              description: Checksum релиза\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"            Vary:\n" +
+		"              description: X-Endge-Workspace, Authorization, Cookie\n" +
 		"              schema:\n" +
 		"                type: string\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/release.ExportResponse\"\n" +
+		"        \"304\":\n" +
+		"          description: Release не изменился\n" +
+		"          headers:\n" +
+		"            Cache-Control:\n" +
+		"              description: private, no-cache\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"            ETag:\n" +
+		"              description: Checksum релиза\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"            Vary:\n" +
+		"              description: X-Endge-Workspace, Authorization, Cookie\n" +
+		"              schema:\n" +
+		"                type: string\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +

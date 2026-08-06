@@ -42,7 +42,7 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (*entities.Rele
 		displayName = identity
 	}
 	sum := sha256.Sum256(bundle)
-	value := entities.Release{ID: uuid.NewString(), WorkspaceID: scope.Workspace.ID, Identity: identity, DisplayName: displayName, Description: input.Description, SourceCommitID: commit.ID, HeadSequence: commit.HeadSequence, SchemaVersion: history.SnapshotVersion, Checksum: hex.EncodeToString(sum[:]), Data: bundle, CreatedBy: entities.Actor{ID: current.User.ID}}
-	created, err := s.releases.CreateRelease(ctx, value)
+	value := entities.Release{ID: uuid.NewString(), WorkspaceID: scope.Workspace.ID, Identity: identity, DisplayName: displayName, Description: input.Description, SourceCommitID: commit.ID, HeadSequence: commit.HeadSequence, SchemaVersion: history.SnapshotVersion, Checksum: hex.EncodeToString(sum[:]), CreatedBy: entities.Actor{ID: current.User.ID}}
+	created, err := s.releases.CreateRelease(ctx, value, bundle)
 	return created, shared.MapConflict(err)
 }

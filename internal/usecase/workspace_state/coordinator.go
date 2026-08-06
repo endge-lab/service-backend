@@ -33,14 +33,15 @@ type Coordinator struct {
 	repository          Repository
 	tx                  ports.TxManager
 	backupRetentionDays int
+	artifacts           ports.ReleaseArtifactReader
 }
 
 // mutationBatchContextKey задаёт закрытый тип ключа контекста для пакета мутаций.
 type mutationBatchContextKey struct{}
 
 // NewCoordinator создаёт координатор операций над состоянием рабочего пространства.
-func NewCoordinator(repository Repository, tx ports.TxManager, cfg *config.Config) *Coordinator {
-	return &Coordinator{repository: repository, tx: tx, backupRetentionDays: cfg.Snapshots.ImportBackupRetentionDays}
+func NewCoordinator(repository Repository, tx ports.TxManager, cfg *config.Config, artifacts ports.ReleaseArtifactReader) *Coordinator {
+	return &Coordinator{repository: repository, tx: tx, backupRetentionDays: cfg.Snapshots.ImportBackupRetentionDays, artifacts: artifacts}
 }
 
 // actor возвращает текущего пользователя из контекста.

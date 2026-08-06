@@ -194,6 +194,14 @@ Backups доступны через `/api/v1/domain/backups`: manual backup пр
 `GET /api/v1/releases/last/export`; по умолчанию это JSON, а
 `?download=true` возвращает attachment.
 
+Release artifact JSON лениво кэшируется в памяти backend-процесса. Перед чтением
+artifact API всегда проверяет metadata и checksum, поэтому `ETag` / `If-None-Match`
+безопасно возвращают `304` после проверки авторизации workspace. Лимиты задают
+`RELEASE_ARTIFACT_CACHE_ENABLED`, `RELEASE_ARTIFACT_CACHE_MAX_BYTES` (по умолчанию
+64 MiB) и `RELEASE_ARTIFACT_CACHE_MAX_ITEM_BYTES` (16 MiB). Каждая реплика имеет
+свой локальный LRU-кэш: cache miss на другой реплике может один раз прочитать JSON
+из PostgreSQL, но не влияет на корректность или свежесть `last`.
+
 Полный HTTP-контракт генерируется из Swagger-аннотаций handler-методов и
 transport DTO командой `make docs`. Результат сохраняется в
 [`docs/openapi3.yaml`](docs/openapi3.yaml) и встраивается в binary. В development Scalar

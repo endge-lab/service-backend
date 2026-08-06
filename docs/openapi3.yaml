@@ -8873,6 +8873,12 @@ paths:
           schema:
             type: string
             maxLength: 160
+        - example: '"\"sha256:0123456789abcdef\""'
+          description: ETag ранее полученного release
+          name: If-None-Match
+          in: header
+          schema:
+            type: string
         - description: Скачать JSON как файл
           name: download
           in: query
@@ -8883,14 +8889,37 @@ paths:
         "200":
           description: Portable snapshot
           headers:
+            Cache-Control:
+              description: private, no-cache
+              schema:
+                type: string
             ETag:
               description: Checksum релиза
+              schema:
+                type: string
+            Vary:
+              description: X-Endge-Workspace, Authorization, Cookie
               schema:
                 type: string
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/release.ExportResponse"
+        "304":
+          description: Release не изменился
+          headers:
+            Cache-Control:
+              description: private, no-cache
+              schema:
+                type: string
+            ETag:
+              description: Checksum релиза
+              schema:
+                type: string
+            Vary:
+              description: X-Endge-Workspace, Authorization, Cookie
+              schema:
+                type: string
         "401":
           description: Требуется аутентификация
           content:

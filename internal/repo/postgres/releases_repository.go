@@ -9,31 +9,27 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func releaseSelect(includeData bool) string {
-	data := "NULL::jsonb"
-	if includeData {
-		data = "r.data"
-	}
-	return `SELECT r.id::text,r.workspace_id::text,r.identity,r.display_name,r.description,r.source_commit_id::text,r.head_sequence,r.schema_version,r.checksum,` + data + `,` + actorScan("u") + `,r.created_at FROM releases r JOIN service_users u ON u.id=r.created_by`
+func releaseMetadataSelect() string {
+	return `SELECT r.id::text,r.workspace_id::text,r.identity,r.display_name,r.description,r.source_commit_id::text,r.head_sequence,r.schema_version,r.checksum,` + actorScan("u") + `,r.created_at FROM releases r JOIN service_users u ON u.id=r.created_by`
 }
 func scanRelease(row scanner) (*entities.Release, error) {
 	v := &entities.Release{}
 	var actor []byte
-	if err := row.Scan(&v.ID, &v.WorkspaceID, &v.Identity, &v.DisplayName, &v.Description, &v.SourceCommitID, &v.HeadSequence, &v.SchemaVersion, &v.Checksum, &v.Data, &actor, &v.CreatedAt); err != nil {
+	if err := row.Scan(&v.ID, &v.WorkspaceID, &v.Identity, &v.DisplayName, &v.Description, &v.SourceCommitID, &v.HeadSequence, &v.SchemaVersion, &v.Checksum, &actor, &v.CreatedAt); err != nil {
 		return nil, repositoryError(err)
 	}
 	_ = json.Unmarshal(actor, &v.CreatedBy)
 	return v, nil
 }
-func (r *EndgeRepository) CreateRelease(ctx context.Context, v entities.Release) (*entities.Release, error) {
-	_, err := r.executor(ctx).Exec(ctx, `INSERT INTO releases(id,workspace_id,identity,display_name,description,source_commit_id,head_sequence,schema_version,checksum,data,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`, v.ID, v.WorkspaceID, v.Identity, v.DisplayName, v.Description, v.SourceCommitID, v.HeadSequence, v.SchemaVersion, v.Checksum, v.Data, v.CreatedBy.ID)
+func (r *EndgeRepository) CreateRelease(ctx context.Context, v entities.Release, artifact json.RawMessage) (*entities.Release, error) {
+	_, err := r.executor(ctx).Exec(ctx, `INSERT INTO releases(id,workspace_id,identity,display_name,description,source_commit_id,head_sequence,schema_version,checksum,data,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`, v.ID, v.WorkspaceID, v.Identity, v.DisplayName, v.Description, v.SourceCommitID, v.HeadSequence, v.SchemaVersion, v.Checksum, artifact, v.CreatedBy.ID)
 	if err != nil {
 		return nil, err
 	}
-	return r.GetRelease(ctx, v.WorkspaceID, v.Identity)
+	return r.GetReleaseMetadata(ctx, v.WorkspaceID, v.Identity)
 }
 func (r *EndgeRepository) ListReleases(ctx context.Context, workspaceID string) ([]entities.Release, error) {
-	rows, err := r.executor(ctx).Query(ctx, releaseSelect(false)+` WHERE r.workspace_id=$1 ORDER BY r.created_at DESC`, workspaceID)
+	rows, err := r.executor(ctx).Query(ctx, releaseMetadataSelect()+` WHERE r.workspace_id=$1 ORDER BY r.created_at DESC`, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -48,11 +44,22 @@ func (r *EndgeRepository) ListReleases(ctx context.Context, workspaceID string) 
 	}
 	return result, rows.Err()
 }
-func (r *EndgeRepository) GetRelease(ctx context.Context, workspaceID, identity string) (*entities.Release, error) {
-	if identity == "last" {
-		return scanRelease(r.executor(ctx).QueryRow(ctx, releaseSelect(true)+` WHERE r.workspace_id=$1 ORDER BY r.created_at DESC,r.id DESC LIMIT 1`, workspaceID))
+func (r *EndgeRepository) GetReleaseMetadata(ctx context.Context, workspaceID, identity string) (*entities.Release, error) {
+	return scanRelease(r.executor(ctx).QueryRow(ctx, releaseMetadataSelect()+` WHERE r.workspace_id=$1 AND r.identity=$2`, workspaceID, identity))
+}
+
+func (r *EndgeRepository) GetLatestReleaseMetadata(ctx context.Context, workspaceID string) (*entities.Release, error) {
+	return scanRelease(r.executor(ctx).QueryRow(ctx, releaseMetadataSelect()+` WHERE r.workspace_id=$1 ORDER BY r.created_at DESC,r.id DESC LIMIT 1`, workspaceID))
+}
+
+func (r *EndgeRepository) GetReleaseArtifact(ctx context.Context, workspaceID, releaseID string) (*entities.ReleaseArtifact, error) {
+	value := &entities.ReleaseArtifact{}
+	err := r.executor(ctx).QueryRow(ctx, `SELECT id::text,workspace_id::text,identity,checksum,data FROM releases WHERE workspace_id=$1 AND id=$2`, workspaceID, releaseID).Scan(
+		&value.ReleaseID, &value.WorkspaceID, &value.Identity, &value.Checksum, &value.Data)
+	if err != nil {
+		return nil, repositoryError(err)
 	}
-	return scanRelease(r.executor(ctx).QueryRow(ctx, releaseSelect(true)+` WHERE r.workspace_id=$1 AND r.identity=$2`, workspaceID, identity))
+	return value, nil
 }
 
 func (r *EndgeRepository) ExportWorkspace(ctx context.Context, workspaceID string, head *int64) (json.RawMessage, error) {

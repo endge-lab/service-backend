@@ -153,6 +153,28 @@ func IfMatch(c *fiber.Ctx) (int, error) {
 // ETag формирует strong ETag из revision документа.
 func ETag(revision int) string { return `"` + strconv.Itoa(revision) + `"` }
 
+// IfNoneMatch сообщает, совпадает ли хотя бы один клиентский ETag с текущим.
+// Для GET используется weak comparison, поэтому W/"tag" и "tag" эквивалентны.
+func IfNoneMatch(c *fiber.Ctx, currentETag string) bool {
+	currentETag = normalizeEntityTag(currentETag)
+	if currentETag == "" {
+		return false
+	}
+	for _, value := range strings.Split(c.Get(fiber.HeaderIfNoneMatch), ",") {
+		value = strings.TrimSpace(value)
+		if value == "*" || normalizeEntityTag(value) == currentETag {
+			return true
+		}
+	}
+	return false
+}
+
+func normalizeEntityTag(value string) string {
+	value = strings.TrimSpace(value)
+	value = strings.TrimPrefix(value, "W/")
+	return strings.Trim(value, `"`)
+}
+
 // DocumentMap объединяет resource payload и серверные метаданные документа.
 func DocumentMap(doc entities.Document) (map[string]any, error) {
 	result := map[string]any{}

@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"github.com/endge-lab/service-backend/internal/config"
 	"github.com/endge-lab/service-backend/internal/usecase/actions"
 	"github.com/endge-lab/service-backend/internal/usecase/auth_profiles"
 	"github.com/endge-lab/service-backend/internal/usecase/backups"
@@ -20,8 +21,10 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/mocks"
 	"github.com/endge-lab/service-backend/internal/usecase/navigations"
 	"github.com/endge-lab/service-backend/internal/usecase/portable"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/projects"
 	"github.com/endge-lab/service-backend/internal/usecase/queries"
+	"github.com/endge-lab/service-backend/internal/usecase/release_artifacts"
 	"github.com/endge-lab/service-backend/internal/usecase/releases"
 	"github.com/endge-lab/service-backend/internal/usecase/revisions"
 	"github.com/endge-lab/service-backend/internal/usecase/session"
@@ -39,6 +42,7 @@ import (
 
 func UseCaseModules() fx.Option {
 	return fx.Options(fx.Provide(
+		releaseArtifactCacheConfig,
 		workspace_state.NewCoordinator,
 		history.NewRecorder,
 		documents.NewLifecycle,
@@ -70,7 +74,12 @@ func UseCaseModules() fx.Option {
 		revisions.NewUseCase,
 		commits.NewUseCase,
 		portable.NewUseCase,
+		fx.Annotate(release_artifacts.NewReader, fx.As(new(ports.ReleaseArtifactReader))),
 		releases.NewUseCase,
 		backups.NewUseCase,
 	))
+}
+
+func releaseArtifactCacheConfig(cfg *config.Config) config.ReleaseArtifactCacheConfig {
+	return cfg.ReleaseArtifactCache
 }

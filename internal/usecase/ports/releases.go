@@ -9,9 +9,11 @@ import (
 
 // ReleaseRepository задаёт порт хранения релизов для use case-слоя.
 type ReleaseRepository interface {
-	CreateRelease(context.Context, entities.Release) (*entities.Release, error)
+	CreateRelease(context.Context, entities.Release, json.RawMessage) (*entities.Release, error)
 	ListReleases(context.Context, string) ([]entities.Release, error)
-	GetRelease(context.Context, string, string) (*entities.Release, error)
+	GetReleaseMetadata(context.Context, string, string) (*entities.Release, error)
+	GetLatestReleaseMetadata(context.Context, string) (*entities.Release, error)
+	GetReleaseArtifact(context.Context, string, string) (*entities.ReleaseArtifact, error)
 }
 
 // PortableRepository задаёт порт хранения переносимых пакетов для use case-слоя.

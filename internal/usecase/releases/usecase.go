@@ -11,9 +11,10 @@ type UseCase struct {
 	commits     ports.CommitRepository
 	portable    ports.PortableRepository
 	coordinator *workspace_state.Coordinator
+	artifacts   ports.ReleaseArtifactReader
 }
 
 // NewUseCase создаёт use case для работы с релизами рабочего пространства.
-func NewUseCase(releases ports.ReleaseRepository, commits ports.CommitRepository, portable ports.PortableRepository, coordinator *workspace_state.Coordinator) *UseCase {
-	return &UseCase{releases: releases, commits: commits, portable: portable, coordinator: coordinator}
+func NewUseCase(releases ports.ReleaseRepository, commits ports.CommitRepository, portable ports.PortableRepository, coordinator *workspace_state.Coordinator, artifacts ports.ReleaseArtifactReader) *UseCase {
+	return &UseCase{releases: releases, commits: commits, portable: portable, coordinator: coordinator, artifacts: artifacts}
 }

@@ -11,6 +11,7 @@ type UseCase interface {
 	Create(context.Context, resourceusecase.CreateInput) (*entities.Release, error)
 	List(context.Context) ([]entities.Release, error)
 	Get(context.Context, string) (*entities.Release, error)
+	GetArtifact(context.Context, entities.Release) (*entities.ReleaseArtifact, error)
 	PlanRestore(context.Context, string) (*entities.ImportPlan, error)
 	Restore(context.Context, string, int64) (*entities.Commit, error)
 }

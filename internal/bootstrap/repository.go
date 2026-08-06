@@ -12,28 +12,30 @@ import (
 type endgeRepositoryPorts struct {
 	fx.Out
 
-	WorkspaceState workspace_state.Repository
-	Workspaces     ports.WorkspaceRepository
-	Integrations   ports.IntegrationRepository
-	Documents      ports.DocumentRepository
-	Revisions      ports.RevisionRepository
-	Commits        ports.CommitRepository
-	Releases       ports.ReleaseRepository
-	Portable       ports.PortableRepository
-	Snapshots      ports.SnapshotRepository
+	WorkspaceState   workspace_state.Repository
+	Workspaces       ports.WorkspaceRepository
+	Integrations     ports.IntegrationRepository
+	Documents        ports.DocumentRepository
+	Revisions        ports.RevisionRepository
+	Commits          ports.CommitRepository
+	Releases         ports.ReleaseRepository
+	ReleaseArtifacts ports.ReleaseArtifactRepository
+	Portable         ports.PortableRepository
+	Snapshots        ports.SnapshotRepository
 }
 
 func exposeEndgeRepository(store *postgres.EndgeRepository) endgeRepositoryPorts {
 	return endgeRepositoryPorts{
-		WorkspaceState: store,
-		Workspaces:     store,
-		Integrations:   store,
-		Documents:      store,
-		Revisions:      store,
-		Commits:        store,
-		Releases:       store,
-		Portable:       store,
-		Snapshots:      store,
+		WorkspaceState:   store,
+		Workspaces:       store,
+		Integrations:     store,
+		Documents:        store,
+		Revisions:        store,
+		Commits:          store,
+		Releases:         store,
+		ReleaseArtifacts: store,
+		Portable:         store,
+		Snapshots:        store,
 	}
 }
 

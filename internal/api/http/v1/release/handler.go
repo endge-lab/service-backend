@@ -105,9 +105,16 @@ func (h *Handler) Get(c *fiber.Ctx) error {
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
 // @Param identity path string true "Identity release или last" maxlength(160)
+// @Param If-None-Match header string false "ETag ранее полученного release" example("\"sha256:0123456789abcdef\"")
 // @Param download query bool false "Скачать JSON как файл" default(false)
 // @Success 200 {object} ExportResponse "Portable snapshot"
 // @Header 200 {string} ETag "Checksum релиза"
+// @Header 200 {string} Cache-Control "private, no-cache"
+// @Header 200 {string} Vary "X-Endge-Workspace, Authorization, Cookie"
+// @Success 304 "Release не изменился"
+// @Header 304 {string} ETag "Checksum релиза"
+// @Header 304 {string} Cache-Control "private, no-cache"
+// @Header 304 {string} Vary "X-Endge-Workspace, Authorization, Cookie"
 // @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
 // @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
 // @Failure 404 {object} shared.ErrorResponse "Ресурс не найден"
@@ -115,20 +122,30 @@ func (h *Handler) Get(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/releases/{identity}/export [get]
 func (h *Handler) Export(c *fiber.Ctx) error {
-	value, err := h.usecase.Get(c.UserContext(), c.Params("identity"))
-	if err != nil {
-		return respond.RespondDomainError(c, nil, err)
-	}
-	c.Type("json")
-	c.Set(fiber.HeaderETag, `"`+value.Checksum+`"`)
 	download, err := shared.OptionalBoolQuery(c, "download", false)
 	if err != nil {
 		return respond.WriteErrorResponse(c, err)
 	}
-	if download {
-		c.Attachment(shared.SafeAttachmentName(value.Identity, "release") + "-release.json")
+	metadata, err := h.usecase.Get(c.UserContext(), c.Params("identity"))
+	if err != nil {
+		return respond.RespondDomainError(c, nil, err)
 	}
-	return c.Send(value.Data)
+	etag := `"` + metadata.Checksum + `"`
+	c.Set(fiber.HeaderETag, etag)
+	c.Set(fiber.HeaderCacheControl, "private, no-cache")
+	c.Set(fiber.HeaderVary, "X-Endge-Workspace, Authorization, Cookie")
+	if shared.IfNoneMatch(c, etag) {
+		return c.Status(fiber.StatusNotModified).Send(nil)
+	}
+	artifact, err := h.usecase.GetArtifact(c.UserContext(), *metadata)
+	if err != nil {
+		return respond.RespondDomainError(c, nil, err)
+	}
+	c.Type("json")
+	if download {
+		c.Attachment(shared.SafeAttachmentName(artifact.Identity, "release") + "-release.json")
+	}
+	return c.Send(artifact.Data)
 }
 
 // PlanRestore возвращает diff восстановления release.

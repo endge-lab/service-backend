@@ -16,12 +16,14 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/documents"
 	"github.com/endge-lab/service-backend/internal/usecase/history"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
+	"github.com/endge-lab/service-backend/internal/usecase/release_artifacts"
 	"github.com/endge-lab/service-backend/internal/usecase/releases"
 	"github.com/endge-lab/service-backend/internal/usecase/revisions"
 	"github.com/endge-lab/service-backend/internal/usecase/workspace_state"
 	"github.com/endge-lab/service-backend/internal/usecase/workspaces"
 	"github.com/endge-lab/service-backend/test/support"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
 )
 
@@ -155,8 +157,12 @@ func TestCommitSquashReleaseAndRestore(t *testing.T) {
 		t.Fatalf("создать preserve commit: %v", err)
 	}
 	release, err := fixture.releases.Create(fixture.ctx, releases.CreateInput{Identity: "release-one", DisplayName: "Release One", SourceCommitID: commit.ID})
-	if err != nil || len(release.Data) == 0 {
+	if err != nil || release.Checksum == "" {
 		t.Fatalf("создать release: value=%#v err=%v", release, err)
+	}
+	artifact, err := fixture.store.GetReleaseArtifact(fixture.ctx, release.WorkspaceID, release.ID)
+	if err != nil || len(artifact.Data) == 0 {
+		t.Fatalf("прочитать release artifact: value=%#v err=%v", artifact, err)
 	}
 
 	third, err := fixture.lifecycle.Patch(fixture.ctx, documents.Definition{Collection: "queries"}, queryRepository, created.Identity, patchInput(t, map[string]any{"source": "query { third }"}), updated.Revision)
@@ -169,8 +175,17 @@ func TestCommitSquashReleaseAndRestore(t *testing.T) {
 	}
 	scope, _ = fixture.workspaces.Authorize(fixture.ctx, "default")
 	fixture.ctx = entities.WithWorkspaceAccess(fixture.ctx, scope)
-	if _, err = fixture.commits.Create(fixture.ctx, "Squashed history", "squash", scope.Workspace.HeadSequence); err != nil {
+	squashedCommit, err := fixture.commits.Create(fixture.ctx, "Squashed history", "squash", scope.Workspace.HeadSequence)
+	if err != nil {
 		t.Fatalf("создать squash commit: %v", err)
+	}
+	secondRelease, err := fixture.releases.Create(fixture.ctx, releases.CreateInput{Identity: "release-two", DisplayName: "Release Two", SourceCommitID: squashedCommit.ID})
+	if err != nil {
+		t.Fatalf("создать второй release: %v", err)
+	}
+	last, err := fixture.releases.Get(fixture.ctx, "last")
+	if err != nil || last.ID != secondRelease.ID {
+		t.Fatalf("last не указывает на новый release: value=%#v err=%v", last, err)
 	}
 	revisionItems, err := fixture.revisions.List(fixture.ctx, "queries", created.Identity)
 	if err != nil {
@@ -202,7 +217,12 @@ func newRepositoryFixture(t *testing.T) *repositoryFixture {
 	store := postgres.NewEndgeRepository(database.Pool)
 	tx := postgres.NewTxManager(database.Pool, observability.NewCore(nil, zap.NewNop()), nil)
 	recorder := history.NewRecorder(store)
-	coordinator := workspace_state.NewCoordinator(store, tx, support.DevConfig())
+	cfg := support.DevConfig()
+	artifacts, err := release_artifacts.NewReader(store, cfg.ReleaseArtifactCache, noop.NewMeterProvider().Meter("integration"))
+	if err != nil {
+		t.Fatalf("создать reader artifact: %v", err)
+	}
+	coordinator := workspace_state.NewCoordinator(store, tx, cfg, artifacts)
 	lifecycle := documents.NewLifecycle(store, tx, recorder)
 	workspaceUseCase := workspaces.NewUseCase(store, store, store, tx, recorder)
 	actor := entities.CurrentActor{User: &entities.User{ID: userID, ProviderID: "integration", Subject: "subject-" + userID, Issuer: "urn:endge:test", Username: "tester", DisplayName: "Integration Tester", Active: true}, PlatformAdmin: true}
@@ -215,7 +235,7 @@ func newRepositoryFixture(t *testing.T) *repositoryFixture {
 	return &repositoryFixture{
 		database: database, ctx: ctx, store: store, tx: tx, lifecycle: lifecycle, workspaces: workspaceUseCase,
 		revisions: revisions.NewUseCase(store, coordinator), commits: commits.NewUseCase(store, store, tx, coordinator),
-		releases: releases.NewUseCase(store, store, store, coordinator), resources: documentRepositories(store),
+		releases: releases.NewUseCase(store, store, store, coordinator, artifacts), resources: documentRepositories(store),
 	}
 }
 
