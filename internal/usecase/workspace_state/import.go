@@ -254,12 +254,18 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 		if txErr = s.recordWorkspaceRevision(txctx, *reset, "create"); txErr != nil {
 			return txErr
 		}
+		createdRootTypes := map[string]bool{}
 		for _, kind := range Collections {
 			if kind == "folders" {
 				continue
 			}
-			rootIdentity := "root-" + kind
-			root := entities.Document{ID: uuid.NewString(), WorkspaceID: reset.ID, Type: "folders", Identity: rootIdentity, DisplayName: "Root " + kind, ManagedBy: "system", Meta: json.RawMessage(`{}`), Data: mustJSON(map[string]any{"entityType": kind, "isRoot": true}), Active: true, Revision: nextImportedRevision(baselines, "folders", rootIdentity), CreatedBy: entities.Actor{ID: current.User.ID}, UpdatedBy: entities.Actor{ID: current.User.ID}}
+			entityType := entities.FolderEntityType(kind)
+			if createdRootTypes[entityType] {
+				continue
+			}
+			createdRootTypes[entityType] = true
+			rootIdentity := entities.RootFolderIdentity(kind)
+			root := entities.Document{ID: uuid.NewString(), WorkspaceID: reset.ID, Type: "folders", Identity: rootIdentity, DisplayName: "Root " + entityType, ManagedBy: "system", Meta: json.RawMessage(`{}`), Data: mustJSON(map[string]any{"entityType": entityType, "isRoot": true}), Active: true, Revision: nextImportedRevision(baselines, "folders", rootIdentity), CreatedBy: entities.Actor{ID: current.User.ID}, UpdatedBy: entities.Actor{ID: current.User.ID}}
 			created, insertErr := s.repository.InsertDocument(txctx, root, nil)
 			if insertErr != nil {
 				return insertErr
@@ -340,10 +346,10 @@ func validateSnapshotRelations(bundle entities.PortableBundle) []string {
 			if kind == "folders" {
 				parent := stringField(item, "parentIdentity")
 				entityType := stringField(item, "entityType")
-				if parent != "" && parent != "root-"+entityType && !available["folders"][parent] {
+				if parent != "" && parent != entities.RootFolderIdentity(entityType) && !available["folders"][parent] {
 					result = append(result, kind+":"+identity+": parentIdentity target is missing")
 				}
-			} else if folder := stringField(item, "folderIdentity"); folder != "" && folder != "root-"+kind && !available["folders"][folder] {
+			} else if folder := stringField(item, "folderIdentity"); folder != "" && folder != entities.RootFolderIdentity(kind) && !available["folders"][folder] {
 				result = append(result, kind+":"+identity+": folderIdentity target is missing")
 			}
 			if kind == "updates" && !available["stores"][stringField(item, "storeIdentity")] {

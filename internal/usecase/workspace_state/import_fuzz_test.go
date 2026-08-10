@@ -44,7 +44,7 @@ func TestNormalizePortableBundleIgnoresLegacyImportState(t *testing.T) {
 				{"identity": "active", "folderIdentity": "no-folder"},
 			},
 			"streams": {
-				{"identity": "events", "folderIdentity": "root-queries"},
+				{"identity": "events", "folderIdentity": "root-streams"},
 			},
 			"compositions": {
 				{"identity": "composition", "folderIdentity": "query-folder"},
@@ -66,7 +66,7 @@ func TestNormalizePortableBundleIgnoresLegacyImportState(t *testing.T) {
 	if _, exists := bundle.Documents["types"][0]["folderIdentity"]; exists {
 		t.Fatal("no-folder reference was not normalized to the collection root")
 	}
-	if folder := stringField(bundle.Documents["streams"][0], "folderIdentity"); folder != "root-streams" {
+	if folder := stringField(bundle.Documents["streams"][0], "folderIdentity"); folder != "root-queries" {
 		t.Fatalf("stream root was not normalized: %q", folder)
 	}
 	if folder := stringField(bundle.Documents["compositions"][0], "folderIdentity"); folder != "root-compositions" {

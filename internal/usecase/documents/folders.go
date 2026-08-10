@@ -13,20 +13,20 @@ import (
 func (s *Lifecycle) resolveFolder(ctx context.Context, scope entities.WorkspaceAccess, kind string, input map[string]any) (*string, error) {
 	identity := stringField(input, "folderIdentity")
 	if kind == "folders" {
-		entityType := stringField(input, "entityType")
+		entityType := entities.FolderEntityType(stringField(input, "entityType"))
 		if entityType == "" {
 			return nil, domainerrors.InvalidInput("folder_entity_type_required", "entityType is required")
 		}
 		identity = stringField(input, "parentIdentity")
 		if identity == "" && !boolField(input, "isRoot") {
-			identity = "root-" + entityType
+			identity = entities.RootFolderIdentity(entityType)
 		}
 		return s.documents.ResolveFolder(ctx, scope.Workspace.ID, identity, entityType)
 	}
 	if identity == "" {
-		identity = "root-" + kind
+		identity = entities.RootFolderIdentity(kind)
 	}
-	return s.documents.ResolveFolder(ctx, scope.Workspace.ID, identity, kind)
+	return s.documents.ResolveFolder(ctx, scope.Workspace.ID, identity, entities.FolderEntityType(kind))
 }
 
 // resolveDocumentFolder разрешает папку, указанную в документе.
@@ -34,20 +34,30 @@ func (s *Lifecycle) resolveDocumentFolder(ctx context.Context, scope entities.Wo
 	var data map[string]any
 	_ = json.Unmarshal(document.Data, &data)
 	if document.Type == "folders" {
+		entityType := entities.FolderEntityType(stringField(data, "entityType"))
 		parent := stringField(data, "parentIdentity")
 		if parent == "" && !boolField(data, "isRoot") {
-			parent = "root-" + stringField(data, "entityType")
+			parent = entities.RootFolderIdentity(entityType)
 		}
-		return s.documents.ResolveFolder(ctx, scope.Workspace.ID, parent, stringField(data, "entityType"))
+		return s.documents.ResolveFolder(ctx, scope.Workspace.ID, parent, entityType)
 	}
 	identity := ""
 	if document.FolderIdentity != nil {
 		identity = *document.FolderIdentity
 	}
 	if identity == "" {
-		identity = "root-" + document.Type
+		identity = entities.RootFolderIdentity(document.Type)
 	}
-	return s.documents.ResolveFolder(ctx, scope.Workspace.ID, identity, document.Type)
+	return s.documents.ResolveFolder(ctx, scope.Workspace.ID, identity, entities.FolderEntityType(document.Type))
+}
+
+// normalizeFolderInput приводит тип папок к общей физической секции коллекции.
+func normalizeFolderInput(kind string, input map[string]any) {
+	if kind == "folders" {
+		if entityType := stringField(input, "entityType"); entityType != "" {
+			input["entityType"] = entities.FolderEntityType(entityType)
+		}
+	}
 }
 
 // replaceStructuredRelations обновляет структурированные связи документа.

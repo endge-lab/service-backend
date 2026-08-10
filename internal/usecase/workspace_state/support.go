@@ -89,20 +89,20 @@ func (s *Coordinator) mutationBatch(ctx context.Context, workspaceID *string, op
 func (s *Coordinator) resolveFolder(ctx context.Context, scope entities.WorkspaceAccess, kind string, input map[string]any) (*string, error) {
 	identity := stringField(input, "folderIdentity")
 	if kind == "folders" {
-		var entityType = stringField(input, "entityType")
+		entityType := entities.FolderEntityType(stringField(input, "entityType"))
 		if entityType == "" {
 			return nil, domainerrors.InvalidInput("folder_entity_type_required", "entityType is required")
 		}
 		parent := stringField(input, "parentIdentity")
 		if parent == "" && !boolField(input, "isRoot") {
-			parent = "root-" + entityType
+			parent = entities.RootFolderIdentity(entityType)
 		}
 		return s.repository.ResolveFolder(ctx, scope.Workspace.ID, parent, entityType)
 	}
 	if identity == "" {
-		identity = "root-" + kind
+		identity = entities.RootFolderIdentity(kind)
 	}
-	return s.repository.ResolveFolder(ctx, scope.Workspace.ID, identity, kind)
+	return s.repository.ResolveFolder(ctx, scope.Workspace.ID, identity, entities.FolderEntityType(kind))
 }
 
 // resolveDocumentFolder разрешает папку, указанную в документе.
@@ -110,20 +110,21 @@ func (s *Coordinator) resolveDocumentFolder(ctx context.Context, scope entities.
 	var data map[string]any
 	_ = json.Unmarshal(doc.Data, &data)
 	if doc.Type == "folders" {
+		entityType := entities.FolderEntityType(stringField(data, "entityType"))
 		parent := stringField(data, "parentIdentity")
 		if parent == "" && !boolValue(data["isRoot"]) {
-			parent = "root-" + stringField(data, "entityType")
+			parent = entities.RootFolderIdentity(entityType)
 		}
-		return s.repository.ResolveFolder(ctx, scope.Workspace.ID, parent, stringField(data, "entityType"))
+		return s.repository.ResolveFolder(ctx, scope.Workspace.ID, parent, entityType)
 	}
 	identity := ""
 	if doc.FolderIdentity != nil {
 		identity = *doc.FolderIdentity
 	}
 	if identity == "" {
-		identity = "root-" + doc.Type
+		identity = entities.RootFolderIdentity(doc.Type)
 	}
-	return s.repository.ResolveFolder(ctx, scope.Workspace.ID, identity, doc.Type)
+	return s.repository.ResolveFolder(ctx, scope.Workspace.ID, identity, entities.FolderEntityType(doc.Type))
 }
 
 // replaceStructuredRelations обновляет структурированные связи документа.
@@ -620,6 +621,14 @@ func normalizePortableBundle(bundle *entities.PortableBundle) portableBundleNorm
 		bundle.Documents["components"] = append(bundle.Documents["components"], legacy...)
 		delete(bundle.Documents, "componentSFCs")
 	}
+	for _, folder := range bundle.Documents["folders"] {
+		if entityType := stringField(folder, "entityType"); entityType != "" {
+			folder["entityType"] = entities.FolderEntityType(entityType)
+		}
+		if parent := stringField(folder, "parentIdentity"); parent == "root-streams" {
+			folder["parentIdentity"] = entities.RootFolderIdentity("streams")
+		}
+	}
 
 	ignoredDeletedFolders := map[string]bool{"soft-deleted": true}
 	folderTypes := map[string]string{}
@@ -648,7 +657,7 @@ func normalizePortableBundle(bundle *entities.PortableBundle) portableBundleNorm
 			}
 			if kind == "folders" {
 				identity := stringField(item, "identity")
-				if ignoredDeletedFolders[identity] || identity == "no-folder" || identity == "root-bindings" {
+				if ignoredDeletedFolders[identity] || identity == "no-folder" || identity == "root-bindings" || identity == "root-streams" {
 					result.IgnoredLegacyFolders++
 					continue
 				}
@@ -659,14 +668,22 @@ func normalizePortableBundle(bundle *entities.PortableBundle) portableBundleNorm
 			}
 			if kind != "folders" {
 				folderIdentity := stringField(item, "folderIdentity")
+				if kind == "streams" && folderIdentity == "root-streams" {
+					folderIdentity = entities.RootFolderIdentity(kind)
+				}
+				if folderIdentity != stringField(item, "folderIdentity") {
+					item["folderIdentity"] = folderIdentity
+					result.NormalizedFolderReferences++
+				}
 				switch folderIdentity {
 				case "no-folder", "root-bindings":
 					delete(item, "folderIdentity")
 					result.NormalizedFolderReferences++
 				default:
 					folderType, hasFolderType := folderTypes[folderIdentity]
-					if folderIdentity != "" && ((strings.HasPrefix(folderIdentity, "root-") && folderIdentity != "root-"+kind) || (hasFolderType && folderType != kind)) {
-						item["folderIdentity"] = "root-" + kind
+					expectedFolderType := entities.FolderEntityType(kind)
+					if folderIdentity != "" && ((strings.HasPrefix(folderIdentity, "root-") && folderIdentity != entities.RootFolderIdentity(kind)) || (hasFolderType && folderType != expectedFolderType)) {
+						item["folderIdentity"] = entities.RootFolderIdentity(kind)
 						result.NormalizedFolderReferences++
 					}
 				}

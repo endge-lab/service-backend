@@ -27,6 +27,7 @@ func (s *Lifecycle) Create(ctx context.Context, definition Definition, repositor
 	if err = rejectReadOnly(values); err != nil {
 		return nil, err
 	}
+	normalizeFolderInput(definition.Collection, values)
 	if err = validateDocument(definition.Collection, values); err != nil {
 		return nil, err
 	}
@@ -68,6 +69,7 @@ func (s *Lifecycle) Patch(ctx context.Context, definition Definition, repository
 	if err = rejectReadOnly(patch); err != nil {
 		return nil, err
 	}
+	normalizeFolderInput(definition.Collection, patch)
 	existing, err := repository.Get(ctx, scope.Workspace.ID, identity, true)
 	if err != nil {
 		return nil, shared.MapNotFound(err)

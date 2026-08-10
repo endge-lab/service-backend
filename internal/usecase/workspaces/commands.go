@@ -61,11 +61,17 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entiti
 		if txErr = s.history.RecordWorkspace(txctx, *created, "create"); txErr != nil {
 			return txErr
 		}
+		createdRootTypes := map[string]bool{}
 		for _, kind := range documents.Collections {
 			if kind == "folders" {
 				continue
 			}
-			root := entities.Document{ID: uuid.NewString(), WorkspaceID: created.ID, Type: "folders", Identity: "root-" + kind, DisplayName: "Root " + kind, ManagedBy: "system", Meta: json.RawMessage(`{}`), Data: workspaceJSON(map[string]any{"entityType": kind, "isRoot": true}, `{}`), Active: true, Revision: 1, CreatedBy: entities.Actor{ID: current.User.ID}, UpdatedBy: entities.Actor{ID: current.User.ID}}
+			entityType := entities.FolderEntityType(kind)
+			if createdRootTypes[entityType] {
+				continue
+			}
+			createdRootTypes[entityType] = true
+			root := entities.Document{ID: uuid.NewString(), WorkspaceID: created.ID, Type: "folders", Identity: entities.RootFolderIdentity(kind), DisplayName: "Root " + entityType, ManagedBy: "system", Meta: json.RawMessage(`{}`), Data: workspaceJSON(map[string]any{"entityType": entityType, "isRoot": true}, `{}`), Active: true, Revision: 1, CreatedBy: entities.Actor{ID: current.User.ID}, UpdatedBy: entities.Actor{ID: current.User.ID}}
 			createdRoot, insertErr := s.documents.InsertDocument(txctx, root, nil)
 			if insertErr != nil {
 				return insertErr
