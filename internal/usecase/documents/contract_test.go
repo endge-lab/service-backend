@@ -23,19 +23,20 @@ func TestValidateSecretsAllowsCredentialRefsAndTokenEndpoint(t *testing.T) {
 	}
 }
 
-func TestAuthProfileAllowsAdapterCredentialConfig(t *testing.T) {
+func TestAuthProfileRejectsCredentialMaterialInsideConfig(t *testing.T) {
 	input := map[string]any{
 		"identity":    "form-auth",
 		"displayName": "Form auth",
 		"config":      map[string]any{"password": "configured-at-workspace-level"},
 	}
-	if err := validateDocument("auth-profiles", input); err != nil {
-		t.Fatalf("AuthProfile adapter config rejected: %v", err)
+	if err := validateDocument("auth-profiles", input); err == nil {
+		t.Fatal("AuthProfile config password was accepted")
 	}
 
-	input["clientSecret"] = "outside-adapter-config"
-	if err := validateDocument("auth-profiles", input); err == nil {
-		t.Fatal("top-level AuthProfile secret was accepted")
+	input["config"] = map[string]any{"baseUrl": "https://issuer.example", "clientId": "web"}
+	input["credentialRefs"] = map[string]any{"password": "AODB_PASSWORD"}
+	if err := validateDocument("auth-profiles", input); err != nil {
+		t.Fatalf("AuthProfile public config and credentialRefs rejected: %v", err)
 	}
 }
 

@@ -87,7 +87,7 @@ backend validation + storage + closure + bundle
 - включает workspace profile;
 - предназначен для полного destructive import.
 
-Существующая `validateSnapshotRelations` проверяет только ограниченные backend-visible связи: folders, update→store, project→environment, vocab→auth-profile. Этого недостаточно для semantic closure.
+Существующая `validateSnapshotRelations` проверяет только ограниченные backend-visible связи: folders, update-store, project-environment, vocab-auth-profile. Этого недостаточно для semantic closure.
 
 ## Цель
 
@@ -304,12 +304,12 @@ Backend строит graph из двух источников, не создав
 
 Добавить edges из typed stored fields:
 
-- document → folder и folder → parent folder;
-- project → allowed environments;
-- Composition owner → Composition через `kind`/`kindIdentity`;
-- update → store через `storeIdentity`;
-- vocab → auth-profile через `authProfileIdentity`;
-- document → integration requirement, если manifest/контракт указывает integration identity/version;
+- document - folder и folder - parent folder;
+- project - allowed environments;
+- Composition owner - Composition через `kind`/`kindIdentity`;
+- update - store через `storeIdentity`;
+- vocab - auth-profile через `authProfileIdentity`;
+- document - integration requirement, если manifest/контракт указывает integration identity/version;
 - другие typed relations, уже явно представленные backend schema.
 
 Нельзя извлекать зависимости поиском строк по arbitrary JSON/source.
@@ -533,7 +533,7 @@ Response:
 1. Project root включает все owned project Composition.
 2. Tenant/environment roots включаются только если выбраны.
 3. Library Composition попадает только через dependency.
-4. Транзитивная цепочка Composition→Query→DataView включается полностью.
+4. Транзитивная цепочка Composition-Query-DataView включается полностью.
 5. Cycle не вызывает бесконечный обход.
 6. Missing required dependency делает plan invalid.
 7. Non-compilable included node делает plan invalid.

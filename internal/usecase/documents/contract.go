@@ -86,11 +86,6 @@ func validateDocument(kind string, input map[string]any) error {
 			return domainerrors.InvalidInput("folder_root_field_read_only", "isRoot is server-managed")
 		}
 	}
-	if kind == "auth-profiles" {
-		publicFields := copyMap(input)
-		delete(publicFields, "config")
-		return validateSecrets(publicFields)
-	}
 	return validateSecrets(input)
 }
 

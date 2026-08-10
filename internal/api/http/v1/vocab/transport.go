@@ -10,7 +10,7 @@ type CreateRequest struct {
 	Mode                string  `json:"mode,omitempty" validate:"omitempty,oneof=external_payload internal" example:"example"`
 	BaseAPIURL          *string `json:"baseApiUrl,omitempty" example:"example"`
 	CollectionSlug      *string `json:"collectionSlug,omitempty" example:"example"`
-	AuthMode            string  `json:"authMode,omitempty" validate:"omitempty,oneof=inherit profile manual none" example:"example"`
+	AuthMode            string  `json:"authMode,omitempty" validate:"omitempty,oneof=inherit profile none" example:"example"`
 	AuthProfileIdentity *string `json:"authProfileIdentity,omitempty" example:"default-auth"`
 }
 
@@ -19,7 +19,7 @@ type PatchRequest struct {
 	Mode                *string `json:"mode,omitempty" validate:"omitempty,oneof=external_payload internal" example:"example"`
 	BaseAPIURL          *string `json:"baseApiUrl,omitempty" example:"example"`
 	CollectionSlug      *string `json:"collectionSlug,omitempty" example:"example"`
-	AuthMode            *string `json:"authMode,omitempty" validate:"omitempty,oneof=inherit profile manual none" example:"example"`
+	AuthMode            *string `json:"authMode,omitempty" validate:"omitempty,oneof=inherit profile none" example:"example"`
 	AuthProfileIdentity *string `json:"authProfileIdentity,omitempty" example:"default-auth"`
 }
 

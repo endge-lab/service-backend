@@ -98,7 +98,7 @@ Backend должен поддерживать:
 2. получение OIDC service token через client credentials;
 3. pull deployment bundle с source;
 4. строгую проверку schema/checksum/размера;
-5. source→target context mapping;
+5. source-target context mapping;
 6. dry-run plan с creates/updates/deletes/unchanged/conflicts;
 7. three-way conflict detection по последнему успешно применённому base;
 8. применение только ранее сохранённого plan с `If-Match` target workspace;
@@ -510,9 +510,9 @@ local    — текущее target состояние
 
 ### Первый sync без base
 
-- target document отсутствует → create;
-- target document byte/content-equivalent → unchanged;
-- target document существует с другим content → conflict;
+- target document отсутствует - create;
+- target document byte/content-equivalent - unchanged;
+- target document существует с другим content - conflict;
 - ничего не удалять, потому что нет доказательства, что target document ранее управлялся этим mapping.
 
 ### Важное ограничение merge

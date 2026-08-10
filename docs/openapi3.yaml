@@ -17337,7 +17337,6 @@ components:
           enum:
             - inherit
             - profile
-            - manual
             - none
           example: example
         authProfileIdentity:
@@ -17409,7 +17408,6 @@ components:
           enum:
             - inherit
             - profile
-            - manual
             - none
           example: example
         authProfileIdentity:

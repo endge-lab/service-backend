@@ -17342,7 +17342,6 @@ var openAPI3YAML = []byte(
 		"          enum:\n" +
 		"            - inherit\n" +
 		"            - profile\n" +
-		"            - manual\n" +
 		"            - none\n" +
 		"          example: example\n" +
 		"        authProfileIdentity:\n" +
@@ -17414,7 +17413,6 @@ var openAPI3YAML = []byte(
 		"          enum:\n" +
 		"            - inherit\n" +
 		"            - profile\n" +
-		"            - manual\n" +
 		"            - none\n" +
 		"          example: example\n" +
 		"        authProfileIdentity:\n" +

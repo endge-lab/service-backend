@@ -325,7 +325,7 @@ func validateDocument(kind string, input map[string]any) error {
 		if mode := stringField(input, "mode"); mode != "" && !slices.Contains([]string{"external_payload", "internal"}, mode) {
 			return domainerrors.InvalidInput("vocab_mode_invalid", "mode is invalid")
 		}
-		if mode := stringField(input, "authMode"); mode != "" && !slices.Contains([]string{"inherit", "profile", "manual", "none"}, mode) {
+		if mode := stringField(input, "authMode"); mode != "" && !slices.Contains([]string{"inherit", "profile", "none"}, mode) {
 			return domainerrors.InvalidInput("vocab_auth_mode_invalid", "authMode is invalid")
 		}
 	}
