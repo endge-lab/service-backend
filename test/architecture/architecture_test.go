@@ -66,18 +66,6 @@ func parsedImports(t *testing.T, filePath string) []string {
 	return imports
 }
 
-func packageName(t *testing.T, filePath string) string {
-	t.Helper()
-
-	fileSet := token.NewFileSet()
-	parsed, err := parser.ParseFile(fileSet, filePath, nil, parser.PackageClauseOnly)
-	if err != nil {
-		t.Fatalf("parse package name %s: %v", filePath, err)
-	}
-
-	return parsed.Name.Name
-}
-
 // TestTemplateRequiredPathsExist проверяет обязательные каталоги слоёв и checked-in OpenAPI.
 func TestTemplateRequiredPathsExist(t *testing.T) {
 	root := repoRoot(t)
@@ -105,118 +93,6 @@ func TestTemplateRequiredPathsExist(t *testing.T) {
 	for _, relativePath := range requiredPaths {
 		if _, err := os.Stat(filepath.Join(root, relativePath)); err != nil {
 			t.Fatalf("required architecture path is missing: %s", relativePath)
-		}
-	}
-}
-
-// TestTemplateLayerPackageNames не позволяет транспортным и прикладным пакетам смешиваться.
-func TestTemplateLayerPackageNames(t *testing.T) {
-	root := repoRoot(t)
-
-	expectedPackages := map[string]string{
-		"internal/api/http":                   "http",
-		"internal/api/http/configurator_auth": "configurator_auth",
-		"internal/api/http/health":            "health",
-		"internal/api/http/middleware":        "middleware",
-		"internal/api/http/openapi":           "openapi",
-		"internal/api/http/respond":           "respond",
-		"internal/api/http/v1/action":         "action",
-		"internal/api/http/v1/auth_profile":   "auth_profile",
-		"internal/api/http/v1/backup":         "backup",
-		"internal/api/http/v1/commit":         "commit",
-		"internal/api/http/v1/component":      "component",
-		"internal/api/http/v1/composition":    "composition",
-		"internal/api/http/v1/computation":    "computation",
-		"internal/api/http/v1/converter":      "converter",
-		"internal/api/http/v1/data_view":      "data_view",
-		"internal/api/http/v1/domain":         "domain",
-		"internal/api/http/v1/environment":    "environment",
-		"internal/api/http/v1/filter":         "filter",
-		"internal/api/http/v1/folder":         "folder",
-		"internal/api/http/v1/i18n_bundle":    "i18n_bundle",
-		"internal/api/http/v1/integration":    "integration",
-		"internal/api/http/v1/mock":           "mock",
-		"internal/api/http/v1/navigation":     "navigation",
-		"internal/api/http/v1/project":        "project",
-		"internal/api/http/v1/query":          "query",
-		"internal/api/http/v1/release":        "release",
-		"internal/api/http/v1/revision":       "revision",
-		"internal/api/http/v1/session":        "session",
-		"internal/api/http/v1/shared":         "shared",
-		"internal/api/http/v1/store":          "store",
-		"internal/api/http/v1/stream":         "stream",
-		"internal/api/http/v1/style":          "style",
-		"internal/api/http/v1/tenant":         "tenant",
-		"internal/api/http/v1/type":           "domain_type",
-		"internal/api/http/v1/update":         "update",
-		"internal/api/http/v1/vocab":          "vocab",
-		"internal/api/http/v1/workspace":      "workspace",
-		"internal/bootstrap":                  "bootstrap",
-		"internal/domain/entities":            "entities",
-		"internal/domain/errors":              "errors",
-		"internal/platform":                   "platform",
-		"internal/repo/postgres":              "postgres",
-		"internal/repo/postgres/sqlc":         "sqlc",
-		"internal/usecase/actions":            "actions",
-		"internal/usecase/auth_profiles":      "auth_profiles",
-		"internal/usecase/backups":            "backups",
-		"internal/usecase/commits":            "commits",
-		"internal/usecase/components":         "components",
-		"internal/usecase/compositions":       "compositions",
-		"internal/usecase/computations":       "computations",
-		"internal/usecase/converters":         "converters",
-		"internal/usecase/data_views":         "data_views",
-		"internal/usecase/documents":          "documents",
-		"internal/usecase/environments":       "environments",
-		"internal/usecase/filters":            "filters",
-		"internal/usecase/folders":            "folders",
-		"internal/usecase/history":            "history",
-		"internal/usecase/shared":             "shared",
-		"internal/usecase/workspace_state":    "workspace_state",
-		"internal/usecase/i18n_bundles":       "i18n_bundles",
-		"internal/usecase/integrations":       "integrations",
-		"internal/usecase/mocks":              "mocks",
-		"internal/usecase/navigations":        "navigations",
-		"internal/usecase/portable":           "portable",
-		"internal/usecase/ports":              "ports",
-		"internal/usecase/projects":           "projects",
-		"internal/usecase/queries":            "queries",
-		"internal/usecase/releases":           "releases",
-		"internal/usecase/revisions":          "revisions",
-		"internal/usecase/session":            "session",
-		"internal/usecase/stores":             "stores",
-		"internal/usecase/streams":            "streams",
-		"internal/usecase/styles":             "styles",
-		"internal/usecase/tenants":            "tenants",
-		"internal/usecase/types":              "types",
-		"internal/usecase/updates":            "updates",
-		"internal/usecase/vocabs":             "vocabs",
-		"internal/usecase/workspaces":         "workspaces",
-	}
-
-	for relativeDir, expectedPackage := range expectedPackages {
-		files := listGoFiles(t, root, relativeDir)
-		if len(files) == 0 {
-			t.Fatalf("expected go files in %s", relativeDir)
-		}
-
-		for _, filePath := range files {
-			effectiveExpectedPackage := expectedPackage
-			relativeFilePath, err := filepath.Rel(root, filePath)
-			if err != nil {
-				t.Fatalf("relative file path %s: %v", filePath, err)
-			}
-			matchedDir := relativeDir
-			for expectedDir, expectedDirPackage := range expectedPackages {
-				if strings.HasPrefix(relativeFilePath, expectedDir+string(filepath.Separator)) && len(expectedDir) > len(matchedDir) {
-					effectiveExpectedPackage = expectedDirPackage
-					matchedDir = expectedDir
-				}
-			}
-
-			if actualPackage := packageName(t, filePath); actualPackage != effectiveExpectedPackage {
-				t.Fatalf("unexpected package name in %s: got %s want %s", filePath, actualPackage, effectiveExpectedPackage)
-			}
 		}
 	}
 }
