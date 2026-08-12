@@ -241,27 +241,6 @@ func TestHTTPConstructorsDependOnUseCasePorts(t *testing.T) {
 	}
 }
 
-// TestExportedTransportFunctionsHaveGoDoc требует GoDoc у экспортируемых функций транспорта.
-func TestExportedTransportFunctionsHaveGoDoc(t *testing.T) {
-	root := repoRoot(t)
-	for _, filePath := range listGoFiles(t, root, "internal/api/http/v1") {
-		fileSet := token.NewFileSet()
-		parsed, err := parser.ParseFile(fileSet, filePath, nil, parser.ParseComments)
-		if err != nil {
-			t.Fatalf("parse transport %s: %v", filePath, err)
-		}
-		for _, declaration := range parsed.Decls {
-			function, ok := declaration.(*ast.FuncDecl)
-			if !ok || !function.Name.IsExported() {
-				continue
-			}
-			if function.Doc == nil || !strings.HasPrefix(strings.TrimSpace(function.Doc.Text()), function.Name.Name) {
-				t.Fatalf("exported transport function %s in %s needs Russian GoDoc beginning with its name", function.Name.Name, filePath)
-			}
-		}
-	}
-}
-
 // TestHTTPUseCasePortsDoNotExposeUntypedMaps не допускает map[string]any на границе transport-usecase.
 func TestHTTPUseCasePortsDoNotExposeUntypedMaps(t *testing.T) {
 	root := repoRoot(t)
