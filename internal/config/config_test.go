@@ -66,6 +66,33 @@ func TestLoadFromEnvironmentWithoutYAML(t *testing.T) {
 	}
 }
 
+func TestNormalizeHTTPBasePath(t *testing.T) {
+	for input, want := range map[string]string{
+		"":                       "",
+		"/":                      "",
+		"/endge-service-backend": "/endge-service-backend",
+	} {
+		got, err := normalizeHTTPBasePath(input)
+		if err != nil || got != want {
+			t.Fatalf("normalizeHTTPBasePath(%q) = %q, %v; want %q", input, got, err, want)
+		}
+	}
+	for _, input := range []string{"endge-service-backend", "/endge-service-backend/", "/endge//backend", "/endge/../backend"} {
+		if _, err := normalizeHTTPBasePath(input); err == nil {
+			t.Fatalf("normalizeHTTPBasePath(%q) accepted invalid path", input)
+		}
+	}
+}
+
+func TestPublicURLPathMatchesHTTPBasePath(t *testing.T) {
+	if err := validatePublicURLBasePath("https://backend.example/endge-service-backend", "/endge-service-backend"); err != nil {
+		t.Fatalf("matching paths rejected: %v", err)
+	}
+	if err := validatePublicURLBasePath("https://backend.example", "/endge-service-backend"); err == nil {
+		t.Fatal("PUBLIC_URL without configured HTTP_BASE_PATH was accepted")
+	}
+}
+
 // TestConfiguratorAuthConfigAcceptsEncryptionKeyRotation проверяет валидную
 // конфигурацию текущего и предыдущего ключей server-side sessions.
 func TestConfiguratorAuthConfigAcceptsEncryptionKeyRotation(t *testing.T) {

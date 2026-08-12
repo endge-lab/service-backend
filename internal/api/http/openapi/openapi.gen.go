@@ -989,6 +989,114 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/backend-connections:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает глобальный каталог основного backend без привязки к Workspace.\n" +
+		"      tags:\n" +
+		"        - Backend-подключения\n" +
+		"      summary: Получить backend-подключения\n" +
+		"      operationId: listBackendConnections\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/backend_connection.ListResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Нормализует и добавляет адрес в глобальный каталог основного\n" +
+		"        backend. Доступно только Platform Admin.\n" +
+		"      tags:\n" +
+		"        - Backend-подключения\n" +
+		"      summary: Добавить backend-подключение\n" +
+		"      operationId: createBackendConnection\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/backend_connection.CreateRequest\"\n" +
+		"        description: Адрес backend\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Created\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/backend_connection.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Conflict\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/backend-connections/{id}\":\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Физически удаляет адрес из глобального каталога. Доступно только\n" +
+		"        Platform Admin.\n" +
+		"      tags:\n" +
+		"        - Backend-подключения\n" +
+		"      summary: Удалить backend-подключение\n" +
+		"      operationId: deleteBackendConnection\n" +
+		"      parameters:\n" +
+		"        - description: ID подключения\n" +
+		"          name: id\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            format: uuid\n" +
+		"      responses:\n" +
+		"        \"204\":\n" +
+		"          description: No Content\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /api/v1/commits:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -13267,6 +13375,43 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    backend_connection.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - baseUrl\n" +
+		"      properties:\n" +
+		"        baseUrl:\n" +
+		"          type: string\n" +
+		"          example: https://backend.example.com\n" +
+		"    backend_connection.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        canManage:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/backend_connection.Response\"\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    backend_connection.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        baseUrl:\n" +
+		"          type: string\n" +
+		"          example: https://backend.example.com\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"        createdBy:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"    backup.CreateRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +

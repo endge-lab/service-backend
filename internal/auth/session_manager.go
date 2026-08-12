@@ -37,12 +37,14 @@ type SessionManager struct {
 	resolver Resolver
 	keyring  *sessionEncryptionKeyring
 	loginURL string
+	basePath string
 }
 
 func NewSessionManager(cfg *config.Config, pool *pgxpool.Pool, registry *LoginAdapterRegistry, resolver Resolver) (*SessionManager, error) {
 	manager := &SessionManager{
 		config: cfg.ConfiguratorAuth, pool: pool, registry: registry, resolver: resolver,
 		loginURL: strings.TrimRight(cfg.App.PublicURL, "/") + "/auth/login",
+		basePath: cfg.HTTPBasePath,
 	}
 	if cfg.ConfiguratorAuth.Adapter == "dev" {
 		return manager, nil
@@ -63,6 +65,9 @@ func (m *SessionManager) CleanupInterval() time.Duration {
 	return m.config.SessionCleanupInterval
 }
 func (m *SessionManager) LoginURL() string { return m.loginURL }
+func (m *SessionManager) LoginCallbackPath() string {
+	return m.basePath + "/auth/callback"
+}
 
 func (m *SessionManager) Begin(ctx context.Context, requestedReturnURL string) (LoginStart, error) {
 	if m.config.Adapter == "dev" {

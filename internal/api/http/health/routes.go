@@ -9,9 +9,10 @@ type Config struct {
 	Env     string
 }
 
-func RegisterRoutes(app *fiber.App, cfg Config) {
-	app.Get("/health", healthHandler(cfg))
-	app.Get("/version", versionHandler(cfg))
+func RegisterRoutes(router fiber.Router, cfg Config) {
+	router.Get("/", healthHandler(cfg))
+	router.Get("/health", healthHandler(cfg))
+	router.Get("/version", versionHandler(cfg))
 }
 
 // healthHandler возвращает состояние работоспособности сервиса.

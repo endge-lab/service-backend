@@ -5,6 +5,7 @@ import (
 	httpmiddleware "github.com/endge-lab/service-backend/internal/api/http/middleware"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/action"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/auth_profile"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/backend_connection"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/backup"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/commit"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/component"
@@ -49,6 +50,7 @@ func HandlerModules() fx.Option {
 			httpmiddleware.NewCurrentUserMiddleware,
 			configuratorauth.NewHandler,
 			workspace.BindUseCase,
+			backend_connection.BindUseCase,
 			backup.BindUseCase,
 			httpsession.BindUseCase,
 			integration.BindUseCase,
@@ -79,6 +81,7 @@ func HandlerModules() fx.Option {
 			domain.BindUseCase,
 			release.BindUseCase,
 			workspace.NewHandler,
+			backend_connection.NewHandler,
 			backup.NewHandler,
 			httpsession.NewHandler,
 			integration.NewHandler,

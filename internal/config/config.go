@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -76,6 +77,7 @@ type SessionEncryptionKeyConfig struct {
 
 type Config struct {
 	*kitconfig.ServiceConfig
+	HTTPBasePath         string
 	Identity             IdentityConfig
 	ConfiguratorAuth     ConfiguratorAuthConfig
 	Snapshots            SnapshotConfig
@@ -111,6 +113,13 @@ func (c ReleaseArtifactCacheConfig) Validate() error {
 func Load() (*Config, error) {
 	base, err := kitconfig.LoadServiceConfig()
 	if err != nil {
+		return nil, err
+	}
+	httpBasePath, err := normalizeHTTPBasePath(os.Getenv("HTTP_BASE_PATH"))
+	if err != nil {
+		return nil, err
+	}
+	if err := validatePublicURLBasePath(base.App.PublicURL, httpBasePath); err != nil {
 		return nil, err
 	}
 
@@ -171,6 +180,7 @@ func Load() (*Config, error) {
 	}
 	return &Config{
 		ServiceConfig:        base,
+		HTTPBasePath:         httpBasePath,
 		Identity:             identity,
 		ConfiguratorAuth:     configuratorAuth,
 		ReleaseArtifactCache: releaseArtifactCache,
@@ -178,6 +188,34 @@ func Load() (*Config, error) {
 			ImportBackupRetentionDays: envInt("IMPORT_BACKUP_RETENTION_DAYS", 7),
 		},
 	}, nil
+}
+
+func normalizeHTTPBasePath(raw string) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" || value == "/" {
+		return "", nil
+	}
+	if !strings.HasPrefix(value, "/") {
+		return "", fmt.Errorf("HTTP_BASE_PATH must start with /")
+	}
+	if strings.ContainsAny(value, "?#\\%") || path.Clean(value) != value {
+		return "", fmt.Errorf("HTTP_BASE_PATH must be a clean URL path without a trailing slash")
+	}
+	return value, nil
+}
+
+func validatePublicURLBasePath(publicURL, basePath string) error {
+	if basePath == "" {
+		return nil
+	}
+	parsed, err := url.Parse(publicURL)
+	if err != nil {
+		return fmt.Errorf("PUBLIC_URL must be a valid URL: %w", err)
+	}
+	if strings.TrimRight(parsed.Path, "/") != basePath {
+		return fmt.Errorf("PUBLIC_URL path must match HTTP_BASE_PATH")
+	}
+	return nil
 }
 
 func (c ConfiguratorAuthConfig) Validate(production bool) error {

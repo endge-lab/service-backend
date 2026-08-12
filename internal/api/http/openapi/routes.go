@@ -3,9 +3,9 @@ package openapi
 
 import "github.com/gofiber/fiber/v2"
 
-func RegisterRoutes(app *fiber.App) {
-	app.Get("/swagger/openapi3.yaml", handleOpenAPISpec)
-	app.Get("/swagger", handleSwaggerUI)
+func RegisterRoutes(router fiber.Router) {
+	router.Get("/swagger/openapi3.yaml", handleOpenAPISpec)
+	router.Get("/swagger", handleSwaggerUI)
 }
 
 func handleOpenAPISpec(c *fiber.Ctx) error {
@@ -29,7 +29,7 @@ func handleSwaggerUI(c *fiber.Ctx) error {
     <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.28.5"></script>
     <script>
       Scalar.createApiReference('#api-reference', {
-        url: '/swagger/openapi3.yaml',
+        url: 'swagger/openapi3.yaml',
         theme: 'blue',
         layout: 'modern',
         showSidebar: true,

@@ -8,6 +8,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/respond"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/action"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/auth_profile"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/backend_connection"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/backup"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/commit"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/component"
@@ -46,52 +47,58 @@ import (
 type Handlers struct {
 	fx.In
 
-	CurrentUser      *httpmiddleware.CurrentUserMiddleware
-	ConfiguratorAuth *configuratorauth.Handler
-	Workspace        *workspace.Handler
-	Session          *httpsession.Handler
-	Integration      *integration.Handler
-	Project          *project.Handler
-	Tenant           *tenant.Handler
-	Environment      *environment.Handler
-	Folder           *folder.Handler
-	Type             *domain_type.Handler
-	Query            *query.Handler
-	DataView         *data_view.Handler
-	Composition      *composition.Handler
-	Store            *store.Handler
-	Stream           *stream.Handler
-	Update           *update.Handler
-	Mock             *mock.Handler
-	Component        *component.Handler
-	Action           *action.Handler
-	Filter           *filter.Handler
-	Converter        *converter.Handler
-	Computation      *computation.Handler
-	Vocab            *vocab.Handler
-	I18nBundle       *i18n_bundle.Handler
-	AuthProfile      *auth_profile.Handler
-	Navigation       *navigation.Handler
-	Style            *style.Handler
-	Revision         *revision.Handler
-	Commit           *commit.Handler
-	Domain           *domain.Handler
-	Backup           *backup.Handler
-	Release          *release.Handler
+	CurrentUser       *httpmiddleware.CurrentUserMiddleware
+	ConfiguratorAuth  *configuratorauth.Handler
+	Workspace         *workspace.Handler
+	BackendConnection *backend_connection.Handler
+	Session           *httpsession.Handler
+	Integration       *integration.Handler
+	Project           *project.Handler
+	Tenant            *tenant.Handler
+	Environment       *environment.Handler
+	Folder            *folder.Handler
+	Type              *domain_type.Handler
+	Query             *query.Handler
+	DataView          *data_view.Handler
+	Composition       *composition.Handler
+	Store             *store.Handler
+	Stream            *stream.Handler
+	Update            *update.Handler
+	Mock              *mock.Handler
+	Component         *component.Handler
+	Action            *action.Handler
+	Filter            *filter.Handler
+	Converter         *converter.Handler
+	Computation       *computation.Handler
+	Vocab             *vocab.Handler
+	I18nBundle        *i18n_bundle.Handler
+	AuthProfile       *auth_profile.Handler
+	Navigation        *navigation.Handler
+	Style             *style.Handler
+	Revision          *revision.Handler
+	Commit            *commit.Handler
+	Domain            *domain.Handler
+	Backup            *backup.Handler
+	Release           *release.Handler
 }
 
 func SetupRoutes(app *fiber.App, cfg *config.Config, handlers Handlers, authMiddleware httpmiddleware.AuthMiddleware, meter metric.Meter, logger *zap.Logger) {
 	httpmiddleware.Register(app, cfg, meter, logger)
-	if !cfg.App.IsProduction() {
-		openapi.RegisterRoutes(app)
+	var router fiber.Router = app
+	if cfg.HTTPBasePath != "" {
+		router = app.Group(cfg.HTTPBasePath)
 	}
-	health.RegisterRoutes(app, health.Config{Service: cfg.App.Name, Version: cfg.App.Version, Env: cfg.App.Env})
-	configuratorauth.RegisterPublicRoutes(app, handlers.ConfiguratorAuth)
-	app.Get("/auth/session", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve(), handlers.Session.Current)
-	api := app.Group("/api", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve())
+	if !cfg.App.IsProduction() {
+		openapi.RegisterRoutes(router)
+	}
+	health.RegisterRoutes(router, health.Config{Service: cfg.App.Name, Version: cfg.App.Version, Env: cfg.App.Env})
+	configuratorauth.RegisterPublicRoutes(router, handlers.ConfiguratorAuth)
+	router.Get("/auth/session", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve(), handlers.Session.Current)
+	api := router.Group("/api", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve())
 	httpsession.RegisterRoutes(api, handlers.Session)
 	v1 := api.Group("/v1")
 	workspace.RegisterRoutes(v1, handlers.Workspace)
+	backend_connection.RegisterRoutes(v1, handlers.BackendConnection)
 	integration.RegisterRoutes(v1, handlers.Integration)
 	scoped := v1.Group("", handlers.Workspace.RequireWorkspace())
 	project.RegisterRoutes(scoped, handlers.Project)

@@ -71,14 +71,14 @@ func (h *Handler) Callback(c *fiber.Ctx) error {
 
 func (h *Handler) setLoginTransactionCookie(c *fiber.Ctx, value string, expiresAt time.Time) {
 	c.Cookie(&fiber.Cookie{
-		Name: loginTransactionCookie, Value: value, Path: "/auth/callback", Domain: h.sessions.CookieDomain(),
+		Name: loginTransactionCookie, Value: value, Path: h.sessions.LoginCallbackPath(), Domain: h.sessions.CookieDomain(),
 		Expires: expiresAt, HTTPOnly: true, Secure: h.sessions.CookieSecure(), SameSite: fiber.CookieSameSiteLaxMode,
 	})
 }
 
 func (h *Handler) clearLoginTransactionCookie(c *fiber.Ctx) {
 	c.Cookie(&fiber.Cookie{
-		Name: loginTransactionCookie, Value: "", Path: "/auth/callback", Domain: h.sessions.CookieDomain(),
+		Name: loginTransactionCookie, Value: "", Path: h.sessions.LoginCallbackPath(), Domain: h.sessions.CookieDomain(),
 		Expires: time.Unix(0, 0), MaxAge: -1, HTTPOnly: true, Secure: h.sessions.CookieSecure(), SameSite: fiber.CookieSameSiteLaxMode,
 	})
 }

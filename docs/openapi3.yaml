@@ -984,6 +984,114 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/backend-connections:
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает глобальный каталог основного backend без привязки к Workspace.
+      tags:
+        - Backend-подключения
+      summary: Получить backend-подключения
+      operationId: listBackendConnections
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/backend_connection.ListResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+    post:
+      security:
+        - BearerAuth: []
+      description: Нормализует и добавляет адрес в глобальный каталог основного
+        backend. Доступно только Platform Admin.
+      tags:
+        - Backend-подключения
+      summary: Добавить backend-подключение
+      operationId: createBackendConnection
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/backend_connection.CreateRequest"
+        description: Адрес backend
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/backend_connection.Response"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/backend-connections/{id}":
+    delete:
+      security:
+        - BearerAuth: []
+      description: Физически удаляет адрес из глобального каталога. Доступно только
+        Platform Admin.
+      tags:
+        - Backend-подключения
+      summary: Удалить backend-подключение
+      operationId: deleteBackendConnection
+      parameters:
+        - description: ID подключения
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
   /api/v1/commits:
     get:
       security:
@@ -13262,6 +13370,43 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+    backend_connection.CreateRequest:
+      type: object
+      required:
+        - baseUrl
+      properties:
+        baseUrl:
+          type: string
+          example: https://backend.example.com
+    backend_connection.ListResponse:
+      type: object
+      properties:
+        canManage:
+          type: boolean
+          example: true
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/backend_connection.Response"
+        total:
+          type: integer
+          example: 1
+    backend_connection.Response:
+      type: object
+      properties:
+        baseUrl:
+          type: string
+          example: https://backend.example.com
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          format: uuid
+        id:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
     backup.CreateRequest:
       type: object
       properties:
