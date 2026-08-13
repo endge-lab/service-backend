@@ -38,9 +38,13 @@ func (s *UseCase) List(ctx context.Context) (ListResult, error) {
 	return ListResult{Items: items, CanManage: current.PlatformAdmin}, err
 }
 
-// Create нормализует и добавляет URL. Проверка доступности намеренно выполняется только браузером.
-func (s *UseCase) Create(ctx context.Context, baseURL string) (*entities.BackendConnection, error) {
+// Create нормализует и добавляет именованный URL. Проверка доступности намеренно выполняется только браузером.
+func (s *UseCase) Create(ctx context.Context, name, baseURL string) (*entities.BackendConnection, error) {
 	current, err := platformAdmin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	name, err = NormalizeName(name)
 	if err != nil {
 		return nil, err
 	}
@@ -48,9 +52,21 @@ func (s *UseCase) Create(ctx context.Context, baseURL string) (*entities.Backend
 	if err != nil {
 		return nil, err
 	}
-	value := entities.BackendConnection{ID: uuid.NewString(), BaseURL: normalized, CreatedBy: current.User.ID}
+	value := entities.BackendConnection{ID: uuid.NewString(), Name: name, BaseURL: normalized, CreatedBy: current.User.ID}
 	created, err := s.repository.InsertBackendConnection(ctx, value)
 	return created, shared.MapConflict(err)
+}
+
+// NormalizeName приводит пользовательское название к хранимой форме.
+func NormalizeName(raw string) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "", domainerrors.InvalidInput("backend_name_required", "name is required")
+	}
+	if len([]rune(value)) > 160 {
+		return "", domainerrors.InvalidInput("backend_name_too_long", "name must not exceed 160 characters")
+	}
+	return value, nil
 }
 
 // Delete физически удаляет подключение по id.

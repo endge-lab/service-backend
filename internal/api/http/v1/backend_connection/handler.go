@@ -45,7 +45,7 @@ func (h *Handler) List(c *fiber.Ctx) error {
 // @Tags Backend-подключения
 // @Accept json
 // @Produce json
-// @Param request body CreateRequest true "Адрес backend"
+// @Param request body CreateRequest true "Название и адрес backend"
 // @Success 201 {object} Response
 // @Failure 400 {object} shared.ErrorResponse
 // @Failure 401 {object} shared.ErrorResponse
@@ -58,7 +58,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 	if err != nil {
 		return respond.WriteErrorResponse(c, err)
 	}
-	created, err := h.usecase.Create(c.UserContext(), request.BaseURL)
+	created, err := h.usecase.Create(c.UserContext(), request.Name, request.BaseURL)
 	if err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}

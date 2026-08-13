@@ -3,6 +3,7 @@ package backend_connections
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
@@ -64,13 +65,27 @@ func TestNormalizeBaseURL(t *testing.T) {
 	}
 }
 
+func TestNormalizeName(t *testing.T) {
+	t.Parallel()
+	name, err := NormalizeName("  Production  ")
+	if err != nil || name != "Production" {
+		t.Fatalf("NormalizeName() = %q, %v", name, err)
+	}
+	if _, err = NormalizeName("   "); err == nil {
+		t.Fatal("empty name was accepted")
+	}
+	if _, err = NormalizeName(strings.Repeat("я", 161)); err == nil {
+		t.Fatal("too long name was accepted")
+	}
+}
+
 func TestUseCaseRequiresPlatformAdminForMutations(t *testing.T) {
 	t.Parallel()
 	repository := &repositoryStub{}
 	usecase := NewUseCase(repository)
 	ctx := actorContext(false)
 
-	if _, err := usecase.Create(ctx, "https://remote.example.com"); err == nil {
+	if _, err := usecase.Create(ctx, "Remote", "https://remote.example.com"); err == nil {
 		t.Fatal("non-admin create was allowed")
 	}
 	if err := usecase.Delete(ctx, "550e8400-e29b-41d4-a716-446655440000"); err == nil {
@@ -83,15 +98,15 @@ func TestUseCaseRequiresPlatformAdminForMutations(t *testing.T) {
 
 func TestUseCaseListAndMutations(t *testing.T) {
 	t.Parallel()
-	repository := &repositoryStub{items: []entities.BackendConnection{{ID: "connection", BaseURL: "https://remote.example.com"}}}
+	repository := &repositoryStub{items: []entities.BackendConnection{{ID: "connection", Name: "Remote", BaseURL: "https://remote.example.com"}}}
 	usecase := NewUseCase(repository)
 
 	result, err := usecase.List(actorContext(false))
 	if err != nil || result.CanManage || len(result.Items) != 1 {
 		t.Fatalf("unexpected viewer list result: %#v, %v", result, err)
 	}
-	created, err := usecase.Create(actorContext(true), " https://REMOTE.example.com/ ")
-	if err != nil || created.BaseURL != "https://remote.example.com" {
+	created, err := usecase.Create(actorContext(true), " Remote production ", " https://REMOTE.example.com/ ")
+	if err != nil || created.Name != "Remote production" || created.BaseURL != "https://remote.example.com" {
 		t.Fatalf("unexpected create result: %#v, %v", created, err)
 	}
 
@@ -100,7 +115,7 @@ func TestUseCaseListAndMutations(t *testing.T) {
 		t.Fatal("missing id did not return an error")
 	}
 	repository.err = errors.New("duplicate key value violates unique constraint")
-	if _, err = usecase.Create(actorContext(true), "https://remote.example.com"); err == nil {
+	if _, err = usecase.Create(actorContext(true), "Remote", "https://remote.example.com"); err == nil {
 		t.Fatal("duplicate URL did not return a conflict")
 	}
 }

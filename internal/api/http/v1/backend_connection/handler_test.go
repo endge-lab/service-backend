@@ -15,7 +15,7 @@ type listUseCaseStub struct{}
 func (listUseCaseStub) List(context.Context) (resourceusecase.ListResult, error) {
 	return resourceusecase.ListResult{Items: []entities.BackendConnection{}, CanManage: false}, nil
 }
-func (listUseCaseStub) Create(context.Context, string) (*entities.BackendConnection, error) {
+func (listUseCaseStub) Create(context.Context, string, string) (*entities.BackendConnection, error) {
 	return nil, nil
 }
 func (listUseCaseStub) Delete(context.Context, string) error { return nil }

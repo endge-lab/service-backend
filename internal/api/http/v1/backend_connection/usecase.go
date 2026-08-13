@@ -9,7 +9,7 @@ import (
 
 type UseCase interface {
 	List(context.Context) (resourceusecase.ListResult, error)
-	Create(context.Context, string) (*entities.BackendConnection, error)
+	Create(context.Context, string, string) (*entities.BackendConnection, error)
 	Delete(context.Context, string) error
 }
 

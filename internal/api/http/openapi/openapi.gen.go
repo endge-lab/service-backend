@@ -1228,7 +1228,7 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/backend_connection.CreateRequest\"\n" +
-		"        description: Адрес backend\n" +
+		"        description: Название и адрес backend\n" +
 		"        required: true\n" +
 		"      responses:\n" +
 		"        \"201\":\n" +
@@ -13760,10 +13760,15 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      required:\n" +
 		"        - baseUrl\n" +
+		"        - name\n" +
 		"      properties:\n" +
 		"        baseUrl:\n" +
 		"          type: string\n" +
 		"          example: https://backend.example.com\n" +
+		"        name:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: Production\n" +
 		"    backend_connection.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -13793,6 +13798,9 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        name:\n" +
+		"          type: string\n" +
+		"          example: Production\n" +
 		"    backup.CreateRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +

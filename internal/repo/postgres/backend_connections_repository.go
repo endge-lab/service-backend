@@ -9,15 +9,15 @@ import (
 
 func scanBackendConnection(row scanner) (*entities.BackendConnection, error) {
 	value := &entities.BackendConnection{}
-	if err := row.Scan(&value.ID, &value.BaseURL, &value.CreatedBy, &value.CreatedAt); err != nil {
+	if err := row.Scan(&value.ID, &value.Name, &value.BaseURL, &value.CreatedBy, &value.CreatedAt); err != nil {
 		return nil, repositoryError(err)
 	}
 	return value, nil
 }
 
-// ListBackendConnections возвращает глобальный каталог, отсортированный по URL.
+// ListBackendConnections возвращает глобальный каталог, отсортированный по названию и URL.
 func (r *EndgeRepository) ListBackendConnections(ctx context.Context) ([]entities.BackendConnection, error) {
-	rows, err := r.executor(ctx).Query(ctx, `SELECT id::text,base_url,created_by::text,created_at FROM backend_connections ORDER BY base_url`)
+	rows, err := r.executor(ctx).Query(ctx, `SELECT id::text,name,base_url,created_by::text,created_at FROM backend_connections ORDER BY LOWER(name),base_url`)
 	if err != nil {
 		return nil, err
 	}
@@ -33,9 +33,9 @@ func (r *EndgeRepository) ListBackendConnections(ctx context.Context) ([]entitie
 	return result, rows.Err()
 }
 
-// InsertBackendConnection добавляет нормализованный URL в каталог.
+// InsertBackendConnection добавляет именованное подключение в каталог.
 func (r *EndgeRepository) InsertBackendConnection(ctx context.Context, value entities.BackendConnection) (*entities.BackendConnection, error) {
-	return scanBackendConnection(r.executor(ctx).QueryRow(ctx, `INSERT INTO backend_connections(id,base_url,created_by) VALUES($1,$2,$3) RETURNING id::text,base_url,created_by::text,created_at`, value.ID, value.BaseURL, value.CreatedBy))
+	return scanBackendConnection(r.executor(ctx).QueryRow(ctx, `INSERT INTO backend_connections(id,name,base_url,created_by) VALUES($1,$2,$3,$4) RETURNING id::text,name,base_url,created_by::text,created_at`, value.ID, value.Name, value.BaseURL, value.CreatedBy))
 }
 
 // DeleteBackendConnection физически удаляет подключение.
