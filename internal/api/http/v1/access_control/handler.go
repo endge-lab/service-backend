@@ -21,6 +21,8 @@ func NewHandler(usecase UseCase, validator appvalidator.Validator) *Handler {
 
 // SearchUsers лениво ищет активных пользователей по username.
 // @Summary Найти пользователей для назначения доступа
+// @Description Возвращает страницу активных пользователей, доступных текущему администратору для назначения ролей.
+// @ID searchServiceUsers
 // @Tags Управление доступом
 // @Produce json
 // @Param q query string true "Префикс username" minlength(2)
@@ -47,6 +49,8 @@ func (h *Handler) SearchUsers(c *fiber.Ctx) error {
 
 // List возвращает прямые назначения выбранного scope.
 // @Summary Получить назначения доступа
+// @Description Возвращает страницу прямых назначений ролей платформы или выбранного рабочего пространства.
+// @ID listAccessGrants
 // @Tags Управление доступом
 // @Produce json
 // @Param scopeType query string true "platform или workspace"
@@ -78,6 +82,8 @@ func (h *Handler) List(c *fiber.Ctx) error {
 
 // Put создаёт или заменяет назначение роли.
 // @Summary Назначить роль
+// @Description Создаёт прямое назначение роли или заменяет существующую роль пользователя в выбранном scope.
+// @ID putAccessGrant
 // @Tags Управление доступом
 // @Accept json
 // @Produce json
@@ -106,6 +112,8 @@ func (h *Handler) Put(c *fiber.Ctx) error {
 
 // Delete отзывает прямое назначение роли.
 // @Summary Отозвать роль
+// @Description Удаляет прямое назначение роли по идентификатору.
+// @ID deleteAccessGrant
 // @Tags Управление доступом
 // @Param id path string true "Grant ID" format(uuid)
 // @Success 204
@@ -124,6 +132,8 @@ func (h *Handler) Delete(c *fiber.Ctx) error {
 
 // Bulk массово назначает Workspace-роли.
 // @Summary Массово назначить роли Workspace
+// @Description Массово создаёт или обновляет назначения Workspace-роли для выбранных рабочих пространств.
+// @ID bulkPutWorkspaceAccessGrants
 // @Tags Управление доступом
 // @Accept json
 // @Produce json

@@ -44,9 +44,12 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Возвращает страницу прямых назначений ролей платформы или\n" +
+		"        выбранного рабочего пространства.\n" +
 		"      tags:\n" +
 		"        - Управление доступом\n" +
 		"      summary: Получить назначения доступа\n" +
+		"      operationId: listAccessGrants\n" +
 		"      parameters:\n" +
 		"        - description: platform или workspace\n" +
 		"          name: scopeType\n" +
@@ -110,9 +113,12 @@ var openAPI3YAML = []byte(
 		"    put:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Создаёт прямое назначение роли или заменяет существующую роль\n" +
+		"        пользователя в выбранном scope.\n" +
 		"      tags:\n" +
 		"        - Управление доступом\n" +
 		"      summary: Назначить роль\n" +
+		"      operationId: putAccessGrant\n" +
 		"      requestBody:\n" +
 		"        content:\n" +
 		"          application/json:\n" +
@@ -155,9 +161,12 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Массово создаёт или обновляет назначения Workspace-роли для\n" +
+		"        выбранных рабочих пространств.\n" +
 		"      tags:\n" +
 		"        - Управление доступом\n" +
 		"      summary: Массово назначить роли Workspace\n" +
+		"      operationId: bulkPutWorkspaceAccessGrants\n" +
 		"      requestBody:\n" +
 		"        content:\n" +
 		"          application/json:\n" +
@@ -194,9 +203,11 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Удаляет прямое назначение роли по идентификатору.\n" +
 		"      tags:\n" +
 		"        - Управление доступом\n" +
 		"      summary: Отозвать роль\n" +
+		"      operationId: deleteAccessGrant\n" +
 		"      parameters:\n" +
 		"        - description: Grant ID\n" +
 		"          name: id\n" +
@@ -9389,9 +9400,12 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Возвращает страницу активных пользователей, доступных текущему\n" +
+		"        администратору для назначения ролей.\n" +
 		"      tags:\n" +
 		"        - Управление доступом\n" +
 		"      summary: Найти пользователей для назначения доступа\n" +
+		"      operationId: searchServiceUsers\n" +
 		"      parameters:\n" +
 		"        - description: Префикс username\n" +
 		"          name: q\n" +

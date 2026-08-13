@@ -39,9 +39,12 @@ paths:
     get:
       security:
         - BearerAuth: []
+      description: Возвращает страницу прямых назначений ролей платформы или
+        выбранного рабочего пространства.
       tags:
         - Управление доступом
       summary: Получить назначения доступа
+      operationId: listAccessGrants
       parameters:
         - description: platform или workspace
           name: scopeType
@@ -105,9 +108,12 @@ paths:
     put:
       security:
         - BearerAuth: []
+      description: Создаёт прямое назначение роли или заменяет существующую роль
+        пользователя в выбранном scope.
       tags:
         - Управление доступом
       summary: Назначить роль
+      operationId: putAccessGrant
       requestBody:
         content:
           application/json:
@@ -150,9 +156,12 @@ paths:
     post:
       security:
         - BearerAuth: []
+      description: Массово создаёт или обновляет назначения Workspace-роли для
+        выбранных рабочих пространств.
       tags:
         - Управление доступом
       summary: Массово назначить роли Workspace
+      operationId: bulkPutWorkspaceAccessGrants
       requestBody:
         content:
           application/json:
@@ -189,9 +198,11 @@ paths:
     delete:
       security:
         - BearerAuth: []
+      description: Удаляет прямое назначение роли по идентификатору.
       tags:
         - Управление доступом
       summary: Отозвать роль
+      operationId: deleteAccessGrant
       parameters:
         - description: Grant ID
           name: id
@@ -9384,9 +9395,12 @@ paths:
     get:
       security:
         - BearerAuth: []
+      description: Возвращает страницу активных пользователей, доступных текущему
+        администратору для назначения ролей.
       tags:
         - Управление доступом
       summary: Найти пользователей для назначения доступа
+      operationId: searchServiceUsers
       parameters:
         - description: Префикс username
           name: q
