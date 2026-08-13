@@ -12,7 +12,7 @@
 - Workspace commits с режимами `preserve` и optional `squash`, contributors и восстановлением полного состояния workspace.
 - Immutable releases, привязанные к commit и содержащие готовый portable JSON snapshot без replay истории.
 - Единый live workspace snapshot для загрузки Configurator одним запросом.
-- Двухфазный destructive import (`plan` + подтверждение с `If-Match`), который полностью заменяет domain state и создаёт новый начальный commit без переноса старой истории.
+- Двухфазный безопасный import (`plan` + подтверждение с `If-Match`), который применяет полный snapshot как новые revisions и один обратимый import commit, сохраняя предыдущую историю.
 - Автоматические `pre_import` backups, ручные backups с описанием, экспорт последнего backup и ZIP-архив всех страховочных копий.
 - Inline JSON export по умолчанию и опциональная выдача attachment через `download=true`; read-only alias `last` для последнего release.
 - Типизированные composite FK по `workspace_id` для `Update.store` и `Vocab.authProfile`, а также отдельная many-to-many таблица `project_environments`.

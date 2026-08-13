@@ -55,26 +55,25 @@ func (s *Coordinator) recordRevision(ctx context.Context, doc entities.Document,
 }
 
 // recordWorkspaceRevision записывает ревизию рабочего пространства.
-func (s *Coordinator) recordWorkspaceRevision(ctx context.Context, workspace entities.Workspace, operation string) error {
+func (s *Coordinator) recordWorkspaceRevision(ctx context.Context, workspace entities.Workspace, operation string) (*entities.Revision, error) {
 	sequence, err := s.repository.NextWorkspaceSequence(ctx, workspace.ID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	batch, err := s.mutationBatch(ctx, &workspace.ID, operation, workspace.UpdatedBy.ID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	latest, err := s.repository.LatestRevision(ctx, &workspace.ID, "workspaces", workspace.ID)
 	var parent *string
 	if err == nil {
 		parent = &latest.ID
 	} else if !errors.Is(err, ports.ErrNotFound) {
-		return err
+		return nil, err
 	}
 	snapshot := mustJSON(workspace)
 	value := entities.Revision{ID: uuid.NewString(), WorkspaceID: workspace.ID, DocumentType: "workspaces", DocumentID: workspace.ID, DocumentIdentity: workspace.Identity, RevisionNumber: workspace.Revision, WorkspaceSequence: &sequence, Operation: operation, ParentRevisionID: parent, MutationBatchID: batch, SnapshotVersion: SchemaVersion, Snapshot: snapshot, Checksum: checksum(snapshot), CreatedBy: workspace.UpdatedBy}
-	_, err = s.repository.InsertRevision(ctx, value)
-	return err
+	return s.repository.InsertRevision(ctx, value)
 }
 
 // mutationBatch создаёт или переиспользует пакет связанных изменений.
@@ -185,42 +184,16 @@ func documentFromInput(kind, workspace string, input map[string]any, actorID str
 	return entities.Document{ID: uuid.NewString(), WorkspaceID: workspace, Type: kind, Identity: stringField(input, "identity"), DisplayName: stringField(input, "displayName"), Description: description, FolderIdentity: folder, ManagedBy: defaultString(stringField(input, "managedBy"), "user"), ManagedByID: managedID, Meta: jsonField(input, "meta", json.RawMessage(`{}`)), Data: mustJSON(data), Active: defaultBool(input, "active", true), Revision: 1, CreatedBy: entities.Actor{ID: actorID}, UpdatedBy: entities.Actor{ID: actorID}}
 }
 
-// applyPatch применяет частичное обновление к документу.
-func applyPatch(doc entities.Document, patch map[string]any, actorID string) entities.Document {
-	if value, ok := patch["identity"].(string); ok {
-		doc.Identity = strings.TrimSpace(value)
-	}
-	if value, ok := patch["displayName"].(string); ok {
-		doc.DisplayName = value
-	}
-	if _, ok := patch["description"]; ok {
-		doc.Description = optionalString(patch, "description")
-	}
-	if _, ok := patch["folderIdentity"]; ok {
-		doc.FolderIdentity = optionalString(patch, "folderIdentity")
-	}
-	if value, ok := patch["managedBy"].(string); ok {
-		doc.ManagedBy = value
-	}
-	if _, ok := patch["managedById"]; ok {
-		doc.ManagedByID = optionalString(patch, "managedById")
-	}
-	if value, ok := patch["meta"]; ok {
-		doc.Meta = mustJSON(value)
-	}
-	if value, ok := patch["active"].(bool); ok {
-		doc.Active = value
-	}
-	var data map[string]any
-	_ = json.Unmarshal(doc.Data, &data)
-	for key, value := range patch {
-		if !slices.Contains(append(readOnlyFields, "identity", "displayName", "description", "folderIdentity", "managedBy", "managedById", "meta", "active"), key) {
-			data[key] = value
-		}
-	}
-	doc.Data = mustJSON(data)
-	doc.UpdatedBy = entities.Actor{ID: actorID}
-	return doc
+// replaceDocumentFromInput строит полное новое состояние существующего документа.
+// Локальная идентичность и audit создания сохраняются, portable-содержимое заменяется целиком.
+func replaceDocumentFromInput(existing entities.Document, input map[string]any, actorID string) entities.Document {
+	next := documentFromInput(existing.Type, existing.WorkspaceID, input, actorID)
+	next.ID = existing.ID
+	next.Revision = existing.Revision
+	next.CreatedBy = existing.CreatedBy
+	next.CreatedAt = existing.CreatedAt
+	next.DeletedAt = nil
+	return next
 }
 
 // documentAsInput преобразует доменный документ в данные для повторной проверки.

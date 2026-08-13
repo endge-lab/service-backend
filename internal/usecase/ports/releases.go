@@ -31,7 +31,4 @@ type SnapshotRepository interface {
 	CreateSnapshotBackup(context.Context, entities.SnapshotBackup) (*entities.SnapshotBackup, error)
 	ListSnapshotBackups(context.Context, string, string, bool, int, int) ([]entities.SnapshotBackup, error)
 	GetSnapshotBackup(context.Context, string, string, bool) (*entities.SnapshotBackup, error)
-	CountWorkspaceSnapshotState(context.Context, string) (entities.SnapshotStateCounts, error)
-	DocumentRevisionBaselines(context.Context, string) (map[string]int, error)
-	ResetWorkspaceSnapshotState(context.Context, string, map[string]any, string) (*entities.Workspace, error)
 }

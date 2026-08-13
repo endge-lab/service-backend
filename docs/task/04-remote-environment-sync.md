@@ -836,7 +836,7 @@ Comparison и apply не размещать в HTTP handler или PostgreSQL tr
 - Target создаёт собственные revisions и commit `remote_sync`.
 - Source provenance сохраняется отдельно и не подменяет local author.
 - Повторный sync использует сохранённый base для three-way comparison.
-- Existing full snapshot import/restore остаётся отдельным сценарием и не переиспользуется как destructive shortcut.
+- Existing full snapshot import/restore остаётся отдельным сценарием и не переиспользуется как shortcut для selective sync.
 
 ## Риски, которые нельзя скрывать
 

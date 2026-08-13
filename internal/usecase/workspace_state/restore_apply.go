@@ -90,7 +90,7 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 				if e != nil {
 					return e
 				}
-				if e = s.recordWorkspaceRevision(txctx, *updated, "restore"); e != nil {
+				if _, e = s.recordWorkspaceRevision(txctx, *updated, "restore"); e != nil {
 					return e
 				}
 				workspaceRevisionRecorded = true
@@ -105,7 +105,7 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 			if e != nil {
 				return e
 			}
-			if e = s.recordWorkspaceRevision(txctx, *updated, "restore"); e != nil {
+			if _, e = s.recordWorkspaceRevision(txctx, *updated, "restore"); e != nil {
 				return e
 			}
 		}
@@ -153,9 +153,7 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 					continue
 				}
 				seen[doc.Identity] = true
-				next := applyPatch(doc, item, current.User.ID)
-				next.DeletedAt = nil
-				next.Active = defaultBool(item, "active", true)
+				next := replaceDocumentFromInput(doc, item, current.User.ID)
 				folderID, e := s.resolveDocumentFolder(txctx, scope, next)
 				if e != nil {
 					return e

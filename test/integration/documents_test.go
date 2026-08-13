@@ -222,7 +222,7 @@ func newRepositoryFixture(t *testing.T) *repositoryFixture {
 	if err != nil {
 		t.Fatalf("создать reader artifact: %v", err)
 	}
-	coordinator := workspace_state.NewCoordinator(store, tx, cfg, artifacts)
+	coordinator := workspace_state.NewCoordinator(store, tx, artifacts)
 	lifecycle := documents.NewLifecycle(store, tx, recorder)
 	workspaceUseCase := workspaces.NewUseCase(store, store, store, tx, recorder)
 	actor := entities.CurrentActor{User: &entities.User{ID: userID, ProviderID: "integration", Subject: "subject-" + userID, Issuer: "urn:endge:test", Username: "tester", DisplayName: "Integration Tester", Active: true}, PlatformAdmin: true}

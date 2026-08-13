@@ -85,7 +85,7 @@ backend validation + storage + closure + bundle
 - не содержит revisions/commits;
 - не содержит dependency graph;
 - включает workspace profile;
-- предназначен для полного destructive import.
+- предназначен для полного ревизионного import с обратимым soft-delete отсутствующих документов.
 
 Существующая `validateSnapshotRelations` проверяет только ограниченные backend-visible связи: folders, update-store, project-environment, vocab-auth-profile. Этого недостаточно для semantic closure.
 
@@ -563,7 +563,7 @@ Response:
 - Required dependency не может потеряться молча.
 - Bundle не содержит secrets, actors, RBAC и target-local integration configuration.
 - Export детерминирован и имеет стабильный checksum.
-- Существующий полный `PortableBundle` и destructive import продолжают работать без изменения семантики.
+- Существующий полный `PortableBundle` и безопасный ревизионный import продолжают работать независимо от selective bundle.
 
 ## Риски и внешние зависимости
 

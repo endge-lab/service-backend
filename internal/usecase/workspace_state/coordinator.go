@@ -4,7 +4,6 @@ package workspace_state
 import (
 	"context"
 
-	"github.com/endge-lab/service-backend/internal/config"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
@@ -30,18 +29,17 @@ type Repository interface {
 
 // Coordinator координирует импорт и восстановление состояния рабочего пространства.
 type Coordinator struct {
-	repository          Repository
-	tx                  ports.TxManager
-	backupRetentionDays int
-	artifacts           ports.ReleaseArtifactReader
+	repository Repository
+	tx         ports.TxManager
+	artifacts  ports.ReleaseArtifactReader
 }
 
 // mutationBatchContextKey задаёт закрытый тип ключа контекста для пакета мутаций.
 type mutationBatchContextKey struct{}
 
 // NewCoordinator создаёт координатор операций над состоянием рабочего пространства.
-func NewCoordinator(repository Repository, tx ports.TxManager, cfg *config.Config, artifacts ports.ReleaseArtifactReader) *Coordinator {
-	return &Coordinator{repository: repository, tx: tx, backupRetentionDays: cfg.Snapshots.ImportBackupRetentionDays, artifacts: artifacts}
+func NewCoordinator(repository Repository, tx ports.TxManager, artifacts ports.ReleaseArtifactReader) *Coordinator {
+	return &Coordinator{repository: repository, tx: tx, artifacts: artifacts}
 }
 
 // actor возвращает текущего пользователя из контекста.

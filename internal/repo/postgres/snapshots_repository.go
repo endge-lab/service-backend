@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 )
@@ -70,7 +69,7 @@ func (r *EndgeRepository) LockWorkspaceSnapshot(ctx context.Context, workspaceID
 	return repositoryError(err)
 }
 
-// CreateSnapshotImportPlan сохраняет проверенный snapshot до подтверждения destructive import.
+// CreateSnapshotImportPlan сохраняет проверенный snapshot до подтверждения импорта.
 func (r *EndgeRepository) CreateSnapshotImportPlan(ctx context.Context, value entities.SnapshotImportPlan) (*entities.SnapshotImportPlan, error) {
 	_, _ = r.executor(ctx).Exec(ctx, `DELETE FROM workspace_snapshot_import_plans WHERE expires_at<=NOW() OR applied_at IS NOT NULL`)
 	_, err := r.executor(ctx).Exec(ctx, `INSERT INTO workspace_snapshot_import_plans(id,workspace_id,snapshot_checksum,snapshot,expected_generation,expected_head_sequence,created_by,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, value.ID, value.WorkspaceID, value.SnapshotChecksum, value.Snapshot, value.ExpectedGeneration, value.ExpectedHeadSequence, value.CreatedBy.ID, value.ExpiresAt)
@@ -167,112 +166,4 @@ func (r *EndgeRepository) GetSnapshotBackup(ctx context.Context, workspaceID, id
 		args = append(args, id)
 	}
 	return scanSnapshotBackup(r.executor(ctx).QueryRow(ctx, query, args...))
-}
-
-// CountWorkspaceSnapshotState считает данные, которые будут удалены destructive import.
-func (r *EndgeRepository) CountWorkspaceSnapshotState(ctx context.Context, workspaceID string) (entities.SnapshotStateCounts, error) {
-	counts := entities.SnapshotStateCounts{}
-	for _, table := range documentTables {
-		var count int
-		if err := r.executor(ctx).QueryRow(ctx, `SELECT COUNT(*) FROM `+table+` WHERE workspace_id=$1`, workspaceID).Scan(&count); err != nil {
-			return counts, err
-		}
-		counts.Documents += count
-	}
-	err := r.executor(ctx).QueryRow(ctx, `SELECT (SELECT COUNT(*) FROM document_revisions WHERE workspace_id=$1),(SELECT COUNT(*) FROM workspace_commits WHERE workspace_id=$1),(SELECT COUNT(*) FROM releases WHERE workspace_id=$1)`, workspaceID).Scan(&counts.Revisions, &counts.Commits, &counts.Releases)
-	return counts, err
-}
-
-// DocumentRevisionBaselines сохраняет последние concurrency revisions перед очисткой.
-func (r *EndgeRepository) DocumentRevisionBaselines(ctx context.Context, workspaceID string) (map[string]int, error) {
-	result := map[string]int{}
-	for kind, table := range documentTables {
-		rows, err := r.executor(ctx).Query(ctx, `SELECT identity,revision FROM `+table+` WHERE workspace_id=$1`, workspaceID)
-		if err != nil {
-			return nil, err
-		}
-		for rows.Next() {
-			var identity string
-			var revision int
-			if err = rows.Scan(&identity, &revision); err != nil {
-				rows.Close()
-				return nil, err
-			}
-			result[kind+":"+identity] = revision
-		}
-		rows.Close()
-	}
-	return result, nil
-}
-
-// ResetWorkspaceSnapshotState физически очищает domain state и создаёт новое поколение workspace.
-func (r *EndgeRepository) ResetWorkspaceSnapshotState(ctx context.Context, workspaceID string, workspace map[string]any, actorID string) (*entities.Workspace, error) {
-	if _, err := r.executor(ctx).Exec(ctx, `SELECT id FROM workspaces WHERE id=$1 FOR UPDATE`, workspaceID); err != nil {
-		return nil, err
-	}
-	for _, statement := range []string{
-		`DELETE FROM releases WHERE workspace_id=$1`,
-		`DELETE FROM workspace_commit_changes WHERE commit_id IN (SELECT id FROM workspace_commits WHERE workspace_id=$1)`,
-		`DELETE FROM document_revisions WHERE workspace_id=$1`,
-		`DELETE FROM workspace_commits WHERE workspace_id=$1`,
-		`DELETE FROM mutation_batches WHERE workspace_id=$1`,
-		`DELETE FROM project_environments WHERE workspace_id=$1`,
-		`DELETE FROM workspace_integrations WHERE workspace_id=$1`,
-	} {
-		if _, err := r.executor(ctx).Exec(ctx, statement, workspaceID); err != nil {
-			return nil, err
-		}
-	}
-	kinds := make([]string, 0, len(documentTables))
-	for kind := range documentTables {
-		if kind != "folders" {
-			kinds = append(kinds, kind)
-		}
-	}
-	sort.Strings(kinds)
-	for _, kind := range kinds {
-		if _, err := r.executor(ctx).Exec(ctx, `DELETE FROM `+documentTables[kind]+` WHERE workspace_id=$1`, workspaceID); err != nil {
-			return nil, err
-		}
-	}
-	if _, err := r.executor(ctx).Exec(ctx, `DELETE FROM folders WHERE workspace_id=$1`, workspaceID); err != nil {
-		return nil, err
-	}
-	current, err := r.getWorkspaceByID(ctx, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-	displayName := current.DisplayName
-	if value := strings.TrimSpace(fmt.Sprint(workspace["displayName"])); value != "" {
-		displayName = value
-	}
-	description := current.Description
-	if value, exists := workspace["description"]; exists {
-		if value == nil {
-			description = nil
-		} else if text, ok := value.(string); ok {
-			description = &text
-		}
-	}
-	dataMode := current.DataMode
-	if value, ok := workspace["dataMode"].(string); ok && value != "" {
-		dataMode = value
-	}
-	configuration := mustJSON(workspace["configuration"])
-	if workspace["configuration"] == nil {
-		configuration = json.RawMessage(`{}`)
-	}
-	meta := mustJSON(workspace["meta"])
-	if workspace["meta"] == nil {
-		meta = json.RawMessage(`{}`)
-	}
-	active := true
-	if value, ok := workspace["active"].(bool); ok {
-		active = value
-	}
-	_, err = r.executor(ctx).Exec(ctx, `UPDATE workspaces SET display_name=$1,description=$2,data_mode=$3,configuration=$4,meta=$5,active=$6,generation=gen_random_uuid(),head_sequence=0,revision=revision+1,updated_by=$7,updated_at=NOW() WHERE id=$8`, displayName, description, dataMode, configuration, meta, active, actorID, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-	return r.getWorkspaceByID(ctx, workspaceID)
 }

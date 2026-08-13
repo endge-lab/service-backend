@@ -172,7 +172,7 @@ server-only полем `state`. `GET /api/v1/domain/export` отдаёт тот 
 контракт без локальных UUID, истории и времён хранения. Оба export endpoint
 возвращают JSON inline; `?download=true` включает скачивание файла.
 
-Полная замена domain state выполняется в два шага:
+Безопасный импорт полного domain snapshot выполняется в два шага:
 
 ```text
 POST /api/v1/domain/import/plan
@@ -180,15 +180,17 @@ POST /api/v1/domain/import
 ```
 
 Второй запрос требует `planId`, подтверждение identity текущего workspace и
-`If-Match` из плана. В одной транзакции backend блокирует workspace, создаёт
-`pre_import` backup, очищает документы и историю, импортирует snapshot и создаёт
-начальный commit. Пользователи, memberships, сам workspace и глобальный catalog
-интеграций не удаляются.
+`If-Match` из плана. В одной транзакции backend блокирует workspace, создаёт новые
+document revisions и один commit с `operation=import`. Новые документы создаются,
+совпавшие по `(type, identity)` полностью заменяются новой revision, отсутствующие
+в полном snapshot получают soft-delete revision. Предыдущие revisions, commits,
+releases, пользователи и memberships не удаляются; состояние до импорта можно
+восстановить через restore родительского commit.
 
 Backups доступны через `/api/v1/domain/backups`: manual backup принимает
 опциональное описание, `last` выбирает последнюю копию, `/archive` возвращает ZIP
-всех доступных snapshots. Срок хранения автоматических `pre_import` backups
-задаётся `IMPORT_BACKUP_RETENTION_DAYS`; manual backups бессрочны.
+всех доступных snapshots. Manual backups бессрочны; ранее созданные `pre_import`
+backups остаются доступными до истечения своего срока хранения.
 
 Последний release экспортируется через
 `GET /api/v1/releases/last/export`; по умолчанию это JSON, а

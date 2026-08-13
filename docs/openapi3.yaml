@@ -4679,8 +4679,8 @@ paths:
     post:
       security:
         - BearerAuth: []
-      description: Создаёт backup, удаляет старое domain state и атомарно загружает
-        ранее проверенный snapshot.
+      description: Атомарно применяет snapshot как новые revisions и создаёт обратимый
+        import commit.
       tags:
         - Перенос домена
       summary: Импортировать домен
@@ -4705,11 +4705,11 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/domain.ImportRequest"
-        description: Подтверждение destructive import
+        description: Подтверждение импорта
         required: true
       responses:
         "201":
-          description: Результат импорта и страховочный backup
+          description: Результат безопасного импорта
           content:
             application/json:
               schema:
@@ -13961,6 +13961,8 @@ components:
             type: string
         creates:
           type: integer
+        deletes:
+          type: integer
         expectedHeadSequence:
           type: integer
         expiresAt:
@@ -13973,6 +13975,8 @@ components:
             type: string
         planId:
           type: string
+        restores:
+          type: integer
         snapshotChecksum:
           type: string
         targetETag:
@@ -13995,8 +13999,6 @@ components:
           type: array
           items:
             type: string
-        willRemove:
-          $ref: "#/components/schemas/entities.SnapshotStateCounts"
     commit.RestoreRequest:
       type: object
       required:
@@ -14861,33 +14863,6 @@ components:
         workspace:
           type: object
           additionalProperties: {}
-    domain.ImportBackupResponse:
-      type: object
-      properties:
-        checksum:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        createdBy:
-          $ref: "#/components/schemas/entities.Actor"
-        description:
-          type: string
-        expiresAt:
-          type: string
-          format: date-time
-        id:
-          type: string
-          format: uuid
-        kind:
-          type: string
-          enum:
-            - pre_import
-        schemaVersion:
-          type: integer
-          example: 1
-        sizeBytes:
-          type: integer
     domain.ImportPlanRequest:
       type: object
       required:
@@ -14904,6 +14879,8 @@ components:
             type: string
         creates:
           type: integer
+        deletes:
+          type: integer
         expectedHeadSequence:
           type: integer
         expiresAt:
@@ -14916,6 +14893,8 @@ components:
             type: string
         planId:
           type: string
+        restores:
+          type: integer
         snapshotChecksum:
           type: string
         targetETag:
@@ -14938,8 +14917,6 @@ components:
           type: array
           items:
             type: string
-        willRemove:
-          $ref: "#/components/schemas/entities.SnapshotStateCounts"
     domain.ImportRequest:
       type: object
       required:
@@ -14957,13 +14934,22 @@ components:
     domain.ImportResponse:
       type: object
       properties:
-        backup:
-          $ref: "#/components/schemas/domain.ImportBackupResponse"
-        imported:
-          $ref: "#/components/schemas/entities.SnapshotCounts"
-        initialCommitId:
+        commitId:
           type: string
           format: uuid
+        creates:
+          type: integer
+        deletes:
+          type: integer
+        imported:
+          $ref: "#/components/schemas/entities.SnapshotCounts"
+        parentCommitId:
+          type: string
+          format: uuid
+        restores:
+          type: integer
+        updates:
+          type: integer
         workspace:
           type: string
     domain_type.CreateRequest:
@@ -15185,17 +15171,6 @@ components:
         documents:
           type: integer
         integrations:
-          type: integer
-    entities.SnapshotStateCounts:
-      type: object
-      properties:
-        commits:
-          type: integer
-        documents:
-          type: integer
-        releases:
-          type: integer
-        revisions:
           type: integer
     environment.CreateRequest:
       type: object
@@ -16755,6 +16730,8 @@ components:
             type: string
         creates:
           type: integer
+        deletes:
+          type: integer
         expectedHeadSequence:
           type: integer
         expiresAt:
@@ -16767,6 +16744,8 @@ components:
             type: string
         planId:
           type: string
+        restores:
+          type: integer
         snapshotChecksum:
           type: string
         targetETag:
@@ -16789,8 +16768,6 @@ components:
           type: array
           items:
             type: string
-        willRemove:
-          $ref: "#/components/schemas/entities.SnapshotStateCounts"
     release.RestoreRequest:
       type: object
       required:

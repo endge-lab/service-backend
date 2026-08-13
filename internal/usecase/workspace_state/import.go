@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -32,7 +33,7 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 		TargetETag:           workspaceETag(scope.Workspace.Generation, scope.Workspace.HeadSequence),
 		ExpectedHeadSequence: scope.Workspace.HeadSequence,
 		MissingIntegrations:  []string{}, Unsupported: []string{}, ValidationErrors: []string{},
-		Warnings: []string{"Existing workspace documents and history will be removed"},
+		Warnings: []string{},
 	}
 	if normalization.IgnoredIntegrations > 0 {
 		plan.Warnings = append(plan.Warnings, fmt.Sprintf("Installed integrations from snapshot were ignored: %d; target workspace integrations will be preserved", normalization.IgnoredIntegrations))
@@ -153,9 +154,20 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 	}
 	slices.Sort(plan.Unsupported)
 	slices.Sort(plan.MissingIntegrations)
-	plan.WillRemove, err = s.repository.CountWorkspaceSnapshotState(ctx, scope.Workspace.ID)
-	if err != nil {
-		return nil, err
+	if plan.Valid {
+		latest, latestErr := s.repository.LatestCommit(ctx, scope.Workspace.ID)
+		if latestErr != nil {
+			return nil, latestErr
+		}
+		if latest.HeadSequence != scope.Workspace.HeadSequence {
+			plan.Valid = false
+			plan.ValidationErrors = append(plan.ValidationErrors, "workspace has uncommitted revisions; create a commit before import")
+		} else if err = s.planSnapshotChanges(ctx, scope.Workspace.ID, bundle, plan); err != nil {
+			return nil, err
+		}
+		if plan.Deletes > 0 {
+			plan.Warnings = append(plan.Warnings, fmt.Sprintf("Documents absent from snapshot will be soft-deleted: %d", plan.Deletes))
+		}
 	}
 	if !plan.Valid {
 		return plan, nil
@@ -176,7 +188,7 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 	return plan, nil
 }
 
-// Import полностью заменяет domain state данными ранее проверенного snapshot.
+// Import приводит domain state к ранее проверенному snapshot через обратимые revisions.
 func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch string) (result *entities.SnapshotImportResult, err error) {
 	current, scope, err := s.writeContext(ctx)
 	if err != nil {
@@ -218,104 +230,121 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 		if live.Generation != plan.ExpectedGeneration || live.HeadSequence != plan.ExpectedHeadSequence {
 			return domainerrors.New("precondition_failed", "Workspace changed after import plan", 412)
 		}
-		backupRaw, txErr := s.repository.ExportWorkspace(txctx, live.ID, nil)
+		latest, txErr := s.repository.LatestCommit(txctx, live.ID)
 		if txErr != nil {
 			return txErr
 		}
-		expiresAt := time.Now().UTC().AddDate(0, 0, s.backupRetentionDays)
-		backup, txErr := s.repository.CreateSnapshotBackup(txctx, entities.SnapshotBackup{
-			ID: uuid.NewString(), WorkspaceID: live.ID, Kind: "pre_import", Description: pointer("Automatic backup before snapshot import"),
-			SchemaVersion: SchemaVersion, Checksum: checksum(backupRaw), Data: backupRaw,
-			CreatedBy: entities.Actor{ID: current.User.ID}, ExpiresAt: &expiresAt,
-		})
-		if txErr != nil {
-			return txErr
+		if latest.HeadSequence != live.HeadSequence {
+			return domainerrors.Conflict("import_requires_clean_commit", "Workspace has uncommitted revisions")
 		}
-		baselines, txErr := s.repository.DocumentRevisionBaselines(txctx, live.ID)
-		if txErr != nil {
-			return txErr
-		}
-		existingIntegrations, txErr := s.repository.ListWorkspaceIntegrations(txctx, live.ID)
-		if txErr != nil {
-			return txErr
-		}
-		reset, txErr := s.repository.ResetWorkspaceSnapshotState(txctx, live.ID, bundle.Workspace, current.User.ID)
-		if txErr != nil {
-			return txErr
-		}
-		if txErr = s.repository.ReplaceWorkspaceIntegrations(txctx, reset.ID, existingIntegrations, current.User.ID); txErr != nil {
-			return txErr
-		}
-		batch, txErr := s.repository.CreateMutationBatch(txctx, &reset.ID, "bootstrap_import", current.User.ID)
+		batch, txErr := s.repository.CreateMutationBatch(txctx, &live.ID, "import", current.User.ID)
 		if txErr != nil {
 			return txErr
 		}
 		txctx = context.WithValue(txctx, mutationBatchContextKey{}, batch)
-		if txErr = s.recordWorkspaceRevision(txctx, *reset, "create"); txErr != nil {
+		revisions := []entities.Revision{}
+		workspacePatch := map[string]any{}
+		for _, key := range []string{"displayName", "description", "dataMode", "configuration", "meta", "active"} {
+			if value, exists := bundle.Workspace[key]; exists {
+				workspacePatch[key] = value
+			}
+		}
+		updatedWorkspace, txErr := s.repository.UpdateWorkspace(txctx, live.Identity, workspacePatch, live.Revision, current.User.ID)
+		if txErr != nil {
 			return txErr
 		}
-		createdRootTypes := map[string]bool{}
-		for _, kind := range Collections {
-			if kind == "folders" {
-				continue
-			}
-			entityType := entities.FolderEntityType(kind)
-			if createdRootTypes[entityType] {
-				continue
-			}
-			createdRootTypes[entityType] = true
-			rootIdentity := entities.RootFolderIdentity(kind)
-			root := entities.Document{ID: uuid.NewString(), WorkspaceID: reset.ID, Type: "folders", Identity: rootIdentity, DisplayName: "Root " + entityType, ManagedBy: "system", Meta: json.RawMessage(`{}`), Data: mustJSON(map[string]any{"entityType": entityType, "isRoot": true}), Active: true, Revision: nextImportedRevision(baselines, "folders", rootIdentity), CreatedBy: entities.Actor{ID: current.User.ID}, UpdatedBy: entities.Actor{ID: current.User.ID}}
-			created, insertErr := s.repository.InsertDocument(txctx, root, nil)
-			if insertErr != nil {
-				return insertErr
-			}
-			if _, insertErr = s.recordRevision(txctx, *created, "create", nil); insertErr != nil {
-				return insertErr
-			}
+		workspaceRevision, txErr := s.recordWorkspaceRevision(txctx, *updatedWorkspace, "update")
+		if txErr != nil {
+			return txErr
 		}
-		importScope := entities.WorkspaceAccess{Workspace: *reset, Role: scope.Role}
+		revisions = append(revisions, *workspaceRevision)
+
+		existing, txErr := s.loadSnapshotDocuments(txctx, live.ID)
+		if txErr != nil {
+			return txErr
+		}
+		incoming := snapshotDocumentIdentities(bundle)
+		importScope := entities.WorkspaceAccess{Workspace: *updatedWorkspace, Role: scope.Role}
 		for _, kind := range restoreOrder() {
 			items, orderErr := orderPortableItems(kind, bundle.Documents[kind])
 			if orderErr != nil {
 				return fmt.Errorf("order imported %s: %w", kind, orderErr)
 			}
 			for _, item := range items {
-				document := documentFromInput(kind, reset.ID, item, current.User.ID)
-				document.Revision = nextImportedRevision(baselines, kind, document.Identity)
+				identity := stringField(item, "identity")
 				folderID, resolveErr := s.resolveFolder(txctx, importScope, kind, item)
 				if resolveErr != nil {
-					return fmt.Errorf("resolve imported %s:%s folder: %w", kind, document.Identity, resolveErr)
+					return fmt.Errorf("resolve imported %s:%s folder: %w", kind, identity, resolveErr)
 				}
-				created, insertErr := s.repository.InsertDocument(txctx, document, folderID)
-				if insertErr != nil {
-					return fmt.Errorf("insert imported %s:%s: %w", kind, document.Identity, insertErr)
+				document := documentFromInput(kind, live.ID, item, current.User.ID)
+				operation := "create"
+				stored := &document
+				if previous, exists := existing[kind][identity]; exists {
+					document = replaceDocumentFromInput(previous, item, current.User.ID)
+					operation = "update"
+					if previous.DeletedAt != nil {
+						operation = "restore"
+					}
+					stored, txErr = s.repository.UpdateDocument(txctx, document, previous.Revision, folderID)
+				} else {
+					stored, txErr = s.repository.InsertDocument(txctx, document, folderID)
 				}
-				if insertErr = s.replaceStructuredRelations(txctx, *created); insertErr != nil {
-					return fmt.Errorf("relate imported %s:%s: %w", kind, document.Identity, insertErr)
+				if txErr != nil {
+					return fmt.Errorf("apply imported %s:%s: %w", kind, identity, txErr)
 				}
-				if _, insertErr = s.recordRevision(txctx, *created, "create", nil); insertErr != nil {
-					return fmt.Errorf("record imported %s:%s revision: %w", kind, document.Identity, insertErr)
+				if txErr = s.replaceStructuredRelations(txctx, *stored); txErr != nil {
+					return fmt.Errorf("relate imported %s:%s: %w", kind, identity, txErr)
+				}
+				revision, revisionErr := s.recordRevision(txctx, *stored, operation, nil)
+				if revisionErr != nil {
+					return fmt.Errorf("record imported %s:%s revision: %w", kind, identity, revisionErr)
+				}
+				revisions = append(revisions, *revision)
+				switch operation {
+				case "create":
+					result.Creates++
+				case "restore":
+					result.Restores++
+				default:
+					result.Updates++
 				}
 				result.Imported.Documents++
 			}
 		}
-		pending, txErr := s.repository.PendingRevisions(txctx, reset.ID, 0)
-		if txErr != nil {
-			return txErr
+		for _, document := range documentsMissingFromSnapshot(existing, incoming) {
+			now := time.Now().UTC()
+			next := document
+			next.Active = false
+			next.DeletedAt = &now
+			next.UpdatedBy = entities.Actor{ID: current.User.ID}
+			folderID, resolveErr := s.resolveDocumentFolder(txctx, importScope, next)
+			if resolveErr != nil {
+				return fmt.Errorf("resolve deleted %s:%s folder: %w", next.Type, next.Identity, resolveErr)
+			}
+			deleted, deleteErr := s.repository.UpdateDocument(txctx, next, document.Revision, folderID)
+			if deleteErr != nil {
+				return fmt.Errorf("soft-delete imported %s:%s: %w", next.Type, next.Identity, deleteErr)
+			}
+			revision, revisionErr := s.recordRevision(txctx, *deleted, "delete", nil)
+			if revisionErr != nil {
+				return revisionErr
+			}
+			revisions = append(revisions, *revision)
+			result.Deletes++
 		}
-		head := int64(0)
-		for _, revision := range pending {
+		head := latest.HeadSequence
+		for _, revision := range revisions {
 			if revision.WorkspaceSequence != nil && *revision.WorkspaceSequence > head {
 				head = *revision.WorkspaceSequence
 			}
 		}
-		commit, txErr := s.repository.CreateCommit(txctx, entities.Commit{ID: uuid.NewString(), WorkspaceID: reset.ID, BaseSequence: 0, HeadSequence: head, Message: "Snapshot import baseline", RevisionPolicy: "preserve", Operation: "bootstrap_import", CreatedBy: entities.Actor{ID: current.User.ID}}, commitChanges(pending))
+		message := "Import workspace snapshot " + shortChecksum(plan.SnapshotChecksum)
+		commit, txErr := s.repository.CreateCommit(txctx, entities.Commit{ID: uuid.NewString(), WorkspaceID: live.ID, ParentCommitID: &latest.ID, BaseSequence: latest.HeadSequence, HeadSequence: head, Message: message, RevisionPolicy: "preserve", Operation: "import", CreatedBy: entities.Actor{ID: current.User.ID}}, commitChanges(revisions))
 		if txErr != nil {
 			return txErr
 		}
-		ids := make([]string, 0, len(pending))
-		for _, revision := range pending {
+		ids := make([]string, 0, len(revisions))
+		for _, revision := range revisions {
 			ids = append(ids, revision.ID)
 		}
 		if txErr = s.repository.AttachRevisionsToCommit(txctx, commit.ID, ids); txErr != nil {
@@ -324,11 +353,120 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 		if txErr = s.repository.MarkSnapshotImportPlanApplied(txctx, plan.ID); txErr != nil {
 			return txErr
 		}
-		result.Backup = *backup
-		result.InitialCommitID = commit.ID
+		result.CommitID = commit.ID
+		result.ParentCommitID = latest.ID
 		return nil
 	})
 	return result, mapConflict(err)
+}
+
+func (s *Coordinator) planSnapshotChanges(ctx context.Context, workspaceID string, bundle entities.PortableBundle, plan *entities.ImportPlan) error {
+	existing, err := s.loadSnapshotDocuments(ctx, workspaceID)
+	if err != nil {
+		return err
+	}
+	incoming := snapshotDocumentIdentities(bundle)
+	for kind, identities := range incoming {
+		for identity := range identities {
+			document, exists := existing[kind][identity]
+			if !exists {
+				plan.Creates++
+			} else if document.DeletedAt != nil {
+				plan.Restores++
+			} else {
+				plan.Updates++
+			}
+		}
+	}
+	plan.Deletes = len(documentsMissingFromSnapshot(existing, incoming))
+	return nil
+}
+
+func (s *Coordinator) loadSnapshotDocuments(ctx context.Context, workspaceID string) (map[string]map[string]entities.Document, error) {
+	result := make(map[string]map[string]entities.Document, len(Collections))
+	for _, kind := range Collections {
+		documents, err := s.repository.ListAllDocuments(ctx, workspaceID, kind, true)
+		if err != nil {
+			return nil, err
+		}
+		result[kind] = make(map[string]entities.Document, len(documents))
+		for _, document := range documents {
+			result[kind][document.Identity] = document
+		}
+	}
+	return result, nil
+}
+
+func snapshotDocumentIdentities(bundle entities.PortableBundle) map[string]map[string]bool {
+	result := make(map[string]map[string]bool, len(Collections))
+	for _, kind := range Collections {
+		result[kind] = map[string]bool{}
+		for _, item := range bundle.Documents[kind] {
+			result[kind][stringField(item, "identity")] = true
+		}
+	}
+	return result
+}
+
+func documentsMissingFromSnapshot(existing map[string]map[string]entities.Document, incoming map[string]map[string]bool) []entities.Document {
+	result := []entities.Document{}
+	order := restoreOrder()
+	for index := len(order) - 1; index >= 0; index-- {
+		kind := order[index]
+		if kind == "folders" {
+			continue
+		}
+		documents := []entities.Document{}
+		for identity, document := range existing[kind] {
+			if !incoming[kind][identity] && document.DeletedAt == nil && document.ManagedBy != "system" {
+				documents = append(documents, document)
+			}
+		}
+		sort.Slice(documents, func(i, j int) bool { return documents[i].Identity < documents[j].Identity })
+		result = append(result, documents...)
+	}
+	folders := []entities.Document{}
+	for identity, document := range existing["folders"] {
+		if !incoming["folders"][identity] && document.DeletedAt == nil && document.ManagedBy != "system" {
+			folders = append(folders, document)
+		}
+	}
+	sort.Slice(folders, func(i, j int) bool {
+		left := folderDepth(folders[i], existing["folders"])
+		right := folderDepth(folders[j], existing["folders"])
+		if left == right {
+			return folders[i].Identity < folders[j].Identity
+		}
+		return left > right
+	})
+	return append(result, folders...)
+}
+
+func folderDepth(document entities.Document, folders map[string]entities.Document) int {
+	depth := 0
+	seen := map[string]bool{document.Identity: true}
+	current := document
+	for current.FolderIdentity != nil && *current.FolderIdentity != "" {
+		parentIdentity := *current.FolderIdentity
+		if seen[parentIdentity] {
+			break
+		}
+		parent, exists := folders[parentIdentity]
+		if !exists {
+			break
+		}
+		seen[parentIdentity] = true
+		depth++
+		current = parent
+	}
+	return depth
+}
+
+func shortChecksum(value string) string {
+	if len(value) <= 12 {
+		return value
+	}
+	return value[:12]
 }
 
 func validateSnapshotRelations(bundle entities.PortableBundle) []string {
@@ -380,12 +518,6 @@ func workspaceETag(generation string, head int64) string {
 func normalizeETag(value string) string {
 	return strings.Trim(strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(value), "W/")), `"`)
 }
-
-func nextImportedRevision(baselines map[string]int, kind, identity string) int {
-	return baselines[kind+":"+identity] + 1
-}
-
-func pointer(value string) *string { return &value }
 
 func mapImportPlanNotFound(err error) error {
 	if errors.Is(err, ports.ErrNotFound) {

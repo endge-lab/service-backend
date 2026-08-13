@@ -14,34 +14,28 @@ type PortableBundle struct {
 }
 
 type ImportPlan struct {
-	ID                   string              `json:"planId,omitempty"`
-	Valid                bool                `json:"valid"`
-	SnapshotChecksum     string              `json:"snapshotChecksum,omitempty"`
-	TargetWorkspace      string              `json:"targetWorkspace,omitempty"`
-	TargetETag           string              `json:"targetETag,omitempty"`
-	ExpiresAt            *time.Time          `json:"expiresAt,omitempty"`
-	Incoming             SnapshotCounts      `json:"incoming,omitempty"`
-	WillRemove           SnapshotStateCounts `json:"willRemove,omitempty"`
-	MissingIntegrations  []string            `json:"missingIntegrations,omitempty"`
-	Unsupported          []string            `json:"unsupportedCollections,omitempty"`
-	ValidationErrors     []string            `json:"validationErrors,omitempty"`
-	Warnings             []string            `json:"warnings,omitempty"`
-	Conflicts            []string            `json:"conflicts,omitempty"`
-	Creates              int                 `json:"creates,omitempty"`
-	Updates              int                 `json:"updates,omitempty"`
-	ExpectedHeadSequence int64               `json:"expectedHeadSequence,omitempty"`
+	ID                   string         `json:"planId,omitempty"`
+	Valid                bool           `json:"valid"`
+	SnapshotChecksum     string         `json:"snapshotChecksum,omitempty"`
+	TargetWorkspace      string         `json:"targetWorkspace,omitempty"`
+	TargetETag           string         `json:"targetETag,omitempty"`
+	ExpiresAt            *time.Time     `json:"expiresAt,omitempty"`
+	Incoming             SnapshotCounts `json:"incoming,omitempty"`
+	MissingIntegrations  []string       `json:"missingIntegrations,omitempty"`
+	Unsupported          []string       `json:"unsupportedCollections,omitempty"`
+	ValidationErrors     []string       `json:"validationErrors,omitempty"`
+	Warnings             []string       `json:"warnings,omitempty"`
+	Conflicts            []string       `json:"conflicts,omitempty"`
+	Creates              int            `json:"creates,omitempty"`
+	Updates              int            `json:"updates,omitempty"`
+	Restores             int            `json:"restores,omitempty"`
+	Deletes              int            `json:"deletes,omitempty"`
+	ExpectedHeadSequence int64          `json:"expectedHeadSequence,omitempty"`
 }
 
 type SnapshotCounts struct {
 	Documents    int `json:"documents"`
 	Integrations int `json:"integrations"`
-}
-
-type SnapshotStateCounts struct {
-	Documents int `json:"documents"`
-	Revisions int `json:"revisions"`
-	Commits   int `json:"commits"`
-	Releases  int `json:"releases"`
 }
 
 type SnapshotImportPlan struct {
@@ -73,7 +67,11 @@ type SnapshotBackup struct {
 
 type SnapshotImportResult struct {
 	WorkspaceIdentity string         `json:"workspace"`
-	Backup            SnapshotBackup `json:"backup"`
 	Imported          SnapshotCounts `json:"imported"`
-	InitialCommitID   string         `json:"initialCommitId"`
+	Creates           int            `json:"creates"`
+	Updates           int            `json:"updates"`
+	Restores          int            `json:"restores"`
+	Deletes           int            `json:"deletes"`
+	CommitID          string         `json:"commitId"`
+	ParentCommitID    string         `json:"parentCommitId"`
 }

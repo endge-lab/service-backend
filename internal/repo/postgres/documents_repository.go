@@ -88,6 +88,11 @@ func (r *EndgeRepository) listAllDocuments(ctx context.Context, workspaceID, kin
 	}
 	return result, rows.Err()
 }
+
+// ListAllDocuments читает полную коллекцию workspace без пользовательской пагинации.
+func (r *EndgeRepository) ListAllDocuments(ctx context.Context, workspaceID, kind string, includeDeleted bool) ([]entities.Document, error) {
+	return r.listAllDocuments(ctx, workspaceID, kind, includeDeleted)
+}
 func (r *EndgeRepository) GetDocument(ctx context.Context, workspaceID, kind, identity string, includeDeleted bool) (*entities.Document, error) {
 	table, err := tableFor(kind)
 	if err != nil {

@@ -4684,8 +4684,8 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Создаёт backup, удаляет старое domain state и атомарно загружает\n" +
-		"        ранее проверенный snapshot.\n" +
+		"      description: Атомарно применяет snapshot как новые revisions и создаёт обратимый\n" +
+		"        import commit.\n" +
 		"      tags:\n" +
 		"        - Перенос домена\n" +
 		"      summary: Импортировать домен\n" +
@@ -4710,11 +4710,11 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/domain.ImportRequest\"\n" +
-		"        description: Подтверждение destructive import\n" +
+		"        description: Подтверждение импорта\n" +
 		"        required: true\n" +
 		"      responses:\n" +
 		"        \"201\":\n" +
-		"          description: Результат импорта и страховочный backup\n" +
+		"          description: Результат безопасного импорта\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
@@ -13966,6 +13966,8 @@ var openAPI3YAML = []byte(
 		"            type: string\n" +
 		"        creates:\n" +
 		"          type: integer\n" +
+		"        deletes:\n" +
+		"          type: integer\n" +
 		"        expectedHeadSequence:\n" +
 		"          type: integer\n" +
 		"        expiresAt:\n" +
@@ -13978,6 +13980,8 @@ var openAPI3YAML = []byte(
 		"            type: string\n" +
 		"        planId:\n" +
 		"          type: string\n" +
+		"        restores:\n" +
+		"          type: integer\n" +
 		"        snapshotChecksum:\n" +
 		"          type: string\n" +
 		"        targetETag:\n" +
@@ -14000,8 +14004,6 @@ var openAPI3YAML = []byte(
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
-		"        willRemove:\n" +
-		"          $ref: \"#/components/schemas/entities.SnapshotStateCounts\"\n" +
 		"    commit.RestoreRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -14866,33 +14868,6 @@ var openAPI3YAML = []byte(
 		"        workspace:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
-		"    domain.ImportBackupResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        checksum:\n" +
-		"          type: string\n" +
-		"        createdAt:\n" +
-		"          type: string\n" +
-		"          format: date-time\n" +
-		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"        expiresAt:\n" +
-		"          type: string\n" +
-		"          format: date-time\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"          format: uuid\n" +
-		"        kind:\n" +
-		"          type: string\n" +
-		"          enum:\n" +
-		"            - pre_import\n" +
-		"        schemaVersion:\n" +
-		"          type: integer\n" +
-		"          example: 1\n" +
-		"        sizeBytes:\n" +
-		"          type: integer\n" +
 		"    domain.ImportPlanRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -14909,6 +14884,8 @@ var openAPI3YAML = []byte(
 		"            type: string\n" +
 		"        creates:\n" +
 		"          type: integer\n" +
+		"        deletes:\n" +
+		"          type: integer\n" +
 		"        expectedHeadSequence:\n" +
 		"          type: integer\n" +
 		"        expiresAt:\n" +
@@ -14921,6 +14898,8 @@ var openAPI3YAML = []byte(
 		"            type: string\n" +
 		"        planId:\n" +
 		"          type: string\n" +
+		"        restores:\n" +
+		"          type: integer\n" +
 		"        snapshotChecksum:\n" +
 		"          type: string\n" +
 		"        targetETag:\n" +
@@ -14943,8 +14922,6 @@ var openAPI3YAML = []byte(
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
-		"        willRemove:\n" +
-		"          $ref: \"#/components/schemas/entities.SnapshotStateCounts\"\n" +
 		"    domain.ImportRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -14962,13 +14939,22 @@ var openAPI3YAML = []byte(
 		"    domain.ImportResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
-		"        backup:\n" +
-		"          $ref: \"#/components/schemas/domain.ImportBackupResponse\"\n" +
-		"        imported:\n" +
-		"          $ref: \"#/components/schemas/entities.SnapshotCounts\"\n" +
-		"        initialCommitId:\n" +
+		"        commitId:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
+		"        creates:\n" +
+		"          type: integer\n" +
+		"        deletes:\n" +
+		"          type: integer\n" +
+		"        imported:\n" +
+		"          $ref: \"#/components/schemas/entities.SnapshotCounts\"\n" +
+		"        parentCommitId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"        restores:\n" +
+		"          type: integer\n" +
+		"        updates:\n" +
+		"          type: integer\n" +
 		"        workspace:\n" +
 		"          type: string\n" +
 		"    domain_type.CreateRequest:\n" +
@@ -15190,17 +15176,6 @@ var openAPI3YAML = []byte(
 		"        documents:\n" +
 		"          type: integer\n" +
 		"        integrations:\n" +
-		"          type: integer\n" +
-		"    entities.SnapshotStateCounts:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        commits:\n" +
-		"          type: integer\n" +
-		"        documents:\n" +
-		"          type: integer\n" +
-		"        releases:\n" +
-		"          type: integer\n" +
-		"        revisions:\n" +
 		"          type: integer\n" +
 		"    environment.CreateRequest:\n" +
 		"      type: object\n" +
@@ -16760,6 +16735,8 @@ var openAPI3YAML = []byte(
 		"            type: string\n" +
 		"        creates:\n" +
 		"          type: integer\n" +
+		"        deletes:\n" +
+		"          type: integer\n" +
 		"        expectedHeadSequence:\n" +
 		"          type: integer\n" +
 		"        expiresAt:\n" +
@@ -16772,6 +16749,8 @@ var openAPI3YAML = []byte(
 		"            type: string\n" +
 		"        planId:\n" +
 		"          type: string\n" +
+		"        restores:\n" +
+		"          type: integer\n" +
 		"        snapshotChecksum:\n" +
 		"          type: string\n" +
 		"        targetETag:\n" +
@@ -16794,8 +16773,6 @@ var openAPI3YAML = []byte(
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
-		"        willRemove:\n" +
-		"          $ref: \"#/components/schemas/entities.SnapshotStateCounts\"\n" +
 		"    release.RestoreRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +

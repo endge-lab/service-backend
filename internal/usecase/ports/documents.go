@@ -17,6 +17,7 @@ type DocumentFilter struct {
 // DocumentRepository задаёт порт хранения документов для use case-слоя.
 type DocumentRepository interface {
 	ListDocuments(context.Context, string, string, DocumentFilter) ([]entities.Document, error)
+	ListAllDocuments(context.Context, string, string, bool) ([]entities.Document, error)
 	GetDocument(context.Context, string, string, string, bool) (*entities.Document, error)
 	InsertDocument(context.Context, entities.Document, *string) (*entities.Document, error)
 	UpdateDocument(context.Context, entities.Document, int, *string) (*entities.Document, error)

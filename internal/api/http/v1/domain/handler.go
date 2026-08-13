@@ -122,15 +122,15 @@ func (h *Handler) PlanImport(c *fiber.Ctx) error {
 
 // Import атомарно импортирует переносимый пакет и создаёт commit.
 // @Summary Импортировать домен
-// @Description Создаёт backup, удаляет старое domain state и атомарно загружает ранее проверенный snapshot.
+// @Description Атомарно применяет snapshot как новые revisions и создаёт обратимый import commit.
 // @ID importDomain
 // @Tags Перенос домена
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
 // @Accept json
 // @Param If-Match header string true "ETag workspace из import plan" example("generation:42")
-// @Param request body ImportRequest true "Подтверждение destructive import"
-// @Success 201 {object} ImportResponse "Результат импорта и страховочный backup"
+// @Param request body ImportRequest true "Подтверждение импорта"
+// @Success 201 {object} ImportResponse "Результат безопасного импорта"
 // @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
 // @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
 // @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"

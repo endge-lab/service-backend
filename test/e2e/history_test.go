@@ -158,7 +158,7 @@ func TestCommitReleaseBackupAndImportFlow(t *testing.T) {
 	_, err := database.Pool.Exec(t.Context(), `
 		CREATE FUNCTION endge_test_fail_import() RETURNS trigger LANGUAGE plpgsql AS $$
 		BEGIN RAISE EXCEPTION 'forced import failure'; END $$;
-		CREATE TRIGGER endge_test_fail_import_trigger BEFORE INSERT ON queries
+		CREATE TRIGGER endge_test_fail_import_trigger BEFORE UPDATE ON queries
 		FOR EACH ROW EXECUTE FUNCTION endge_test_fail_import()`)
 	if err != nil {
 		t.Fatalf("установить test-only import failpoint: %v", err)
@@ -196,11 +196,44 @@ func TestCommitReleaseBackupAndImportFlow(t *testing.T) {
 	importResult := perform(t, app, http.MethodPost, "/api/v1/domain/import", map[string]any{"planId": stringField(t, freshPlanBody, "planId"), "confirmation": "default"}, importHeaders)
 	assertStatus(t, importResult, fiber.StatusCreated)
 	resultBody := decodeObject(t, importResult)
-	if stringField(t, objectField(t, resultBody, "backup"), "kind") != "pre_import" || stringField(t, resultBody, "initialCommitId") == "" {
-		t.Fatalf("import не создал backup/initial commit: %#v", resultBody)
+	if stringField(t, resultBody, "commitId") == "" || stringField(t, resultBody, "parentCommitId") == "" {
+		t.Fatalf("import не создал обратимый commit: %#v", resultBody)
 	}
 	importedQuery := perform(t, app, http.MethodGet, "/api/v1/queries/portable-query", nil, headers)
 	assertStatus(t, importedQuery, fiber.StatusOK)
+
+	withoutQuery := cloneJSON(snapshot)
+	documents := objectField(t, withoutQuery, "documents")
+	queryItems, _ := documents["queries"].([]any)
+	filteredQueries := make([]any, 0, len(queryItems))
+	for _, item := range queryItems {
+		query, _ := item.(map[string]any)
+		if query["identity"] != "portable-query" {
+			filteredQueries = append(filteredQueries, item)
+		}
+	}
+	documents["queries"] = filteredQueries
+	deletePlan := perform(t, app, http.MethodPost, "/api/v1/domain/import/plan", map[string]any{"snapshot": withoutQuery}, headers)
+	assertStatus(t, deletePlan, fiber.StatusOK)
+	deletePlanBody := decodeObject(t, deletePlan)
+	if numberField(t, deletePlanBody, "deletes") < 1 {
+		t.Fatalf("import plan не показал soft-delete отсутствующего документа: %#v", deletePlanBody)
+	}
+	deleteHeaders := cloneHeaders(headers)
+	deleteHeaders["If-Match"] = stringField(t, deletePlanBody, "targetETag")
+	deleteResult := perform(t, app, http.MethodPost, "/api/v1/domain/import", map[string]any{"planId": stringField(t, deletePlanBody, "planId"), "confirmation": "default"}, deleteHeaders)
+	assertStatus(t, deleteResult, fiber.StatusCreated)
+	deleteResultBody := decodeObject(t, deleteResult)
+	if numberField(t, deleteResultBody, "deletes") < 1 {
+		t.Fatalf("import не записал delete revision: %#v", deleteResultBody)
+	}
+	deletedQuery := perform(t, app, http.MethodGet, "/api/v1/queries/portable-query", nil, headers)
+	assertStatus(t, deletedQuery, fiber.StatusNotFound)
+	parentCommitID := stringField(t, deleteResultBody, "parentCommitId")
+	restoreDeleted := perform(t, app, http.MethodPost, "/api/v1/commits/"+parentCommitID+"/restore", map[string]any{"expectedHeadSequence": currentHeadSequence(t, app, headers)}, headers)
+	assertStatus(t, restoreDeleted, fiber.StatusCreated)
+	restoredQuery := perform(t, app, http.MethodGet, "/api/v1/queries/portable-query", nil, headers)
+	assertStatus(t, restoredQuery, fiber.StatusOK)
 
 	secretSnapshot := cloneJSON(snapshot)
 	workspace := objectField(t, secretSnapshot, "workspace")
@@ -214,8 +247,8 @@ func TestCommitReleaseBackupAndImportFlow(t *testing.T) {
 
 	backupList := perform(t, app, http.MethodGet, "/api/v1/domain/backups?limit=100&offset=0", nil, headers)
 	assertStatus(t, backupList, fiber.StatusOK)
-	if numberField(t, decodeObject(t, backupList), "total") < 2 {
-		t.Fatal("после import не сохранены manual и pre_import backups")
+	if numberField(t, decodeObject(t, backupList), "total") < 1 {
+		t.Fatal("после import не сохранился manual backup")
 	}
 }
 
