@@ -72,14 +72,14 @@ func (h *Handler) Callback(c *fiber.Ctx) error {
 func (h *Handler) setLoginTransactionCookie(c *fiber.Ctx, value string, expiresAt time.Time) {
 	c.Cookie(&fiber.Cookie{
 		Name: loginTransactionCookie, Value: value, Path: h.sessions.LoginCallbackPath(), Domain: h.sessions.CookieDomain(),
-		Expires: expiresAt, HTTPOnly: true, Secure: h.sessions.CookieSecure(), SameSite: fiber.CookieSameSiteLaxMode,
+		Expires: expiresAt, HTTPOnly: true, Secure: h.sessions.CookieSecure(), SameSite: h.sessions.CookieSameSite(),
 	})
 }
 
 func (h *Handler) clearLoginTransactionCookie(c *fiber.Ctx) {
 	c.Cookie(&fiber.Cookie{
 		Name: loginTransactionCookie, Value: "", Path: h.sessions.LoginCallbackPath(), Domain: h.sessions.CookieDomain(),
-		Expires: time.Unix(0, 0), MaxAge: -1, HTTPOnly: true, Secure: h.sessions.CookieSecure(), SameSite: fiber.CookieSameSiteLaxMode,
+		Expires: time.Unix(0, 0), MaxAge: -1, HTTPOnly: true, Secure: h.sessions.CookieSecure(), SameSite: h.sessions.CookieSameSite(),
 	})
 }
 
@@ -108,7 +108,7 @@ func (h *Handler) setSessionCookie(c *fiber.Ctx, value string, expiresAt time.Ti
 		Expires:  expiresAt,
 		HTTPOnly: true,
 		Secure:   h.sessions.CookieSecure(),
-		SameSite: fiber.CookieSameSiteLaxMode,
+		SameSite: h.sessions.CookieSameSite(),
 	})
 }
 
@@ -122,6 +122,6 @@ func (h *Handler) clearSessionCookie(c *fiber.Ctx) {
 		MaxAge:   -1,
 		HTTPOnly: true,
 		Secure:   h.sessions.CookieSecure(),
-		SameSite: fiber.CookieSameSiteLaxMode,
+		SameSite: h.sessions.CookieSameSite(),
 	})
 }

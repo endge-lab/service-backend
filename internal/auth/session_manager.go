@@ -59,6 +59,7 @@ func NewSessionManager(cfg *config.Config, pool *pgxpool.Pool, registry *LoginAd
 
 func (m *SessionManager) CookieName() string        { return m.config.SessionCookieName }
 func (m *SessionManager) CookieSecure() bool        { return m.config.CookieSecure }
+func (m *SessionManager) CookieSameSite() string    { return m.config.CookieSameSite }
 func (m *SessionManager) CookieDomain() string      { return m.config.CookieDomain }
 func (m *SessionManager) SessionTTL() time.Duration { return m.config.SessionTTL }
 func (m *SessionManager) CleanupInterval() time.Duration {

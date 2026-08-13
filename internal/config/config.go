@@ -65,6 +65,7 @@ type ConfiguratorAuthConfig struct {
 	TransactionTTL                time.Duration
 	SessionCleanupInterval        time.Duration
 	CookieSecure                  bool
+	CookieSameSite                string
 	CookieDomain                  string
 }
 
@@ -165,6 +166,7 @@ func Load() (*Config, error) {
 		TransactionTTL:                envDuration("AUTH_TRANSACTION_TTL", 10*time.Minute),
 		SessionCleanupInterval:        envDuration("AUTH_SESSION_CLEANUP_INTERVAL", 15*time.Minute),
 		CookieSecure:                  envBool("AUTH_COOKIE_SECURE", base.App.IsProduction()),
+		CookieSameSite:                strings.ToLower(env("AUTH_COOKIE_SAME_SITE", "lax")),
 		CookieDomain:                  strings.TrimSpace(os.Getenv("AUTH_COOKIE_DOMAIN")),
 	}
 	if err := configuratorAuth.Validate(base.App.IsProduction()); err != nil {
@@ -219,6 +221,12 @@ func validatePublicURLBasePath(publicURL, basePath string) error {
 }
 
 func (c ConfiguratorAuthConfig) Validate(production bool) error {
+	if c.CookieSameSite != "lax" && c.CookieSameSite != "strict" && c.CookieSameSite != "none" {
+		return fmt.Errorf("AUTH_COOKIE_SAME_SITE must be lax, strict or none")
+	}
+	if c.CookieSameSite == "none" && !c.CookieSecure {
+		return fmt.Errorf("AUTH_COOKIE_SECURE must be true when AUTH_COOKIE_SAME_SITE=none")
+	}
 	if c.Adapter == "dev" {
 		if production {
 			return fmt.Errorf("AUTH_LOGIN_ADAPTER=dev is forbidden in production")

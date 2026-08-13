@@ -114,6 +114,22 @@ func TestConfiguratorAuthConfigRejectsDuplicateEncryptionKeyID(t *testing.T) {
 	}
 }
 
+func TestConfiguratorAuthConfigValidatesCookieSameSite(t *testing.T) {
+	value := validConfiguratorAuthConfig()
+	value.CookieSameSite = "none"
+	if err := value.Validate(true); err != nil {
+		t.Fatalf("secure SameSite=None rejected: %v", err)
+	}
+	value.CookieSecure = false
+	if err := value.Validate(false); err == nil {
+		t.Fatal("SameSite=None without Secure was accepted")
+	}
+	value.CookieSameSite = "invalid"
+	if err := value.Validate(false); err == nil {
+		t.Fatal("invalid SameSite mode was accepted")
+	}
+}
+
 func TestReleaseArtifactCacheConfigRejectsInvalidEnabledLimits(t *testing.T) {
 	value := ReleaseArtifactCacheConfig{Enabled: true, MaxBytes: 0, MaxItemBytes: 1}
 	if err := value.Validate(); err == nil {
@@ -133,7 +149,7 @@ func validConfiguratorAuthConfig() ConfiguratorAuthConfig {
 		Adapter: "oidc", AuthorizationURL: "https://issuer.example/authorize", TokenURL: "https://issuer.example/token",
 		ClientID: "configurator", RedirectURL: "https://backend.example/auth/callback", ReturnURL: "https://configurator.example",
 		SessionEncryptionKeyID: "v1", SessionEncryptionKey: testEncryptionKey(1), SessionTTL: time.Hour,
-		TransactionTTL: time.Minute, SessionCleanupInterval: time.Minute, CookieSecure: true,
+		TransactionTTL: time.Minute, SessionCleanupInterval: time.Minute, CookieSecure: true, CookieSameSite: "lax",
 	}
 }
 
