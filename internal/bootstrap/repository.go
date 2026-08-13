@@ -16,6 +16,7 @@ type endgeRepositoryPorts struct {
 	Workspaces         ports.WorkspaceRepository
 	Integrations       ports.IntegrationRepository
 	BackendConnections ports.BackendConnectionRepository
+	AccessControl      ports.AccessControlRepository
 	Documents          ports.DocumentRepository
 	Revisions          ports.RevisionRepository
 	Commits            ports.CommitRepository
@@ -31,6 +32,7 @@ func exposeEndgeRepository(store *postgres.EndgeRepository) endgeRepositoryPorts
 		Workspaces:         store,
 		Integrations:       store,
 		BackendConnections: store,
+		AccessControl:      store,
 		Documents:          store,
 		Revisions:          store,
 		Commits:            store,

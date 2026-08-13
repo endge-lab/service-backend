@@ -35,6 +35,198 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/respond.ErrorResponse"
+  /api/v1/access-grants:
+    get:
+      security:
+        - BearerAuth: []
+      tags:
+        - Управление доступом
+      summary: Получить назначения доступа
+      parameters:
+        - description: platform или workspace
+          name: scopeType
+          in: query
+          required: true
+          schema:
+            type: string
+        - description: Workspace identity
+          name: workspaceIdentity
+          in: query
+          schema:
+            type: string
+        - description: Фильтр пользователя для Platform Admin
+          name: userId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - description: Префикс username
+          name: q
+          in: query
+          schema:
+            type: string
+        - description: Cursor следующей страницы
+          name: cursor
+          in: query
+          schema:
+            type: string
+        - description: Размер страницы
+          name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/access_control.GrantListResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+    put:
+      security:
+        - BearerAuth: []
+      tags:
+        - Управление доступом
+      summary: Назначить роль
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/access_control.PutRequest"
+        description: Назначение роли
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/access_control.GrantResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/access-grants/bulk-workspaces:
+    post:
+      security:
+        - BearerAuth: []
+      tags:
+        - Управление доступом
+      summary: Массово назначить роли Workspace
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/access_control.BulkRequest"
+        description: Массовое назначение
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/access_control.BulkResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/access-grants/{id}":
+    delete:
+      security:
+        - BearerAuth: []
+      tags:
+        - Управление доступом
+      summary: Отозвать роль
+      parameters:
+        - description: Grant ID
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
   /api/v1/actions:
     get:
       security:
@@ -9188,6 +9380,63 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/service-users/search:
+    get:
+      security:
+        - BearerAuth: []
+      tags:
+        - Управление доступом
+      summary: Найти пользователей для назначения доступа
+      parameters:
+        - description: Префикс username
+          name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+        - description: Workspace для проверки полномочий
+          name: workspaceIdentity
+          in: query
+          schema:
+            type: string
+        - description: Cursor следующей страницы
+          name: cursor
+          in: query
+          schema:
+            type: string
+        - description: Размер страницы
+          name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/access_control.UserListResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
   /api/v1/stores:
     get:
       security:
@@ -13007,6 +13256,124 @@ components:
       name: Authorization
       in: header
   schemas:
+    access_control.BulkRequest:
+      type: object
+      required:
+        - role
+        - selection
+        - userId
+      properties:
+        role:
+          type: string
+          enum:
+            - viewer
+            - editor
+            - admin
+        selection:
+          $ref: "#/components/schemas/access_control.BulkSelectionRequest"
+        userId:
+          type: string
+    access_control.BulkResponse:
+      type: object
+      properties:
+        affected:
+          type: integer
+        created:
+          type: integer
+        updated:
+          type: integer
+    access_control.BulkSelectionRequest:
+      type: object
+      required:
+        - type
+        - workspaceIdentities
+      properties:
+        type:
+          type: string
+          enum:
+            - all-active
+            - selected
+        workspaceIdentities:
+          type: array
+          items:
+            type: string
+    access_control.GrantListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/access_control.GrantResponse"
+        nextCursor:
+          type: string
+    access_control.GrantResponse:
+      type: object
+      properties:
+        createdAt:
+          type: string
+        createdBy:
+          $ref: "#/components/schemas/entities.Actor"
+        id:
+          type: string
+        role:
+          type: string
+        scopeType:
+          type: string
+        updatedAt:
+          type: string
+        updatedBy:
+          $ref: "#/components/schemas/entities.Actor"
+        user:
+          $ref: "#/components/schemas/access_control.UserResponse"
+        workspaceDisplayName:
+          type: string
+        workspaceIdentity:
+          type: string
+    access_control.PutRequest:
+      type: object
+      required:
+        - role
+        - scopeType
+        - userId
+      properties:
+        role:
+          type: string
+          enum:
+            - viewer
+            - editor
+            - admin
+        scopeType:
+          type: string
+          enum:
+            - platform
+            - workspace
+        userId:
+          type: string
+        workspaceIdentity:
+          type: string
+          maxLength: 160
+    access_control.UserListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/access_control.UserResponse"
+        nextCursor:
+          type: string
+    access_control.UserResponse:
+      type: object
+      properties:
+        active:
+          type: boolean
+        displayName:
+          type: string
+        id:
+          type: string
+        providerId:
+          type: string
+        username:
+          type: string
     action.CreateRequest:
       type: object
       required:

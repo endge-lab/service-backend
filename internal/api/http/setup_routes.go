@@ -6,6 +6,7 @@ import (
 	httpmiddleware "github.com/endge-lab/service-backend/internal/api/http/middleware"
 	"github.com/endge-lab/service-backend/internal/api/http/openapi"
 	"github.com/endge-lab/service-backend/internal/api/http/respond"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/access_control"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/action"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/auth_profile"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/backend_connection"
@@ -48,6 +49,7 @@ type Handlers struct {
 	fx.In
 
 	CurrentUser       *httpmiddleware.CurrentUserMiddleware
+	AccessControl     *access_control.Handler
 	ConfiguratorAuth  *configuratorauth.Handler
 	Workspace         *workspace.Handler
 	BackendConnection *backend_connection.Handler
@@ -98,6 +100,7 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, handlers Handlers, authMidd
 	httpsession.RegisterRoutes(api, handlers.Session)
 	v1 := api.Group("/v1")
 	workspace.RegisterRoutes(v1, handlers.Workspace)
+	access_control.RegisterRoutes(v1, handlers.AccessControl)
 	backend_connection.RegisterRoutes(v1, handlers.BackendConnection)
 	integration.RegisterRoutes(v1, handlers.Integration)
 	scoped := v1.Group("", handlers.Workspace.RequireWorkspace())

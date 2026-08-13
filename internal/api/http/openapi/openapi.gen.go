@@ -40,6 +40,198 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"  /api/v1/access-grants:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Управление доступом\n" +
+		"      summary: Получить назначения доступа\n" +
+		"      parameters:\n" +
+		"        - description: platform или workspace\n" +
+		"          name: scopeType\n" +
+		"          in: query\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Workspace identity\n" +
+		"          name: workspaceIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Фильтр пользователя для Platform Admin\n" +
+		"          name: userId\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            format: uuid\n" +
+		"        - description: Префикс username\n" +
+		"          name: q\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Cursor следующей страницы\n" +
+		"          name: cursor\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 100\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/access_control.GrantListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    put:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Управление доступом\n" +
+		"      summary: Назначить роль\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/access_control.PutRequest\"\n" +
+		"        description: Назначение роли\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/access_control.GrantResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/access-grants/bulk-workspaces:\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Управление доступом\n" +
+		"      summary: Массово назначить роли Workspace\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/access_control.BulkRequest\"\n" +
+		"        description: Массовое назначение\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/access_control.BulkResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/access-grants/{id}\":\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Управление доступом\n" +
+		"      summary: Отозвать роль\n" +
+		"      parameters:\n" +
+		"        - description: Grant ID\n" +
+		"          name: id\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            format: uuid\n" +
+		"      responses:\n" +
+		"        \"204\":\n" +
+		"          description: No Content\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Conflict\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /api/v1/actions:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -9193,6 +9385,63 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/service-users/search:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Управление доступом\n" +
+		"      summary: Найти пользователей для назначения доступа\n" +
+		"      parameters:\n" +
+		"        - description: Префикс username\n" +
+		"          name: q\n" +
+		"          in: query\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            minLength: 2\n" +
+		"        - description: Workspace для проверки полномочий\n" +
+		"          name: workspaceIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Cursor следующей страницы\n" +
+		"          name: cursor\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 50\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/access_control.UserListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /api/v1/stores:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -13012,6 +13261,124 @@ var openAPI3YAML = []byte(
 		"      name: Authorization\n" +
 		"      in: header\n" +
 		"  schemas:\n" +
+		"    access_control.BulkRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - role\n" +
+		"        - selection\n" +
+		"        - userId\n" +
+		"      properties:\n" +
+		"        role:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - viewer\n" +
+		"            - editor\n" +
+		"            - admin\n" +
+		"        selection:\n" +
+		"          $ref: \"#/components/schemas/access_control.BulkSelectionRequest\"\n" +
+		"        userId:\n" +
+		"          type: string\n" +
+		"    access_control.BulkResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        affected:\n" +
+		"          type: integer\n" +
+		"        created:\n" +
+		"          type: integer\n" +
+		"        updated:\n" +
+		"          type: integer\n" +
+		"    access_control.BulkSelectionRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - type\n" +
+		"        - workspaceIdentities\n" +
+		"      properties:\n" +
+		"        type:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - all-active\n" +
+		"            - selected\n" +
+		"        workspaceIdentities:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: string\n" +
+		"    access_control.GrantListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/access_control.GrantResponse\"\n" +
+		"        nextCursor:\n" +
+		"          type: string\n" +
+		"    access_control.GrantResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"        role:\n" +
+		"          type: string\n" +
+		"        scopeType:\n" +
+		"          type: string\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        user:\n" +
+		"          $ref: \"#/components/schemas/access_control.UserResponse\"\n" +
+		"        workspaceDisplayName:\n" +
+		"          type: string\n" +
+		"        workspaceIdentity:\n" +
+		"          type: string\n" +
+		"    access_control.PutRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - role\n" +
+		"        - scopeType\n" +
+		"        - userId\n" +
+		"      properties:\n" +
+		"        role:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - viewer\n" +
+		"            - editor\n" +
+		"            - admin\n" +
+		"        scopeType:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - platform\n" +
+		"            - workspace\n" +
+		"        userId:\n" +
+		"          type: string\n" +
+		"        workspaceIdentity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"    access_control.UserListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/access_control.UserResponse\"\n" +
+		"        nextCursor:\n" +
+		"          type: string\n" +
+		"    access_control.UserResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"        providerId:\n" +
+		"          type: string\n" +
+		"        username:\n" +
+		"          type: string\n" +
 		"    action.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +

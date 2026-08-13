@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"github.com/endge-lab/service-backend/internal/config"
+	"github.com/endge-lab/service-backend/internal/usecase/access_control"
 	"github.com/endge-lab/service-backend/internal/usecase/actions"
 	"github.com/endge-lab/service-backend/internal/usecase/auth_profiles"
 	"github.com/endge-lab/service-backend/internal/usecase/backend_connections"
@@ -47,6 +48,7 @@ func UseCaseModules() fx.Option {
 		workspace_state.NewCoordinator,
 		history.NewRecorder,
 		documents.NewLifecycle,
+		access_control.NewUseCase,
 		workspaces.NewUseCase,
 		backend_connections.NewUseCase,
 		integrations.NewUseCase,

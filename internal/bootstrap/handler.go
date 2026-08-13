@@ -3,6 +3,7 @@ package bootstrap
 import (
 	configuratorauth "github.com/endge-lab/service-backend/internal/api/http/configurator_auth"
 	httpmiddleware "github.com/endge-lab/service-backend/internal/api/http/middleware"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/access_control"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/action"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/auth_profile"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/backend_connection"
@@ -49,6 +50,7 @@ func HandlerModules() fx.Option {
 			fx.Annotate(httpmiddleware.NewAuthMiddleware, fx.As(new(httpmiddleware.AuthMiddleware))),
 			httpmiddleware.NewCurrentUserMiddleware,
 			configuratorauth.NewHandler,
+			access_control.BindUseCase,
 			workspace.BindUseCase,
 			backend_connection.BindUseCase,
 			backup.BindUseCase,
@@ -81,6 +83,7 @@ func HandlerModules() fx.Option {
 			domain.BindUseCase,
 			release.BindUseCase,
 			workspace.NewHandler,
+			access_control.NewHandler,
 			backend_connection.NewHandler,
 			backup.NewHandler,
 			httpsession.NewHandler,

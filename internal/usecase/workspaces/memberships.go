@@ -37,7 +37,13 @@ func (s *UseCase) PutMembership(ctx context.Context, identity, userID, role stri
 	if !slices.Contains([]string{"viewer", "editor", "admin"}, role) {
 		return nil, domainerrors.InvalidInput("membership_role_invalid", "role must be viewer, editor or admin")
 	}
-	return s.workspaces.PutMembership(ctx, scope.Workspace.ID, userID, role, current.User.ID)
+	var membership *entities.Membership
+	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
+		var putErr error
+		membership, putErr = s.workspaces.PutMembership(txctx, scope.Workspace.ID, userID, role, current.User.ID)
+		return shared.MapNotFound(putErr)
+	})
+	return membership, err
 }
 
 // DeleteMembership удаляет участника из рабочего пространства.
@@ -49,5 +55,7 @@ func (s *UseCase) DeleteMembership(ctx context.Context, identity, userID string)
 	if !shared.CanAdmin(scope.Role) {
 		return domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
 	}
-	return s.workspaces.DeleteMembership(ctx, scope.Workspace.ID, userID)
+	return s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
+		return shared.MapNotFound(s.workspaces.DeleteMembership(txctx, scope.Workspace.ID, userID))
+	})
 }

@@ -7,16 +7,17 @@ import (
 	"strings"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 )
 
 func (r *EndgeRepository) ListWorkspaces(ctx context.Context, userID string, platform bool) ([]entities.Workspace, error) {
-	where := "WHERE w.identity='default' OR m.user_id=$1"
+	where := "WHERE g.user_id=$1"
 	if platform {
 		where = "WHERE TRUE"
 	}
 	rows, err := r.executor(ctx).Query(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.configuration,w.meta,w.active,w.generation::text,w.head_sequence,w.revision,
 		`+actorScan("cu")+`,`+actorScan("uu")+`,w.created_at,w.updated_at FROM workspaces w
-		LEFT JOIN workspace_memberships m ON m.workspace_id=w.id AND m.user_id=$1
+		LEFT JOIN access_grants g ON g.workspace_id=w.id AND g.user_id=$1 AND g.scope_type='workspace'
 		JOIN service_users cu ON cu.id=w.created_by JOIN service_users uu ON uu.id=w.updated_by `+where+` ORDER BY w.identity`, userID)
 	if err != nil {
 		return nil, err
@@ -104,22 +105,16 @@ func (r *EndgeRepository) WorkspaceRole(ctx context.Context, workspaceID, userID
 	if platform {
 		return "platform_admin", nil
 	}
-	var identity, role string
-	err := r.executor(ctx).QueryRow(ctx, `SELECT w.identity,COALESCE(m.role,'') FROM workspaces w LEFT JOIN workspace_memberships m ON m.workspace_id=w.id AND m.user_id=$2 WHERE w.id=$1`, workspaceID, userID).Scan(&identity, &role)
+	var role string
+	err := r.executor(ctx).QueryRow(ctx, `SELECT COALESCE(g.role,'') FROM workspaces w LEFT JOIN access_grants g ON g.workspace_id=w.id AND g.user_id=$2 AND g.scope_type='workspace' WHERE w.id=$1`, workspaceID, userID).Scan(&role)
 	if err != nil {
 		return "", repositoryError(err)
 	}
-	if role != "" {
-		return role, nil
-	}
-	if identity == "default" {
-		return "editor", nil
-	}
-	return "", nil
+	return role, nil
 }
 
 func (r *EndgeRepository) ListMemberships(ctx context.Context, workspaceID string) ([]entities.Membership, error) {
-	rows, err := r.executor(ctx).Query(ctx, `SELECT m.workspace_id::text,m.user_id::text,m.role,u.username,u.display_name,m.created_at,m.updated_at FROM workspace_memberships m JOIN service_users u ON u.id=m.user_id WHERE m.workspace_id=$1 ORDER BY u.username,u.id`, workspaceID)
+	rows, err := r.executor(ctx).Query(ctx, `SELECT g.workspace_id::text,g.user_id::text,g.role,u.username,u.display_name,g.created_at,g.updated_at FROM access_grants g JOIN service_users u ON u.id=g.user_id WHERE g.scope_type='workspace' AND g.workspace_id=$1 ORDER BY u.username,u.id`, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -135,16 +130,32 @@ func (r *EndgeRepository) ListMemberships(ctx context.Context, workspaceID strin
 	return result, rows.Err()
 }
 func (r *EndgeRepository) PutMembership(ctx context.Context, workspaceID, userID, role, actor string) (*entities.Membership, error) {
-	_, err := r.executor(ctx).Exec(ctx, `INSERT INTO workspace_memberships(workspace_id,user_id,role,created_by) VALUES($1,$2,$3,$4) ON CONFLICT(workspace_id,user_id) DO UPDATE SET role=EXCLUDED.role,updated_at=NOW()`, workspaceID, userID, role, actor)
+	tag, err := r.executor(ctx).Exec(ctx, `INSERT INTO access_grants(user_id,scope_type,workspace_id,role,created_by,updated_by)
+		SELECT u.id,'workspace',$1,$3,$4,$4 FROM service_users u JOIN workspaces w ON w.id=$1
+		WHERE u.id=$2 AND u.active=TRUE AND u.is_system=FALSE ON CONFLICT(workspace_id,user_id) WHERE scope_type='workspace'
+		DO UPDATE SET role=EXCLUDED.role,updated_by=EXCLUDED.updated_by,updated_at=NOW()`, workspaceID, userID, role, actor)
+	if err != nil {
+		return nil, err
+	}
+	if tag.RowsAffected() == 0 {
+		return nil, ports.ErrNotFound
+	}
+	_, err = r.executor(ctx).Exec(ctx, `INSERT INTO workspace_memberships(workspace_id,user_id,role,created_by) VALUES($1,$2,$3,$4) ON CONFLICT(workspace_id,user_id) DO UPDATE SET role=EXCLUDED.role,updated_at=NOW()`, workspaceID, userID, role, actor)
 	if err != nil {
 		return nil, err
 	}
 	var v entities.Membership
-	err = r.executor(ctx).QueryRow(ctx, `SELECT m.workspace_id::text,m.user_id::text,m.role,u.username,u.display_name,m.created_at,m.updated_at FROM workspace_memberships m JOIN service_users u ON u.id=m.user_id WHERE m.workspace_id=$1 AND m.user_id=$2`, workspaceID, userID).Scan(&v.WorkspaceID, &v.UserID, &v.Role, &v.Username, &v.DisplayName, &v.CreatedAt, &v.UpdatedAt)
+	err = r.executor(ctx).QueryRow(ctx, `SELECT g.workspace_id::text,g.user_id::text,g.role,u.username,u.display_name,g.created_at,g.updated_at FROM access_grants g JOIN service_users u ON u.id=g.user_id WHERE g.scope_type='workspace' AND g.workspace_id=$1 AND g.user_id=$2`, workspaceID, userID).Scan(&v.WorkspaceID, &v.UserID, &v.Role, &v.Username, &v.DisplayName, &v.CreatedAt, &v.UpdatedAt)
 	return &v, repositoryError(err)
 }
 func (r *EndgeRepository) DeleteMembership(ctx context.Context, workspaceID, userID string) error {
-	_, err := r.executor(ctx).Exec(ctx, `DELETE FROM workspace_memberships WHERE workspace_id=$1 AND user_id=$2`, workspaceID, userID)
+	if _, err := r.executor(ctx).Exec(ctx, `DELETE FROM workspace_memberships WHERE workspace_id=$1 AND user_id=$2`, workspaceID, userID); err != nil {
+		return err
+	}
+	tag, err := r.executor(ctx).Exec(ctx, `DELETE FROM access_grants WHERE scope_type='workspace' AND workspace_id=$1 AND user_id=$2`, workspaceID, userID)
+	if err == nil && tag.RowsAffected() == 0 {
+		return ports.ErrNotFound
+	}
 	return err
 }
 func (r *EndgeRepository) ReplaceWorkspaceIntegrations(ctx context.Context, workspaceID string, items []map[string]any, actor string) error {
