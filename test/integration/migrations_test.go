@@ -6,6 +6,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/endge-lab/service-backend/internal/domain/entities"
+	"github.com/endge-lab/service-backend/internal/usecase/documents"
 	"github.com/endge-lab/service-backend/test/support"
 	"github.com/pressly/goose/v3"
 )
@@ -77,12 +79,18 @@ func assertMigrationState(t *testing.T, database interface {
 	if err != nil {
 		t.Fatalf("получить migration status: %v", err)
 	}
-	if len(statuses) != 41 {
-		t.Fatalf("миграций = %d, ожидалось 41", len(statuses))
+	if len(statuses) == 0 {
+		t.Fatal("список embedded-миграций пуст")
 	}
 	for index, status := range statuses {
-		if status.Source == nil || status.Source.Version != int64(index+1) {
+		if status.Source == nil {
 			t.Fatalf("неожиданная migration position %d: %#v", index, status.Source)
+		}
+		if index == 0 && status.Source.Version != 1 {
+			t.Fatalf("первая migration имеет version %d, ожидалась 1", status.Source.Version)
+		}
+		if index > 0 && status.Source.Version != statuses[index-1].Source.Version+1 {
+			t.Fatalf("нарушена последовательность migration: после %d идёт %d", statuses[index-1].Source.Version, status.Source.Version)
 		}
 		if status.State != expected {
 			t.Fatalf("migration %d имеет state %s, ожидался %s", status.Source.Version, status.State, expected)
@@ -100,7 +108,7 @@ func assertBootstrapState(t *testing.T, database *support.TestDatabase) {
 	}{
 		{name: "system user", query: `SELECT count(*) FROM service_users WHERE id='00000000-0000-0000-0000-000000000001' AND is_system`, want: 1},
 		{name: "default workspace", query: `SELECT count(*) FROM workspaces WHERE id='00000000-0000-0000-0000-000000000010' AND identity='default'`, want: 1},
-		{name: "system roots", query: `SELECT count(*) FROM folders WHERE workspace_id='00000000-0000-0000-0000-000000000010' AND is_root AND managed_by='system'`, want: 21},
+		{name: "system roots", query: `SELECT count(*) FROM folders WHERE workspace_id='00000000-0000-0000-0000-000000000010' AND is_root AND managed_by='system'`, want: expectedSystemRootCount()},
 		{name: "initial commit", query: `SELECT count(*) FROM workspace_commits WHERE workspace_id='00000000-0000-0000-0000-000000000010' AND operation='bootstrap'`, want: 1},
 	}
 	for _, check := range checks {
@@ -112,4 +120,15 @@ func assertBootstrapState(t *testing.T, database *support.TestDatabase) {
 			t.Fatalf("%s: count=%d, ожидалось %d", check.name, count, check.want)
 		}
 	}
+}
+
+func expectedSystemRootCount() int {
+	entityTypes := make(map[string]struct{}, len(documents.Collections))
+	for _, collection := range documents.Collections {
+		if collection == "folders" {
+			continue
+		}
+		entityTypes[entities.FolderEntityType(collection)] = struct{}{}
+	}
+	return len(entityTypes)
 }

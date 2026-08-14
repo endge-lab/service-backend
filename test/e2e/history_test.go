@@ -86,6 +86,12 @@ func TestCommitReleaseBackupAndImportFlow(t *testing.T) {
 	assertStatus(t, afterRelease, fiber.StatusOK)
 	afterRelease.Body.Close()
 	secondHead := currentHeadSequence(t, app, headers)
+	blockedRestore := perform(t, app, http.MethodPost, "/api/v1/releases/portable-release/restore", map[string]any{"expectedHeadSequence": secondHead}, headers)
+	assertStatus(t, blockedRestore, fiber.StatusConflict)
+	blockedRestoreBody := decodeObject(t, blockedRestore)
+	if stringField(t, blockedRestoreBody, "code") != "pending_revisions_must_be_committed" {
+		t.Fatalf("restore с незакоммиченными revisions вернул неверную ошибку: %#v", blockedRestoreBody)
+	}
 	secondCommitResponse := perform(t, app, http.MethodPost, "/api/v1/commits", map[string]any{"message": "Second state", "revisionPolicy": "preserve", "expectedHeadSequence": secondHead}, headers)
 	assertStatus(t, secondCommitResponse, fiber.StatusCreated)
 	secondCommitID := stringField(t, decodeObject(t, secondCommitResponse), "id")

@@ -96,12 +96,15 @@ func (s *Coordinator) resolveFolder(ctx context.Context, scope entities.Workspac
 		if parent == "" && !boolField(input, "isRoot") {
 			parent = entities.RootFolderIdentity(entityType)
 		}
+		parent = resolvableFolderIdentity(parent, entityType)
 		return s.repository.ResolveFolder(ctx, scope.Workspace.ID, parent, entityType)
 	}
 	if identity == "" {
 		identity = entities.RootFolderIdentity(kind)
 	}
-	return s.repository.ResolveFolder(ctx, scope.Workspace.ID, identity, entities.FolderEntityType(kind))
+	entityType := entities.FolderEntityType(kind)
+	identity = resolvableFolderIdentity(identity, entityType)
+	return s.repository.ResolveFolder(ctx, scope.Workspace.ID, identity, entityType)
 }
 
 // resolveDocumentFolder разрешает папку, указанную в документе.
@@ -114,6 +117,7 @@ func (s *Coordinator) resolveDocumentFolder(ctx context.Context, scope entities.
 		if parent == "" && !boolValue(data["isRoot"]) {
 			parent = entities.RootFolderIdentity(entityType)
 		}
+		parent = resolvableFolderIdentity(parent, entityType)
 		return s.repository.ResolveFolder(ctx, scope.Workspace.ID, parent, entityType)
 	}
 	identity := ""
@@ -123,7 +127,18 @@ func (s *Coordinator) resolveDocumentFolder(ctx context.Context, scope entities.
 	if identity == "" {
 		identity = entities.RootFolderIdentity(doc.Type)
 	}
-	return s.repository.ResolveFolder(ctx, scope.Workspace.ID, identity, entities.FolderEntityType(doc.Type))
+	entityType := entities.FolderEntityType(doc.Type)
+	identity = resolvableFolderIdentity(identity, entityType)
+	return s.repository.ResolveFolder(ctx, scope.Workspace.ID, identity, entityType)
+}
+
+// resolvableFolderIdentity сопоставляет legacy-корень streams с общим корнем queries.
+// Старые revisions хранят root-streams, а актуальная схема использует root-queries.
+func resolvableFolderIdentity(identity, entityType string) string {
+	if identity == "root-streams" && entityType == entities.FolderEntityType("streams") {
+		return entities.RootFolderIdentity("streams")
+	}
+	return identity
 }
 
 // replaceStructuredRelations обновляет структурированные связи документа.

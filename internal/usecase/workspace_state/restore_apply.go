@@ -55,10 +55,26 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 	if !canAdmin(scope.Role) {
 		return nil, domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
 	}
-	if expected != scope.Workspace.HeadSequence {
-		return nil, domainerrors.Conflict("head_sequence_conflict", "Workspace changed after preview")
-	}
 	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
+		if e := s.repository.LockWorkspaceSnapshot(txctx, scope.Workspace.ID); e != nil {
+			return e
+		}
+		live, e := s.repository.GetWorkspace(txctx, scope.Workspace.Identity)
+		if e != nil {
+			return e
+		}
+		if expected != live.HeadSequence {
+			return domainerrors.Conflict("head_sequence_conflict", "Workspace changed after preview")
+		}
+		latest, e := s.repository.LatestCommit(txctx, live.ID)
+		if e != nil {
+			return e
+		}
+		if latest.HeadSequence != live.HeadSequence {
+			return domainerrors.Conflict("pending_revisions_must_be_committed", "Workspace has uncommitted revisions")
+		}
+		scope.Workspace = *live
+
 		batch, e := s.repository.CreateMutationBatch(txctx, &scope.Workspace.ID, operation, current.User.ID)
 		if e != nil {
 			return e
@@ -193,7 +209,7 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 				}
 			}
 		}
-		latest, e := s.repository.LatestCommit(txctx, scope.Workspace.ID)
+		latest, e = s.repository.LatestCommit(txctx, scope.Workspace.ID)
 		if e != nil {
 			return e
 		}

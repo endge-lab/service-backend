@@ -43,6 +43,22 @@ func WriteContext(ctx context.Context) (entities.CurrentActor, entities.Workspac
 	return current, scope, nil
 }
 
+// AdminContext возвращает контекст административной операции рабочего пространства.
+func AdminContext(ctx context.Context) (entities.CurrentActor, entities.WorkspaceAccess, error) {
+	current, err := Actor(ctx)
+	if err != nil {
+		return current, entities.WorkspaceAccess{}, err
+	}
+	scope, err := Access(ctx)
+	if err != nil {
+		return current, scope, err
+	}
+	if !CanAdmin(scope.Role) {
+		return current, scope, domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
+	}
+	return current, scope, nil
+}
+
 // CanWrite проверяет, разрешает ли роль изменять рабочее пространство.
 func CanWrite(role string) bool {
 	return role == "editor" || role == "admin" || role == "platform_admin"

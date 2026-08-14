@@ -12,7 +12,7 @@ import (
 
 // Create создаёт коммит из ожидающих ревизий рабочего пространства.
 func (s *UseCase) Create(ctx context.Context, message, policy string, expected int64) (result *entities.Commit, err error) {
-	current, scope, err := shared.WriteContext(ctx)
+	current, scope, err := shared.AdminContext(ctx)
 	if err != nil {
 		return nil, err
 	}
