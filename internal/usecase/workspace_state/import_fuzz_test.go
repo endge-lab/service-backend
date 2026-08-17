@@ -57,8 +57,11 @@ func TestNormalizePortableBundleDoesNotTreatSoftDeletedAsFolder(t *testing.T) {
 	if result.IgnoredIntegrations != 1 || len(bundle.InstalledIntegrations) != 0 {
 		t.Fatalf("installed integrations were not ignored: %#v", result)
 	}
-	if result.IgnoredLegacyFolders != 4 || len(bundle.Documents["folders"]) != 1 {
+	if result.IgnoredLegacyFolders != 3 || len(bundle.Documents["folders"]) != 1 {
 		t.Fatalf("legacy folders were not ignored: %#v", result)
+	}
+	if result.NormalizedFolderReferences != 4 {
+		t.Fatalf("legacy folder references were not normalized: %#v", result)
 	}
 	if len(bundle.Documents["types"]) != 2 || stringField(bundle.Documents["types"][0], "folderIdentity") != "root-types" {
 		t.Fatalf("soft-deleted must be handled as an ordinary mismatched folder: %#v", bundle.Documents["types"])
