@@ -38,9 +38,6 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 	if normalization.IgnoredIntegrations > 0 {
 		plan.Warnings = append(plan.Warnings, fmt.Sprintf("Installed integrations from snapshot were ignored: %d; target workspace integrations will be preserved", normalization.IgnoredIntegrations))
 	}
-	if normalization.IgnoredDeletedDocuments > 0 {
-		plan.Warnings = append(plan.Warnings, fmt.Sprintf("%d soft-deleted documents were ignored", normalization.IgnoredDeletedDocuments))
-	}
 	if normalization.IgnoredLegacyFolders > 0 {
 		plan.Warnings = append(plan.Warnings, fmt.Sprintf("%d legacy system folders were ignored", normalization.IgnoredLegacyFolders))
 	}
@@ -166,7 +163,7 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 			return nil, err
 		}
 		if plan.Deletes > 0 {
-			plan.Warnings = append(plan.Warnings, fmt.Sprintf("Documents absent from snapshot will be soft-deleted: %d", plan.Deletes))
+			plan.Warnings = append(plan.Warnings, fmt.Sprintf("Documents absent from snapshot will be marked as deleted: %d", plan.Deletes))
 		}
 	}
 	if !plan.Valid {

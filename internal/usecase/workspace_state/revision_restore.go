@@ -3,10 +3,12 @@ package workspace_state
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"slices"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 )
 
 // RestoreRevision восстанавливает документ до выбранной ревизии.
@@ -48,6 +50,11 @@ func (s *Coordinator) RestoreRevision(ctx context.Context, kind, identity, id st
 	target.Revision = existing.Revision
 	target.UpdatedBy = entities.Actor{ID: current.User.ID}
 	folderID, err := s.resolveDocumentFolder(ctx, scope, target)
+	if err != nil && kind != "folders" && errors.Is(err, ports.ErrNotFound) {
+		rootIdentity := entities.RootFolderIdentity(target.Type)
+		target.FolderIdentity = &rootIdentity
+		folderID, err = s.resolveDocumentFolder(ctx, scope, target)
+	}
 	if err != nil {
 		return nil, err
 	}

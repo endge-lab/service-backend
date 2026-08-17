@@ -266,7 +266,7 @@ func (r *EndgeRepository) MoveFolderContents(ctx context.Context, workspaceID, f
 		if kind == "folders" {
 			column = "parent_id"
 		}
-		rows, err := r.executor(ctx).Query(ctx, `UPDATE `+table+` SET `+column+`=$1,updated_by=$2,updated_at=NOW(),revision=revision+1 WHERE workspace_id=$3 AND `+column+`=$4 RETURNING identity`, parentID, actor, workspaceID, folderID)
+		rows, err := r.executor(ctx).Query(ctx, `UPDATE `+table+` SET `+column+`=$1,updated_by=$2,updated_at=NOW(),revision=revision+1 WHERE workspace_id=$3 AND `+column+`=$4 AND deleted_at IS NULL RETURNING identity`, parentID, actor, workspaceID, folderID)
 		if err != nil {
 			return nil, err
 		}

@@ -28,7 +28,7 @@ func FuzzPortableBundleStructure(f *testing.F) {
 	})
 }
 
-func TestNormalizePortableBundleIgnoresLegacyImportState(t *testing.T) {
+func TestNormalizePortableBundleDoesNotTreatSoftDeletedAsFolder(t *testing.T) {
 	bundle := entities.PortableBundle{
 		Workspace:             map[string]any{},
 		InstalledIntegrations: []map[string]any{{"identity": "legacy"}},
@@ -57,13 +57,13 @@ func TestNormalizePortableBundleIgnoresLegacyImportState(t *testing.T) {
 	if result.IgnoredIntegrations != 1 || len(bundle.InstalledIntegrations) != 0 {
 		t.Fatalf("installed integrations were not ignored: %#v", result)
 	}
-	if result.IgnoredDeletedDocuments != 1 || len(bundle.Documents["types"]) != 1 {
-		t.Fatalf("soft-deleted documents were not ignored: %#v", result)
-	}
-	if result.IgnoredLegacyFolders != 3 || len(bundle.Documents["folders"]) != 1 {
+	if result.IgnoredLegacyFolders != 4 || len(bundle.Documents["folders"]) != 1 {
 		t.Fatalf("legacy folders were not ignored: %#v", result)
 	}
-	if _, exists := bundle.Documents["types"][0]["folderIdentity"]; exists {
+	if len(bundle.Documents["types"]) != 2 || stringField(bundle.Documents["types"][0], "folderIdentity") != "root-types" {
+		t.Fatalf("soft-deleted must be handled as an ordinary mismatched folder: %#v", bundle.Documents["types"])
+	}
+	if _, exists := bundle.Documents["types"][1]["folderIdentity"]; exists {
 		t.Fatal("no-folder reference was not normalized to the collection root")
 	}
 	if folder := stringField(bundle.Documents["streams"][0], "folderIdentity"); folder != "root-queries" {

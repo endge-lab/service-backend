@@ -585,7 +585,6 @@ func integrationItems(input map[string]any) ([]map[string]any, error) {
 
 type portableBundleNormalization struct {
 	IgnoredIntegrations        int
-	IgnoredDeletedDocuments    int
 	IgnoredLegacyFolders       int
 	NormalizedFolderReferences int
 }
@@ -618,20 +617,9 @@ func normalizePortableBundle(bundle *entities.PortableBundle) portableBundleNorm
 		}
 	}
 
-	ignoredDeletedFolders := map[string]bool{"soft-deleted": true}
 	folderTypes := map[string]string{}
 	for _, folder := range bundle.Documents["folders"] {
 		folderTypes[stringField(folder, "identity")] = stringField(folder, "entityType")
-	}
-	for changed := true; changed; {
-		changed = false
-		for _, folder := range bundle.Documents["folders"] {
-			identity := stringField(folder, "identity")
-			if identity != "" && ignoredDeletedFolders[stringField(folder, "parentIdentity")] && !ignoredDeletedFolders[identity] {
-				ignoredDeletedFolders[identity] = true
-				changed = true
-			}
-		}
 	}
 
 	for kind, items := range bundle.Documents {
@@ -645,14 +633,10 @@ func normalizePortableBundle(bundle *entities.PortableBundle) portableBundleNorm
 			}
 			if kind == "folders" {
 				identity := stringField(item, "identity")
-				if ignoredDeletedFolders[identity] || identity == "no-folder" || identity == "root-bindings" || identity == "root-streams" {
+				if identity == "soft-deleted" || identity == "no-folder" || identity == "root-bindings" || identity == "root-streams" {
 					result.IgnoredLegacyFolders++
 					continue
 				}
-			}
-			if kind != "folders" && ignoredDeletedFolders[stringField(item, "folderIdentity")] {
-				result.IgnoredDeletedDocuments++
-				continue
 			}
 			if kind != "folders" {
 				folderIdentity := stringField(item, "folderIdentity")
