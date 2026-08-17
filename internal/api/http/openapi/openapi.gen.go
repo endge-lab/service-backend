@@ -4391,6 +4391,74 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/domain/documents/move:\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Атомарно переносит до 500 документов в одну папку с optimistic\n" +
+		"        locking и общей mutation batch.\n" +
+		"      tags:\n" +
+		"        - Домен\n" +
+		"      summary: Переместить документы в одну папку\n" +
+		"      operationId: moveDomainDocuments\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/document_move.MoveRequest\"\n" +
+		"        description: Документы и папка назначения\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Актуальные документы после перемещения\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/document_move.MoveResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ или папка не найдены\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  \"/api/v1/domain/documents/{type}/{identity}/revisions\":\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -14854,6 +14922,60 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    document_move.MoveDocumentRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - collection\n" +
+		"        - expectedRevision\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        collection:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: actions\n" +
+		"        expectedRevision:\n" +
+		"          type: integer\n" +
+		"          minimum: 1\n" +
+		"          example: 3\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: open-schedule\n" +
+		"    document_move.MoveRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - documents\n" +
+		"        - folderIdentity\n" +
+		"      properties:\n" +
+		"        documents:\n" +
+		"          type: array\n" +
+		"          maxItems: 500\n" +
+		"          minItems: 1\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/document_move.MoveDocumentRequest\"\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: schedule-actions\n" +
+		"    document_move.MoveResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        documents:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/document_move.MovedDocumentResponse\"\n" +
+		"        moved:\n" +
+		"          type: integer\n" +
+		"          example: 2\n" +
+		"    document_move.MovedDocumentResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        collection:\n" +
+		"          type: string\n" +
+		"          example: actions\n" +
+		"        document:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
 		"    domain.ExportResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +

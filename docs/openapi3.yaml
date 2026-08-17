@@ -4386,6 +4386,74 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/domain/documents/move:
+    post:
+      security:
+        - BearerAuth: []
+      description: Атомарно переносит до 500 документов в одну папку с optimistic
+        locking и общей mutation batch.
+      tags:
+        - Домен
+      summary: Переместить документы в одну папку
+      operationId: moveDomainDocuments
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/document_move.MoveRequest"
+        description: Документы и папка назначения
+        required: true
+      responses:
+        "200":
+          description: Актуальные документы после перемещения
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/document_move.MoveResponse"
+        "400":
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Требуется аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Документ или папка не найдены
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Конфликт revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
   "/api/v1/domain/documents/{type}/{identity}/revisions":
     get:
       security:
@@ -14849,6 +14917,60 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+    document_move.MoveDocumentRequest:
+      type: object
+      required:
+        - collection
+        - expectedRevision
+        - identity
+      properties:
+        collection:
+          type: string
+          maxLength: 160
+          example: actions
+        expectedRevision:
+          type: integer
+          minimum: 1
+          example: 3
+        identity:
+          type: string
+          maxLength: 160
+          example: open-schedule
+    document_move.MoveRequest:
+      type: object
+      required:
+        - documents
+        - folderIdentity
+      properties:
+        documents:
+          type: array
+          maxItems: 500
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/document_move.MoveDocumentRequest"
+        folderIdentity:
+          type: string
+          maxLength: 160
+          example: schedule-actions
+    document_move.MoveResponse:
+      type: object
+      properties:
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/document_move.MovedDocumentResponse"
+        moved:
+          type: integer
+          example: 2
+    document_move.MovedDocumentResponse:
+      type: object
+      properties:
+        collection:
+          type: string
+          example: actions
+        document:
+          type: object
+          additionalProperties: {}
     domain.ExportResponse:
       type: object
       properties:

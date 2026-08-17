@@ -293,6 +293,62 @@ func TestFolderSafetyAndReparenting(t *testing.T) {
 	}
 }
 
+// TestBulkDocumentMove проверяет один атомарный запрос, optimistic revisions и общую папку назначения.
+func TestBulkDocumentMove(t *testing.T) {
+	database := postgresSuite.NewDatabase(t)
+	app := support.NewTestApp(t, database, support.DevConfig())
+	headers := map[string]string{"X-Endge-Workspace": "default"}
+
+	folder := perform(t, app, http.MethodPost, "/api/v1/folders", map[string]any{
+		"identity": "schedule-actions", "displayName": "Schedule", "entityType": "actions",
+	}, headers)
+	assertStatus(t, folder, fiber.StatusCreated)
+	folder.Body.Close()
+	for _, identity := range []string{"action-a", "action-b"} {
+		created := perform(t, app, http.MethodPost, "/api/v1/actions", map[string]any{
+			"identity": identity, "displayName": identity,
+		}, headers)
+		assertStatus(t, created, fiber.StatusCreated)
+		created.Body.Close()
+	}
+
+	move := perform(t, app, http.MethodPost, "/api/v1/domain/documents/move", map[string]any{
+		"folderIdentity": "schedule-actions",
+		"documents": []map[string]any{
+			{"collection": "actions", "identity": "action-a", "expectedRevision": 1},
+			{"collection": "actions", "identity": "action-b", "expectedRevision": 1},
+		},
+	}, headers)
+	assertStatus(t, move, fiber.StatusOK)
+	moveBody := decodeObject(t, move)
+	if numberField(t, moveBody, "moved") != 2 {
+		t.Fatalf("неверное число перемещённых документов: %#v", moveBody)
+	}
+	items, ok := moveBody["documents"].([]any)
+	if !ok || len(items) != 2 {
+		t.Fatalf("неверный bulk move response: %#v", moveBody)
+	}
+
+	conflict := perform(t, app, http.MethodPost, "/api/v1/domain/documents/move", map[string]any{
+		"folderIdentity": "root-actions",
+		"documents": []map[string]any{
+			{"collection": "actions", "identity": "action-a", "expectedRevision": 2},
+			{"collection": "actions", "identity": "action-b", "expectedRevision": 1},
+		},
+	}, headers)
+	assertStatus(t, conflict, fiber.StatusConflict)
+	conflict.Body.Close()
+
+	for _, identity := range []string{"action-a", "action-b"} {
+		actual := perform(t, app, http.MethodGet, "/api/v1/actions/"+identity, nil, headers)
+		assertStatus(t, actual, fiber.StatusOK)
+		body := decodeObject(t, actual)
+		if stringField(t, body, "folderIdentity") != "schedule-actions" || numberField(t, body, "revision") != 2 {
+			t.Fatalf("атомарность bulk move нарушена для %s: %#v", identity, body)
+		}
+	}
+}
+
 func documentHTTPCases() []documentHTTPCase {
 	base := func(identity string) map[string]any {
 		return map[string]any{"identity": identity, "displayName": identity}

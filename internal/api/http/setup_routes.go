@@ -17,6 +17,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/computation"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/converter"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/data_view"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/document_move"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/domain"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/environment"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/filter"
@@ -80,6 +81,7 @@ type Handlers struct {
 	Revision          *revision.Handler
 	Commit            *commit.Handler
 	Domain            *domain.Handler
+	DocumentMove      *document_move.Handler
 	Backup            *backup.Handler
 	Release           *release.Handler
 }
@@ -129,6 +131,7 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, handlers Handlers, authMidd
 	revision.RegisterRoutes(scoped, handlers.Revision)
 	commit.RegisterRoutes(scoped, handlers.Commit)
 	domain.RegisterRoutes(scoped, handlers.Domain)
+	document_move.RegisterRoutes(scoped, handlers.DocumentMove)
 	backup.RegisterRoutes(scoped, handlers.Backup)
 	release.RegisterRoutes(scoped, handlers.Release)
 	app.Use(func(c *fiber.Ctx) error { return respond.WriteErrorResponse(c, respond.ErrRouteNotFound) })
