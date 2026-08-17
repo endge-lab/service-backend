@@ -13,6 +13,7 @@ import (
 
 type releaseUseCaseStub struct {
 	metadataCalls int
+	metadataInput string
 	metadata      entities.Release
 	artifact      entities.ReleaseArtifact
 	artifactCalls int
@@ -24,8 +25,9 @@ func (s *releaseUseCaseStub) Create(context.Context, resourceusecase.CreateInput
 func (s *releaseUseCaseStub) List(context.Context) ([]entities.Release, error) {
 	return []entities.Release{s.metadata}, nil
 }
-func (s *releaseUseCaseStub) Get(context.Context, string) (*entities.Release, error) {
+func (s *releaseUseCaseStub) Get(_ context.Context, identity string) (*entities.Release, error) {
 	s.metadataCalls++
+	s.metadataInput = identity
 	return &s.metadata, nil
 }
 func (s *releaseUseCaseStub) GetArtifact(context.Context, entities.Release) (*entities.ReleaseArtifact, error) {
@@ -51,6 +53,29 @@ func TestHandlerExportRejectsInvalidDownloadBeforeReadingRelease(t *testing.T) {
 		t.Fatalf("invalid query read release: metadata=%d artifact=%d", stub.metadataCalls, stub.artifactCalls)
 	}
 }
+
+func TestHandlerExportDecodesReleaseIdentity(t *testing.T) {
+	stub := &releaseUseCaseStub{
+		metadata: entities.Release{ID: "release-id", Identity: "Keycloak Auth Test", Checksum: "checksum"},
+		artifact: entities.ReleaseArtifact{ReleaseID: "release-id", Identity: "Keycloak Auth Test", Checksum: "checksum", Data: []byte(`{}`)},
+	}
+	app := fiber.New()
+	app.Get("/releases/:identity/export", NewHandler(stub, nil).Export)
+
+	request := httptest.NewRequest(fiber.MethodGet, "/releases/Keycloak%20Auth%20Test/export", nil)
+	response, err := app.Test(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != fiber.StatusOK {
+		t.Fatalf("status = %d, want %d", response.StatusCode, fiber.StatusOK)
+	}
+	if stub.metadataInput != "Keycloak Auth Test" {
+		t.Fatalf("identity = %q, want %q", stub.metadataInput, "Keycloak Auth Test")
+	}
+}
+
 func (s *releaseUseCaseStub) PlanRestore(context.Context, string) (*entities.ImportPlan, error) {
 	return nil, nil
 }

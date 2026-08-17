@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +18,19 @@ import (
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 )
+
+// PathParam декодирует отдельный path-параметр после сопоставления маршрута.
+// Это сохраняет закодированные разделители внутри одного сегмента маршрута.
+func PathParam(c *fiber.Ctx, name string) (string, error) {
+	value, err := url.PathUnescape(c.Params(name))
+	if err != nil {
+		return "", domainerrors.WithDetails(
+			domainerrors.InvalidInput("path_parameter_invalid", name+" must be URL-encoded"),
+			map[string]any{"field": name},
+		)
+	}
+	return value, nil
+}
 
 // OptionalBoolQuery строго разбирает необязательный boolean query-параметр.
 func OptionalBoolQuery(c *fiber.Ctx, name string, fallback bool) (bool, error) {

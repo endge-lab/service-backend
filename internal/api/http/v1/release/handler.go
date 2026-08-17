@@ -90,7 +90,11 @@ func (h *Handler) List(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/releases/{identity} [get]
 func (h *Handler) Get(c *fiber.Ctx) error {
-	value, err := h.usecase.Get(c.UserContext(), c.Params("identity"))
+	identity, err := shared.PathParam(c, "identity")
+	if err != nil {
+		return respond.WriteErrorResponse(c, err)
+	}
+	value, err := h.usecase.Get(c.UserContext(), identity)
 	if err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}
@@ -126,7 +130,11 @@ func (h *Handler) Export(c *fiber.Ctx) error {
 	if err != nil {
 		return respond.WriteErrorResponse(c, err)
 	}
-	metadata, err := h.usecase.Get(c.UserContext(), c.Params("identity"))
+	identity, err := shared.PathParam(c, "identity")
+	if err != nil {
+		return respond.WriteErrorResponse(c, err)
+	}
+	metadata, err := h.usecase.Get(c.UserContext(), identity)
 	if err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}
@@ -165,7 +173,11 @@ func (h *Handler) Export(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/releases/{identity}/restore/plan [post]
 func (h *Handler) PlanRestore(c *fiber.Ctx) error {
-	value, err := h.usecase.PlanRestore(c.UserContext(), c.Params("identity"))
+	identity, err := shared.PathParam(c, "identity")
+	if err != nil {
+		return respond.WriteErrorResponse(c, err)
+	}
+	value, err := h.usecase.PlanRestore(c.UserContext(), identity)
 	if err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}
@@ -196,7 +208,11 @@ func (h *Handler) Restore(c *fiber.Ctx) error {
 	if err != nil {
 		return respond.WriteErrorResponse(c, err)
 	}
-	value, err := h.usecase.Restore(c.UserContext(), c.Params("identity"), *request.ExpectedHeadSequence)
+	identity, err := shared.PathParam(c, "identity")
+	if err != nil {
+		return respond.WriteErrorResponse(c, err)
+	}
+	value, err := h.usecase.Restore(c.UserContext(), identity, *request.ExpectedHeadSequence)
 	if err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}
