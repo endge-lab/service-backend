@@ -13,8 +13,12 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-  go build -trimpath -ldflags="-s -w" -buildvcs=false -o /out/service-backend ./cmd
+RUN backend_version="$(tr -d '[:space:]' < VERSION)" \
+  && echo "$backend_version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' \
+  && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+  go build -trimpath \
+  -ldflags="-s -w -X github.com/endge-lab/service-backend/internal/buildinfo.Version=$backend_version" \
+  -buildvcs=false -o /out/service-backend ./cmd
 
 FROM ${BASE_RUNTIME_IMAGE}
 

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/endge-lab/service-backend/internal/buildinfo"
 	kitconfig "github.com/endge-lab/service-kit-go/config"
 )
 
@@ -116,6 +117,7 @@ func Load() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	base.App.Version = buildinfo.Resolve(base.App.Version)
 	httpBasePath, err := normalizeHTTPBasePath(os.Getenv("HTTP_BASE_PATH"))
 	if err != nil {
 		return nil, err

@@ -68,6 +68,14 @@ AUTH_DEV_PLATFORM_ADMIN=true
 
 `AUTH_MODE=dev` запрещён при `APP_ENV=production`.
 
+## Версия backend
+
+Единственный источник версии сервиса — корневой файл `VERSION`. Перед каждым
+изменением backend вручную увеличьте patch, minor или major номер в формате
+`X.Y.Z`. Локальная, Docker- и удалённая сборки вшивают это значение в бинарник;
+Kubernetes его не переопределяет. Публичные `GET /health` и `GET /version`
+возвращают тот же номер.
+
 ## Production OIDC
 
 Production запускается только с валидной OIDC/JWKS-конфигурацией:

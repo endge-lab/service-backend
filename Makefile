@@ -18,6 +18,8 @@ export
 APP_NAME ?= service-backend
 MAIN := ./cmd
 BIN := ./tmp/$(APP_NAME)
+BACKEND_VERSION := $(strip $(shell tr -d '[:space:]' < VERSION))
+BUILDINFO_PACKAGE := github.com/endge-lab/service-backend/internal/buildinfo
 GOCACHE ?= /tmp/$(APP_NAME)-go-build
 SQLC_VERSION ?= v1.31.1
 SQLC ?= go run github.com/sqlc-dev/sqlc/cmd/sqlc@$(SQLC_VERSION)
@@ -45,7 +47,12 @@ POSTGRES_SCHEMA ?= public
 POSTGRES_SSLMODE ?= disable
 POSTGRES_DSN := postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DATABASE)?sslmode=$(POSTGRES_SSLMODE)&search_path=$(POSTGRES_SCHEMA)
 
-LDFLAGS := -s -w
+LDFLAGS := -s -w -X $(BUILDINFO_PACKAGE).Version=$(BACKEND_VERSION)
+
+.PHONY: validate-version
+validate-version:
+	@test -f VERSION
+	@grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$$' VERSION
 
 .PHONY: all
 all: mod lint test build
@@ -149,15 +156,15 @@ test-cover:
 	go tool cover -html=coverage.out
 
 .PHONY: build
-build:
+build: validate-version
 	@echo "Building application..."
 	mkdir -p ./tmp
 	go build -ldflags="$(LDFLAGS)" -buildvcs=false -o $(BIN) $(MAIN)
 
 .PHONY: run
-run:
+run: validate-version
 	@echo "Running application..."
-	APP_ENV=$(APP_ENV) go run $(MAIN)
+	APP_ENV=$(APP_ENV) go run -ldflags="$(LDFLAGS)" $(MAIN)
 
 .PHONY: dev
 dev:
