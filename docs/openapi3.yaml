@@ -13673,7 +13673,6 @@ components:
         - adapterId
         - displayName
         - identity
-        - persist
       properties:
         active:
           type: boolean
@@ -13681,11 +13680,11 @@ components:
         adapterId:
           type: string
           maxLength: 160
-          example: example
+          example: oidc
         config:
           type: object
           additionalProperties: {}
-        credentialRefs:
+        credentials:
           type: object
           additionalProperties:
             type: string
@@ -13716,13 +13715,8 @@ components:
         meta:
           type: object
           additionalProperties: {}
-        persist:
-          type: string
-          enum:
-            - localStorage
-            - sessionStorage
-            - memory
-          example: example
+        session:
+          $ref: "#/components/schemas/auth_profile.SessionPolicy"
     auth_profile.ListResponse:
       type: object
       properties:
@@ -13748,11 +13742,11 @@ components:
         adapterId:
           type: string
           maxLength: 160
-          example: example
+          example: oidc
         config:
           type: object
           additionalProperties: {}
-        credentialRefs:
+        credentials:
           type: object
           additionalProperties:
             type: string
@@ -13783,13 +13777,8 @@ components:
         meta:
           type: object
           additionalProperties: {}
-        persist:
-          type: string
-          enum:
-            - localStorage
-            - sessionStorage
-            - memory
-          example: example
+        session:
+          $ref: "#/components/schemas/auth_profile.SessionPolicy"
     auth_profile.Response:
       type: object
       properties:
@@ -13798,7 +13787,7 @@ components:
           example: true
         adapterId:
           type: string
-          example: example
+          example: oidc
         config:
           type: object
           additionalProperties: {}
@@ -13808,7 +13797,7 @@ components:
           example: 2026-08-04T10:00:00Z
         createdBy:
           $ref: "#/components/schemas/entities.Actor"
-        credentialRefs:
+        credentials:
           type: object
           additionalProperties:
             type: string
@@ -13844,18 +13833,32 @@ components:
           example: endge-core
         meta:
           type: object
-        persist:
-          type: string
-          example: example
         revision:
           type: integer
           example: 3
+        session:
+          $ref: "#/components/schemas/auth_profile.SessionPolicy"
         updatedAt:
           type: string
           format: date-time
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+    auth_profile.SessionPolicy:
+      type: object
+      required:
+        - storage
+      properties:
+        persistRefreshToken:
+          type: boolean
+          example: false
+        storage:
+          type: string
+          enum:
+            - localStorage
+            - sessionStorage
+            - memory
+          example: memory
     backend_connection.CreateRequest:
       type: object
       required:

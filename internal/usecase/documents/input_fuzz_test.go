@@ -23,7 +23,7 @@ func FuzzDocumentInputs(f *testing.F) {
 // FuzzSecretValidation проверяет рекурсивные JSON-структуры и неизменный запрет credential material.
 func FuzzSecretValidation(f *testing.F) {
 	for _, seed := range []string{
-		`{"credentialRefs":{"client":"vault://client"}}`,
+		`{"credentials":{"client":"{CLIENT}"}}`,
 		`{"clientSecret":"value"}`,
 		`{"nested":[{"password":"value"}]}`,
 		`{"tokenEndpoint":"https://issuer/token"}`,

@@ -13678,7 +13678,6 @@ var openAPI3YAML = []byte(
 		"        - adapterId\n" +
 		"        - displayName\n" +
 		"        - identity\n" +
-		"        - persist\n" +
 		"      properties:\n" +
 		"        active:\n" +
 		"          type: boolean\n" +
@@ -13686,11 +13685,11 @@ var openAPI3YAML = []byte(
 		"        adapterId:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
-		"          example: example\n" +
+		"          example: oidc\n" +
 		"        config:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
-		"        credentialRefs:\n" +
+		"        credentials:\n" +
 		"          type: object\n" +
 		"          additionalProperties:\n" +
 		"            type: string\n" +
@@ -13721,13 +13720,8 @@ var openAPI3YAML = []byte(
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
-		"        persist:\n" +
-		"          type: string\n" +
-		"          enum:\n" +
-		"            - localStorage\n" +
-		"            - sessionStorage\n" +
-		"            - memory\n" +
-		"          example: example\n" +
+		"        session:\n" +
+		"          $ref: \"#/components/schemas/auth_profile.SessionPolicy\"\n" +
 		"    auth_profile.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -13753,11 +13747,11 @@ var openAPI3YAML = []byte(
 		"        adapterId:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
-		"          example: example\n" +
+		"          example: oidc\n" +
 		"        config:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
-		"        credentialRefs:\n" +
+		"        credentials:\n" +
 		"          type: object\n" +
 		"          additionalProperties:\n" +
 		"            type: string\n" +
@@ -13788,13 +13782,8 @@ var openAPI3YAML = []byte(
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
-		"        persist:\n" +
-		"          type: string\n" +
-		"          enum:\n" +
-		"            - localStorage\n" +
-		"            - sessionStorage\n" +
-		"            - memory\n" +
-		"          example: example\n" +
+		"        session:\n" +
+		"          $ref: \"#/components/schemas/auth_profile.SessionPolicy\"\n" +
 		"    auth_profile.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -13803,7 +13792,7 @@ var openAPI3YAML = []byte(
 		"          example: true\n" +
 		"        adapterId:\n" +
 		"          type: string\n" +
-		"          example: example\n" +
+		"          example: oidc\n" +
 		"        config:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
@@ -13813,7 +13802,7 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
-		"        credentialRefs:\n" +
+		"        credentials:\n" +
 		"          type: object\n" +
 		"          additionalProperties:\n" +
 		"            type: string\n" +
@@ -13849,18 +13838,32 @@ var openAPI3YAML = []byte(
 		"          example: endge-core\n" +
 		"        meta:\n" +
 		"          type: object\n" +
-		"        persist:\n" +
-		"          type: string\n" +
-		"          example: example\n" +
 		"        revision:\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
+		"        session:\n" +
+		"          $ref: \"#/components/schemas/auth_profile.SessionPolicy\"\n" +
 		"        updatedAt:\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    auth_profile.SessionPolicy:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - storage\n" +
+		"      properties:\n" +
+		"        persistRefreshToken:\n" +
+		"          type: boolean\n" +
+		"          example: false\n" +
+		"        storage:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - localStorage\n" +
+		"            - sessionStorage\n" +
+		"            - memory\n" +
+		"          example: memory\n" +
 		"    backend_connection.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +

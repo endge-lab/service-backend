@@ -15,9 +15,9 @@ func TestValidateSecretsRejectsCredentialMaterial(t *testing.T) {
 	}
 }
 
-// TestValidateSecretsAllowsCredentialRefsAndTokenEndpoint проверяет допустимые публичные ссылки и URL.
-func TestValidateSecretsAllowsCredentialRefsAndTokenEndpoint(t *testing.T) {
-	input := map[string]any{"credentialRefs": []any{"oidc-client"}, "tokenEndpoint": "https://issuer/token"}
+// TestValidateSecretsAllowsCredentialsAndTokenEndpoint проверяет выделенную credential boundary.
+func TestValidateSecretsAllowsCredentialsAndTokenEndpoint(t *testing.T) {
+	input := map[string]any{"credentials": map[string]any{"clientSecret": "literal-test-secret"}, "tokenEndpoint": "https://issuer/token"}
 	if err := validateSecrets(input); err != nil {
 		t.Fatalf("public auth config rejected: %v", err)
 	}
@@ -33,10 +33,57 @@ func TestAuthProfileRejectsCredentialMaterialInsideConfig(t *testing.T) {
 		t.Fatal("AuthProfile config password was accepted")
 	}
 
-	input["config"] = map[string]any{"baseUrl": "https://issuer.example", "clientId": "web"}
-	input["credentialRefs"] = map[string]any{"password": "AODB_PASSWORD"}
+	input["adapterId"] = "basic"
+	input["config"] = map[string]any{}
+	input["credentials"] = map[string]any{"username": "test", "password": "{AODB_PASSWORD}"}
 	if err := validateDocument("auth-profiles", input); err != nil {
-		t.Fatalf("AuthProfile public config and credentialRefs rejected: %v", err)
+		t.Fatalf("AuthProfile credentials rejected: %v", err)
+	}
+}
+
+func TestAuthProfileValidatesBuiltinAdapters(t *testing.T) {
+	cases := []map[string]any{
+		{"identity": "oidc", "displayName": "OIDC", "adapterId": "oidc", "config": map[string]any{"issuer": "{OIDC_ISSUER}", "clientId": "web", "scopes": []any{"openid", "profile"}}, "credentials": map[string]any{}, "session": map[string]any{"storage": "memory", "persistRefreshToken": false}},
+		{"identity": "service", "displayName": "Service", "adapterId": "oauth2-client-credentials", "config": map[string]any{"tokenEndpoint": "{SERVICE_TOKEN_ENDPOINT}", "clientId": "{SERVICE_CLIENT_ID}", "scopes": []any{}, "clientAuthentication": "client_secret_basic"}, "credentials": map[string]any{"clientSecret": "{SERVICE_CLIENT_SECRET}"}, "session": map[string]any{"storage": "sessionStorage", "persistRefreshToken": false}},
+		{"identity": "basic", "displayName": "Basic", "adapterId": "basic", "config": map[string]any{}, "credentials": map[string]any{"username": "test", "password": "literal-password"}},
+		{"identity": "bearer", "displayName": "Bearer", "adapterId": "bearer", "config": map[string]any{}, "credentials": map[string]any{"token": "{SERVICE_TOKEN}"}},
+	}
+	for _, input := range cases {
+		if err := validateDocument("auth-profiles", input); err != nil {
+			t.Fatalf("valid %s profile rejected: %v", input["adapterId"], err)
+		}
+	}
+	cases[0]["config"].(map[string]any)["tokenPath"] = "/token"
+	if err := validateDocument("auth-profiles", cases[0]); err == nil {
+		t.Fatal("legacy manual OIDC endpoint was accepted")
+	}
+	cases[2]["session"] = map[string]any{"storage": "memory", "persistRefreshToken": false}
+	if err := validateDocument("auth-profiles", cases[2]); err == nil {
+		t.Fatal("Basic session policy was accepted")
+	}
+}
+
+func TestAuthProfileRejectsLegacyTopLevelFields(t *testing.T) {
+	input := map[string]any{
+		"identity": "oidc", "displayName": "OIDC", "adapterId": "oidc",
+		"config":      map[string]any{"issuer": "{OIDC_ISSUER}", "clientId": "web", "scopes": []any{"openid", "profile"}},
+		"credentials": map[string]any{},
+		"session":     map[string]any{"storage": "memory", "persistRefreshToken": false},
+		"loginMode":   "interactive",
+	}
+	if err := validateDocument("auth-profiles", input); err == nil {
+		t.Fatal("legacy top-level auth profile field was accepted")
+	}
+}
+
+func TestAuthProfileRejectsNestedCredentialsBoundary(t *testing.T) {
+	input := map[string]any{
+		"identity": "plugin", "displayName": "Plugin", "adapterId": "third-party",
+		"config":      map[string]any{"credentials": map[string]any{"token": "literal"}},
+		"credentials": map[string]any{},
+	}
+	if err := validateDocument("auth-profiles", input); err == nil {
+		t.Fatal("nested credentials boundary was accepted")
 	}
 }
 

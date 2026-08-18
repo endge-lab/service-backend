@@ -6,13 +6,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"slices"
 	"strings"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
+	"github.com/endge-lab/service-backend/internal/usecase/shared"
 	"github.com/google/uuid"
 )
 
@@ -298,16 +298,8 @@ func validateDocument(kind string, input map[string]any) error {
 		}
 	}
 	if kind == "auth-profiles" {
-		if stringField(input, "adapterId") == "" {
-			return domainerrors.InvalidInput("auth_profile_adapter_required", "adapterId is required")
-		}
-		if !slices.Contains([]string{"localStorage", "sessionStorage", "memory"}, stringField(input, "persist")) {
-			return domainerrors.InvalidInput("auth_profile_persist_invalid", "persist must be localStorage, sessionStorage or memory")
-		}
-		if references, exists := input["credentialRefs"]; exists {
-			if err := validateCredentialRefs(references, "credentialRefs"); err != nil {
-				return err
-			}
+		if err := shared.ValidateAuthProfile(input); err != nil {
+			return err
 		}
 	}
 	if kind == "vocabs" {
@@ -362,60 +354,7 @@ func validateIdentity(value string) error {
 }
 
 // validateSecrets проверяет, что входные данные не содержат открытых секретов.
-func validateSecrets(value any) error {
-	var walk func(any, string) error
-	walk = func(current any, path string) error {
-		switch typed := current.(type) {
-		case map[string]any:
-			for key, item := range typed {
-				normalized := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(key, "_", ""), "-", ""))
-				if normalized == "credentialrefs" {
-					if err := validateCredentialRefs(item, joinPath(path, key)); err != nil {
-						return err
-					}
-					continue
-				}
-				if normalized == "manualtoken" || strings.Contains(normalized, "password") || strings.Contains(normalized, "clientsecret") || strings.Contains(normalized, "accesstoken") || strings.Contains(normalized, "refreshtoken") || normalized == "bearertoken" || normalized == "secret" {
-					return domainerrors.WithDetails(domainerrors.InvalidInput("secret_field_forbidden", "Secret material must be provided through credentialRefs"), map[string]any{"field": joinPath(path, key)})
-				}
-				if err := walk(item, joinPath(path, key)); err != nil {
-					return err
-				}
-			}
-		case []any:
-			for index, item := range typed {
-				if err := walk(item, fmt.Sprintf("%s[%d]", path, index)); err != nil {
-					return err
-				}
-			}
-		}
-		return nil
-	}
-	return walk(value, "")
-}
-
-// validateCredentialRefs проверяет корректность ссылок на учётные данные.
-func validateCredentialRefs(value any, path string) error {
-	switch references := value.(type) {
-	case map[string]any:
-		for name, value := range references {
-			reference, ok := value.(string)
-			if strings.TrimSpace(name) == "" || !ok || strings.TrimSpace(reference) == "" {
-				return domainerrors.WithDetails(domainerrors.InvalidInput("credential_ref_invalid", "Each credential reference must be a non-empty string"), map[string]any{"field": joinPath(path, name)})
-			}
-		}
-	case []any:
-		for index, value := range references {
-			reference, ok := value.(string)
-			if !ok || strings.TrimSpace(reference) == "" {
-				return domainerrors.WithDetails(domainerrors.InvalidInput("credential_ref_invalid", "Each credential reference must be a non-empty string"), map[string]any{"field": fmt.Sprintf("%s[%d]", path, index)})
-			}
-		}
-	default:
-		return domainerrors.WithDetails(domainerrors.InvalidInput("credential_refs_invalid", "credentialRefs must contain named external references"), map[string]any{"field": path})
-	}
-	return nil
-}
+func validateSecrets(value any) error { return shared.ValidateSecrets(value) }
 
 // rejectReadOnly отклоняет изменение серверных полей только для чтения.
 func rejectReadOnly(input map[string]any) error {

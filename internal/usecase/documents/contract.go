@@ -74,6 +74,11 @@ func validateDocument(kind string, input map[string]any) error {
 			return domainerrors.InvalidInput("project_navigation_legacy", "Project navigation must use navigationIdentity")
 		}
 	}
+	if kind == "auth-profiles" {
+		if err := shared.ValidateAuthProfile(input); err != nil {
+			return err
+		}
+	}
 	if kind == "folders" {
 		entityType := stringField(input, "entityType")
 		if !slices.Contains(Collections, entityType) || entityType == "folders" {

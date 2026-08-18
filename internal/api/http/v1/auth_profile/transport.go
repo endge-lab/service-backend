@@ -7,26 +7,32 @@ import (
 
 type CreateRequest struct {
 	shared.CreateDocumentRequest
-	AdapterID      string            `json:"adapterId" validate:"required,max=160" example:"example"`
-	Config         map[string]any    `json:"config,omitempty"`
-	CredentialRefs map[string]string `json:"credentialRefs,omitempty"`
-	Persist        string            `json:"persist" validate:"required,oneof=localStorage sessionStorage memory" example:"example"`
+	AdapterID   string            `json:"adapterId" validate:"required,max=160" example:"oidc"`
+	Config      map[string]any    `json:"config,omitempty"`
+	Credentials map[string]string `json:"credentials,omitempty"`
+	Session     *SessionPolicy    `json:"session,omitempty"`
 }
 
 type PatchRequest struct {
 	shared.PatchDocumentRequest
-	AdapterID      *string            `json:"adapterId,omitempty" validate:"omitempty,max=160" example:"example"`
-	Config         *map[string]any    `json:"config,omitempty"`
-	CredentialRefs *map[string]string `json:"credentialRefs,omitempty"`
-	Persist        *string            `json:"persist,omitempty" validate:"omitempty,oneof=localStorage sessionStorage memory" example:"example"`
+	AdapterID   *string            `json:"adapterId,omitempty" validate:"omitempty,max=160" example:"oidc"`
+	Config      *map[string]any    `json:"config,omitempty"`
+	Credentials *map[string]string `json:"credentials,omitempty"`
+	Session     *SessionPolicy     `json:"session,omitempty"`
 }
 
 type Response struct {
 	shared.DocumentMetadata
-	AdapterID      string            `json:"adapterId" example:"example"`
-	Config         map[string]any    `json:"config"`
-	CredentialRefs map[string]string `json:"credentialRefs"`
-	Persist        string            `json:"persist" example:"example"`
+	AdapterID   string            `json:"adapterId" example:"oidc"`
+	Config      map[string]any    `json:"config"`
+	Credentials map[string]string `json:"credentials"`
+	Session     *SessionPolicy    `json:"session,omitempty"`
+}
+
+// SessionPolicy задаёт browser storage для token-producing адаптеров.
+type SessionPolicy struct {
+	Storage             string `json:"storage" validate:"required,oneof=localStorage sessionStorage memory" example:"memory"`
+	PersistRefreshToken bool   `json:"persistRefreshToken" example:"false"`
 }
 
 type ListResponse struct {

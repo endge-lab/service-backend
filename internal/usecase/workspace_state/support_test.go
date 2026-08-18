@@ -15,11 +15,10 @@ func TestVocabRejectsLegacyManualAuthMode(t *testing.T) {
 
 func TestAuthProfileAllowsPluginAdapterAndRejectsSecretConfig(t *testing.T) {
 	input := map[string]any{
-		"identity":       "plugin-auth",
-		"displayName":    "Plugin auth",
-		"adapterId":      "company-plugin",
-		"persist":        "memory",
-		"credentialRefs": map[string]any{"secret": "COMPANY_SECRET"},
+		"identity":    "plugin-auth",
+		"displayName": "Plugin auth",
+		"adapterId":   "company-plugin",
+		"credentials": map[string]any{"secret": "{COMPANY_SECRET}"},
 	}
 	if err := validateDocument("auth-profiles", input); err != nil {
 		t.Fatalf("plugin adapter rejected: %v", err)
