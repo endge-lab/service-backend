@@ -4879,6 +4879,43 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/domain/status:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает domainVersion только когда текущее workspace не содержит\n" +
+		"        незакоммиченных revisions.\n" +
+		"      tags:\n" +
+		"        - Перенос домена\n" +
+		"      summary: Получить состояние версии домена\n" +
+		"      operationId: getDomainStatus\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Состояние версии домена\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/entities.DomainStatus\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /api/v1/environments:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -13886,6 +13923,8 @@ var openAPI3YAML = []byte(
 		"            items:\n" +
 		"              type: object\n" +
 		"              additionalProperties: {}\n" +
+		"        domainVersion:\n" +
+		"          type: string\n" +
 		"        installedIntegrations:\n" +
 		"          type: array\n" +
 		"          items:\n" +
@@ -14006,6 +14045,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        domainVersion:\n" +
+		"          type: string\n" +
+		"          example: dv1:sha256:0123456789abcdef\n" +
 		"        headSequence:\n" +
 		"          type: integer\n" +
 		"          example: 42\n" +
@@ -14986,6 +15028,8 @@ var openAPI3YAML = []byte(
 		"            items:\n" +
 		"              type: object\n" +
 		"              additionalProperties: {}\n" +
+		"        domainVersion:\n" +
+		"          type: string\n" +
 		"        installedIntegrations:\n" +
 		"          type: array\n" +
 		"          items:\n" +
@@ -15076,6 +15120,9 @@ var openAPI3YAML = []byte(
 		"          type: integer\n" +
 		"        deletes:\n" +
 		"          type: integer\n" +
+		"        domainVersion:\n" +
+		"          type: string\n" +
+		"          example: dv1:sha256:0123456789abcdef\n" +
 		"        imported:\n" +
 		"          $ref: \"#/components/schemas/entities.SnapshotCounts\"\n" +
 		"        parentCommitId:\n" +
@@ -15274,9 +15321,30 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        documentId:\n" +
 		"          type: string\n" +
+		"        documentIdentity:\n" +
+		"          type: string\n" +
 		"        documentType:\n" +
 		"          type: string\n" +
 		"        operation:\n" +
+		"          type: string\n" +
+		"    entities.DomainStatus:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        commitId:\n" +
+		"          type: string\n" +
+		"        commitMessage:\n" +
+		"          type: string\n" +
+		"        committedAt:\n" +
+		"          type: string\n" +
+		"        domainVersion:\n" +
+		"          type: string\n" +
+		"        lastCommittedDomainVersion:\n" +
+		"          type: string\n" +
+		"        pendingRevisionCount:\n" +
+		"          type: integer\n" +
+		"        state:\n" +
+		"          type: string\n" +
+		"        workspace:\n" +
 		"          type: string\n" +
 		"    entities.PortableBundle:\n" +
 		"      type: object\n" +
@@ -15288,6 +15356,8 @@ var openAPI3YAML = []byte(
 		"            items:\n" +
 		"              type: object\n" +
 		"              additionalProperties: {}\n" +
+		"        domainVersion:\n" +
+		"          type: string\n" +
 		"        installedIntegrations:\n" +
 		"          type: array\n" +
 		"          items:\n" +
@@ -16795,6 +16865,8 @@ var openAPI3YAML = []byte(
 		"            items:\n" +
 		"              type: object\n" +
 		"              additionalProperties: {}\n" +
+		"        domainVersion:\n" +
+		"          type: string\n" +
 		"        installedIntegrations:\n" +
 		"          type: array\n" +
 		"          items:\n" +
@@ -16925,6 +16997,8 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        createdBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        domainVersion:\n" +
+		"          type: string\n" +
 		"        headSequence:\n" +
 		"          type: integer\n" +
 		"        id:\n" +

@@ -61,8 +61,14 @@ func (s *Coordinator) Export(ctx context.Context) (json.RawMessage, error) {
 	}
 	var result json.RawMessage
 	err = s.tx.WithinReadTransaction(ctx, func(txctx context.Context) error {
-		var txErr error
-		result, txErr = s.repository.ExportWorkspace(txctx, scope.Workspace.ID, nil)
+		latest, txErr := s.repository.LatestCommit(txctx, scope.Workspace.ID)
+		if txErr != nil {
+			return txErr
+		}
+		if latest.HeadSequence != scope.Workspace.HeadSequence {
+			return domainerrors.Conflict("export_requires_clean_commit", "Workspace has uncommitted revisions")
+		}
+		result, txErr = s.repository.ExportWorkspace(txctx, scope.Workspace.ID, &latest.HeadSequence)
 		return txErr
 	})
 	return result, err

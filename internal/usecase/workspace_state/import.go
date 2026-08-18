@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/endge-lab/service-backend/internal/domain/domainversion"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
@@ -27,6 +28,7 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 	if !canAdmin(scope.Role) {
 		return nil, domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
 	}
+	providedDomainVersion := bundle.DomainVersion
 	normalization := normalizePortableBundle(&bundle)
 	plan := &entities.ImportPlan{
 		Valid: true, TargetWorkspace: scope.Workspace.Identity,
@@ -102,6 +104,15 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 			seen[key] = true
 			plan.Incoming.Documents++
 		}
+	}
+	computedDomainVersion, versionErr := domainversion.Compute(bundle)
+	if versionErr != nil {
+		return nil, domainerrors.InvalidInput("domain_version_invalid", "Domain version could not be computed")
+	}
+	bundle.DomainVersion = computedDomainVersion
+	if providedDomainVersion != "" && providedDomainVersion != computedDomainVersion {
+		plan.Valid = false
+		plan.ValidationErrors = append(plan.ValidationErrors, "domainVersion does not match portable domain content")
 	}
 	integrationIdentities := map[string]bool{}
 	for _, item := range bundle.InstalledIntegrations {
@@ -340,6 +351,9 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 		if txErr != nil {
 			return txErr
 		}
+		if commit.DomainVersion != bundle.DomainVersion {
+			return domainerrors.Conflict("domain_version_mismatch", "Imported workspace does not match the source domain version")
+		}
 		ids := make([]string, 0, len(revisions))
 		for _, revision := range revisions {
 			ids = append(ids, revision.ID)
@@ -352,6 +366,7 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 		}
 		result.CommitID = commit.ID
 		result.ParentCommitID = latest.ID
+		result.DomainVersion = commit.DomainVersion
 		return nil
 	})
 	return result, mapConflict(err)

@@ -6,18 +6,19 @@ import (
 	"errors"
 	"sort"
 
+	"github.com/endge-lab/service-backend/internal/domain/domainversion"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
 func commitSelect() string {
-	return `SELECT c.id::text,c.workspace_id::text,c.parent_commit_id::text,c.base_sequence,c.head_sequence,c.message,c.revision_policy,c.operation,` + actorScan("u") + `,c.created_at FROM workspace_commits c JOIN service_users u ON u.id=c.created_by`
+	return `SELECT c.id::text,c.workspace_id::text,c.parent_commit_id::text,c.base_sequence,c.head_sequence,c.message,c.revision_policy,c.operation,COALESCE(c.domain_version,''),` + actorScan("u") + `,c.created_at FROM workspace_commits c JOIN service_users u ON u.id=c.created_by`
 }
 func scanCommit(row scanner) (*entities.Commit, error) {
 	v := &entities.Commit{}
 	var actor []byte
-	if err := row.Scan(&v.ID, &v.WorkspaceID, &v.ParentCommitID, &v.BaseSequence, &v.HeadSequence, &v.Message, &v.RevisionPolicy, &v.Operation, &actor, &v.CreatedAt); err != nil {
+	if err := row.Scan(&v.ID, &v.WorkspaceID, &v.ParentCommitID, &v.BaseSequence, &v.HeadSequence, &v.Message, &v.RevisionPolicy, &v.Operation, &v.DomainVersion, &actor, &v.CreatedAt); err != nil {
 		return nil, repositoryError(err)
 	}
 	_ = json.Unmarshal(actor, &v.CreatedBy)
@@ -47,14 +48,21 @@ func (r *EndgeRepository) GetCommit(ctx context.Context, workspaceID, id string)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := r.executor(ctx).Query(ctx, `SELECT document_type,document_id::text,before_revision_id::text,after_revision_id::text,operation FROM workspace_commit_changes WHERE commit_id=$1 ORDER BY document_type,document_id`, id)
+	rows, err := r.executor(ctx).Query(ctx, `SELECT c.document_type,c.document_id::text,
+		COALESCE(after_revision.document_identity,before_revision.document_identity,''),
+		c.before_revision_id::text,c.after_revision_id::text,c.operation
+		FROM workspace_commit_changes c
+		LEFT JOIN document_revisions before_revision ON before_revision.id=c.before_revision_id
+		LEFT JOIN document_revisions after_revision ON after_revision.id=c.after_revision_id
+		WHERE c.commit_id=$1
+		ORDER BY c.document_type,COALESCE(after_revision.document_identity,before_revision.document_identity,''),c.document_id`, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var c entities.CommitChange
-		if err := rows.Scan(&c.DocumentType, &c.DocumentID, &c.BeforeRevisionID, &c.AfterRevisionID, &c.Operation); err != nil {
+		if err := rows.Scan(&c.DocumentType, &c.DocumentID, &c.DocumentIdentity, &c.BeforeRevisionID, &c.AfterRevisionID, &c.Operation); err != nil {
 			return nil, err
 		}
 		v.Changes = append(v.Changes, c)
@@ -78,7 +86,15 @@ func (r *EndgeRepository) PendingRevisions(ctx context.Context, workspaceID stri
 	return result, rows.Err()
 }
 func (r *EndgeRepository) CreateCommit(ctx context.Context, v entities.Commit, changes []entities.CommitChange) (*entities.Commit, error) {
-	_, err := r.executor(ctx).Exec(ctx, `INSERT INTO workspace_commits(id,workspace_id,parent_commit_id,base_sequence,head_sequence,message,revision_policy,operation,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, v.ID, v.WorkspaceID, v.ParentCommitID, v.BaseSequence, v.HeadSequence, v.Message, v.RevisionPolicy, v.Operation, v.CreatedBy.ID)
+	bundle, err := r.ExportWorkspace(ctx, v.WorkspaceID, &v.HeadSequence)
+	if err != nil {
+		return nil, err
+	}
+	v.DomainVersion, err = domainversion.ComputeRaw(bundle)
+	if err != nil {
+		return nil, err
+	}
+	_, err = r.executor(ctx).Exec(ctx, `INSERT INTO workspace_commits(id,workspace_id,parent_commit_id,base_sequence,head_sequence,message,revision_policy,operation,domain_version,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, v.ID, v.WorkspaceID, v.ParentCommitID, v.BaseSequence, v.HeadSequence, v.Message, v.RevisionPolicy, v.Operation, v.DomainVersion, v.CreatedBy.ID)
 	if err != nil {
 		return nil, err
 	}

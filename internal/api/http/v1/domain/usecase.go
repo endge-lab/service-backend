@@ -10,6 +10,7 @@ import (
 
 type UseCase interface {
 	Live(context.Context) (json.RawMessage, error)
+	Status(context.Context) (*entities.DomainStatus, error)
 	Export(context.Context) (json.RawMessage, error)
 	PlanImport(context.Context, entities.PortableBundle) (*entities.ImportPlan, error)
 	Import(context.Context, string, string, string) (*entities.SnapshotImportResult, error)

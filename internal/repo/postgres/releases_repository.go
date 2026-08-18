@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/endge-lab/service-backend/internal/domain/domainversion"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	"github.com/jackc/pgx/v5"
 )
@@ -149,6 +150,9 @@ func (r *EndgeRepository) ExportWorkspace(ctx context.Context, workspaceID strin
 		bundle.InstalledIntegrations = append(bundle.InstalledIntegrations, map[string]any{"identity": identity, "version": version, "configuration": configuration})
 	}
 	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	if err = domainversion.Attach(&bundle); err != nil {
 		return nil, err
 	}
 	raw, err := json.Marshal(bundle)

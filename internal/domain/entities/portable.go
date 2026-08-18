@@ -8,6 +8,7 @@ import (
 type PortableBundle struct {
 	Kind                  string                      `json:"kind"`
 	SchemaVersion         int                         `json:"schemaVersion"`
+	DomainVersion         string                      `json:"domainVersion,omitempty"`
 	Workspace             map[string]any              `json:"workspace"`
 	Documents             map[string][]map[string]any `json:"documents"`
 	InstalledIntegrations []map[string]any            `json:"installedIntegrations"`
@@ -74,4 +75,16 @@ type SnapshotImportResult struct {
 	Deletes           int            `json:"deletes"`
 	CommitID          string         `json:"commitId"`
 	ParentCommitID    string         `json:"parentCommitId"`
+	DomainVersion     string         `json:"domainVersion"`
+}
+
+type DomainStatus struct {
+	Workspace                  string    `json:"workspace"`
+	State                      string    `json:"state"`
+	DomainVersion              string    `json:"domainVersion,omitempty"`
+	LastCommittedDomainVersion string    `json:"lastCommittedDomainVersion,omitempty"`
+	CommitID                   string    `json:"commitId"`
+	CommitMessage              string    `json:"commitMessage"`
+	CommittedAt                time.Time `json:"committedAt"`
+	PendingRevisionCount       int       `json:"pendingRevisionCount"`
 }

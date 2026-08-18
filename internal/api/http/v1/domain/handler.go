@@ -57,6 +57,26 @@ func NewHandler(usecase UseCase, validator appvalidator.Validator) *Handler {
 	return &Handler{usecase: usecase, validator: validator}
 }
 
+// Status возвращает версию последнего зафиксированного состояния домена.
+// @Summary Получить состояние версии домена
+// @Description Возвращает domainVersion только когда текущее workspace не содержит незакоммиченных revisions.
+// @ID getDomainStatus
+// @Tags Перенос домена
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
+// @Success 200 {object} entities.DomainStatus "Состояние версии домена"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Security BearerAuth
+// @Router /api/v1/domain/status [get]
+func (h *Handler) Status(c *fiber.Ctx) error {
+	value, err := h.usecase.Status(c.UserContext())
+	if err != nil {
+		return respond.RespondDomainError(c, nil, err)
+	}
+	return c.JSON(value)
+}
+
 // Export выгружает переносимый JSON текущего workspace.
 // @Summary Экспортировать рабочее пространство
 // @Description Возвращает переносимый пакет без UUID-связей, пользователей, назначения ролей, истории и секретов.

@@ -26,6 +26,7 @@ type Response struct {
 	Message        string                  `json:"message" example:"Сохранена конфигурация проекта"`
 	RevisionPolicy string                  `json:"revisionPolicy" example:"preserve" enums:"preserve,squash"`
 	Operation      string                  `json:"operation" example:"update"`
+	DomainVersion  string                  `json:"domainVersion,omitempty" example:"dv1:sha256:0123456789abcdef"`
 	CreatedBy      entities.Actor          `json:"createdBy"`
 	CreatedAt      time.Time               `json:"createdAt" example:"2026-08-04T10:00:00Z" format:"date-time"`
 	Changes        []entities.CommitChange `json:"changes,omitempty"`

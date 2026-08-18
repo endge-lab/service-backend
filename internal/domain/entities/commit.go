@@ -11,6 +11,7 @@ type Commit struct {
 	Message        string         `json:"message"`
 	RevisionPolicy string         `json:"revisionPolicy"`
 	Operation      string         `json:"operation"`
+	DomainVersion  string         `json:"domainVersion,omitempty"`
 	CreatedBy      Actor          `json:"createdBy"`
 	CreatedAt      time.Time      `json:"createdAt"`
 	Changes        []CommitChange `json:"changes,omitempty"`
@@ -19,6 +20,7 @@ type Commit struct {
 type CommitChange struct {
 	DocumentType     string  `json:"documentType"`
 	DocumentID       string  `json:"documentId"`
+	DocumentIdentity string  `json:"documentIdentity"`
 	BeforeRevisionID *string `json:"beforeRevisionId,omitempty"`
 	AfterRevisionID  *string `json:"afterRevisionId,omitempty"`
 	Operation        string  `json:"operation"`

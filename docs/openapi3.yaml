@@ -4874,6 +4874,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/domain/status:
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает domainVersion только когда текущее workspace не содержит
+        незакоммиченных revisions.
+      tags:
+        - Перенос домена
+      summary: Получить состояние версии домена
+      operationId: getDomainStatus
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Состояние версии домена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/entities.DomainStatus"
+        "401":
+          description: Требуется аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
   /api/v1/environments:
     get:
       security:
@@ -13881,6 +13918,8 @@ components:
             items:
               type: object
               additionalProperties: {}
+        domainVersion:
+          type: string
         installedIntegrations:
           type: array
           items:
@@ -14001,6 +14040,9 @@ components:
           example: 2026-08-04T10:00:00Z
         createdBy:
           $ref: "#/components/schemas/entities.Actor"
+        domainVersion:
+          type: string
+          example: dv1:sha256:0123456789abcdef
         headSequence:
           type: integer
           example: 42
@@ -14981,6 +15023,8 @@ components:
             items:
               type: object
               additionalProperties: {}
+        domainVersion:
+          type: string
         installedIntegrations:
           type: array
           items:
@@ -15071,6 +15115,9 @@ components:
           type: integer
         deletes:
           type: integer
+        domainVersion:
+          type: string
+          example: dv1:sha256:0123456789abcdef
         imported:
           $ref: "#/components/schemas/entities.SnapshotCounts"
         parentCommitId:
@@ -15269,9 +15316,30 @@ components:
           type: string
         documentId:
           type: string
+        documentIdentity:
+          type: string
         documentType:
           type: string
         operation:
+          type: string
+    entities.DomainStatus:
+      type: object
+      properties:
+        commitId:
+          type: string
+        commitMessage:
+          type: string
+        committedAt:
+          type: string
+        domainVersion:
+          type: string
+        lastCommittedDomainVersion:
+          type: string
+        pendingRevisionCount:
+          type: integer
+        state:
+          type: string
+        workspace:
           type: string
     entities.PortableBundle:
       type: object
@@ -15283,6 +15351,8 @@ components:
             items:
               type: object
               additionalProperties: {}
+        domainVersion:
+          type: string
         installedIntegrations:
           type: array
           items:
@@ -16790,6 +16860,8 @@ components:
             items:
               type: object
               additionalProperties: {}
+        domainVersion:
+          type: string
         installedIntegrations:
           type: array
           items:
@@ -16920,6 +16992,8 @@ components:
           type: string
         createdBy:
           $ref: "#/components/schemas/entities.Actor"
+        domainVersion:
+          type: string
         headSequence:
           type: integer
         id:
