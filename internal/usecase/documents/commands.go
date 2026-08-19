@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
+	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
@@ -27,6 +28,7 @@ func (s *Lifecycle) Create(ctx context.Context, definition Definition, repositor
 	if err = rejectReadOnly(values); err != nil {
 		return nil, err
 	}
+	configurationdomain.RemoveLegacySSEFromDocument(definition.Collection, values)
 	normalizeFolderInput(definition.Collection, values)
 	if err = validateDocument(definition.Collection, values); err != nil {
 		return nil, err
@@ -69,6 +71,7 @@ func (s *Lifecycle) Patch(ctx context.Context, definition Definition, repository
 	if err = rejectReadOnly(patch); err != nil {
 		return nil, err
 	}
+	configurationdomain.RemoveLegacySSEFromDocument(definition.Collection, patch)
 	normalizeFolderInput(definition.Collection, patch)
 	existing, err := repository.Get(ctx, scope.Workspace.ID, identity, true)
 	if err != nil {

@@ -230,6 +230,7 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 	if err = json.Unmarshal(plan.Snapshot, &bundle); err != nil {
 		return nil, domainerrors.Internal("import_plan_corrupted", "Stored import plan is corrupted")
 	}
+	removeLegacySSEFromPortableBundle(&bundle)
 	result = &entities.SnapshotImportResult{WorkspaceIdentity: scope.Workspace.Identity}
 	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
 		if txErr := s.repository.LockWorkspaceSnapshot(txctx, scope.Workspace.ID); txErr != nil {

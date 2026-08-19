@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 
+	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
@@ -541,6 +542,7 @@ func normalizePortableBundle(bundle *entities.PortableBundle) portableBundleNorm
 		bundle.Kind = "workspace-snapshot"
 	}
 	delete(bundle.Workspace, "state")
+	removeLegacySSEFromPortableBundle(bundle)
 	result.IgnoredIntegrations = len(bundle.InstalledIntegrations)
 	bundle.InstalledIntegrations = []map[string]any{}
 	if legacy, ok := bundle.Documents["componentSFCs"]; ok {
@@ -604,6 +606,19 @@ func normalizePortableBundle(bundle *entities.PortableBundle) portableBundleNorm
 		bundle.Documents[kind] = filtered
 	}
 	return result
+}
+
+// removeLegacySSEFromPortableBundle не позволяет старой глобальной настройке вернуться из snapshot.
+func removeLegacySSEFromPortableBundle(bundle *entities.PortableBundle) {
+	if bundle == nil {
+		return
+	}
+	configurationdomain.RemoveLegacySSE(bundle.Workspace["configuration"])
+	for kind, items := range bundle.Documents {
+		for _, item := range items {
+			configurationdomain.RemoveLegacySSEFromDocument(kind, item)
+		}
+	}
 }
 
 // orderPortableItems упорядочивает элементы пакета с учётом зависимостей.

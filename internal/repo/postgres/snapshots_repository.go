@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 
+	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 )
 
@@ -15,11 +16,14 @@ func (r *EndgeRepository) ExportLiveWorkspace(ctx context.Context, workspaceID s
 	if err != nil {
 		return nil, err
 	}
+	var workspaceConfiguration map[string]any
+	_ = json.Unmarshal(workspace.Configuration, &workspaceConfiguration)
+	configurationdomain.RemoveLegacySSE(workspaceConfiguration)
 	bundle := entities.PortableBundle{
 		Kind: "workspace-snapshot", SchemaVersion: 1,
 		Workspace: map[string]any{
 			"identity": workspace.Identity, "displayName": workspace.DisplayName, "description": workspace.Description,
-			"dataMode": workspace.DataMode, "configuration": json.RawMessage(workspace.Configuration), "meta": json.RawMessage(workspace.Meta),
+			"dataMode": workspace.DataMode, "configuration": workspaceConfiguration, "meta": json.RawMessage(workspace.Meta),
 			"active": workspace.Active,
 			"state":  map[string]any{"id": workspace.ID, "generation": workspace.Generation, "headSequence": workspace.HeadSequence, "revision": workspace.Revision, "createdBy": workspace.CreatedBy, "updatedBy": workspace.UpdatedBy, "createdAt": workspace.CreatedAt, "updatedAt": workspace.UpdatedAt},
 		},
@@ -39,6 +43,7 @@ func (r *EndgeRepository) ExportLiveWorkspace(ctx context.Context, workspaceID s
 		for _, document := range documents {
 			var item map[string]any
 			_ = json.Unmarshal(document.Data, &item)
+			configurationdomain.RemoveLegacySSEFromDocument(kind, item)
 			item["identity"] = document.Identity
 			item["displayName"] = document.DisplayName
 			item["description"] = document.Description

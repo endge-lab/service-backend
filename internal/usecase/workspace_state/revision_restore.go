@@ -6,6 +6,7 @@ import (
 	"errors"
 	"slices"
 
+	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
@@ -47,6 +48,7 @@ func (s *Coordinator) RestoreRevision(ctx context.Context, kind, identity, id st
 	}
 	target.ID = existing.ID
 	target.WorkspaceID = existing.WorkspaceID
+	target.Data = configurationdomain.RemoveLegacySSEFromDocumentData(kind, target.Data)
 	target.Revision = existing.Revision
 	target.UpdatedBy = entities.Actor{ID: current.User.ID}
 	folderID, err := s.resolveDocumentFolder(ctx, scope, target)

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/documents"
@@ -33,6 +34,7 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entiti
 	if err = shared.ValidateSecrets(values); err != nil {
 		return nil, err
 	}
+	configurationdomain.RemoveLegacySSE(values["configuration"])
 	identity, displayName := workspaceText(values, "identity"), workspaceText(values, "displayName")
 	if err = validateWorkspaceIdentity(identity); err != nil {
 		return nil, err
@@ -129,6 +131,7 @@ func (s *UseCase) Patch(ctx context.Context, identity string, input PatchInput, 
 	if err = shared.ValidateSecrets(patch); err != nil {
 		return nil, err
 	}
+	configurationdomain.RemoveLegacySSE(patch["configuration"])
 	if scope.Workspace.Revision != expected {
 		return nil, shared.RevisionConflict()
 	}

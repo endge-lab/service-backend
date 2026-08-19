@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
 	"github.com/endge-lab/service-backend/internal/domain/domainversion"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	"github.com/jackc/pgx/v5"
@@ -81,7 +82,10 @@ func (r *EndgeRepository) ExportWorkspace(ctx context.Context, workspaceID strin
 			return nil, revisionErr
 		}
 	}
-	bundle := entities.PortableBundle{Kind: "workspace-snapshot", SchemaVersion: 1, Workspace: map[string]any{"identity": workspace.Identity, "displayName": workspace.DisplayName, "description": workspace.Description, "dataMode": workspace.DataMode, "configuration": json.RawMessage(workspace.Configuration), "meta": json.RawMessage(workspace.Meta), "active": workspace.Active}, Documents: map[string][]map[string]any{}, InstalledIntegrations: []map[string]any{}}
+	var workspaceConfiguration map[string]any
+	_ = json.Unmarshal(workspace.Configuration, &workspaceConfiguration)
+	configurationdomain.RemoveLegacySSE(workspaceConfiguration)
+	bundle := entities.PortableBundle{Kind: "workspace-snapshot", SchemaVersion: 1, Workspace: map[string]any{"identity": workspace.Identity, "displayName": workspace.DisplayName, "description": workspace.Description, "dataMode": workspace.DataMode, "configuration": workspaceConfiguration, "meta": json.RawMessage(workspace.Meta), "active": workspace.Active}, Documents: map[string][]map[string]any{}, InstalledIntegrations: []map[string]any{}}
 	documents := map[string][]entities.Document{}
 	if head == nil {
 		for kind := range documentTables {
@@ -119,6 +123,7 @@ func (r *EndgeRepository) ExportWorkspace(ctx context.Context, workspaceID strin
 		for _, doc := range documents[kind] {
 			var data map[string]any
 			_ = json.Unmarshal(doc.Data, &data)
+			configurationdomain.RemoveLegacySSEFromDocument(kind, data)
 			if kind == "folders" && doc.ManagedBy == "system" {
 				continue
 			}

@@ -48,6 +48,7 @@ func (s *Coordinator) planExactRestore(ctx context.Context, scope entities.Works
 
 // restoreBundle собирает переносимый пакет из снимка для восстановления.
 func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.PortableBundle, expected int64, operation, message string) (result *entities.Commit, err error) {
+	removeLegacySSEFromPortableBundle(&bundle)
 	current, scope, err := s.writeContext(ctx)
 	if err != nil {
 		return nil, err
