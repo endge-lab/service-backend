@@ -24,12 +24,7 @@ type canonicalBundle struct {
 // Target-local workspace identity, integrations, credentials and provenance are
 // deliberately outside this contract.
 func Compute(bundle entities.PortableBundle) (string, error) {
-	workspace, err := cloneMap(bundle.Workspace)
-	if err != nil {
-		return "", fmt.Errorf("clone workspace for domain version: %w", err)
-	}
-	delete(workspace, "identity")
-	delete(workspace, "state")
+	workspace := portableWorkspace(bundle.Workspace)
 
 	documents := make(map[string][]map[string]any, len(bundle.Documents))
 	for kind, values := range bundle.Documents {
@@ -64,6 +59,17 @@ func Compute(bundle entities.PortableBundle) (string, error) {
 	}
 	sum := sha256.Sum256(raw)
 	return prefix + hex.EncodeToString(sum[:]), nil
+}
+
+// portableWorkspace оставляет только поля Workspace, которые применяет import.
+func portableWorkspace(source map[string]any) map[string]any {
+	result := map[string]any{}
+	for _, key := range []string{"displayName", "description", "dataMode", "configuration", "meta", "active"} {
+		if value, exists := source[key]; exists {
+			result[key] = value
+		}
+	}
+	return result
 }
 
 // ComputeRaw computes a version from a serialized portable bundle.

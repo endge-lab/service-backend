@@ -109,10 +109,14 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 	if versionErr != nil {
 		return nil, domainerrors.InvalidInput("domain_version_invalid", "Domain version could not be computed")
 	}
-	bundle.DomainVersion = computedDomainVersion
 	if providedDomainVersion != "" && providedDomainVersion != computedDomainVersion {
 		plan.Valid = false
 		plan.ValidationErrors = append(plan.ValidationErrors, "domainVersion does not match portable domain content")
+	}
+	if providedDomainVersion != "" {
+		bundle.DomainVersion = computedDomainVersion
+	} else {
+		bundle.DomainVersion = ""
 	}
 	integrationIdentities := map[string]bool{}
 	for _, item := range bundle.InstalledIntegrations {
@@ -351,7 +355,7 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 		if txErr != nil {
 			return txErr
 		}
-		if commit.DomainVersion != bundle.DomainVersion {
+		if bundle.DomainVersion != "" && commit.DomainVersion != bundle.DomainVersion {
 			return domainerrors.Conflict("domain_version_mismatch", "Imported workspace does not match the source domain version")
 		}
 		ids := make([]string, 0, len(revisions))

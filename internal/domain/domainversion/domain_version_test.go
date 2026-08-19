@@ -62,3 +62,30 @@ func TestComputeChangesWhenPortableContentChanges(t *testing.T) {
 		t.Fatalf("portable content change must change domain version: %s", before)
 	}
 }
+
+func TestComputeIgnoresWorkspaceFieldsThatImportDoesNotApply(t *testing.T) {
+	left := entities.PortableBundle{
+		Kind: "workspace-snapshot", SchemaVersion: 1,
+		Workspace: map[string]any{
+			"identity": "source", "displayName": "Domain", "dataMode": "development",
+			"managedBy": "user", "managedById": "source-owner",
+		},
+		Documents: map[string][]map[string]any{},
+	}
+	right := left
+	right.Workspace = map[string]any{
+		"identity": "target", "displayName": "Domain", "dataMode": "development",
+	}
+
+	leftVersion, err := Compute(left)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rightVersion, err := Compute(right)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if leftVersion != rightVersion {
+		t.Fatalf("workspace ownership fields must not affect portable version: %s != %s", leftVersion, rightVersion)
+	}
+}

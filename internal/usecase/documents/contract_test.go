@@ -45,6 +45,7 @@ func TestAuthProfileValidatesBuiltinAdapters(t *testing.T) {
 	cases := []map[string]any{
 		{"identity": "oidc", "displayName": "OIDC", "adapterId": "oidc", "config": map[string]any{"issuer": "{OIDC_ISSUER}", "clientId": "web", "scopes": []any{"openid", "profile"}}, "credentials": map[string]any{}, "session": map[string]any{"storage": "memory", "persistRefreshToken": false}},
 		{"identity": "service", "displayName": "Service", "adapterId": "oauth2-client-credentials", "config": map[string]any{"tokenEndpoint": "{SERVICE_TOKEN_ENDPOINT}", "clientId": "{SERVICE_CLIENT_ID}", "scopes": []any{}, "clientAuthentication": "client_secret_basic"}, "credentials": map[string]any{"clientSecret": "{SERVICE_CLIENT_SECRET}"}, "session": map[string]any{"storage": "sessionStorage", "persistRefreshToken": false}},
+		{"identity": "dev-user", "displayName": "Dev user", "adapterId": "oauth2-password", "config": map[string]any{"tokenEndpoint": "{KEYCLOAK_TOKEN_ENDPOINT}", "clientId": "hub-public", "scopes": []any{"openid", "email"}}, "credentials": map[string]any{"username": "{KEYCLOAK_USERNAME}", "password": "literal-password"}, "session": map[string]any{"storage": "memory", "persistRefreshToken": false}},
 		{"identity": "basic", "displayName": "Basic", "adapterId": "basic", "config": map[string]any{}, "credentials": map[string]any{"username": "test", "password": "literal-password"}},
 		{"identity": "bearer", "displayName": "Bearer", "adapterId": "bearer", "config": map[string]any{}, "credentials": map[string]any{"token": "{SERVICE_TOKEN}"}},
 	}
@@ -57,8 +58,8 @@ func TestAuthProfileValidatesBuiltinAdapters(t *testing.T) {
 	if err := validateDocument("auth-profiles", cases[0]); err == nil {
 		t.Fatal("legacy manual OIDC endpoint was accepted")
 	}
-	cases[2]["session"] = map[string]any{"storage": "memory", "persistRefreshToken": false}
-	if err := validateDocument("auth-profiles", cases[2]); err == nil {
+	cases[3]["session"] = map[string]any{"storage": "memory", "persistRefreshToken": false}
+	if err := validateDocument("auth-profiles", cases[3]); err == nil {
 		t.Fatal("Basic session policy was accepted")
 	}
 }

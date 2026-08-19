@@ -135,6 +135,23 @@ func ValidateAuthProfile(input map[string]any) error {
 			return domainerrors.InvalidInput("oauth2_client_secret_required", "credentials.clientSecret is required")
 		}
 		return validateSession(input["session"], true)
+	case "oauth2-password":
+		if err := requireExactKeys(config, "config", "tokenEndpoint", "clientId", "scopes"); err != nil {
+			return err
+		}
+		if stringValue(config["tokenEndpoint"]) == "" || stringValue(config["clientId"]) == "" {
+			return domainerrors.InvalidInput("oauth2_password_config_invalid", "tokenEndpoint and clientId are required")
+		}
+		if err := validateStringArray(config["scopes"], "config.scopes", false); err != nil {
+			return err
+		}
+		if err := requireExactKeys(credentials, "credentials", "username", "password"); err != nil {
+			return err
+		}
+		if stringValue(credentials["username"]) == "" || stringValue(credentials["password"]) == "" {
+			return domainerrors.InvalidInput("oauth2_password_credentials_required", "credentials.username and credentials.password are required")
+		}
+		return validateSession(input["session"], true)
 	case "basic":
 		if len(config) != 0 {
 			return domainerrors.InvalidInput("basic_config_invalid", "Basic profile config must be empty")
