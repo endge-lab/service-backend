@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
+	"github.com/endge-lab/service-backend/internal/domain/domainversion"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
@@ -619,6 +620,41 @@ func removeLegacySSEFromPortableBundle(bundle *entities.PortableBundle) {
 			configurationdomain.RemoveLegacySSEFromDocument(kind, item)
 		}
 	}
+}
+
+// prepareImportDomainVersion сохраняет проверяемую версию исходного артефакта,
+// затем переводит snapshot в актуальное persisted-представление для применения.
+func prepareImportDomainVersion(bundle *entities.PortableBundle, providedDomainVersion string) (string, bool, error) {
+	computedSourceDomainVersion, err := domainversion.Compute(*bundle)
+	if err != nil {
+		return "", false, err
+	}
+	defaultsAdded := ensureSFCEditingDefaultsInPortableBundle(bundle)
+	effectiveDomainVersion, err := domainversion.Compute(*bundle)
+	if err != nil {
+		return "", false, err
+	}
+	if providedDomainVersion != "" {
+		bundle.DomainVersion = effectiveDomainVersion
+	} else {
+		bundle.DomainVersion = ""
+	}
+	return computedSourceDomainVersion, defaultsAdded, nil
+}
+
+// ensureSFCEditingDefaultsInPortableBundle добавляет только отсутствующие defaults.
+func ensureSFCEditingDefaultsInPortableBundle(bundle *entities.PortableBundle) bool {
+	if bundle == nil || bundle.Workspace == nil {
+		return false
+	}
+	configuration, exists := bundle.Workspace["configuration"]
+	if !exists {
+		return false
+	}
+	before := checksum(mustJSON(configuration))
+	normalized := configurationdomain.EnsureSFCEditingDefaults(configuration)
+	bundle.Workspace["configuration"] = normalized
+	return before != checksum(mustJSON(normalized))
 }
 
 // orderPortableItems упорядочивает элементы пакета с учётом зависимостей.

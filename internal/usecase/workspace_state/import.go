@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
-	"github.com/endge-lab/service-backend/internal/domain/domainversion"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
@@ -106,18 +104,16 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 			plan.Incoming.Documents++
 		}
 	}
-	computedDomainVersion, versionErr := domainversion.Compute(bundle)
+	computedSourceDomainVersion, sfcEditingDefaultsAdded, versionErr := prepareImportDomainVersion(&bundle, providedDomainVersion)
 	if versionErr != nil {
 		return nil, domainerrors.InvalidInput("domain_version_invalid", "Domain version could not be computed")
 	}
-	if providedDomainVersion != "" && providedDomainVersion != computedDomainVersion {
+	if providedDomainVersion != "" && providedDomainVersion != computedSourceDomainVersion {
 		plan.Valid = false
 		plan.ValidationErrors = append(plan.ValidationErrors, "domainVersion does not match portable domain content")
 	}
-	if providedDomainVersion != "" {
-		bundle.DomainVersion = computedDomainVersion
-	} else {
-		bundle.DomainVersion = ""
+	if sfcEditingDefaultsAdded {
+		plan.Warnings = append(plan.Warnings, "Workspace SFC editing defaults were added for compatibility")
 	}
 	integrationIdentities := map[string]bool{}
 	for _, item := range bundle.InstalledIntegrations {
@@ -232,6 +228,9 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 		return nil, domainerrors.Internal("import_plan_corrupted", "Stored import plan is corrupted")
 	}
 	removeLegacySSEFromPortableBundle(&bundle)
+	if _, _, versionErr := prepareImportDomainVersion(&bundle, bundle.DomainVersion); versionErr != nil {
+		return nil, domainerrors.Internal("import_plan_corrupted", "Stored import plan domain version is invalid")
+	}
 	result = &entities.SnapshotImportResult{WorkspaceIdentity: scope.Workspace.Identity}
 	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
 		if txErr := s.repository.LockWorkspaceSnapshot(txctx, scope.Workspace.ID); txErr != nil {
@@ -262,9 +261,6 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 			if value, exists := bundle.Workspace[key]; exists {
 				workspacePatch[key] = value
 			}
-		}
-		if configuration, exists := workspacePatch["configuration"]; exists {
-			workspacePatch["configuration"] = configurationdomain.EnsureSFCEditingDefaults(configuration)
 		}
 		updatedWorkspace, txErr := s.repository.UpdateWorkspace(txctx, live.Identity, workspacePatch, live.Revision, current.User.ID)
 		if txErr != nil {
