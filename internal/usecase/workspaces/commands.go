@@ -34,6 +34,7 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entiti
 	if err = shared.ValidateSecrets(values); err != nil {
 		return nil, err
 	}
+	values["configuration"] = configurationdomain.EnsureSFCEditingDefaults(values["configuration"])
 	configurationdomain.RemoveLegacySSE(values["configuration"])
 	identity, displayName := workspaceText(values, "identity"), workspaceText(values, "displayName")
 	if err = validateWorkspaceIdentity(identity); err != nil {
@@ -131,7 +132,10 @@ func (s *UseCase) Patch(ctx context.Context, identity string, input PatchInput, 
 	if err = shared.ValidateSecrets(patch); err != nil {
 		return nil, err
 	}
-	configurationdomain.RemoveLegacySSE(patch["configuration"])
+	if configuration, exists := patch["configuration"]; exists {
+		patch["configuration"] = configurationdomain.EnsureSFCEditingDefaults(configuration)
+		configurationdomain.RemoveLegacySSE(patch["configuration"])
+	}
 	if scope.Workspace.Revision != expected {
 		return nil, shared.RevisionConflict()
 	}

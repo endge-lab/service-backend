@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
 	"github.com/endge-lab/service-backend/internal/domain/domainversion"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
@@ -261,6 +262,9 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 			if value, exists := bundle.Workspace[key]; exists {
 				workspacePatch[key] = value
 			}
+		}
+		if configuration, exists := workspacePatch["configuration"]; exists {
+			workspacePatch["configuration"] = configurationdomain.EnsureSFCEditingDefaults(configuration)
 		}
 		updatedWorkspace, txErr := s.repository.UpdateWorkspace(txctx, live.Identity, workspacePatch, live.Revision, current.User.ID)
 		if txErr != nil {

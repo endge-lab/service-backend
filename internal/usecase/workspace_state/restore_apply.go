@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
+	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
@@ -95,6 +96,9 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 			if value, ok := bundle.Workspace[key]; ok {
 				workspacePatch[key] = value
 			}
+		}
+		if configuration, exists := workspacePatch["configuration"]; exists {
+			workspacePatch["configuration"] = configurationdomain.EnsureSFCEditingDefaults(configuration)
 		}
 		if len(workspacePatch) > 0 {
 			live, e := s.repository.GetWorkspace(txctx, scope.Workspace.Identity)
