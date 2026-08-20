@@ -90,7 +90,7 @@ func TestDocumentContractContainsOnlyMVPCollections(t *testing.T) {
 		{"components", "component"}, {"actions", "action"}, {"filters", "filter"},
 		{"converters", "converter"}, {"computations", "computation"}, {"vocabs", "vocab"},
 		{"i18n-bundles", "i18n_bundle"}, {"auth-profiles", "auth_profile"},
-		{"navigations", "navigation"}, {"styles", "style"},
+		{"navigations", "navigation"}, {"styles", "style"}, {"configurations", "configuration"},
 	}
 	for _, collection := range collections {
 		base := "/api/v1/" + collection.path
@@ -109,7 +109,11 @@ func TestDocumentContractContainsOnlyMVPCollections(t *testing.T) {
 		}
 		assertOperationRequestBody(t, document.Paths[item]["patch"], "patch "+item)
 		listContract := fmt.Sprint(document.Paths[base]["get"])
-		for _, parameter := range []string{"X-Endge-Workspace", "includeDeleted", "folderIdentity", "active", "limit", "offset"} {
+		parameters := []string{"X-Endge-Workspace", "includeDeleted", "active", "limit", "offset"}
+		if collection.path != "configurations" {
+			parameters = append(parameters, "folderIdentity")
+		}
+		for _, parameter := range parameters {
 			if !bytes.Contains([]byte(listContract), []byte(parameter)) {
 				t.Fatalf("%s GET does not expose %s", base, parameter)
 			}

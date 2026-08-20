@@ -268,6 +268,7 @@ func documentCases() []documentCase {
 		{collection: "i18n-bundles", payload: with(baseDocument("i18n-main"), "locales", map[string]any{"ru": map[string]any{"title": "Тест"}})},
 		{collection: "navigations", payload: with(baseDocument("navigation-main"), "tree", []any{})},
 		{collection: "styles", payload: with(baseDocument("style-main"), "source", "body {}", "sourceVersion", 1)},
+		{collection: "configurations", payload: with(baseDocument("configuration-main"), "source", "defineConfig({ enabled: value(Boolean, true) })", "sourceVersion", 1)},
 	}
 }
 
@@ -283,7 +284,7 @@ func documentRepositories(store *postgres.EndgeRepository) map[string]ports.Docu
 		"filters": postgres.NewFilterRepository(store), "converters": postgres.NewConverterRepository(store),
 		"computations": postgres.NewComputationRepository(store), "vocabs": postgres.NewVocabRepository(store),
 		"i18n-bundles": postgres.NewI18nBundleRepository(store), "auth-profiles": postgres.NewAuthProfileRepository(store),
-		"navigations": postgres.NewNavigationRepository(store), "styles": postgres.NewStyleRepository(store),
+		"navigations": postgres.NewNavigationRepository(store), "styles": postgres.NewStyleRepository(store), "configurations": postgres.NewConfigurationRepository(store),
 	}
 }
 

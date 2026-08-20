@@ -18,7 +18,7 @@ var documentTables = map[string]string{
 	"types": "types", "queries": "queries", "data-views": "data_views", "compositions": "compositions",
 	"stores": "stores", "streams": "streams", "updates": "updates", "mocks": "mocks", "components": "components",
 	"actions": "actions", "filters": "filters", "converters": "converters", "computations": "computations",
-	"vocabs": "vocabs", "i18n-bundles": "i18n_bundles", "auth-profiles": "auth_profiles", "navigations": "navigations", "styles": "styles",
+	"vocabs": "vocabs", "i18n-bundles": "i18n_bundles", "auth-profiles": "auth_profiles", "navigations": "navigations", "styles": "styles", "configurations": "configurations",
 }
 
 type queryExecutor interface {

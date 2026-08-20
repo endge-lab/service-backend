@@ -11,6 +11,9 @@ import (
 
 // resolveFolder разрешает identity папки в её внутренний идентификатор.
 func (s *Lifecycle) resolveFolder(ctx context.Context, scope entities.WorkspaceAccess, kind string, input map[string]any) (*string, error) {
+	if kind == "configurations" {
+		return nil, nil
+	}
 	identity := stringField(input, "folderIdentity")
 	if kind == "folders" {
 		entityType := entities.FolderEntityType(stringField(input, "entityType"))
@@ -31,6 +34,9 @@ func (s *Lifecycle) resolveFolder(ctx context.Context, scope entities.WorkspaceA
 
 // resolveDocumentFolder разрешает папку, указанную в документе.
 func (s *Lifecycle) resolveDocumentFolder(ctx context.Context, scope entities.WorkspaceAccess, document entities.Document) (*string, error) {
+	if document.Type == "configurations" {
+		return nil, nil
+	}
 	var data map[string]any
 	_ = json.Unmarshal(document.Data, &data)
 	if document.Type == "folders" {

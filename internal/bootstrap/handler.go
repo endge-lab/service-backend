@@ -12,6 +12,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/component"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/composition"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/computation"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/configuration"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/converter"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/data_view"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/document_move"
@@ -79,6 +80,7 @@ func HandlerModules() fx.Option {
 			auth_profile.BindUseCase,
 			navigation.BindUseCase,
 			style.BindUseCase,
+			configuration.BindUseCase,
 			revision.BindUseCase,
 			commit.BindUseCase,
 			domain.BindUseCase,
@@ -112,6 +114,7 @@ func HandlerModules() fx.Option {
 			auth_profile.NewHandler,
 			navigation.NewHandler,
 			style.NewHandler,
+			configuration.NewHandler,
 			revision.NewHandler,
 			commit.NewHandler,
 			domain.NewHandler,

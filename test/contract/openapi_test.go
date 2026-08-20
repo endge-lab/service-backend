@@ -42,7 +42,7 @@ func TestCriticalOpenAPIEndpoints(t *testing.T) {
 // TestDocumentOpenAPIConcurrencyContract проверяет workspace header, If-Match и responses всех CRUD-коллекций.
 func TestDocumentOpenAPIConcurrencyContract(t *testing.T) {
 	document := readOpenAPI(t)
-	collections := []string{"projects", "tenants", "environments", "folders", "types", "queries", "data-views", "compositions", "stores", "streams", "updates", "mocks", "components", "actions", "filters", "converters", "computations", "vocabs", "i18n-bundles", "auth-profiles", "navigations", "styles"}
+	collections := []string{"projects", "tenants", "environments", "folders", "types", "queries", "data-views", "compositions", "stores", "streams", "updates", "mocks", "components", "actions", "filters", "converters", "computations", "vocabs", "i18n-bundles", "auth-profiles", "navigations", "styles", "configurations"}
 	for _, collection := range collections {
 		base := "/api/v1/" + collection
 		item := base + "/{identity}"

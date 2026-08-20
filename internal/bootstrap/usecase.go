@@ -11,6 +11,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/components"
 	"github.com/endge-lab/service-backend/internal/usecase/compositions"
 	"github.com/endge-lab/service-backend/internal/usecase/computations"
+	"github.com/endge-lab/service-backend/internal/usecase/configurations"
 	"github.com/endge-lab/service-backend/internal/usecase/converters"
 	"github.com/endge-lab/service-backend/internal/usecase/data_views"
 	"github.com/endge-lab/service-backend/internal/usecase/documents"
@@ -75,6 +76,7 @@ func UseCaseModules() fx.Option {
 		auth_profiles.NewUseCase,
 		navigations.NewUseCase,
 		styles.NewUseCase,
+		configurations.NewUseCase,
 		revisions.NewUseCase,
 		commits.NewUseCase,
 		portable.NewUseCase,

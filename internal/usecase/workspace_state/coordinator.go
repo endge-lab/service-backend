@@ -11,7 +11,7 @@ import (
 
 const SchemaVersion = 1
 
-var Collections = []string{"projects", "tenants", "environments", "folders", "types", "queries", "data-views", "compositions", "stores", "streams", "updates", "mocks", "components", "actions", "filters", "converters", "computations", "vocabs", "i18n-bundles", "auth-profiles", "navigations", "styles"}
+var Collections = []string{"projects", "tenants", "environments", "folders", "types", "queries", "data-views", "compositions", "stores", "streams", "updates", "mocks", "components", "actions", "filters", "converters", "computations", "vocabs", "i18n-bundles", "auth-profiles", "navigations", "styles", "configurations"}
 var UnsupportedCollections = []string{"parameters", "legacyComponents", "componentsDSL", "componentsTable", "versions", "pages", "pageTemplates", "page-templates", "policies"}
 var readOnlyFields = []string{"id", "type", "revision", "author", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", "created_by", "updated_by", "state"}
 

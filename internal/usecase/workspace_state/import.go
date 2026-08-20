@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
@@ -72,9 +73,16 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 		plan.Valid = false
 		plan.ValidationErrors = append(plan.ValidationErrors, "workspace.configuration: "+secretErr.Error())
 	}
+	if configurationErr := configurationdomain.ValidateValuesShape(bundle.Workspace["configuration"]); configurationErr != nil {
+		plan.Valid = false
+		plan.ValidationErrors = append(plan.ValidationErrors, "workspace.configuration: "+configurationErr.Error())
+	}
 	seen := map[string]bool{}
 	for _, kind := range Collections {
 		if _, exists := bundle.Documents[kind]; !exists {
+			if kind == "configurations" {
+				continue
+			}
 			plan.Valid = false
 			plan.ValidationErrors = append(plan.ValidationErrors, "documents."+kind+" is required")
 		}

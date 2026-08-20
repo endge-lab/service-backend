@@ -72,6 +72,7 @@ func RepositoryModules() fx.Option {
 		postgres.NewAuthProfileRepository,
 		postgres.NewNavigationRepository,
 		postgres.NewStyleRepository,
+		postgres.NewConfigurationRepository,
 		fx.Annotate(postgres.NewTxManager, fx.As(new(ports.TxManager))),
 	))
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/component"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/composition"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/computation"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/configuration"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/converter"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/data_view"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/document_move"
@@ -78,6 +79,7 @@ type Handlers struct {
 	AuthProfile       *auth_profile.Handler
 	Navigation        *navigation.Handler
 	Style             *style.Handler
+	Configuration     *configuration.Handler
 	Revision          *revision.Handler
 	Commit            *commit.Handler
 	Domain            *domain.Handler
@@ -128,6 +130,7 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, handlers Handlers, authMidd
 	auth_profile.RegisterRoutes(scoped, handlers.AuthProfile)
 	navigation.RegisterRoutes(scoped, handlers.Navigation)
 	style.RegisterRoutes(scoped, handlers.Style)
+	configuration.RegisterRoutes(scoped, handlers.Configuration)
 	revision.RegisterRoutes(scoped, handlers.Revision)
 	commit.RegisterRoutes(scoped, handlers.Commit)
 	domain.RegisterRoutes(scoped, handlers.Domain)

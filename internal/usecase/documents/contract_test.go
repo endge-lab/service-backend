@@ -96,6 +96,32 @@ func TestQueryRequiresSourceVersionTwo(t *testing.T) {
 	}
 }
 
+func TestConfigurationRequiresSourceVersionOneAndRejectsFolders(t *testing.T) {
+	valid := map[string]any{
+		"identity": "groundHandling", "displayName": "Ground handling",
+		"source": "defineConfig({ enabled: value(Boolean, true) })", "sourceVersion": float64(1),
+	}
+	if err := validateDocument("configurations", valid); err != nil {
+		t.Fatalf("valid Configuration rejected: %v", err)
+	}
+	for _, version := range []any{nil, float64(0), float64(2)} {
+		input := copyMap(valid)
+		if version == nil {
+			delete(input, "sourceVersion")
+		} else {
+			input["sourceVersion"] = version
+		}
+		if err := validateDocument("configurations", input); err == nil {
+			t.Fatalf("Configuration sourceVersion %#v was accepted", version)
+		}
+	}
+	withFolder := copyMap(valid)
+	withFolder["folderIdentity"] = "root-configurations"
+	if err := validateDocument("configurations", withFolder); err == nil {
+		t.Fatal("Configuration folderIdentity was accepted")
+	}
+}
+
 // TestProjectAcceptsCanonicalNavigationRelation проверяет identity-based Project-навигацию.
 func TestProjectAcceptsCanonicalNavigationRelation(t *testing.T) {
 	input := map[string]any{"identity": "p", "displayName": "Project", "navigationIdentity": "main"}

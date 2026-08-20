@@ -129,6 +129,7 @@ func TestDocumentTablesHaveOwningLayers(t *testing.T) {
 		{"auth-profiles", "auth_profiles", "auth_profile", "auth_profiles_repository.go", "AuthProfileRepository"},
 		{"navigations", "navigations", "navigation", "navigations_repository.go", "NavigationRepository"},
 		{"styles", "styles", "style", "styles_repository.go", "StyleRepository"},
+		{"configurations", "configurations", "configuration", "configurations_repository.go", "ConfigurationRepository"},
 	}
 
 	portsSource, err := os.ReadFile(filepath.Join(root, "internal/usecase/ports/documents.go"))

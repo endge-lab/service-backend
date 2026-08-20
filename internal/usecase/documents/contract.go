@@ -13,9 +13,9 @@ import (
 	"github.com/google/uuid"
 )
 
-var Collections = []string{"projects", "tenants", "environments", "folders", "types", "queries", "data-views", "compositions", "stores", "streams", "updates", "mocks", "components", "actions", "filters", "converters", "computations", "vocabs", "i18n-bundles", "auth-profiles", "navigations", "styles"}
+var Collections = []string{"projects", "tenants", "environments", "folders", "types", "queries", "data-views", "compositions", "stores", "streams", "updates", "mocks", "components", "actions", "filters", "converters", "computations", "vocabs", "i18n-bundles", "auth-profiles", "navigations", "styles", "configurations"}
 
-var sourceVersionCollections = []string{"types", "queries", "data-views", "compositions", "stores", "streams", "updates", "filters", "computations", "styles"}
+var sourceVersionCollections = []string{"types", "queries", "data-views", "compositions", "stores", "streams", "updates", "filters", "computations", "styles", "configurations"}
 
 var readOnlyFields = []string{"id", "type", "revision", "author", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", "created_by", "updated_by"}
 
@@ -60,6 +60,15 @@ func validateDocument(kind string, input map[string]any) error {
 			return domainerrors.InvalidInput("query_source_version_invalid", "Query sourceVersion must be 2")
 		}
 	}
+	if kind == "configurations" {
+		version, hasVersion := numberField(input, "sourceVersion")
+		if _, hasSource := input["source"].(string); !hasSource || !hasVersion || version != 1 {
+			return domainerrors.InvalidInput("configuration_source_version_invalid", "Configuration source and sourceVersion 1 are required")
+		}
+		if stringField(input, "folderIdentity") != "" {
+			return domainerrors.InvalidInput("configuration_folder_unsupported", "Configuration documents do not support folders")
+		}
+	}
 	if kind == "tenants" && stringField(input, "code") == "" {
 		return domainerrors.InvalidInput("tenant_code_required", "code is required")
 	}
@@ -81,7 +90,7 @@ func validateDocument(kind string, input map[string]any) error {
 	}
 	if kind == "folders" {
 		entityType := stringField(input, "entityType")
-		if !slices.Contains(Collections, entityType) || entityType == "folders" {
+		if !slices.Contains(Collections, entityType) || entityType == "folders" || entityType == "configurations" {
 			return domainerrors.InvalidInput("folder_entity_type_invalid", "entityType must be a folderable collection")
 		}
 		if _, exists := input["isSystem"]; exists {

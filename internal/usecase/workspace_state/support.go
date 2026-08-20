@@ -264,7 +264,7 @@ func validateDocument(kind string, input map[string]any) error {
 			return domainerrors.InvalidInput("source_too_large", "source exceeds 8 MiB")
 		}
 	}
-	versionedSourceKinds := []string{"types", "queries", "data-views", "stores", "streams", "updates", "filters", "computations", "compositions", "styles"}
+	versionedSourceKinds := []string{"types", "queries", "data-views", "stores", "streams", "updates", "filters", "computations", "compositions", "styles", "configurations"}
 	if slices.Contains(versionedSourceKinds, kind) {
 		_, hasSource := input["source"]
 		version, hasVersion := numberField(input, "sourceVersion")
@@ -278,6 +278,15 @@ func validateDocument(kind string, input map[string]any) error {
 		version, _ := numberField(input, "sourceVersion")
 		if version != 2 {
 			return domainerrors.InvalidInput("query_source_version_invalid", "Query sourceVersion must be 2")
+		}
+	}
+	if kind == "configurations" {
+		version, hasVersion := numberField(input, "sourceVersion")
+		if _, hasSource := input["source"].(string); !hasSource || !hasVersion || version != 1 {
+			return domainerrors.InvalidInput("configuration_source_version_invalid", "Configuration source and sourceVersion 1 are required")
+		}
+		if stringField(input, "folderIdentity") != "" {
+			return domainerrors.InvalidInput("configuration_folder_unsupported", "Configuration documents do not support folders")
 		}
 	}
 	if kind == "tenants" && stringField(input, "code") == "" {
@@ -628,6 +637,12 @@ func prepareImportDomainVersion(bundle *entities.PortableBundle, providedDomainV
 	computedSourceDomainVersion, err := domainversion.Compute(*bundle)
 	if err != nil {
 		return "", false, err
+	}
+	if bundle.Documents == nil {
+		bundle.Documents = map[string][]map[string]any{}
+	}
+	if _, exists := bundle.Documents["configurations"]; !exists {
+		bundle.Documents["configurations"] = []map[string]any{}
 	}
 	defaultsAdded := ensureSFCEditingDefaultsInPortableBundle(bundle)
 	effectiveDomainVersion, err := domainversion.Compute(*bundle)

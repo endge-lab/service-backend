@@ -89,3 +89,45 @@ func TestComputeIgnoresWorkspaceFieldsThatImportDoesNotApply(t *testing.T) {
 		t.Fatalf("workspace ownership fields must not affect portable version: %s != %s", leftVersion, rightVersion)
 	}
 }
+
+func TestComputeCoversConfigurationDocumentsAndWorkspaceValues(t *testing.T) {
+	bundle := entities.PortableBundle{
+		Kind: "workspace-snapshot", SchemaVersion: 1,
+		Workspace: map[string]any{"displayName": "Domain", "configuration": map[string]any{"values": map[string]any{"groundHandling": map[string]any{"rowHeight": 32}}}},
+		Documents: map[string][]map[string]any{"configurations": {{"identity": "groundHandling", "sourceVersion": 1, "source": "defineConfig({ rowHeight: value(Number, 32) })", "active": true}}},
+	}
+	base, err := Compute(bundle)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	changedValue := bundle
+	changedValue.Workspace = map[string]any{"displayName": "Domain", "configuration": map[string]any{"values": map[string]any{"groundHandling": map[string]any{"rowHeight": 40}}}}
+	valueVersion, err := Compute(changedValue)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if valueVersion == base {
+		t.Fatal("workspace configuration.values did not change domain version")
+	}
+
+	changedSource := bundle
+	changedSource.Documents = map[string][]map[string]any{"configurations": {{"identity": "groundHandling", "sourceVersion": 1, "source": "defineConfig({ rowHeight: value(Number, 40) })", "active": true}}}
+	sourceVersion, err := Compute(changedSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sourceVersion == base {
+		t.Fatal("Configuration source did not change domain version")
+	}
+
+	deleted := bundle
+	deleted.Documents = map[string][]map[string]any{"configurations": {{"identity": "groundHandling", "sourceVersion": 1, "source": "defineConfig({ rowHeight: value(Number, 32) })", "active": true, "deletedAt": "2026-08-20T00:00:00Z"}}}
+	deletedVersion, err := Compute(deleted)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if deletedVersion == base {
+		t.Fatal("Configuration soft-delete did not change domain version")
+	}
+}

@@ -36,6 +36,9 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entiti
 	}
 	values["configuration"] = configurationdomain.EnsureSFCEditingDefaults(values["configuration"])
 	configurationdomain.RemoveLegacySSE(values["configuration"])
+	if err = configurationdomain.ValidateValuesShape(values["configuration"]); err != nil {
+		return nil, domainerrors.InvalidInput("workspace_configuration_values_invalid", err.Error())
+	}
 	identity, displayName := workspaceText(values, "identity"), workspaceText(values, "displayName")
 	if err = validateWorkspaceIdentity(identity); err != nil {
 		return nil, err
@@ -66,7 +69,7 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entiti
 		}
 		createdRootTypes := map[string]bool{}
 		for _, kind := range documents.Collections {
-			if kind == "folders" {
+			if kind == "folders" || kind == "configurations" {
 				continue
 			}
 			entityType := entities.FolderEntityType(kind)
@@ -135,6 +138,9 @@ func (s *UseCase) Patch(ctx context.Context, identity string, input PatchInput, 
 	if configuration, exists := patch["configuration"]; exists {
 		patch["configuration"] = configurationdomain.EnsureSFCEditingDefaults(configuration)
 		configurationdomain.RemoveLegacySSE(patch["configuration"])
+		if err = configurationdomain.ValidateValuesShape(patch["configuration"]); err != nil {
+			return nil, domainerrors.InvalidInput("workspace_configuration_values_invalid", err.Error())
+		}
 	}
 	if scope.Workspace.Revision != expected {
 		return nil, shared.RevisionConflict()

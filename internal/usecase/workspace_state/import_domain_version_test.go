@@ -34,6 +34,9 @@ func TestPrepareImportDomainVersionMigratesSFCEditingDefaultsAfterSourceVerifica
 	if !defaultsAdded {
 		t.Fatal("SFC editing defaults were not added")
 	}
+	if configurations, exists := bundle.Documents["configurations"]; !exists || len(configurations) != 0 {
+		t.Fatalf("legacy snapshot was not normalized with an empty configurations collection: %#v", bundle.Documents)
+	}
 	if bundle.DomainVersion == sourceDomainVersion {
 		t.Fatal("effective domain version was not updated after migration")
 	}

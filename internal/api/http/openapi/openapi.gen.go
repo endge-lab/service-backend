@@ -3115,6 +3115,299 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/configurations:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает Configuration-документы текущего рабочего пространства.\n" +
+		"      tags:\n" +
+		"        - Конфигурации\n" +
+		"      summary: Получить список Configuration-документов\n" +
+		"      operationId: listConfigurations\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/configuration.ListResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт Configuration sourceVersion 1 без папки.\n" +
+		"      tags:\n" +
+		"        - Конфигурации\n" +
+		"      summary: Создать Configuration-документ\n" +
+		"      operationId: createConfiguration\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/configuration.CreateRequest\"\n" +
+		"        description: Документ\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Created\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/configuration.Response\"\n" +
+		"  \"/api/v1/configurations/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает Configuration-документ по identity.\n" +
+		"      tags:\n" +
+		"        - Конфигурации\n" +
+		"      summary: Получить Configuration-документ\n" +
+		"      operationId: getConfiguration\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/configuration.Response\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление Configuration-документа.\n" +
+		"      tags:\n" +
+		"        - Конфигурации\n" +
+		"      summary: Удалить Configuration-документ\n" +
+		"      operationId: deleteConfiguration\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/configuration.Response\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет Configuration с optimistic revision check.\n" +
+		"      tags:\n" +
+		"        - Конфигурации\n" +
+		"      summary: Изменить Configuration-документ\n" +
+		"      operationId: patchConfiguration\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/configuration.PatchRequest\"\n" +
+		"        description: Изменения\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/configuration.Response\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/configurations/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый Configuration-документ.\n" +
+		"      tags:\n" +
+		"        - Конфигурации\n" +
+		"      summary: Восстановить Configuration-документ\n" +
+		"      operationId: restoreConfiguration\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/configuration.Response\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /api/v1/converters:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -14663,6 +14956,166 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    configuration.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"        - source\n" +
+		"        - sourceVersion\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: defineConfig({})\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    configuration.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/configuration.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    configuration.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: defineConfig({})\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    configuration.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          example: defineConfig({})\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
 		"        updatedAt:\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +

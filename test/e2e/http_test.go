@@ -382,6 +382,7 @@ func documentHTTPCases() []documentHTTPCase {
 		{collection: "i18n-bundles", identity: "i18n-main", payload: with(base("i18n-main"), "locales", map[string]any{"ru": map[string]any{"title": "Тест"}})},
 		{collection: "navigations", identity: "navigation-main", payload: with(base("navigation-main"), "tree", []any{})},
 		{collection: "styles", identity: "style-main", payload: with(base("style-main"), "source", "body {}", "sourceVersion", 1)},
+		{collection: "configurations", identity: "configuration-main", payload: with(base("configuration-main"), "source", "defineConfig({ enabled: value(Boolean, true) })", "sourceVersion", 1)},
 	}
 }
 

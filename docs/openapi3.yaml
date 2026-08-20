@@ -3110,6 +3110,299 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/configurations:
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает Configuration-документы текущего рабочего пространства.
+      tags:
+        - Конфигурации
+      summary: Получить список Configuration-документов
+      operationId: listConfigurations
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Включить мягко удалённые документы
+          name: includeDeleted
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - description: Фильтр по активности
+          name: active
+          in: query
+          schema:
+            type: boolean
+        - description: Размер страницы
+          name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+        - description: Смещение
+          name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/configuration.ListResponse"
+    post:
+      security:
+        - BearerAuth: []
+      description: Создаёт Configuration sourceVersion 1 без папки.
+      tags:
+        - Конфигурации
+      summary: Создать Configuration-документ
+      operationId: createConfiguration
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/configuration.CreateRequest"
+        description: Документ
+        required: true
+      responses:
+        "201":
+          description: Created
+          headers:
+            ETag:
+              description: Текущая revision документа
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/configuration.Response"
+  "/api/v1/configurations/{identity}":
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает Configuration-документ по identity.
+      tags:
+        - Конфигурации
+      summary: Получить Configuration-документ
+      operationId: getConfiguration
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Разрешить получение мягко удалённого документа
+          name: includeDeleted
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: OK
+          headers:
+            ETag:
+              description: Текущая revision документа
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/configuration.Response"
+    delete:
+      security:
+        - BearerAuth: []
+      description: Выполняет мягкое удаление Configuration-документа.
+      tags:
+        - Конфигурации
+      summary: Удалить Configuration-документ
+      operationId: deleteConfiguration
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - example: '"3"'
+          description: Текущая revision документа
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          headers:
+            ETag:
+              description: Новая revision документа
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/configuration.Response"
+        "409":
+          description: Конфликт identity или revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "428":
+          description: Требуется заголовок If-Match
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+    patch:
+      security:
+        - BearerAuth: []
+      description: Частично изменяет Configuration с optimistic revision check.
+      tags:
+        - Конфигурации
+      summary: Изменить Configuration-документ
+      operationId: patchConfiguration
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - example: '"3"'
+          description: Текущая revision документа
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/configuration.PatchRequest"
+        description: Изменения
+        required: true
+      responses:
+        "200":
+          description: OK
+          headers:
+            ETag:
+              description: Новая revision документа
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/configuration.Response"
+        "409":
+          description: Конфликт identity или revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "428":
+          description: Требуется заголовок If-Match
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/configurations/{identity}/restore":
+    post:
+      security:
+        - BearerAuth: []
+      description: Восстанавливает мягко удалённый Configuration-документ.
+      tags:
+        - Конфигурации
+      summary: Восстановить Configuration-документ
+      operationId: restoreConfiguration
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - example: '"3"'
+          description: Текущая revision документа
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          headers:
+            ETag:
+              description: Новая revision документа
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/configuration.Response"
+        "409":
+          description: Конфликт identity или revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "428":
+          description: Требуется заголовок If-Match
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
   /api/v1/converters:
     get:
       security:
@@ -14658,6 +14951,166 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        updatedAt:
+          type: string
+          format: date-time
+          example: 2026-08-04T10:05:00Z
+        updatedBy:
+          $ref: "#/components/schemas/entities.Actor"
+    configuration.CreateRequest:
+      type: object
+      required:
+        - displayName
+        - identity
+        - source
+        - sourceVersion
+      properties:
+        active:
+          type: boolean
+          example: true
+        description:
+          type: string
+          example: Описание объекта
+        displayName:
+          type: string
+          maxLength: 255
+          example: Основной объект
+        folderIdentity:
+          type: string
+          example: root-projects
+        identity:
+          type: string
+          maxLength: 160
+          example: main
+        managedBy:
+          type: string
+          enum:
+            - user
+            - system
+            - integration
+          example: user
+        managedById:
+          type: string
+          example: endge-core
+        meta:
+          type: object
+          additionalProperties: {}
+        source:
+          type: string
+          maxLength: 8388608
+          example: defineConfig({})
+        sourceVersion:
+          type: integer
+          example: 1
+    configuration.ListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/configuration.Response"
+        limit:
+          type: integer
+          example: 100
+        offset:
+          type: integer
+          example: 0
+        total:
+          type: integer
+          example: 1
+    configuration.PatchRequest:
+      type: object
+      properties:
+        active:
+          type: boolean
+          example: true
+        description:
+          type: string
+          example: Описание объекта
+        displayName:
+          type: string
+          maxLength: 255
+          example: Основной объект
+        folderIdentity:
+          type: string
+          example: root-projects
+        identity:
+          type: string
+          maxLength: 160
+          example: main
+        managedBy:
+          type: string
+          enum:
+            - user
+            - system
+            - integration
+          example: user
+        managedById:
+          type: string
+          example: endge-core
+        meta:
+          type: object
+          additionalProperties: {}
+        source:
+          type: string
+          maxLength: 8388608
+          example: defineConfig({})
+        sourceVersion:
+          type: integer
+          example: 1
+    configuration.Response:
+      type: object
+      properties:
+        active:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-08-04T10:00:00Z
+        createdBy:
+          $ref: "#/components/schemas/entities.Actor"
+        deletedAt:
+          type: string
+          format: date-time
+          example: 2026-08-04T11:00:00Z
+        description:
+          type: string
+          example: Описание объекта
+        displayName:
+          type: string
+          example: Основной объект
+        folderIdentity:
+          type: string
+          example: root-projects
+        id:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        identity:
+          type: string
+          example: main
+        managedBy:
+          type: string
+          enum:
+            - user
+            - system
+            - integration
+          example: user
+        managedById:
+          type: string
+          example: endge-core
+        meta:
+          type: object
+        revision:
+          type: integer
+          example: 3
+        source:
+          type: string
+          example: defineConfig({})
+        sourceVersion:
+          type: integer
+          example: 1
         updatedAt:
           type: string
           format: date-time

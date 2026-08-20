@@ -101,3 +101,6 @@ type NavigationRepository interface{ DocumentResourceRepository }
 
 // StyleRepository задаёт порт хранения стилей для use case-слоя.
 type StyleRepository interface{ DocumentResourceRepository }
+
+// ConfigurationRepository задаёт порт хранения workspace-конфигураций.
+type ConfigurationRepository interface{ DocumentResourceRepository }

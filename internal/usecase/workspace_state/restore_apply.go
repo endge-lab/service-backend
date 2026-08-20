@@ -247,5 +247,5 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 
 // restoreOrder задаёт порядок восстановления коллекций.
 func restoreOrder() []string {
-	return []string{"folders", "environments", "navigations", "auth-profiles", "stores", "projects", "vocabs", "updates", "tenants", "types", "queries", "data-views", "compositions", "streams", "mocks", "components", "actions", "filters", "converters", "computations", "i18n-bundles", "styles"}
+	return []string{"folders", "environments", "navigations", "auth-profiles", "stores", "projects", "vocabs", "updates", "tenants", "types", "configurations", "queries", "data-views", "compositions", "streams", "mocks", "components", "actions", "filters", "converters", "computations", "i18n-bundles", "styles"}
 }
