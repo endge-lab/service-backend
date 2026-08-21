@@ -1,6 +1,26 @@
 package workspace_state
 
-import "testing"
+import (
+	"context"
+	"testing"
+
+	"github.com/endge-lab/service-backend/internal/domain/entities"
+)
+
+func TestConfigurationFolderResolutionReturnsNil(t *testing.T) {
+	coordinator := &Coordinator{}
+	scope := entities.WorkspaceAccess{}
+
+	folderID, err := coordinator.resolveFolder(context.Background(), scope, "configurations", map[string]any{})
+	if err != nil || folderID != nil {
+		t.Fatalf("configuration input resolved to folder: id=%v err=%v", folderID, err)
+	}
+
+	folderID, err = coordinator.resolveDocumentFolder(context.Background(), scope, entities.Document{Type: "configurations"})
+	if err != nil || folderID != nil {
+		t.Fatalf("configuration document resolved to folder: id=%v err=%v", folderID, err)
+	}
+}
 
 func TestVocabRejectsLegacyManualAuthMode(t *testing.T) {
 	input := map[string]any{

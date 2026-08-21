@@ -88,6 +88,9 @@ func (s *Coordinator) mutationBatch(ctx context.Context, workspaceID *string, op
 
 // resolveFolder разрешает identity папки в её внутренний идентификатор.
 func (s *Coordinator) resolveFolder(ctx context.Context, scope entities.WorkspaceAccess, kind string, input map[string]any) (*string, error) {
+	if kind == "configurations" {
+		return nil, nil
+	}
 	identity := stringField(input, "folderIdentity")
 	if kind == "folders" {
 		entityType := entities.FolderEntityType(stringField(input, "entityType"))
@@ -111,6 +114,9 @@ func (s *Coordinator) resolveFolder(ctx context.Context, scope entities.Workspac
 
 // resolveDocumentFolder разрешает папку, указанную в документе.
 func (s *Coordinator) resolveDocumentFolder(ctx context.Context, scope entities.WorkspaceAccess, doc entities.Document) (*string, error) {
+	if doc.Type == "configurations" {
+		return nil, nil
+	}
 	var data map[string]any
 	_ = json.Unmarshal(doc.Data, &data)
 	if doc.Type == "folders" {
