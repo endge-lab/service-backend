@@ -17,8 +17,9 @@ func NewFiber(
 	logger *zap.Logger,
 ) *fiber.App {
 	app := fiber.New(fiber.Config{
-		AppName:   cfg.App.Name,
-		BodyLimit: 16 * 1024 * 1024,
+		AppName:        cfg.App.Name,
+		BodyLimit:      16 * 1024 * 1024,
+		ReadBufferSize: 32 * 1024, // Вмещает OIDC JWT с корпоративными group claims.
 	})
 
 	servicefiber.RegisterLifecycle(lc, app, fmt.Sprintf(":%s", cfg.HTTP.Port), logger)
