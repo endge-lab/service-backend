@@ -4,6 +4,7 @@ package integration_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
@@ -71,6 +72,45 @@ func TestMigrationSchemaGuards(t *testing.T) {
 	}
 }
 
+// TestVocabSourceMigrationBackfillsLegacy проверяет sourceVersion 1 и env-проекцию legacy Vocab.
+func TestVocabSourceMigrationBackfillsLegacy(t *testing.T) {
+	database := postgresSuite.NewDatabase(t)
+	ctx := context.Background()
+	if err := database.MigrateDownTo(ctx, 51); err != nil {
+		t.Fatalf("откатить Vocab source migration: %v", err)
+	}
+
+	_, err := database.Pool.Exec(ctx, `INSERT INTO vocabs(
+		workspace_id, identity, display_name, data, created_by, updated_by
+	) VALUES (
+		'00000000-0000-0000-0000-000000000010', 'airlines', 'Airlines',
+		'{"mode":"external_payload","baseApiUrl":"{ENDPOINT_VOCABS_SERVICE}","collectionSlug":"airlines","authMode":"inherit"}'::jsonb,
+		'00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001'
+	)`)
+	if err != nil {
+		t.Fatalf("создать legacy Vocab: %v", err)
+	}
+	if err = database.MigrateUp(ctx); err != nil {
+		t.Fatalf("применить Vocab source migration: %v", err)
+	}
+
+	var source string
+	var sourceVersion int
+	if err = database.Pool.QueryRow(ctx, `SELECT data->>'source', (data->>'sourceVersion')::int FROM vocabs WHERE identity='airlines'`).Scan(&source, &sourceVersion); err != nil {
+		t.Fatalf("прочитать migrated Vocab: %v", err)
+	}
+	for _, fragment := range []string{
+		"defineVocab({", `baseUrl: env("ENDPOINT_VOCABS_SERVICE")`, `collection: "airlines"`, `auth: { mode: "inherit" }`, "items: output().from(response())",
+	} {
+		if !strings.Contains(source, fragment) {
+			t.Fatalf("migrated source не содержит %q: %s", fragment, source)
+		}
+	}
+	if sourceVersion != 1 {
+		t.Fatalf("sourceVersion=%d, ожидался 1", sourceVersion)
+	}
+}
+
 func assertMigrationState(t *testing.T, database interface {
 	MigrationStatus(context.Context) ([]*goose.MigrationStatus, error)
 }, expected goose.State) {
@@ -125,7 +165,7 @@ func assertBootstrapState(t *testing.T, database *support.TestDatabase) {
 func expectedSystemRootCount() int {
 	entityTypes := make(map[string]struct{}, len(documents.Collections))
 	for _, collection := range documents.Collections {
-		if collection == "folders" {
+		if collection == "folders" || collection == "configurations" {
 			continue
 		}
 		entityTypes[entities.FolderEntityType(collection)] = struct{}{}

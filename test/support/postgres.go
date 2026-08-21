@@ -147,11 +147,16 @@ func (d *TestDatabase) MigrateUp(ctx context.Context) error {
 
 // MigrateDownToZero откатывает все миграции, не удаляя safety marker.
 func (d *TestDatabase) MigrateDownToZero(ctx context.Context) error {
+	return d.MigrateDownTo(ctx, 0)
+}
+
+// MigrateDownTo откатывает миграции до указанной версии в изолированной тестовой БД.
+func (d *TestDatabase) MigrateDownTo(ctx context.Context, version int64) error {
 	if err := d.AssertSafe(ctx); err != nil {
 		return err
 	}
 	return withMigrationProvider(d.Pool, func(provider *goose.Provider) error {
-		_, err := provider.DownTo(ctx, 0)
+		_, err := provider.DownTo(ctx, version)
 		return err
 	})
 }

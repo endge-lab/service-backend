@@ -42,7 +42,7 @@ func (h *Handler) List(c *fiber.Ctx) error {
 
 // Create проверяет запрос и создаёт документ ресурса.
 // @Summary Создать справочник
-// @Description Создаёт справочник в текущем рабочем пространстве.
+// @Description Создаёт legacy-совместимый справочник или Vocab sourceVersion 1 в текущем рабочем пространстве.
 // @ID createVocab
 // @Tags Справочники
 // @Accept json

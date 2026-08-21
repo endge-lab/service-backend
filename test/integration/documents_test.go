@@ -248,7 +248,7 @@ func documentCases() []documentCase {
 	return []documentCase{
 		{collection: "environments", payload: baseDocument("environment-main")},
 		{collection: "stores", payload: with(baseDocument("store-main"), "source", "store {}", "sourceVersion", 1)},
-		{collection: "auth-profiles", payload: with(baseDocument("auth-main"), "adapterId", "oidc", "config", map[string]any{}, "credentialRefs", map[string]any{"client": "vault://client"}, "persist", "memory")},
+		{collection: "auth-profiles", payload: with(baseDocument("auth-main"), "adapterId", "oidc", "config", map[string]any{"issuer": "https://issuer.example", "clientId": "endge-test", "scopes": []any{"openid"}}, "credentials", map[string]any{}, "session", map[string]any{"storage": "memory", "persistRefreshToken": false})},
 		{collection: "projects", payload: with(baseDocument("project-main"), "allowedEnvironments", []any{"environment-main"})},
 		{collection: "tenants", payload: with(baseDocument("tenant-main"), "code", "TENANT")},
 		{collection: "folders", payload: with(baseDocument("folder-main"), "entityType", "queries")},
@@ -264,7 +264,7 @@ func documentCases() []documentCase {
 		{collection: "filters", payload: with(baseDocument("filter-main"), "fields", []any{}, "source", "filter {}", "sourceVersion", 1)},
 		{collection: "converters", payload: with(baseDocument("converter-main"), "definition", map[string]any{})},
 		{collection: "computations", payload: with(baseDocument("computation-main"), "source", "compute {}", "sourceVersion", 1, "contractVersion", 1)},
-		{collection: "vocabs", payload: with(baseDocument("vocab-main"), "mode", "external_payload", "authMode", "profile", "authProfileIdentity", "auth-main")},
+		{collection: "vocabs", payload: with(baseDocument("vocab-main"), "source", "defineVocab({ outputs: { items: output().from(response()) } })", "sourceVersion", 1, "mode", "external_payload", "authMode", "profile", "authProfileIdentity", "auth-main")},
 		{collection: "i18n-bundles", payload: with(baseDocument("i18n-main"), "locales", map[string]any{"ru": map[string]any{"title": "Тест"}})},
 		{collection: "navigations", payload: with(baseDocument("navigation-main"), "tree", []any{})},
 		{collection: "styles", payload: with(baseDocument("style-main"), "source", "body {}", "sourceVersion", 1)},

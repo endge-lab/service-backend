@@ -15,7 +15,7 @@ import (
 
 var Collections = []string{"projects", "tenants", "environments", "folders", "types", "queries", "data-views", "compositions", "stores", "streams", "updates", "mocks", "components", "actions", "filters", "converters", "computations", "vocabs", "i18n-bundles", "auth-profiles", "navigations", "styles", "configurations"}
 
-var sourceVersionCollections = []string{"types", "queries", "data-views", "compositions", "stores", "streams", "updates", "filters", "computations", "styles", "configurations"}
+var sourceVersionCollections = []string{"types", "queries", "data-views", "compositions", "stores", "streams", "updates", "filters", "computations", "vocabs", "styles", "configurations"}
 
 var readOnlyFields = []string{"id", "type", "revision", "author", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", "created_by", "updated_by"}
 
@@ -67,6 +67,19 @@ func validateDocument(kind string, input map[string]any) error {
 		}
 		if stringField(input, "folderIdentity") != "" {
 			return domainerrors.InvalidInput("configuration_folder_unsupported", "Configuration documents do not support folders")
+		}
+	}
+	if kind == "vocabs" {
+		source, hasSource := input["source"].(string)
+		version, hasVersion := numberField(input, "sourceVersion")
+		if hasSource != hasVersion {
+			return domainerrors.InvalidInput("vocab_source_contract_invalid", "Vocab source and sourceVersion must be provided together")
+		}
+		if hasSource && strings.TrimSpace(source) == "" {
+			return domainerrors.InvalidInput("vocab_source_invalid", "Vocab source must not be empty")
+		}
+		if hasVersion && version != 1 {
+			return domainerrors.InvalidInput("vocab_source_version_invalid", "Vocab sourceVersion must be 1")
 		}
 	}
 	if kind == "tenants" && stringField(input, "code") == "" {

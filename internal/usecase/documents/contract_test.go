@@ -122,6 +122,37 @@ func TestConfigurationRequiresSourceVersionOneAndRejectsFolders(t *testing.T) {
 	}
 }
 
+// TestVocabAcceptsLegacyOrSourceVersionOne фиксирует additive-переход Vocab на source-first контракт.
+func TestVocabAcceptsLegacyOrSourceVersionOne(t *testing.T) {
+	legacy := map[string]any{
+		"identity": "airlines", "displayName": "Airlines",
+		"mode": "external_payload", "authMode": "inherit",
+	}
+	if err := validateDocument("vocabs", legacy); err != nil {
+		t.Fatalf("legacy Vocab rejected during compatibility window: %v", err)
+	}
+
+	source := copyMap(legacy)
+	source["source"] = "defineVocab({ outputs: { items: output().from(response()) } })"
+	source["sourceVersion"] = float64(1)
+	if err := validateDocument("vocabs", source); err != nil {
+		t.Fatalf("source-first Vocab rejected: %v", err)
+	}
+
+	for _, mutate := range []func(map[string]any){
+		func(value map[string]any) { delete(value, "sourceVersion") },
+		func(value map[string]any) { delete(value, "source") },
+		func(value map[string]any) { value["source"] = "  " },
+		func(value map[string]any) { value["sourceVersion"] = float64(2) },
+	} {
+		invalid := copyMap(source)
+		mutate(invalid)
+		if err := validateDocument("vocabs", invalid); err == nil {
+			t.Fatalf("invalid Vocab source contract was accepted: %#v", invalid)
+		}
+	}
+}
+
 // TestProjectAcceptsCanonicalNavigationRelation проверяет identity-based Project-навигацию.
 func TestProjectAcceptsCanonicalNavigationRelation(t *testing.T) {
 	input := map[string]any{"identity": "p", "displayName": "Project", "navigationIdentity": "main"}

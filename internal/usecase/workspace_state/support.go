@@ -320,6 +320,17 @@ func validateDocument(kind string, input map[string]any) error {
 		}
 	}
 	if kind == "vocabs" {
+		source, hasSource := input["source"].(string)
+		version, hasVersion := numberField(input, "sourceVersion")
+		if hasSource != hasVersion {
+			return domainerrors.InvalidInput("vocab_source_contract_invalid", "Vocab source and sourceVersion must be provided together")
+		}
+		if hasSource && strings.TrimSpace(source) == "" {
+			return domainerrors.InvalidInput("vocab_source_invalid", "Vocab source must not be empty")
+		}
+		if hasVersion && version != 1 {
+			return domainerrors.InvalidInput("vocab_source_version_invalid", "Vocab sourceVersion must be 1")
+		}
 		if mode := stringField(input, "mode"); mode != "" && !slices.Contains([]string{"external_payload", "internal"}, mode) {
 			return domainerrors.InvalidInput("vocab_mode_invalid", "mode is invalid")
 		}

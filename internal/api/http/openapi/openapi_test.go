@@ -130,6 +130,9 @@ func TestDocumentContractContainsOnlyMVPCollections(t *testing.T) {
 		}
 	}
 	assertSchemaProperty(t, document.Components.Schemas, "query.CreateRequest", "sourceVersion")
+	assertSchemaProperty(t, document.Components.Schemas, "vocab.CreateRequest", "source")
+	assertSchemaProperty(t, document.Components.Schemas, "vocab.CreateRequest", "sourceVersion")
+	assertSchemaProperty(t, document.Components.Schemas, "vocab.Response", "source")
 	assertSchemaProperty(t, document.Components.Schemas, "update.PatchRequest", "storeIdentity")
 	assertGeneratedOperationMetadata(t, document.Paths)
 }

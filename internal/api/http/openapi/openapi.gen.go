@@ -12783,7 +12783,8 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Создаёт справочник в текущем рабочем пространстве.\n" +
+		"      description: Создаёт legacy-совместимый справочник или Vocab sourceVersion 1 в\n" +
+		"        текущем рабочем пространстве.\n" +
 		"      tags:\n" +
 		"        - Справочники\n" +
 		"      summary: Создать справочник\n" +
@@ -18549,6 +18550,13 @@ var openAPI3YAML = []byte(
 		"            - external_payload\n" +
 		"            - internal\n" +
 		"          example: example\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: \"defineVocab({ outputs: { items: output().from(response()) } })\"\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
 		"    vocab.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -18620,6 +18628,13 @@ var openAPI3YAML = []byte(
 		"            - external_payload\n" +
 		"            - internal\n" +
 		"          example: example\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: \"defineVocab({ outputs: { items: output().from(response()) } })\"\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
 		"    vocab.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -18682,6 +18697,12 @@ var openAPI3YAML = []byte(
 		"        revision:\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          example: \"defineVocab({ outputs: { items: output().from(response()) } })\"\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
 		"        updatedAt:\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +

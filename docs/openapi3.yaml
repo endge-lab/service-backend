@@ -12778,7 +12778,8 @@ paths:
     post:
       security:
         - BearerAuth: []
-      description: Создаёт справочник в текущем рабочем пространстве.
+      description: Создаёт legacy-совместимый справочник или Vocab sourceVersion 1 в
+        текущем рабочем пространстве.
       tags:
         - Справочники
       summary: Создать справочник
@@ -18544,6 +18545,13 @@ components:
             - external_payload
             - internal
           example: example
+        source:
+          type: string
+          maxLength: 8388608
+          example: "defineVocab({ outputs: { items: output().from(response()) } })"
+        sourceVersion:
+          type: integer
+          example: 1
     vocab.ListResponse:
       type: object
       properties:
@@ -18615,6 +18623,13 @@ components:
             - external_payload
             - internal
           example: example
+        source:
+          type: string
+          maxLength: 8388608
+          example: "defineVocab({ outputs: { items: output().from(response()) } })"
+        sourceVersion:
+          type: integer
+          example: 1
     vocab.Response:
       type: object
       properties:
@@ -18677,6 +18692,12 @@ components:
         revision:
           type: integer
           example: 3
+        source:
+          type: string
+          example: "defineVocab({ outputs: { items: output().from(response()) } })"
+        sourceVersion:
+          type: integer
+          example: 1
         updatedAt:
           type: string
           format: date-time
