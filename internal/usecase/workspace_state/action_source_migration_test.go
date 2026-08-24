@@ -22,13 +22,17 @@ func TestPortableActionSourceMigration(t *testing.T) {
 	}
 }
 
-func TestPortableActionSourceMigrationRejectsNonEmptyFlow(t *testing.T) {
+func TestPortableActionSourceMigrationDiscardsLegacyFlow(t *testing.T) {
 	bundle := portableBundleWithActions(t, []map[string]any{{
 		"identity": "orders.save", "displayName": "Save", "definition": map[string]any{"nodes": []any{map[string]any{"id": "one"}}},
 	}})
 	result := normalizePortableBundle(&bundle)
-	if len(result.NonEmptyLegacyActions) != 1 || result.NonEmptyLegacyActions[0] != "orders.save" {
-		t.Fatalf("non-empty legacy action was not rejected: %+v", result)
+	action := bundle.Documents["actions"][0]
+	if result.MigratedLegacyActions != 1 || !strings.Contains(stringField(action, "source"), "defineAction") {
+		t.Fatalf("legacy action was not migrated: result=%+v action=%+v", result, action)
+	}
+	if _, exists := action["definition"]; exists {
+		t.Fatal("legacy definition was retained")
 	}
 }
 
@@ -40,15 +44,18 @@ func portableBundleWithActions(t *testing.T, actions []map[string]any) entities.
 	}
 }
 
-func TestActionSourceMigrationGuardsNonEmptyFlow(t *testing.T) {
+func TestActionSourceMigrationReplacesEveryEmptySource(t *testing.T) {
 	data, err := os.ReadFile("../../../migrations/000053_action_source.sql")
 	if err != nil {
 		t.Fatal(err)
 	}
 	source := string(data)
-	for _, contract := range []string{"non-empty legacy Flow", "jsonb_array_length", "defineAction", "sourceVersion"} {
+	for _, contract := range []string{"defineAction", "sourceVersion", "- 'definition'"} {
 		if !strings.Contains(source, contract) {
-			t.Fatalf("migration does not contain %q guard/contract", contract)
+			t.Fatalf("migration does not contain %q replacement contract", contract)
 		}
+	}
+	if strings.Contains(source, "RAISE EXCEPTION") {
+		t.Fatal("migration still blocks legacy Action Flow documents")
 	}
 }

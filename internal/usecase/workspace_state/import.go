@@ -47,11 +47,7 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 		plan.Warnings = append(plan.Warnings, fmt.Sprintf("%d legacy folder references were normalized", normalization.NormalizedFolderReferences))
 	}
 	if normalization.MigratedLegacyActions > 0 {
-		plan.Warnings = append(plan.Warnings, fmt.Sprintf("%d empty legacy Action Flow documents were migrated to default Action Source", normalization.MigratedLegacyActions))
-	}
-	if len(normalization.NonEmptyLegacyActions) > 0 {
-		plan.Valid = false
-		plan.ValidationErrors = append(plan.ValidationErrors, "non-empty legacy Action Flow documents require manual migration: "+strings.Join(normalization.NonEmptyLegacyActions, ", "))
+		plan.Warnings = append(plan.Warnings, fmt.Sprintf("%d legacy Action documents with empty Source were migrated to default Action Source", normalization.MigratedLegacyActions))
 	}
 	if bundle.Kind != "workspace-snapshot" {
 		plan.Valid = false

@@ -1,23 +1,4 @@
 -- +goose Up
--- +goose StatementBegin
-DO $$
-BEGIN
-    IF EXISTS (
-        SELECT 1
-        FROM actions
-        WHERE (NOT (data ? 'source') OR NULLIF(BTRIM(data ->> 'source'), '') IS NULL)
-          AND (
-              CASE WHEN jsonb_typeof(data -> 'definition' -> 'nodes') = 'array'
-                  THEN jsonb_array_length(data -> 'definition' -> 'nodes') ELSE 0 END > 0
-              OR CASE WHEN jsonb_typeof(data -> 'definition' -> 'edges') = 'array'
-                  THEN jsonb_array_length(data -> 'definition' -> 'edges') ELSE 0 END > 0
-          )
-    ) THEN
-        RAISE EXCEPTION 'Action Source migration stopped: non-empty legacy Flow documents must be migrated manually';
-    END IF;
-END $$;
--- +goose StatementEnd
-
 UPDATE actions
 SET data = (
         data
