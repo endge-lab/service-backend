@@ -270,7 +270,7 @@ func validateDocument(kind string, input map[string]any) error {
 			return domainerrors.InvalidInput("source_too_large", "source exceeds 8 MiB")
 		}
 	}
-	versionedSourceKinds := []string{"types", "queries", "data-views", "stores", "streams", "updates", "filters", "computations", "compositions", "styles", "configurations"}
+	versionedSourceKinds := []string{"types", "queries", "data-views", "stores", "streams", "updates", "actions", "filters", "computations", "compositions", "styles", "configurations"}
 	if slices.Contains(versionedSourceKinds, kind) {
 		_, hasSource := input["source"]
 		version, hasVersion := numberField(input, "sourceVersion")
@@ -285,6 +285,9 @@ func validateDocument(kind string, input map[string]any) error {
 		if version != 2 {
 			return domainerrors.InvalidInput("query_source_version_invalid", "Query sourceVersion must be 2")
 		}
+	}
+	if kind == "actions" && strings.TrimSpace(stringField(input, "source")) == "" {
+		return domainerrors.InvalidInput("action_source_invalid", "Action source must not be empty")
 	}
 	if kind == "configurations" {
 		version, hasVersion := numberField(input, "sourceVersion")

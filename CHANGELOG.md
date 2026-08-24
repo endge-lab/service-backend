@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 0.3.0 — 2026-08-24
+
+### Добавлено
+
+- Source-first контракт Actions с обязательными `source` и `sourceVersion`.
+- Безопасная миграция пустых legacy Flow документов и явная остановка на непустых Flow.
+
+### Breaking changes
+
+- Поля `definition`, `input` и `output` удалены из Action HTTP contract.
+
 ## 0.2.0 — 2026-08-04
 
 ### Добавлено

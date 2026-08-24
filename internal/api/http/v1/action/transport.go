@@ -9,9 +9,8 @@ import (
 
 type CreateRequest struct {
 	shared.CreateDocumentRequest
-	Definition            json.RawMessage `json:"definition,omitempty" swaggertype:"object"`
-	Input                 json.RawMessage `json:"input,omitempty" swaggertype:"object"`
-	Output                json.RawMessage `json:"output,omitempty" swaggertype:"object"`
+	Source                string          `json:"source" validate:"required"`
+	SourceVersion         int             `json:"sourceVersion" validate:"required,min=1"`
 	Target                json.RawMessage `json:"target,omitempty" swaggertype:"object"`
 	DefaultImplementation json.RawMessage `json:"defaultImplementation,omitempty" swaggertype:"object"`
 	Owner                 json.RawMessage `json:"owner,omitempty" swaggertype:"object"`
@@ -19,9 +18,8 @@ type CreateRequest struct {
 
 type PatchRequest struct {
 	shared.PatchDocumentRequest
-	Definition            json.RawMessage `json:"definition,omitempty" swaggertype:"object"`
-	Input                 json.RawMessage `json:"input,omitempty" swaggertype:"object"`
-	Output                json.RawMessage `json:"output,omitempty" swaggertype:"object"`
+	Source                *string         `json:"source,omitempty"`
+	SourceVersion         *int            `json:"sourceVersion,omitempty" validate:"omitempty,min=1"`
 	Target                json.RawMessage `json:"target,omitempty" swaggertype:"object"`
 	DefaultImplementation json.RawMessage `json:"defaultImplementation,omitempty" swaggertype:"object"`
 	Owner                 json.RawMessage `json:"owner,omitempty" swaggertype:"object"`
@@ -29,9 +27,8 @@ type PatchRequest struct {
 
 type Response struct {
 	shared.DocumentMetadata
-	Definition            json.RawMessage `json:"definition" swaggertype:"object"`
-	Input                 json.RawMessage `json:"input" swaggertype:"object"`
-	Output                json.RawMessage `json:"output" swaggertype:"object"`
+	Source                string          `json:"source"`
+	SourceVersion         int             `json:"sourceVersion"`
 	Target                json.RawMessage `json:"target" swaggertype:"object"`
 	DefaultImplementation json.RawMessage `json:"defaultImplementation" swaggertype:"object"`
 	Owner                 json.RawMessage `json:"owner" swaggertype:"object"`
