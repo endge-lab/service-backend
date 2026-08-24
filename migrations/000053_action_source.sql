@@ -1,4 +1,5 @@
 -- +goose Up
+-- +goose StatementBegin
 DO $$
 BEGIN
     IF EXISTS (
@@ -15,6 +16,7 @@ BEGIN
         RAISE EXCEPTION 'Action Source migration stopped: non-empty legacy Flow documents must be migrated manually';
     END IF;
 END $$;
+-- +goose StatementEnd
 
 UPDATE actions
 SET data = (
