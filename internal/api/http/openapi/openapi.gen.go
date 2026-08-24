@@ -13797,13 +13797,13 @@ var openAPI3YAML = []byte(
 		"      required:\n" +
 		"        - displayName\n" +
 		"        - identity\n" +
+		"        - source\n" +
+		"        - sourceVersion\n" +
 		"      properties:\n" +
 		"        active:\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        defaultImplementation:\n" +
-		"          type: object\n" +
-		"        definition:\n" +
 		"          type: object\n" +
 		"        description:\n" +
 		"          type: string\n" +
@@ -13819,8 +13819,6 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
-		"        input:\n" +
-		"          type: object\n" +
 		"        managedBy:\n" +
 		"          type: string\n" +
 		"          enum:\n" +
@@ -13834,10 +13832,13 @@ var openAPI3YAML = []byte(
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
-		"        output:\n" +
-		"          type: object\n" +
 		"        owner:\n" +
 		"          type: object\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          minimum: 1\n" +
 		"        target:\n" +
 		"          type: object\n" +
 		"    action.ListResponse:\n" +
@@ -13864,8 +13865,6 @@ var openAPI3YAML = []byte(
 		"          example: true\n" +
 		"        defaultImplementation:\n" +
 		"          type: object\n" +
-		"        definition:\n" +
-		"          type: object\n" +
 		"        description:\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
@@ -13880,8 +13879,6 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
-		"        input:\n" +
-		"          type: object\n" +
 		"        managedBy:\n" +
 		"          type: string\n" +
 		"          enum:\n" +
@@ -13895,10 +13892,13 @@ var openAPI3YAML = []byte(
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
-		"        output:\n" +
-		"          type: object\n" +
 		"        owner:\n" +
 		"          type: object\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          minimum: 1\n" +
 		"        target:\n" +
 		"          type: object\n" +
 		"    action.Response:\n" +
@@ -13914,8 +13914,6 @@ var openAPI3YAML = []byte(
 		"        createdBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        defaultImplementation:\n" +
-		"          type: object\n" +
-		"        definition:\n" +
 		"          type: object\n" +
 		"        deletedAt:\n" +
 		"          type: string\n" +
@@ -13937,8 +13935,6 @@ var openAPI3YAML = []byte(
 		"        identity:\n" +
 		"          type: string\n" +
 		"          example: main\n" +
-		"        input:\n" +
-		"          type: object\n" +
 		"        managedBy:\n" +
 		"          type: string\n" +
 		"          enum:\n" +
@@ -13951,13 +13947,15 @@ var openAPI3YAML = []byte(
 		"          example: endge-core\n" +
 		"        meta:\n" +
 		"          type: object\n" +
-		"        output:\n" +
-		"          type: object\n" +
 		"        owner:\n" +
 		"          type: object\n" +
 		"        revision:\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
 		"        target:\n" +
 		"          type: object\n" +
 		"        updatedAt:\n" +

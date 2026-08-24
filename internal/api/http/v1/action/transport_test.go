@@ -21,4 +21,3 @@ func TestActionResponseUsesSourceContract(t *testing.T) {
 		}
 	}
 }
-

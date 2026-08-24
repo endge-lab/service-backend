@@ -13792,13 +13792,13 @@ components:
       required:
         - displayName
         - identity
+        - source
+        - sourceVersion
       properties:
         active:
           type: boolean
           example: true
         defaultImplementation:
-          type: object
-        definition:
           type: object
         description:
           type: string
@@ -13814,8 +13814,6 @@ components:
           type: string
           maxLength: 160
           example: main
-        input:
-          type: object
         managedBy:
           type: string
           enum:
@@ -13829,10 +13827,13 @@ components:
         meta:
           type: object
           additionalProperties: {}
-        output:
-          type: object
         owner:
           type: object
+        source:
+          type: string
+        sourceVersion:
+          type: integer
+          minimum: 1
         target:
           type: object
     action.ListResponse:
@@ -13859,8 +13860,6 @@ components:
           example: true
         defaultImplementation:
           type: object
-        definition:
-          type: object
         description:
           type: string
           example: Описание объекта
@@ -13875,8 +13874,6 @@ components:
           type: string
           maxLength: 160
           example: main
-        input:
-          type: object
         managedBy:
           type: string
           enum:
@@ -13890,10 +13887,13 @@ components:
         meta:
           type: object
           additionalProperties: {}
-        output:
-          type: object
         owner:
           type: object
+        source:
+          type: string
+        sourceVersion:
+          type: integer
+          minimum: 1
         target:
           type: object
     action.Response:
@@ -13909,8 +13909,6 @@ components:
         createdBy:
           $ref: "#/components/schemas/entities.Actor"
         defaultImplementation:
-          type: object
-        definition:
           type: object
         deletedAt:
           type: string
@@ -13932,8 +13930,6 @@ components:
         identity:
           type: string
           example: main
-        input:
-          type: object
         managedBy:
           type: string
           enum:
@@ -13946,13 +13942,15 @@ components:
           example: endge-core
         meta:
           type: object
-        output:
-          type: object
         owner:
           type: object
         revision:
           type: integer
           example: 3
+        source:
+          type: string
+        sourceVersion:
+          type: integer
         target:
           type: object
         updatedAt:

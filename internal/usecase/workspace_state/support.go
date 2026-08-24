@@ -557,7 +557,11 @@ type portableBundleNormalization struct {
 	IgnoredIntegrations        int
 	IgnoredLegacyFolders       int
 	NormalizedFolderReferences int
+	MigratedLegacyActions      int
+	NonEmptyLegacyActions      []string
 }
+
+const defaultActionSource = "defineAction({\n  contract: {\n    input: field('Object'),\n    output: field('Object'),\n  },\n\n  steps: {\n    result: input(),\n  },\n\n  output: output('result'),\n})\n"
 
 // normalizePortableBundle переводит legacy portable-артефакты в контракт backend import.
 func normalizePortableBundle(bundle *entities.PortableBundle) portableBundleNormalization {
@@ -578,6 +582,21 @@ func normalizePortableBundle(bundle *entities.PortableBundle) portableBundleNorm
 	if legacy, ok := bundle.Documents["componentSFCs"]; ok {
 		bundle.Documents["components"] = append(bundle.Documents["components"], legacy...)
 		delete(bundle.Documents, "componentSFCs")
+	}
+	for _, action := range bundle.Documents["actions"] {
+		if strings.TrimSpace(stringField(action, "source")) != "" {
+			continue
+		}
+		if hasNonEmptyLegacyActionFlow(action["definition"]) {
+			result.NonEmptyLegacyActions = append(result.NonEmptyLegacyActions, stringField(action, "identity"))
+			continue
+		}
+		action["source"] = defaultActionSource
+		action["sourceVersion"] = float64(1)
+		delete(action, "definition")
+		delete(action, "input")
+		delete(action, "output")
+		result.MigratedLegacyActions++
 	}
 	for _, folder := range bundle.Documents["folders"] {
 		if entityType := stringField(folder, "entityType"); entityType != "" {
@@ -636,6 +655,19 @@ func normalizePortableBundle(bundle *entities.PortableBundle) portableBundleNorm
 		bundle.Documents[kind] = filtered
 	}
 	return result
+}
+
+func hasNonEmptyLegacyActionFlow(value any) bool {
+	definition, ok := value.(map[string]any)
+	if !ok {
+		return false
+	}
+	for _, key := range []string{"nodes", "edges"} {
+		if items, ok := definition[key].([]any); ok && len(items) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // removeLegacySSEFromPortableBundle не позволяет старой глобальной настройке вернуться из snapshot.

@@ -16,7 +16,9 @@ func TestActionSourceValidation(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			input := map[string]any{}
-			for key, value := range valid { input[key] = value }
+			for key, value := range valid {
+				input[key] = value
+			}
 			mutate(input)
 			if err := validateDocument("actions", input); err == nil {
 				t.Fatal("invalid Action Source was accepted")
@@ -33,4 +35,3 @@ func TestActionSourceSizeLimit(t *testing.T) {
 		t.Fatal("oversized Action Source was accepted")
 	}
 }
-
