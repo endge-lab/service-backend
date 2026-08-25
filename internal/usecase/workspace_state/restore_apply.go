@@ -72,9 +72,6 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 		if e != nil {
 			return e
 		}
-		if latest.HeadSequence != live.HeadSequence {
-			return domainerrors.Conflict("pending_revisions_must_be_committed", "Workspace has uncommitted revisions")
-		}
 		scope.Workspace = *live
 
 		batch, e := s.repository.CreateMutationBatch(txctx, &scope.Workspace.ID, operation, current.User.ID)

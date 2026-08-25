@@ -85,16 +85,6 @@ func TestCommitReleaseBackupAndImportFlow(t *testing.T) {
 	afterRelease := perform(t, app, http.MethodPatch, "/api/v1/queries/portable-query", map[string]any{"source": "query { afterRelease }"}, afterReleaseHeaders)
 	assertStatus(t, afterRelease, fiber.StatusOK)
 	afterRelease.Body.Close()
-	secondHead := currentHeadSequence(t, app, headers)
-	blockedRestore := perform(t, app, http.MethodPost, "/api/v1/releases/portable-release/restore", map[string]any{"expectedHeadSequence": secondHead}, headers)
-	assertStatus(t, blockedRestore, fiber.StatusConflict)
-	blockedRestoreBody := decodeObject(t, blockedRestore)
-	if stringField(t, blockedRestoreBody, "code") != "pending_revisions_must_be_committed" {
-		t.Fatalf("restore с незакоммиченными revisions вернул неверную ошибку: %#v", blockedRestoreBody)
-	}
-	secondCommitResponse := perform(t, app, http.MethodPost, "/api/v1/commits", map[string]any{"message": "Second state", "revisionPolicy": "preserve", "expectedHeadSequence": secondHead}, headers)
-	assertStatus(t, secondCommitResponse, fiber.StatusCreated)
-	secondCommitID := stringField(t, decodeObject(t, secondCommitResponse), "id")
 
 	releaseRestorePlan := perform(t, app, http.MethodPost, "/api/v1/releases/portable-release/restore/plan", nil, headers)
 	assertStatus(t, releaseRestorePlan, fiber.StatusOK)
@@ -105,19 +95,25 @@ func TestCommitReleaseBackupAndImportFlow(t *testing.T) {
 	restoredFromRelease := perform(t, app, http.MethodGet, "/api/v1/queries/portable-query", nil, headers)
 	assertStatus(t, restoredFromRelease, fiber.StatusOK)
 	if stringField(t, decodeObject(t, restoredFromRelease), "source") != "query {}" {
-		t.Fatal("release restore не вернул сохранённое состояние")
+		t.Fatal("release restore с незакоммиченными revisions не вернул сохранённое состояние")
 	}
 
-	commitRestorePlan := perform(t, app, http.MethodPost, "/api/v1/commits/"+secondCommitID+"/restore/plan", nil, headers)
+	afterReleaseAgainHeaders := cloneHeaders(headers)
+	afterReleaseAgainHeaders["If-Match"] = restoredFromRelease.Header.Get("ETag")
+	afterReleaseAgain := perform(t, app, http.MethodPatch, "/api/v1/queries/portable-query", map[string]any{"source": "query { afterRelease }"}, afterReleaseAgainHeaders)
+	assertStatus(t, afterReleaseAgain, fiber.StatusOK)
+	afterReleaseAgain.Body.Close()
+
+	commitRestorePlan := perform(t, app, http.MethodPost, "/api/v1/commits/"+commitID+"/restore/plan", nil, headers)
 	assertStatus(t, commitRestorePlan, fiber.StatusOK)
 	commitRestorePlan.Body.Close()
-	commitRestore := perform(t, app, http.MethodPost, "/api/v1/commits/"+secondCommitID+"/restore", map[string]any{"expectedHeadSequence": currentHeadSequence(t, app, headers)}, headers)
+	commitRestore := perform(t, app, http.MethodPost, "/api/v1/commits/"+commitID+"/restore", map[string]any{"expectedHeadSequence": currentHeadSequence(t, app, headers)}, headers)
 	assertStatus(t, commitRestore, fiber.StatusCreated)
 	commitRestore.Body.Close()
 	restoredFromCommit := perform(t, app, http.MethodGet, "/api/v1/queries/portable-query", nil, headers)
 	assertStatus(t, restoredFromCommit, fiber.StatusOK)
-	if stringField(t, decodeObject(t, restoredFromCommit), "source") != "query { afterRelease }" {
-		t.Fatal("commit restore не вернул точное состояние второго commit")
+	if stringField(t, decodeObject(t, restoredFromCommit), "source") != "query {}" {
+		t.Fatal("commit restore с незакоммиченными revisions не вернул точное состояние commit")
 	}
 
 	manualBackup := perform(t, app, http.MethodPost, "/api/v1/domain/backups", map[string]any{"description": "Перед импортом"}, headers)

@@ -562,6 +562,16 @@ type portableBundleNormalization struct {
 
 const defaultActionSource = "defineAction({\n  contract: {\n    input: field('Object'),\n    output: field('Object'),\n  },\n\n  steps: {\n    result: input(),\n  },\n\n  output: output('result'),\n})\n"
 
+// normalizePortableBundleForImport фиксирует identity исходного артефакта
+// до legacy-нормализации, которая может изменить portable content.
+func normalizePortableBundleForImport(bundle *entities.PortableBundle) (string, portableBundleNormalization, error) {
+	computedSourceDomainVersion, err := domainversion.Compute(*bundle)
+	if err != nil {
+		return "", portableBundleNormalization{}, err
+	}
+	return computedSourceDomainVersion, normalizePortableBundle(bundle), nil
+}
+
 // normalizePortableBundle переводит legacy portable-артефакты в контракт backend import.
 func normalizePortableBundle(bundle *entities.PortableBundle) portableBundleNormalization {
 	result := portableBundleNormalization{}
@@ -665,13 +675,9 @@ func removeLegacySSEFromPortableBundle(bundle *entities.PortableBundle) {
 	}
 }
 
-// prepareImportDomainVersion сохраняет проверяемую версию исходного артефакта,
-// затем переводит snapshot в актуальное persisted-представление для применения.
-func prepareImportDomainVersion(bundle *entities.PortableBundle, providedDomainVersion string) (string, bool, error) {
-	computedSourceDomainVersion, err := domainversion.Compute(*bundle)
-	if err != nil {
-		return "", false, err
-	}
+// finalizeImportDomainVersion переводит уже проверенный и нормализованный snapshot
+// в актуальное persisted-представление для применения.
+func finalizeImportDomainVersion(bundle *entities.PortableBundle, providedDomainVersion string) (bool, error) {
 	if bundle.Documents == nil {
 		bundle.Documents = map[string][]map[string]any{}
 	}
@@ -681,14 +687,14 @@ func prepareImportDomainVersion(bundle *entities.PortableBundle, providedDomainV
 	defaultsAdded := ensureSFCEditingDefaultsInPortableBundle(bundle)
 	effectiveDomainVersion, err := domainversion.Compute(*bundle)
 	if err != nil {
-		return "", false, err
+		return false, err
 	}
 	if providedDomainVersion != "" {
 		bundle.DomainVersion = effectiveDomainVersion
 	} else {
 		bundle.DomainVersion = ""
 	}
-	return computedSourceDomainVersion, defaultsAdded, nil
+	return defaultsAdded, nil
 }
 
 // ensureSFCEditingDefaultsInPortableBundle добавляет только отсутствующие defaults.

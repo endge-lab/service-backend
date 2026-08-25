@@ -29,7 +29,10 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 		return nil, domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
 	}
 	providedDomainVersion := bundle.DomainVersion
-	normalization := normalizePortableBundle(&bundle)
+	computedSourceDomainVersion, normalization, versionErr := normalizePortableBundleForImport(&bundle)
+	if versionErr != nil {
+		return nil, domainerrors.InvalidInput("domain_version_invalid", "Domain version could not be computed")
+	}
 	plan := &entities.ImportPlan{
 		Valid: true, TargetWorkspace: scope.Workspace.Identity,
 		TargetETag:           workspaceETag(scope.Workspace.Generation, scope.Workspace.HeadSequence),
@@ -115,7 +118,7 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 			plan.Incoming.Documents++
 		}
 	}
-	computedSourceDomainVersion, sfcEditingDefaultsAdded, versionErr := prepareImportDomainVersion(&bundle, providedDomainVersion)
+	sfcEditingDefaultsAdded, versionErr := finalizeImportDomainVersion(&bundle, providedDomainVersion)
 	if versionErr != nil {
 		return nil, domainerrors.InvalidInput("domain_version_invalid", "Domain version could not be computed")
 	}
@@ -239,7 +242,7 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 		return nil, domainerrors.Internal("import_plan_corrupted", "Stored import plan is corrupted")
 	}
 	removeLegacySSEFromPortableBundle(&bundle)
-	if _, _, versionErr := prepareImportDomainVersion(&bundle, bundle.DomainVersion); versionErr != nil {
+	if _, versionErr := finalizeImportDomainVersion(&bundle, bundle.DomainVersion); versionErr != nil {
 		return nil, domainerrors.Internal("import_plan_corrupted", "Stored import plan domain version is invalid")
 	}
 	result = &entities.SnapshotImportResult{WorkspaceIdentity: scope.Workspace.Identity}
