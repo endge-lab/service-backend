@@ -2,6 +2,7 @@ package workspace_state
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
@@ -85,5 +86,29 @@ func TestNormalizePortableBundleMigratesQueryV1(t *testing.T) {
 	normalizePortableBundle(&bundle)
 	if version, ok := numberField(bundle.Documents["queries"][0], "sourceVersion"); !ok || version != 2 {
 		t.Fatalf("query sourceVersion was not migrated to v2: %#v", bundle.Documents["queries"][0])
+	}
+}
+
+func TestNormalizePortableBundleMigratesLegacyExternalPayloadVocab(t *testing.T) {
+	bundle := entities.PortableBundle{Documents: map[string][]map[string]any{
+		"vocabs": {{
+			"identity": "airlines", "displayName": "Airlines",
+			"mode": "external_payload", "baseApiUrl": "{ENDPOINT_VOCABS_SERVICE}",
+			"collectionSlug": "airlines", "authMode": "inherit",
+		}},
+	}}
+
+	result := normalizePortableBundle(&bundle)
+	vocab := bundle.Documents["vocabs"][0]
+	if result.MigratedLegacyVocabs != 1 {
+		t.Fatalf("legacy Vocab was not migrated: %+v", result)
+	}
+	if version, ok := numberField(vocab, "sourceVersion"); !ok || version != 1 {
+		t.Fatalf("sourceVersion was not set: %#v", vocab)
+	}
+	for _, fragment := range []string{`provider: payload({`, `baseUrl: env("ENDPOINT_VOCABS_SERVICE")`, `collection: "airlines"`, `auth: { mode: "inherit" }`} {
+		if !strings.Contains(stringField(vocab, "source"), fragment) {
+			t.Fatalf("migrated source does not contain %q: %s", fragment, stringField(vocab, "source"))
+		}
 	}
 }

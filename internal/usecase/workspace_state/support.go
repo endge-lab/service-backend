@@ -558,6 +558,7 @@ type portableBundleNormalization struct {
 	IgnoredLegacyFolders       int
 	NormalizedFolderReferences int
 	MigratedLegacyActions      int
+	MigratedLegacyVocabs       int
 }
 
 const defaultActionSource = "defineAction({\n  contract: {\n    input: field('Object'),\n    output: field('Object'),\n  },\n\n  steps: {\n    result: input(),\n  },\n\n  output: output('result'),\n})\n"
@@ -602,6 +603,11 @@ func normalizePortableBundle(bundle *entities.PortableBundle) portableBundleNorm
 		delete(action, "input")
 		delete(action, "output")
 		result.MigratedLegacyActions++
+	}
+	for _, vocab := range bundle.Documents["vocabs"] {
+		if normalizeLegacyVocabSource(vocab) {
+			result.MigratedLegacyVocabs++
+		}
 	}
 	for _, folder := range bundle.Documents["folders"] {
 		if entityType := stringField(folder, "entityType"); entityType != "" {
@@ -660,6 +666,58 @@ func normalizePortableBundle(bundle *entities.PortableBundle) portableBundleNorm
 		bundle.Documents[kind] = filtered
 	}
 	return result
+}
+
+// normalizeLegacyVocabSource переносит legacy external Payload Vocab в Source
+// до сохранения import snapshot в Domain.
+func normalizeLegacyVocabSource(vocab map[string]any) bool {
+	if strings.TrimSpace(stringField(vocab, "source")) != "" || stringField(vocab, "mode") != "external_payload" {
+		return false
+	}
+	collection := stringField(vocab, "collectionSlug")
+	if collection == "" {
+		collection = stringField(vocab, "identity")
+	}
+	authMode := stringField(vocab, "authMode")
+	if authMode != "profile" && authMode != "none" {
+		authMode = "inherit"
+	}
+	auth := `{ mode: ` + sourceString(authMode)
+	if authMode == "profile" {
+		auth += `, profile: ` + sourceString(stringField(vocab, "authProfileIdentity"))
+	}
+	auth += ` }`
+	vocab["source"] = "defineVocab({\n  provider: payload({\n    baseUrl: " + legacyVocabBaseURLSource(stringField(vocab, "baseApiUrl")) + ",\n    collection: " + sourceString(collection) + ",\n    auth: " + auth + ",\n  }),\n\n  outputs: {\n    items: output()\n      .from(response()),\n  },\n})\n"
+	vocab["sourceVersion"] = float64(1)
+	return true
+}
+
+func legacyVocabBaseURLSource(value string) string {
+	value = strings.TrimSpace(value)
+	if len(value) > 2 && value[0] == '{' && value[len(value)-1] == '}' {
+		name := value[1 : len(value)-1]
+		if isSourceEnvironmentName(name) {
+			return "env(" + sourceString(name) + ")"
+		}
+	}
+	return sourceString(value)
+}
+
+func isSourceEnvironmentName(value string) bool {
+	if value == "" {
+		return false
+	}
+	for index, char := range value {
+		if !(char == '_' || char >= 'A' && char <= 'Z' || char >= 'a' && char <= 'z' || index > 0 && char >= '0' && char <= '9') {
+			return false
+		}
+	}
+	return true
+}
+
+func sourceString(value string) string {
+	encoded, _ := json.Marshal(value)
+	return string(encoded)
 }
 
 // removeLegacySSEFromPortableBundle не позволяет старой глобальной настройке вернуться из snapshot.

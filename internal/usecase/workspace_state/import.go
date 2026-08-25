@@ -52,6 +52,9 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 	if normalization.MigratedLegacyActions > 0 {
 		plan.Warnings = append(plan.Warnings, fmt.Sprintf("%d legacy Action documents with empty Source were migrated to default Action Source", normalization.MigratedLegacyActions))
 	}
+	if normalization.MigratedLegacyVocabs > 0 {
+		plan.Warnings = append(plan.Warnings, fmt.Sprintf("%d legacy external Payload Vocab documents were migrated to Source", normalization.MigratedLegacyVocabs))
+	}
 	if bundle.Kind != "workspace-snapshot" {
 		plan.Valid = false
 		plan.ValidationErrors = append(plan.ValidationErrors, "kind must be workspace-snapshot")
