@@ -367,10 +367,23 @@ func (m *SessionManager) safeReturnURL(candidate string) string {
 	if !requested.IsAbs() {
 		requested = fallback.ResolveReference(requested)
 	}
-	if requested.Scheme != fallback.Scheme || !strings.EqualFold(requested.Host, fallback.Host) {
+	if requested.User != nil {
 		return fallback.String()
 	}
-	return requested.String()
+	if sameURLOrigin(requested, fallback) {
+		return requested.String()
+	}
+	for _, rawOrigin := range m.config.AllowedReturnOrigins {
+		allowed, parseErr := url.Parse(rawOrigin)
+		if parseErr == nil && sameURLOrigin(requested, allowed) {
+			return requested.String()
+		}
+	}
+	return fallback.String()
+}
+
+func sameURLOrigin(left, right *url.URL) bool {
+	return strings.EqualFold(left.Scheme, right.Scheme) && strings.EqualFold(left.Host, right.Host)
 }
 
 func (m *SessionManager) encrypt(value string) ([]byte, error) {

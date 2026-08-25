@@ -58,6 +58,7 @@ type ConfiguratorAuthConfig struct {
 	Scopes                        []string
 	RedirectURL                   string
 	ReturnURL                     string
+	AllowedReturnOrigins          []string
 	SessionCookieName             string
 	SessionEncryptionKeyID        string
 	SessionEncryptionKey          string
@@ -160,6 +161,7 @@ func Load() (*Config, error) {
 		Scopes:                        csv(env("AUTH_SCOPES", "openid,profile,email")),
 		RedirectURL:                   env("AUTH_REDIRECT_URL", strings.TrimRight(base.App.PublicURL, "/")+"/auth/callback"),
 		ReturnURL:                     env("AUTH_RETURN_URL", strings.TrimRight(base.App.PublicURL, "/")),
+		AllowedReturnOrigins:          csv(os.Getenv("AUTH_ALLOWED_RETURN_ORIGINS")),
 		SessionCookieName:             env("AUTH_SESSION_COOKIE_NAME", "endge_configurator_session"),
 		SessionEncryptionKeyID:        env("AUTH_SESSION_ENCRYPTION_KEY_ID", "v1"),
 		SessionEncryptionKey:          strings.TrimSpace(os.Getenv("AUTH_SESSION_ENCRYPTION_KEY")),
@@ -229,6 +231,14 @@ func (c ConfiguratorAuthConfig) Validate(production bool) error {
 	if c.CookieSameSite == "none" && !c.CookieSecure {
 		return fmt.Errorf("AUTH_COOKIE_SECURE must be true when AUTH_COOKIE_SAME_SITE=none")
 	}
+	if err := validateAuthHTTPURL("AUTH_RETURN_URL", c.ReturnURL, production, false); err != nil {
+		return err
+	}
+	for _, origin := range c.AllowedReturnOrigins {
+		if err := validateAuthHTTPURL("AUTH_ALLOWED_RETURN_ORIGINS", origin, production, true); err != nil {
+			return err
+		}
+	}
 	if c.Adapter == "dev" {
 		if production {
 			return fmt.Errorf("AUTH_LOGIN_ADAPTER=dev is forbidden in production")
@@ -238,21 +248,16 @@ func (c ConfiguratorAuthConfig) Validate(production bool) error {
 	if c.Adapter != "oidc" {
 		return fmt.Errorf("AUTH_LOGIN_ADAPTER must be oidc or dev")
 	}
-	if c.AuthorizationURL == "" || c.TokenURL == "" || c.ClientID == "" || c.RedirectURL == "" || c.ReturnURL == "" {
+	if c.AuthorizationURL == "" || c.TokenURL == "" || c.ClientID == "" || c.RedirectURL == "" {
 		return fmt.Errorf("Configurator OIDC login configuration is incomplete")
 	}
 	for key, value := range map[string]string{
 		"AUTH_AUTHORIZATION_URL": c.AuthorizationURL,
 		"AUTH_TOKEN_URL":         c.TokenURL,
 		"AUTH_REDIRECT_URL":      c.RedirectURL,
-		"AUTH_RETURN_URL":        c.ReturnURL,
 	} {
-		parsed, err := url.Parse(value)
-		if err != nil || parsed.Scheme == "" || parsed.Host == "" {
-			return fmt.Errorf("%s must be an absolute URL", key)
-		}
-		if production && parsed.Scheme != "https" {
-			return fmt.Errorf("%s must use https in production", key)
+		if err := validateAuthHTTPURL(key, value, production, false); err != nil {
+			return err
 		}
 	}
 	key, err := base64.StdEncoding.DecodeString(c.SessionEncryptionKey)
@@ -281,6 +286,23 @@ func (c ConfiguratorAuthConfig) Validate(production bool) error {
 	}
 	if production && !c.CookieSecure {
 		return fmt.Errorf("AUTH_COOKIE_SECURE must be true in production")
+	}
+	return nil
+}
+
+func validateAuthHTTPURL(key, value string, production, originOnly bool) error {
+	parsed, err := url.Parse(value)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" || parsed.User != nil {
+		return fmt.Errorf("%s must contain absolute HTTP URLs without user info", key)
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return fmt.Errorf("%s must use http or https", key)
+	}
+	if originOnly && ((parsed.Path != "" && parsed.Path != "/") || parsed.RawQuery != "" || parsed.Fragment != "") {
+		return fmt.Errorf("%s entries must contain only scheme, host and optional port", key)
+	}
+	if production && parsed.Scheme != "https" {
+		return fmt.Errorf("%s must use https in production", key)
 	}
 	return nil
 }

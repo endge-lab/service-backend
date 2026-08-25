@@ -99,6 +99,7 @@ AUTH_LOGOUT_URL=https://keycloak.example/realms/endge/protocol/openid-connect/lo
 AUTH_CLIENT_ID=endge-configurator
 AUTH_REDIRECT_URL=https://backend.example.com/auth/callback
 AUTH_RETURN_URL=https://configurator.example.com
+AUTH_ALLOWED_RETURN_ORIGINS=https://configurator.example.com
 AUTH_SESSION_COOKIE_NAME=endge_configurator_session
 AUTH_SESSION_ENCRYPTION_KEY_ID=v1
 AUTH_SESSION_ENCRYPTION_KEY=<base64-encoded-32-byte-key>
@@ -120,6 +121,12 @@ GET  /auth/callback
 GET  /auth/session
 POST /auth/logout
 ```
+
+Configurator передаёт текущий browser URL через `returnTo`. Backend возвращает
+пользователя на него только при совпадении origin с `AUTH_RETURN_URL` или одним
+из comma-separated значений `AUTH_ALLOWED_RETURN_ORIGINS`; иначе используется
+`AUTH_RETURN_URL`. Wildcard не поддерживается, чтобы backend не становился open
+redirect. Keycloak всегда возвращает браузер только на `AUTH_REDIRECT_URL`.
 
 Callback хранит в PostgreSQL только зашифрованный refresh token (если provider
 его выдал) и выдаёт браузеру opaque `HttpOnly` cookie. Access token после

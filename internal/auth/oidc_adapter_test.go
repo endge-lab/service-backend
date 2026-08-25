@@ -36,11 +36,20 @@ func TestOIDCAdapterBuildsProviderRedirectWithoutFrontendSDK(t *testing.T) {
 
 // TestSessionManagerRejectsExternalReturnURL проверяет защиту от open redirect.
 func TestSessionManagerRejectsExternalReturnURL(t *testing.T) {
-	manager := &SessionManager{config: config.ConfiguratorAuthConfig{ReturnURL: "https://configurator.example/start"}}
+	manager := &SessionManager{config: config.ConfiguratorAuthConfig{
+		ReturnURL:            "https://configurator.example/start",
+		AllowedReturnOrigins: []string{"http://localhost:5173"},
+	}}
 	if got := manager.safeReturnURL("https://attacker.example/callback"); got != "https://configurator.example/start" {
 		t.Fatalf("unsafe return URL accepted: %q", got)
 	}
 	if got := manager.safeReturnURL("/workspace/default"); got != "https://configurator.example/workspace/default" {
 		t.Fatalf("relative return URL resolved to %q", got)
+	}
+	if got := manager.safeReturnURL("http://localhost:5173/workspace/default?tab=source#editor"); got != "http://localhost:5173/workspace/default?tab=source#editor" {
+		t.Fatalf("allowed local return URL rejected: %q", got)
+	}
+	if got := manager.safeReturnURL("http://localhost:5174/workspace/default"); got != "https://configurator.example/start" {
+		t.Fatalf("unlisted local origin accepted: %q", got)
 	}
 }

@@ -53,6 +53,7 @@ func TestLoadFromEnvironmentWithoutYAML(t *testing.T) {
 	t.Setenv("POSTGRES_DATABASE", "endge_service_backend")
 	t.Setenv("AUTH_MODE", "dev")
 	t.Setenv("AUTH_LOGIN_ADAPTER", "dev")
+	t.Setenv("AUTH_ALLOWED_RETURN_ORIGINS", "https://configurator.example.test,http://localhost:5173")
 
 	cfg, err := Load()
 	if err != nil {
@@ -63,6 +64,9 @@ func TestLoadFromEnvironmentWithoutYAML(t *testing.T) {
 	}
 	if cfg.Postgres.Host != "postgres.example.test" || cfg.Postgres.Database != "endge_service_backend" {
 		t.Fatalf("postgres config mismatch: %#v", cfg.Postgres)
+	}
+	if len(cfg.ConfiguratorAuth.AllowedReturnOrigins) != 2 || cfg.ConfiguratorAuth.AllowedReturnOrigins[1] != "http://localhost:5173" {
+		t.Fatalf("return origins mismatch: %#v", cfg.ConfiguratorAuth.AllowedReturnOrigins)
 	}
 }
 
@@ -127,6 +131,24 @@ func TestConfiguratorAuthConfigValidatesCookieSameSite(t *testing.T) {
 	value.CookieSameSite = "invalid"
 	if err := value.Validate(false); err == nil {
 		t.Fatal("invalid SameSite mode was accepted")
+	}
+}
+
+func TestConfiguratorAuthConfigValidatesAllowedReturnOrigins(t *testing.T) {
+	value := validConfiguratorAuthConfig()
+	value.AllowedReturnOrigins = []string{"https://configurator.example", "https://configurator-local.example:5173"}
+	if err := value.Validate(true); err != nil {
+		t.Fatalf("valid return origins rejected: %v", err)
+	}
+	for _, invalid := range []string{"*", "https://configurator.example/path", "https://user@configurator.example"} {
+		value.AllowedReturnOrigins = []string{invalid}
+		if err := value.Validate(false); err == nil {
+			t.Fatalf("invalid return origin %q was accepted", invalid)
+		}
+	}
+	value.AllowedReturnOrigins = []string{"http://localhost:5173"}
+	if err := value.Validate(true); err == nil {
+		t.Fatal("production accepted insecure return origin")
 	}
 }
 
