@@ -101,9 +101,9 @@ AUTH_REDIRECT_URL=https://backend.example.com/auth/callback
 AUTH_RETURN_URL=https://configurator.example.com
 AUTH_ALLOWED_RETURN_ORIGINS=https://configurator.example.com
 AUTH_SESSION_COOKIE_NAME=endge_configurator_session
-AUTH_SESSION_ENCRYPTION_KEY_ID=v1
-AUTH_SESSION_ENCRYPTION_KEY=<base64-encoded-32-byte-key>
-AUTH_SESSION_PREVIOUS_ENCRYPTION_KEYS=
+ENCRYPTION_KEY_ID=v1
+ENCRYPTION_KEY=<base64-encoded-32-byte-key>
+ENCRYPTION_PREVIOUS_KEYS=
 AUTH_SESSION_CLEANUP_INTERVAL=15m
 AUTH_COOKIE_SECURE=true
 ```
@@ -134,9 +134,9 @@ Callback хранит в PostgreSQL только зашифрованный refr
 принимает эту cookie или bearer token, кроме development с явным `AUTH_MODE=dev`.
 
 Зашифрованные auth-значения содержат версию ключа. Для ротации сначала задайте
-новые `AUTH_SESSION_ENCRYPTION_KEY_ID` и `AUTH_SESSION_ENCRYPTION_KEY`, а старый
+новые `ENCRYPTION_KEY_ID` и `ENCRYPTION_KEY`, а старый
 ключ перенесите в список вида
-`AUTH_SESSION_PREVIOUS_ENCRYPTION_KEYS=v1:<base64>,v0:<base64>`. Новые и
+`ENCRYPTION_PREVIOUS_KEYS=v1:<base64>,v0:<base64>`. Новые и
 обновляемые sessions шифруются текущим ключом; предыдущие используются только
 для чтения. Старые ключи можно убрать после истечения большего из
 `AUTH_SESSION_TTL` и `AUTH_TRANSACTION_TTL` для данных, созданных до ротации. Просроченные login

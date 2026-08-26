@@ -16,6 +16,8 @@ func CommonModules() fx.Option {
 	return fx.Options(
 		fx.Provide(
 			config.Load,
+			newEncryptionKeyring,
+			newAIWorkbenchGateway,
 			observability.NewCore,
 			newPostgres,
 			newOpenSearchLogExporter,

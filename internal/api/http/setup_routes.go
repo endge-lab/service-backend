@@ -8,6 +8,8 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/respond"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/access_control"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/action"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/ai_assistant"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/ai_catalog"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/auth_profile"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/backend_connection"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/backup"
@@ -52,6 +54,8 @@ type Handlers struct {
 
 	CurrentUser       *httpmiddleware.CurrentUserMiddleware
 	AccessControl     *access_control.Handler
+	AICatalog         *ai_catalog.Handler
+	AIAssistant       *ai_assistant.Handler
 	ConfiguratorAuth  *configuratorauth.Handler
 	Workspace         *workspace.Handler
 	BackendConnection *backend_connection.Handler
@@ -105,6 +109,7 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, handlers Handlers, authMidd
 	v1 := api.Group("/v1")
 	workspace.RegisterRoutes(v1, handlers.Workspace)
 	access_control.RegisterRoutes(v1, handlers.AccessControl)
+	ai_catalog.RegisterRoutes(v1, handlers.AICatalog)
 	backend_connection.RegisterRoutes(v1, handlers.BackendConnection)
 	integration.RegisterRoutes(v1, handlers.Integration)
 	scoped := v1.Group("", handlers.Workspace.RequireWorkspace())
@@ -137,5 +142,6 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, handlers Handlers, authMidd
 	document_move.RegisterRoutes(scoped, handlers.DocumentMove)
 	backup.RegisterRoutes(scoped, handlers.Backup)
 	release.RegisterRoutes(scoped, handlers.Release)
+	ai_assistant.RegisterRoutes(scoped, handlers.AIAssistant)
 	app.Use(func(c *fiber.Ctx) error { return respond.WriteErrorResponse(c, respond.ErrRouteNotFound) })
 }

@@ -712,6 +712,867 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/ai/capabilities:
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает доступность Workbench, права пользователя, adapters,
+        модели и причину запрета отправки.
+      tags:
+        - AI assistant
+      summary: Получить AI capabilities
+      operationId: getAICapabilities
+      parameters:
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ai_assistant.CapabilitiesResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/ai/conversations:
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает cursor-страницу диалогов текущего пользователя в
+        выбранном Workspace.
+      tags:
+        - AI assistant
+      summary: Получить AI conversations
+      operationId: listAIConversations
+      parameters:
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Включить архивные диалоги
+          name: includeArchived
+          in: query
+          schema:
+            type: boolean
+        - description: Размер страницы
+          name: limit
+          in: query
+          schema:
+            type: integer
+            maximum: 100
+            default: 50
+        - description: Opaque cursor
+          name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ai_assistant.ConversationListResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+    post:
+      security:
+        - BearerAuth: []
+      description: Создаёт единственный активный диалог пользователя в Workspace с
+        выбранной enabled-моделью.
+      tags:
+        - AI assistant
+      summary: Создать AI conversation
+      operationId: createAIConversation
+      parameters:
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ai_assistant.CreateConversationRequest"
+        description: Conversation
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ai_assistant.ConversationResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/ai/conversations/reset:
+    post:
+      security:
+        - BearerAuth: []
+      description: Атомарно архивирует текущий активный диалог и создаёт новый.
+      tags:
+        - AI assistant
+      summary: Сбросить AI conversation
+      operationId: resetAIConversation
+      parameters:
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ai_assistant.ResetConversationRequest"
+        description: Reset
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ai_assistant.ConversationResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/ai/conversations/{id}":
+    patch:
+      security:
+        - BearerAuth: []
+      description: Меняет snapshot модели только у диалога, в котором ещё нет сообщений.
+      tags:
+        - AI assistant
+      summary: Изменить модель AI conversation
+      operationId: patchAIConversation
+      parameters:
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Conversation ID
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ai_assistant.PatchConversationRequest"
+        description: Новая модель
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ai_assistant.ConversationResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/ai/conversations/{id}/messages":
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает до 50 сообщений по opaque cursor с проверкой ownership.
+      tags:
+        - AI assistant
+      summary: Получить сообщения AI conversation
+      operationId: listAIConversationMessages
+      parameters:
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Conversation ID
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Размер страницы
+          name: limit
+          in: query
+          schema:
+            type: integer
+            maximum: 50
+            default: 50
+        - description: Opaque cursor
+          name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ai_assistant.MessageListResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/ai/conversations/{id}/runs":
+    post:
+      security:
+        - BearerAuth: []
+      description: Формирует актуальный ExportLive snapshot и проксирует gRPC stream
+        Workbench как SSE.
+      tags:
+        - AI assistant
+      summary: Запустить AI run
+      operationId: runAIConversation
+      parameters:
+        - description: Workspace identity
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Conversation ID
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ai_assistant.RunRequest"
+        description: Prompt и request ID
+        required: true
+      responses:
+        "200":
+          description: "SSE events: started, content_delta, completed или failed"
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "400":
+          description: Bad Request
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "502":
+          description: Bad Gateway
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "504":
+          description: Gateway Timeout
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/ai/model-profiles:
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает все model profiles платформы без soft-delete фильтрации.
+      tags:
+        - AI catalog
+      summary: Получить AI model profiles
+      operationId: listAIModelProfiles
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ai_catalog.ModelsResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+    post:
+      security:
+        - BearerAuth: []
+      description: Создаёт model profile; default назначается только явно.
+      tags:
+        - AI catalog
+      summary: Создать AI model profile
+      operationId: createAIModelProfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ai_catalog.CreateModelRequest"
+        description: Model profile
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ai_catalog.ModelResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/ai/model-profiles/{id}":
+    delete:
+      security:
+        - BearerAuth: []
+      description: Физически удаляет profile и не выбирает новый default автоматически.
+      tags:
+        - AI catalog
+      summary: Удалить AI model profile
+      operationId: deleteAIModelProfile
+      parameters:
+        - description: Model profile ID
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+    patch:
+      security:
+        - BearerAuth: []
+      description: Частично изменяет profile и обеспечивает не более одного enabled default.
+      tags:
+        - AI catalog
+      summary: Изменить AI model profile
+      operationId: patchAIModelProfile
+      parameters:
+        - description: Model profile ID
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ai_catalog.PatchModelRequest"
+        description: Изменяемые поля
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ai_catalog.ModelResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/ai/provider-adapters:
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает фиксированный список adapter IDs, поддерживаемых платформой.
+      tags:
+        - AI catalog
+      summary: Получить AI adapters
+      operationId: listAIProviderAdapters
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ai_catalog.AdaptersResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/ai/provider-connections:
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает connections без значения credential, только с признаком
+        его наличия.
+      tags:
+        - AI catalog
+      summary: Получить AI connections
+      operationId: listAIProviderConnections
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ai_catalog.ConnectionsResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+    post:
+      security:
+        - BearerAuth: []
+      description: Создаёт connection платформы и сохраняет переданный credential в
+        зашифрованном виде.
+      tags:
+        - AI catalog
+      summary: Создать AI connection
+      operationId: createAIProviderConnection
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ai_catalog.CreateConnectionRequest"
+        description: Connection
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ai_catalog.ConnectionResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/ai/provider-connections/{id}":
+    delete:
+      security:
+        - BearerAuth: []
+      description: Физически удаляет connection, credential и все связанные model profiles.
+      tags:
+        - AI catalog
+      summary: Удалить AI connection
+      operationId: deleteAIProviderConnection
+      parameters:
+        - description: Connection ID
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+    patch:
+      security:
+        - BearerAuth: []
+      description: Частично изменяет имя, base URL или enabled-состояние connection.
+      tags:
+        - AI catalog
+      summary: Изменить AI connection
+      operationId: patchAIProviderConnection
+      parameters:
+        - description: Connection ID
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ai_catalog.PatchConnectionRequest"
+        description: Изменяемые поля
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ai_catalog.ConnectionResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/ai/provider-connections/{id}/credential":
+    put:
+      security:
+        - BearerAuth: []
+      description: Заменяет зашифрованный credential, не возвращая его значение в ответе.
+      tags:
+        - AI catalog
+      summary: Заменить credential AI connection
+      operationId: replaceAIProviderConnectionCredential
+      parameters:
+        - description: Connection ID
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ai_catalog.ReplaceCredentialRequest"
+        description: Новый credential
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ai_catalog.ConnectionResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
   /api/v1/auth-profiles:
     get:
       security:
@@ -13959,6 +14820,243 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+    ai_assistant.CapabilitiesResponse:
+      type: object
+      properties:
+        adapters:
+          type: array
+          items:
+            type: string
+        available:
+          type: boolean
+        canRun:
+          type: boolean
+        canView:
+          type: boolean
+        models:
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.AIModelProfile"
+        reason:
+          type: string
+    ai_assistant.ConversationListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.AIConversation"
+        nextCursor:
+          type: string
+    ai_assistant.ConversationResponse:
+      type: object
+      properties:
+        archived:
+          type: boolean
+        createdAt:
+          type: string
+        id:
+          type: string
+        messageCount:
+          type: integer
+        model:
+          $ref: "#/components/schemas/entities.AIModelSnapshot"
+        updatedAt:
+          type: string
+        workspaceId:
+          type: string
+    ai_assistant.CreateConversationRequest:
+      type: object
+      required:
+        - modelProfileId
+      properties:
+        modelProfileId:
+          type: string
+    ai_assistant.MessageListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.AIMessage"
+        nextCursor:
+          type: string
+    ai_assistant.PatchConversationRequest:
+      type: object
+      required:
+        - modelProfileId
+      properties:
+        modelProfileId:
+          type: string
+    ai_assistant.ResetConversationRequest:
+      type: object
+      required:
+        - modelProfileId
+      properties:
+        currentConversationId:
+          type: string
+        modelProfileId:
+          type: string
+    ai_assistant.RunRequest:
+      type: object
+      required:
+        - modelProfileId
+        - prompt
+        - requestId
+      properties:
+        modelProfileId:
+          type: string
+        prompt:
+          type: string
+          maxLength: 20000
+        requestId:
+          type: string
+    ai_catalog.AdaptersResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: string
+    ai_catalog.ConnectionResponse:
+      type: object
+      properties:
+        adapter:
+          type: string
+        baseUrl:
+          type: string
+        createdAt:
+          type: string
+        createdBy:
+          type: string
+        enabled:
+          type: boolean
+        hasCredential:
+          type: boolean
+        id:
+          type: string
+        modelCount:
+          type: integer
+        name:
+          type: string
+        updatedAt:
+          type: string
+        updatedBy:
+          type: string
+    ai_catalog.ConnectionsResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.AIProviderConnection"
+        total:
+          type: integer
+    ai_catalog.CreateConnectionRequest:
+      type: object
+      required:
+        - adapter
+        - name
+      properties:
+        adapter:
+          type: string
+          enum:
+            - anthropic
+            - ollama
+        baseUrl:
+          type: string
+        credential:
+          type: string
+        enabled:
+          type: boolean
+        name:
+          type: string
+          maxLength: 160
+    ai_catalog.CreateModelRequest:
+      type: object
+      required:
+        - connectionId
+        - displayName
+        - providerModelId
+      properties:
+        connectionId:
+          type: string
+        displayName:
+          type: string
+          maxLength: 160
+        enabled:
+          type: boolean
+        isDefault:
+          type: boolean
+        providerModelId:
+          type: string
+          maxLength: 160
+    ai_catalog.ModelResponse:
+      type: object
+      properties:
+        adapter:
+          type: string
+        connectionId:
+          type: string
+        connectionName:
+          type: string
+        createdAt:
+          type: string
+        createdBy:
+          type: string
+        displayName:
+          type: string
+        enabled:
+          type: boolean
+        id:
+          type: string
+        isDefault:
+          type: boolean
+        providerModelId:
+          type: string
+        updatedAt:
+          type: string
+        updatedBy:
+          type: string
+    ai_catalog.ModelsResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.AIModelProfile"
+        total:
+          type: integer
+    ai_catalog.PatchConnectionRequest:
+      type: object
+      properties:
+        baseUrl:
+          type: string
+        enabled:
+          type: boolean
+        name:
+          type: string
+          maxLength: 160
+    ai_catalog.PatchModelRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+          maxLength: 160
+        enabled:
+          type: boolean
+        isDefault:
+          type: boolean
+        providerModelId:
+          type: string
+          maxLength: 160
+    ai_catalog.ReplaceCredentialRequest:
+      type: object
+      required:
+        - credential
+      properties:
+        credential:
+          type: string
     auth_profile.CreateRequest:
       type: object
       required:
@@ -15753,6 +16851,103 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+    entities.AIConversation:
+      type: object
+      properties:
+        archived:
+          type: boolean
+        createdAt:
+          type: string
+        id:
+          type: string
+        messageCount:
+          type: integer
+        model:
+          $ref: "#/components/schemas/entities.AIModelSnapshot"
+        updatedAt:
+          type: string
+        workspaceId:
+          type: string
+    entities.AIMessage:
+      type: object
+      properties:
+        content:
+          type: string
+        conversationId:
+          type: string
+        createdAt:
+          type: string
+        id:
+          type: string
+        role:
+          type: string
+        sequence:
+          type: integer
+    entities.AIModelProfile:
+      type: object
+      properties:
+        adapter:
+          type: string
+        connectionId:
+          type: string
+        connectionName:
+          type: string
+        createdAt:
+          type: string
+        createdBy:
+          type: string
+        displayName:
+          type: string
+        enabled:
+          type: boolean
+        id:
+          type: string
+        isDefault:
+          type: boolean
+        providerModelId:
+          type: string
+        updatedAt:
+          type: string
+        updatedBy:
+          type: string
+    entities.AIModelSnapshot:
+      type: object
+      properties:
+        adapter:
+          type: string
+        connectionId:
+          type: string
+        displayName:
+          type: string
+        profileId:
+          type: string
+        providerModelId:
+          type: string
+    entities.AIProviderConnection:
+      type: object
+      properties:
+        adapter:
+          type: string
+        baseUrl:
+          type: string
+        createdAt:
+          type: string
+        createdBy:
+          type: string
+        enabled:
+          type: boolean
+        hasCredential:
+          type: boolean
+        id:
+          type: string
+        modelCount:
+          type: integer
+        name:
+          type: string
+        updatedAt:
+          type: string
+        updatedBy:
+          type: string
     entities.Actor:
       type: object
       properties:

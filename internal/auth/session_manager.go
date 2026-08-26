@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/endge-lab/service-backend/internal/config"
+	platformencryption "github.com/endge-lab/service-backend/internal/platform/encryption"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -35,24 +36,19 @@ type SessionManager struct {
 	pool     *pgxpool.Pool
 	registry *LoginAdapterRegistry
 	resolver Resolver
-	keyring  *sessionEncryptionKeyring
+	keyring  *platformencryption.Keyring
 	loginURL string
 	basePath string
 }
 
-func NewSessionManager(cfg *config.Config, pool *pgxpool.Pool, registry *LoginAdapterRegistry, resolver Resolver) (*SessionManager, error) {
+func NewSessionManager(cfg *config.Config, pool *pgxpool.Pool, registry *LoginAdapterRegistry, resolver Resolver, keyring *platformencryption.Keyring) (*SessionManager, error) {
 	manager := &SessionManager{
 		config: cfg.ConfiguratorAuth, pool: pool, registry: registry, resolver: resolver,
 		loginURL: strings.TrimRight(cfg.App.PublicURL, "/") + "/auth/login",
-		basePath: cfg.HTTPBasePath,
+		basePath: cfg.HTTPBasePath, keyring: keyring,
 	}
 	if cfg.ConfiguratorAuth.Adapter == "dev" {
 		return manager, nil
-	}
-	var err error
-	manager.keyring, err = newSessionEncryptionKeyring(cfg.ConfiguratorAuth)
-	if err != nil {
-		return nil, err
 	}
 	return manager, nil
 }
@@ -387,11 +383,11 @@ func sameURLOrigin(left, right *url.URL) bool {
 }
 
 func (m *SessionManager) encrypt(value string) ([]byte, error) {
-	return m.keyring.encrypt(value)
+	return m.keyring.Encrypt(value, nil)
 }
 
 func (m *SessionManager) decrypt(value []byte) (string, error) {
-	return m.keyring.decrypt(value)
+	return m.keyring.Decrypt(value, nil)
 }
 
 func (m *SessionManager) encryptOptional(value string) ([]byte, error) {

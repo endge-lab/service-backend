@@ -31,6 +31,7 @@ func TestLoadHonorsPostgresDatabaseEnvironment(t *testing.T) {
 	t.Setenv("CONFIG_PATH", "../../development.yaml")
 	t.Setenv("POSTGRES_DATABASE", "endge_config_test")
 	t.Setenv("AUTH_MODE", "dev")
+	t.Setenv("ENCRYPTION_KEY", testEncryptionKey(1))
 	cfg, err := Load()
 	if err != nil {
 		t.Fatal(err)
@@ -54,6 +55,7 @@ func TestLoadFromEnvironmentWithoutYAML(t *testing.T) {
 	t.Setenv("AUTH_MODE", "dev")
 	t.Setenv("AUTH_LOGIN_ADAPTER", "dev")
 	t.Setenv("AUTH_ALLOWED_RETURN_ORIGINS", "https://configurator.example.test,http://localhost:5173")
+	t.Setenv("ENCRYPTION_KEY", testEncryptionKey(1))
 
 	cfg, err := Load()
 	if err != nil {
@@ -97,23 +99,20 @@ func TestPublicURLPathMatchesHTTPBasePath(t *testing.T) {
 	}
 }
 
-// TestConfiguratorAuthConfigAcceptsEncryptionKeyRotation проверяет валидную
-// конфигурацию текущего и предыдущего ключей server-side sessions.
-func TestConfiguratorAuthConfigAcceptsEncryptionKeyRotation(t *testing.T) {
-	value := validConfiguratorAuthConfig()
-	value.SessionEncryptionKeyID = "v2"
-	value.SessionPreviousEncryptionKeys = []SessionEncryptionKeyConfig{{ID: "v1", Key: testEncryptionKey(2)}}
-	if err := value.Validate(true); err != nil {
+// TestEncryptionConfigAcceptsKeyRotation проверяет валидную конфигурацию
+// общего keyring для server-side sessions и AI credentials.
+func TestEncryptionConfigAcceptsKeyRotation(t *testing.T) {
+	value := EncryptionConfig{KeyID: "v2", Key: testEncryptionKey(1), PreviousKeys: []EncryptionKeyConfig{{ID: "v1", Key: testEncryptionKey(2)}}}
+	if err := value.Validate(); err != nil {
 		t.Fatalf("валидная ротация ключа отклонена: %v", err)
 	}
 }
 
-// TestConfiguratorAuthConfigRejectsDuplicateEncryptionKeyID проверяет, что
+// TestEncryptionConfigRejectsDuplicateKeyID проверяет, что
 // один key id нельзя одновременно назначить текущему и предыдущему ключу.
-func TestConfiguratorAuthConfigRejectsDuplicateEncryptionKeyID(t *testing.T) {
-	value := validConfiguratorAuthConfig()
-	value.SessionPreviousEncryptionKeys = []SessionEncryptionKeyConfig{{ID: value.SessionEncryptionKeyID, Key: testEncryptionKey(2)}}
-	if err := value.Validate(true); err == nil {
+func TestEncryptionConfigRejectsDuplicateKeyID(t *testing.T) {
+	value := EncryptionConfig{KeyID: "v1", Key: testEncryptionKey(1), PreviousKeys: []EncryptionKeyConfig{{ID: "v1", Key: testEncryptionKey(2)}}}
+	if err := value.Validate(); err == nil {
 		t.Fatal("дублирующийся encryption key id был принят")
 	}
 }
@@ -170,8 +169,8 @@ func validConfiguratorAuthConfig() ConfiguratorAuthConfig {
 	return ConfiguratorAuthConfig{
 		Adapter: "oidc", AuthorizationURL: "https://issuer.example/authorize", TokenURL: "https://issuer.example/token",
 		ClientID: "configurator", RedirectURL: "https://backend.example/auth/callback", ReturnURL: "https://configurator.example",
-		SessionEncryptionKeyID: "v1", SessionEncryptionKey: testEncryptionKey(1), SessionTTL: time.Hour,
-		TransactionTTL: time.Minute, SessionCleanupInterval: time.Minute, CookieSecure: true, CookieSameSite: "lax",
+		SessionTTL: time.Hour, TransactionTTL: time.Minute, SessionCleanupInterval: time.Minute,
+		CookieSecure: true, CookieSameSite: "lax",
 	}
 }
 
