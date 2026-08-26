@@ -27,7 +27,7 @@ func (s *Coordinator) Status(ctx context.Context) (result *entities.DomainStatus
 			return txErr
 		}
 		lastVersion := latest.DomainVersion
-		if lastVersion == "" {
+		if !domainversion.IsCurrent(lastVersion) {
 			raw, exportErr := s.repository.ExportWorkspace(txctx, live.ID, &latest.HeadSequence)
 			if exportErr != nil {
 				return exportErr

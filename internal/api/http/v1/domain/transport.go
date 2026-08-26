@@ -28,7 +28,7 @@ type ImportResponse struct {
 	Deletes        int                     `json:"deletes"`
 	CommitID       string                  `json:"commitId" format:"uuid"`
 	ParentCommitID string                  `json:"parentCommitId" format:"uuid"`
-	DomainVersion  string                  `json:"domainVersion" example:"dv1:sha256:0123456789abcdef"`
+	DomainVersion  string                  `json:"domainVersion" example:"dv2:sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
 }
 
 func newImportResponse(value entities.SnapshotImportResult) ImportResponse {

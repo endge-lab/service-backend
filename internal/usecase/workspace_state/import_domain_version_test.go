@@ -1,13 +1,14 @@
 package workspace_state
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/endge-lab/service-backend/internal/domain/domainversion"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 )
 
-func TestFinalizeImportDomainVersionMigratesSFCEditingDefaultsAfterSourceVerification(t *testing.T) {
+func TestFinalizeImportDomainVersionKeepsCanonicalHashWhileApplyingSFCEditingDefaults(t *testing.T) {
 	bundle := entities.PortableBundle{
 		Kind:          "workspace-snapshot",
 		SchemaVersion: SchemaVersion,
@@ -34,8 +35,8 @@ func TestFinalizeImportDomainVersionMigratesSFCEditingDefaultsAfterSourceVerific
 	if configurations, exists := bundle.Documents["configurations"]; !exists || len(configurations) != 0 {
 		t.Fatalf("legacy snapshot was not normalized with an empty configurations collection: %#v", bundle.Documents)
 	}
-	if bundle.DomainVersion == sourceDomainVersion {
-		t.Fatal("effective domain version was not updated after migration")
+	if bundle.DomainVersion != sourceDomainVersion {
+		t.Fatalf("canonical domain version changed after applying defaults: got %q, want %q", bundle.DomainVersion, sourceDomainVersion)
 	}
 
 	effectiveDomainVersion, err := domainversion.Compute(bundle)
@@ -47,7 +48,7 @@ func TestFinalizeImportDomainVersionMigratesSFCEditingDefaultsAfterSourceVerific
 	}
 }
 
-func TestSourceDomainVersionIsVerifiedBeforeLegacyActionMigration(t *testing.T) {
+func TestLegacyDV1IsVerifiedBeforeCanonicalActionMigrationAndStoredAsDV2(t *testing.T) {
 	bundle := entities.PortableBundle{
 		Kind:          "workspace-snapshot",
 		SchemaVersion: SchemaVersion,
@@ -64,7 +65,7 @@ func TestSourceDomainVersionIsVerifiedBeforeLegacyActionMigration(t *testing.T) 
 			"configurations": {},
 		},
 	}
-	providedDomainVersion, err := domainversion.Compute(bundle)
+	providedDomainVersion, err := domainversion.ComputeForDeclaredVersion(bundle, "dv1:sha256:"+strings.Repeat("0", 64))
 	if err != nil {
 		t.Fatalf("compute source domain version: %v", err)
 	}
@@ -84,8 +85,8 @@ func TestSourceDomainVersionIsVerifiedBeforeLegacyActionMigration(t *testing.T) 
 	if err != nil {
 		t.Fatalf("compute normalized domain version: %v", err)
 	}
-	if normalizedDomainVersion == providedDomainVersion {
-		t.Fatal("legacy Action migration did not change domain version")
+	if !strings.HasPrefix(normalizedDomainVersion, "dv2:sha256:") {
+		t.Fatalf("normalized domain version does not use current contract: %q", normalizedDomainVersion)
 	}
 
 	if _, err = finalizeImportDomainVersion(&bundle, providedDomainVersion); err != nil {

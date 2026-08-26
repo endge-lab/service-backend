@@ -6,10 +6,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 
-	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
 	"github.com/endge-lab/service-backend/internal/domain/domainversion"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
@@ -561,188 +561,47 @@ type portableBundleNormalization struct {
 	MigratedLegacyVocabs       int
 }
 
-const defaultActionSource = "defineAction({\n  contract: {\n    input: field('Object'),\n    output: field('Object'),\n  },\n\n  steps: {\n    result: input(),\n  },\n\n  output: output('result'),\n})\n"
-
-// normalizePortableBundleForImport фиксирует identity исходного артефакта
-// до legacy-нормализации, которая может изменить portable content.
+// normalizePortableBundleForImport validates the source artifact according to
+// its declared hash contract before storing the current canonical form.
 func normalizePortableBundleForImport(bundle *entities.PortableBundle) (string, portableBundleNormalization, error) {
-	computedSourceDomainVersion, err := domainversion.Compute(*bundle)
+	if bundle == nil {
+		return "", portableBundleNormalization{}, fmt.Errorf("portable bundle is required")
+	}
+	var computedSourceDomainVersion string
+	var err error
+	if bundle.DomainVersion == "" {
+		computedSourceDomainVersion, err = domainversion.Compute(*bundle)
+	} else {
+		computedSourceDomainVersion, err = domainversion.ComputeForDeclaredVersion(*bundle, bundle.DomainVersion)
+	}
 	if err != nil {
 		return "", portableBundleNormalization{}, err
 	}
 	return computedSourceDomainVersion, normalizePortableBundle(bundle), nil
 }
 
-// normalizePortableBundle переводит legacy portable-артефакты в контракт backend import.
+// normalizePortableBundle applies the shared portable-domain canonicalizer and
+// then removes target-local integrations according to import policy.
 func normalizePortableBundle(bundle *entities.PortableBundle) portableBundleNormalization {
-	result := portableBundleNormalization{}
 	if bundle == nil {
-		return result
+		return portableBundleNormalization{}
 	}
-	if bundle.Documents == nil {
-		bundle.Documents = map[string][]map[string]any{}
+	report := domainversion.CanonicalizeInPlace(bundle)
+	result := portableBundleNormalization{
+		IgnoredIntegrations:        len(bundle.InstalledIntegrations),
+		IgnoredLegacyFolders:       report.IgnoredLegacyFolders,
+		NormalizedFolderReferences: report.NormalizedFolderReferences,
+		MigratedLegacyActions:      report.MigratedLegacyActions,
+		MigratedLegacyVocabs:       report.MigratedLegacyVocabs,
 	}
-	if bundle.Kind == "" {
-		bundle.Kind = "workspace-snapshot"
-	}
-	delete(bundle.Workspace, "state")
-	removeLegacySSEFromPortableBundle(bundle)
-	result.IgnoredIntegrations = len(bundle.InstalledIntegrations)
 	bundle.InstalledIntegrations = []map[string]any{}
-	if legacy, ok := bundle.Documents["componentSFCs"]; ok {
-		bundle.Documents["components"] = append(bundle.Documents["components"], legacy...)
-		delete(bundle.Documents, "componentSFCs")
-	}
-	for _, action := range bundle.Documents["actions"] {
-		if strings.TrimSpace(stringField(action, "source")) != "" {
-			continue
-		}
-		action["source"] = defaultActionSource
-		action["sourceVersion"] = float64(1)
-		delete(action, "definition")
-		delete(action, "input")
-		delete(action, "output")
-		result.MigratedLegacyActions++
-	}
-	for _, vocab := range bundle.Documents["vocabs"] {
-		if normalizeLegacyVocabSource(vocab) {
-			result.MigratedLegacyVocabs++
-		}
-	}
-	for _, folder := range bundle.Documents["folders"] {
-		if entityType := stringField(folder, "entityType"); entityType != "" {
-			folder["entityType"] = entities.FolderEntityType(entityType)
-		}
-		if parent := stringField(folder, "parentIdentity"); parent == "root-streams" {
-			folder["parentIdentity"] = entities.RootFolderIdentity("streams")
-		}
-	}
-
-	folderTypes := map[string]string{}
-	for _, folder := range bundle.Documents["folders"] {
-		folderTypes[stringField(folder, "identity")] = stringField(folder, "entityType")
-	}
-
-	for kind, items := range bundle.Documents {
-		filtered := make([]map[string]any, 0, len(items))
-		for _, item := range items {
-			delete(item, "state")
-			if kind == "queries" {
-				if sourceVersion, ok := numberField(item, "sourceVersion"); ok && sourceVersion == 1 {
-					item["sourceVersion"] = 2
-				}
-			}
-			if kind == "folders" {
-				identity := stringField(item, "identity")
-				if identity == "soft-deleted" || identity == "no-folder" || identity == "root-bindings" || identity == "root-streams" {
-					result.IgnoredLegacyFolders++
-					continue
-				}
-			}
-			if kind != "folders" {
-				folderIdentity := stringField(item, "folderIdentity")
-				if kind == "streams" && folderIdentity == "root-streams" {
-					folderIdentity = entities.RootFolderIdentity(kind)
-				}
-				if folderIdentity != stringField(item, "folderIdentity") {
-					item["folderIdentity"] = folderIdentity
-					result.NormalizedFolderReferences++
-				}
-				switch folderIdentity {
-				case "no-folder", "root-bindings":
-					delete(item, "folderIdentity")
-					result.NormalizedFolderReferences++
-				default:
-					folderType, hasFolderType := folderTypes[folderIdentity]
-					expectedFolderType := entities.FolderEntityType(kind)
-					if folderIdentity != "" && ((strings.HasPrefix(folderIdentity, "root-") && folderIdentity != entities.RootFolderIdentity(kind)) || (hasFolderType && folderType != expectedFolderType)) {
-						item["folderIdentity"] = entities.RootFolderIdentity(kind)
-						result.NormalizedFolderReferences++
-					}
-				}
-			}
-			filtered = append(filtered, item)
-		}
-		bundle.Documents[kind] = filtered
-	}
 	return result
-}
-
-// normalizeLegacyVocabSource переносит legacy external Payload Vocab в Source
-// до сохранения import snapshot в Domain.
-func normalizeLegacyVocabSource(vocab map[string]any) bool {
-	if strings.TrimSpace(stringField(vocab, "source")) != "" || stringField(vocab, "mode") != "external_payload" {
-		return false
-	}
-	collection := stringField(vocab, "collectionSlug")
-	if collection == "" {
-		collection = stringField(vocab, "identity")
-	}
-	authMode := stringField(vocab, "authMode")
-	if authMode != "profile" && authMode != "none" {
-		authMode = "inherit"
-	}
-	auth := `{ mode: ` + sourceString(authMode)
-	if authMode == "profile" {
-		auth += `, profile: ` + sourceString(stringField(vocab, "authProfileIdentity"))
-	}
-	auth += ` }`
-	vocab["source"] = "defineVocab({\n  provider: payload({\n    baseUrl: " + legacyVocabBaseURLSource(stringField(vocab, "baseApiUrl")) + ",\n    collection: " + sourceString(collection) + ",\n    auth: " + auth + ",\n  }),\n\n  outputs: {\n    items: output()\n      .from(response()),\n  },\n})\n"
-	vocab["sourceVersion"] = float64(1)
-	return true
-}
-
-func legacyVocabBaseURLSource(value string) string {
-	value = strings.TrimSpace(value)
-	if len(value) > 2 && value[0] == '{' && value[len(value)-1] == '}' {
-		name := value[1 : len(value)-1]
-		if isSourceEnvironmentName(name) {
-			return "env(" + sourceString(name) + ")"
-		}
-	}
-	return sourceString(value)
-}
-
-func isSourceEnvironmentName(value string) bool {
-	if value == "" {
-		return false
-	}
-	for index, char := range value {
-		if !(char == '_' || char >= 'A' && char <= 'Z' || char >= 'a' && char <= 'z' || index > 0 && char >= '0' && char <= '9') {
-			return false
-		}
-	}
-	return true
-}
-
-func sourceString(value string) string {
-	encoded, _ := json.Marshal(value)
-	return string(encoded)
-}
-
-// removeLegacySSEFromPortableBundle не позволяет старой глобальной настройке вернуться из snapshot.
-func removeLegacySSEFromPortableBundle(bundle *entities.PortableBundle) {
-	if bundle == nil {
-		return
-	}
-	configurationdomain.RemoveLegacySSE(bundle.Workspace["configuration"])
-	for kind, items := range bundle.Documents {
-		for _, item := range items {
-			configurationdomain.RemoveLegacySSEFromDocument(kind, item)
-		}
-	}
 }
 
 // finalizeImportDomainVersion переводит уже проверенный и нормализованный snapshot
 // в актуальное persisted-представление для применения.
 func finalizeImportDomainVersion(bundle *entities.PortableBundle, providedDomainVersion string) (bool, error) {
-	if bundle.Documents == nil {
-		bundle.Documents = map[string][]map[string]any{}
-	}
-	if _, exists := bundle.Documents["configurations"]; !exists {
-		bundle.Documents["configurations"] = []map[string]any{}
-	}
-	defaultsAdded := ensureSFCEditingDefaultsInPortableBundle(bundle)
+	report := domainversion.CanonicalizeInPlace(bundle)
 	effectiveDomainVersion, err := domainversion.Compute(*bundle)
 	if err != nil {
 		return false, err
@@ -752,22 +611,7 @@ func finalizeImportDomainVersion(bundle *entities.PortableBundle, providedDomain
 	} else {
 		bundle.DomainVersion = ""
 	}
-	return defaultsAdded, nil
-}
-
-// ensureSFCEditingDefaultsInPortableBundle добавляет только отсутствующие defaults.
-func ensureSFCEditingDefaultsInPortableBundle(bundle *entities.PortableBundle) bool {
-	if bundle == nil || bundle.Workspace == nil {
-		return false
-	}
-	configuration, exists := bundle.Workspace["configuration"]
-	if !exists {
-		return false
-	}
-	before := checksum(mustJSON(configuration))
-	normalized := configurationdomain.EnsureSFCEditingDefaults(configuration)
-	bundle.Workspace["configuration"] = normalized
-	return before != checksum(mustJSON(normalized))
+	return report.SFCEditingDefaultsAdded, nil
 }
 
 // orderPortableItems упорядочивает элементы пакета с учётом зависимостей.

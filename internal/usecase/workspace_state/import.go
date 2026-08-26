@@ -11,6 +11,7 @@ import (
 	"time"
 
 	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
+	"github.com/endge-lab/service-backend/internal/domain/domainversion"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
@@ -244,7 +245,7 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 	if err = json.Unmarshal(plan.Snapshot, &bundle); err != nil {
 		return nil, domainerrors.Internal("import_plan_corrupted", "Stored import plan is corrupted")
 	}
-	removeLegacySSEFromPortableBundle(&bundle)
+	domainversion.CanonicalizeInPlace(&bundle)
 	if _, versionErr := finalizeImportDomainVersion(&bundle, bundle.DomainVersion); versionErr != nil {
 		return nil, domainerrors.Internal("import_plan_corrupted", "Stored import plan domain version is invalid")
 	}

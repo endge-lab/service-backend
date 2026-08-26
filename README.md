@@ -187,6 +187,13 @@ server-only полем `state`. `GET /api/v1/domain/export` отдаёт тот 
 контракт без локальных UUID, истории и времён хранения. Оба export endpoint
 возвращают JSON inline; `?download=true` включает скачивание файла.
 
+Перед export и проверкой import backend приводит переносимую часть домена к одной
+идемпотентной канонической форме. Текущий `domainVersion` использует контракт
+`dv2:sha256`; поэтому export/import/export одного snapshot сохраняет одинаковый
+hash независимо от legacy-представления Action, Vocab и совместимых defaults.
+Snapshot с `dv1:sha256` по-прежнему проверяется старым алгоритмом, но после
+успешного import сохраняется уже с актуальным `dv2`.
+
 Безопасный импорт полного domain snapshot выполняется в два шага:
 
 ```text

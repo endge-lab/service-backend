@@ -14342,7 +14342,7 @@ var openAPI3YAML = []byte(
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        domainVersion:\n" +
 		"          type: string\n" +
-		"          example: dv1:sha256:0123456789abcdef\n" +
+		"          example: dv2:sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n" +
 		"        headSequence:\n" +
 		"          type: integer\n" +
 		"          example: 42\n" +
@@ -15577,7 +15577,7 @@ var openAPI3YAML = []byte(
 		"          type: integer\n" +
 		"        domainVersion:\n" +
 		"          type: string\n" +
-		"          example: dv1:sha256:0123456789abcdef\n" +
+		"          example: dv2:sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n" +
 		"        imported:\n" +
 		"          $ref: \"#/components/schemas/entities.SnapshotCounts\"\n" +
 		"        parentCommitId:\n" +

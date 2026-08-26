@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/endge-lab/service-backend/test/support"
@@ -69,7 +70,24 @@ func TestCommitReleaseBackupAndImportFlow(t *testing.T) {
 	}
 	commit := perform(t, app, http.MethodPost, "/api/v1/commits", map[string]any{"message": "Portable baseline", "revisionPolicy": "preserve", "expectedHeadSequence": headSequence}, headers)
 	assertStatus(t, commit, fiber.StatusCreated)
-	commitID := stringField(t, decodeObject(t, commit), "id")
+	commitBody := decodeObject(t, commit)
+	commitID := stringField(t, commitBody, "id")
+	commitDomainVersion := stringField(t, commitBody, "domainVersion")
+	if !strings.HasPrefix(commitDomainVersion, "dv2:sha256:") {
+		t.Fatalf("commit не получил канонический dv2 domainVersion: %q", commitDomainVersion)
+	}
+	if _, err := database.Pool.Exec(t.Context(), `UPDATE workspace_commits SET domain_version=$1 WHERE id=$2`, "dv1:sha256:"+strings.Repeat("0", 64), commitID); err != nil {
+		t.Fatalf("эмулировать commit предыдущей версии backend: %v", err)
+	}
+	legacyStatus := perform(t, app, http.MethodGet, "/api/v1/domain/status", nil, headers)
+	assertStatus(t, legacyStatus, fiber.StatusOK)
+	legacyStatusBody := decodeObject(t, legacyStatus)
+	if stringField(t, legacyStatusBody, "state") != "clean" || stringField(t, legacyStatusBody, "domainVersion") != commitDomainVersion {
+		t.Fatalf("status не пересчитал legacy dv1 через текущий canonicalizer: %#v", legacyStatusBody)
+	}
+	if _, err := database.Pool.Exec(t.Context(), `UPDATE workspace_commits SET domain_version=$1 WHERE id=$2`, commitDomainVersion, commitID); err != nil {
+		t.Fatalf("восстановить domainVersion commit после upgrade-проверки: %v", err)
+	}
 	nothing := perform(t, app, http.MethodPost, "/api/v1/commits", map[string]any{"message": "Empty", "revisionPolicy": "preserve", "expectedHeadSequence": headSequence}, headers)
 	assertStatus(t, nothing, fiber.StatusConflict)
 
@@ -135,6 +153,10 @@ func TestCommitReleaseBackupAndImportFlow(t *testing.T) {
 	assertStatus(t, domainExport, fiber.StatusOK)
 	snapshot := decodeObject(t, domainExport)
 	assertPortableBundle(t, snapshot)
+	exportedDomainVersion := stringField(t, snapshot, "domainVersion")
+	if !strings.HasPrefix(exportedDomainVersion, "dv2:sha256:") {
+		t.Fatalf("export не вернул канонический dv2 domainVersion: %q", exportedDomainVersion)
+	}
 	importPlan := perform(t, app, http.MethodPost, "/api/v1/domain/import/plan", map[string]any{"snapshot": snapshot}, headers)
 	assertStatus(t, importPlan, fiber.StatusOK)
 	planBody := decodeObject(t, importPlan)
@@ -201,10 +223,19 @@ func TestCommitReleaseBackupAndImportFlow(t *testing.T) {
 	if stringField(t, resultBody, "commitId") == "" || stringField(t, resultBody, "parentCommitId") == "" {
 		t.Fatalf("import не создал обратимый commit: %#v", resultBody)
 	}
+	if importedDomainVersion := stringField(t, resultBody, "domainVersion"); importedDomainVersion != exportedDomainVersion {
+		t.Fatalf("domainVersion изменился при импорте того же файла: export=%q import=%q", exportedDomainVersion, importedDomainVersion)
+	}
 	importedQuery := perform(t, app, http.MethodGet, "/api/v1/queries/portable-query", nil, headers)
 	assertStatus(t, importedQuery, fiber.StatusOK)
+	roundTripExport := perform(t, app, http.MethodGet, "/api/v1/domain/export", nil, headers)
+	assertStatus(t, roundTripExport, fiber.StatusOK)
+	if roundTripDomainVersion := stringField(t, decodeObject(t, roundTripExport), "domainVersion"); roundTripDomainVersion != exportedDomainVersion {
+		t.Fatalf("domainVersion изменился после export/import/export: first=%q second=%q", exportedDomainVersion, roundTripDomainVersion)
+	}
 
 	withoutQuery := cloneJSON(snapshot)
+	delete(withoutQuery, "domainVersion")
 	documents := objectField(t, withoutQuery, "documents")
 	queryItems, _ := documents["queries"].([]any)
 	filteredQueries := make([]any, 0, len(queryItems))

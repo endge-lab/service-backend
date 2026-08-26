@@ -14337,7 +14337,7 @@ components:
           $ref: "#/components/schemas/entities.Actor"
         domainVersion:
           type: string
-          example: dv1:sha256:0123456789abcdef
+          example: dv2:sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
         headSequence:
           type: integer
           example: 42
@@ -15572,7 +15572,7 @@ components:
           type: integer
         domainVersion:
           type: string
-          example: dv1:sha256:0123456789abcdef
+          example: dv2:sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
         imported:
           $ref: "#/components/schemas/entities.SnapshotCounts"
         parentCommitId:

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
+	"github.com/endge-lab/service-backend/internal/domain/domainversion"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
@@ -49,7 +50,7 @@ func (s *Coordinator) planExactRestore(ctx context.Context, scope entities.Works
 
 // restoreBundle собирает переносимый пакет из снимка для восстановления.
 func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.PortableBundle, expected int64, operation, message string) (result *entities.Commit, err error) {
-	removeLegacySSEFromPortableBundle(&bundle)
+	domainversion.CanonicalizeInPlace(&bundle)
 	current, scope, err := s.writeContext(ctx)
 	if err != nil {
 		return nil, err

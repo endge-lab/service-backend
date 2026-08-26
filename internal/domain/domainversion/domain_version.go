@@ -7,11 +7,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 )
 
-const prefix = "dv1:sha256:"
+const (
+	legacyPrefix  = "dv1:sha256:"
+	currentPrefix = "dv2:sha256:"
+)
+
+// IsCurrent reports whether a stored identity already uses the current contract.
+func IsCurrent(value string) bool {
+	return strings.HasPrefix(value, currentPrefix) && validateDeclaredVersion(value) == nil
+}
 
 type canonicalBundle struct {
 	Kind          string                      `json:"kind"`
@@ -20,10 +29,35 @@ type canonicalBundle struct {
 	Documents     map[string][]map[string]any `json:"documents"`
 }
 
-// Compute returns a stable identity for the part of a bundle that import applies.
+// Compute returns the current stable identity for the part of a bundle that import applies.
 // Target-local workspace identity, integrations, credentials and provenance are
 // deliberately outside this contract.
 func Compute(bundle entities.PortableBundle) (string, error) {
+	canonical, _, err := Canonicalize(bundle)
+	if err != nil {
+		return "", err
+	}
+	return compute(canonical, currentPrefix)
+}
+
+// ComputeForDeclaredVersion computes a bundle identity according to the version
+// declared by an imported artifact. dv1 remains available only for validating
+// snapshots produced before canonical export was introduced.
+func ComputeForDeclaredVersion(bundle entities.PortableBundle, declared string) (string, error) {
+	if err := validateDeclaredVersion(declared); err != nil {
+		return "", err
+	}
+	switch {
+	case strings.HasPrefix(declared, legacyPrefix):
+		return compute(bundle, legacyPrefix)
+	case strings.HasPrefix(declared, currentPrefix):
+		return Compute(bundle)
+	default:
+		return "", fmt.Errorf("unsupported domain version %q", declared)
+	}
+}
+
+func compute(bundle entities.PortableBundle, versionPrefix string) (string, error) {
 	workspace := portableWorkspace(bundle.Workspace)
 
 	documents := make(map[string][]map[string]any, len(bundle.Documents))
@@ -58,7 +92,7 @@ func Compute(bundle entities.PortableBundle) (string, error) {
 		return "", fmt.Errorf("marshal canonical domain: %w", err)
 	}
 	sum := sha256.Sum256(raw)
-	return prefix + hex.EncodeToString(sum[:]), nil
+	return versionPrefix + hex.EncodeToString(sum[:]), nil
 }
 
 // portableWorkspace оставляет только поля Workspace, которые применяет import.
@@ -86,11 +120,32 @@ func Attach(bundle *entities.PortableBundle) error {
 	if bundle == nil {
 		return fmt.Errorf("portable bundle is required")
 	}
+	CanonicalizeInPlace(bundle)
 	value, err := Compute(*bundle)
 	if err != nil {
 		return err
 	}
 	bundle.DomainVersion = value
+	return nil
+}
+
+func validateDeclaredVersion(value string) error {
+	prefix := ""
+	switch {
+	case strings.HasPrefix(value, legacyPrefix):
+		prefix = legacyPrefix
+	case strings.HasPrefix(value, currentPrefix):
+		prefix = currentPrefix
+	default:
+		return fmt.Errorf("unsupported domain version %q", value)
+	}
+	digest := strings.TrimPrefix(value, prefix)
+	if len(digest) != sha256.Size*2 {
+		return fmt.Errorf("invalid domain version digest length")
+	}
+	if _, err := hex.DecodeString(digest); err != nil {
+		return fmt.Errorf("invalid domain version digest: %w", err)
+	}
 	return nil
 }
 
