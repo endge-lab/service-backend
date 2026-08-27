@@ -6,7 +6,6 @@ import (
 	workbenchadapter "github.com/endge-lab/service-backend/internal/adapter/workbench"
 	workbenchpb "github.com/endge-lab/service-backend/internal/adapter/workbenchpb"
 	"github.com/endge-lab/service-backend/internal/config"
-	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-kit-go/pkg/grpckit"
 	serviceoidc "github.com/endge-lab/service-kit-go/pkg/oidc"
 	"go.uber.org/fx"
@@ -14,7 +13,7 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
-func newAIWorkbenchGateway(lifecycle fx.Lifecycle, cfg *config.Config) (ports.AIWorkbenchGateway, error) {
+func newAIWorkbenchGateway(lifecycle fx.Lifecycle, cfg *config.Config) (*workbenchadapter.Client, error) {
 	if cfg.AIWorkbench.GRPCTarget == "" {
 		return workbenchadapter.NewClient(nil, nil, cfg.AIWorkbench.RequestTimeout, cfg.AIWorkbench.HealthTimeout, cfg.AIWorkbench.HealthCacheTTL), nil
 	}

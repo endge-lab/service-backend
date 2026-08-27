@@ -41,6 +41,16 @@ type WorkbenchRunRequest struct {
 	SnapshotSHA256 string
 }
 
+type ConnectedServiceInfo struct {
+	Service string
+	Version string
+	Env     string
+}
+
+type ConnectedServiceInfoProvider interface {
+	ServiceInfo(context.Context) (ConnectedServiceInfo, error)
+}
+
 type AIWorkbenchGateway interface {
 	Capabilities(context.Context) ([]string, error)
 	ListConversations(context.Context, string, string, bool, int, string) ([]entities.AIConversation, string, error)

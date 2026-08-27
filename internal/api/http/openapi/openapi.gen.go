@@ -14565,7 +14565,8 @@ var openAPI3YAML = []byte(
 		"                $ref: \"#/components/schemas/health.HealthResponse\"\n" +
 		"  /version:\n" +
 		"    get:\n" +
-		"      description: Публичный endpoint с именем сервиса, версией сборки и окружением запуска.\n" +
+		"      description: Публичный endpoint с версией backend и доступностью подключённых\n" +
+		"        backend-сервисов.\n" +
 		"      tags:\n" +
 		"        - Сервис\n" +
 		"      summary: Получить версию сервиса\n" +
@@ -17632,6 +17633,24 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    health.ConnectedServiceResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        env:\n" +
+		"          type: string\n" +
+		"          example: development\n" +
+		"        service:\n" +
+		"          type: string\n" +
+		"          example: service_ai_workbench\n" +
+		"        status:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - available\n" +
+		"            - unavailable\n" +
+		"          example: available\n" +
+		"        version:\n" +
+		"          type: string\n" +
+		"          example: 0.4.0\n" +
 		"    health.HealthResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -17656,6 +17675,10 @@ var openAPI3YAML = []byte(
 		"        service:\n" +
 		"          type: string\n" +
 		"          example: service-backend\n" +
+		"        services:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/health.ConnectedServiceResponse\"\n" +
 		"        version:\n" +
 		"          type: string\n" +
 		"          example: 1.0.0\n" +

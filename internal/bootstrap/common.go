@@ -6,6 +6,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/config"
 	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/platform"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	servicetelemetry "github.com/endge-lab/service-kit-go/pkg/telemetry"
 
 	"go.uber.org/fx"
@@ -17,7 +18,11 @@ func CommonModules() fx.Option {
 		fx.Provide(
 			config.Load,
 			newEncryptionKeyring,
-			newAIWorkbenchGateway,
+			fx.Annotate(
+				newAIWorkbenchGateway,
+				fx.As(new(ports.AIWorkbenchGateway)),
+				fx.As(new(ports.ConnectedServiceInfoProvider)),
+			),
 			observability.NewCore,
 			newPostgres,
 			newOpenSearchLogExporter,

@@ -14560,7 +14560,8 @@ paths:
                 $ref: "#/components/schemas/health.HealthResponse"
   /version:
     get:
-      description: Публичный endpoint с именем сервиса, версией сборки и окружением запуска.
+      description: Публичный endpoint с версией backend и доступностью подключённых
+        backend-сервисов.
       tags:
         - Сервис
       summary: Получить версию сервиса
@@ -17627,6 +17628,24 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+    health.ConnectedServiceResponse:
+      type: object
+      properties:
+        env:
+          type: string
+          example: development
+        service:
+          type: string
+          example: service_ai_workbench
+        status:
+          type: string
+          enum:
+            - available
+            - unavailable
+          example: available
+        version:
+          type: string
+          example: 0.4.0
     health.HealthResponse:
       type: object
       properties:
@@ -17651,6 +17670,10 @@ components:
         service:
           type: string
           example: service-backend
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/health.ConnectedServiceResponse"
         version:
           type: string
           example: 1.0.0

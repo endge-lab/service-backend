@@ -32,6 +32,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/release_artifacts"
 	"github.com/endge-lab/service-backend/internal/usecase/releases"
 	"github.com/endge-lab/service-backend/internal/usecase/revisions"
+	"github.com/endge-lab/service-backend/internal/usecase/service_info"
 	"github.com/endge-lab/service-backend/internal/usecase/session"
 	"github.com/endge-lab/service-backend/internal/usecase/stores"
 	"github.com/endge-lab/service-backend/internal/usecase/streams"
@@ -54,6 +55,7 @@ func UseCaseModules() fx.Option {
 		access_control.NewUseCase,
 		ai_catalog.NewUseCase,
 		ai_assistant.NewUseCase,
+		service_info.NewUseCase,
 		workspaces.NewUseCase,
 		backend_connections.NewUseCase,
 		integrations.NewUseCase,

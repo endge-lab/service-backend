@@ -27,10 +27,48 @@ type Client struct {
 	cachedAdapters  []string
 	capabilitiesAt  time.Time
 	capabilitiesErr error
+
+	infoMu            sync.Mutex
+	cachedServiceInfo ports.ConnectedServiceInfo
+	serviceInfoAt     time.Time
+	serviceInfoErr    error
 }
+
+const serviceName = "service_ai_workbench"
 
 func NewClient(client workbenchpb.WorkbenchServiceClient, health grpc_health_v1.HealthClient, requestTimeout, healthTimeout, healthCacheTTL time.Duration) *Client {
 	return &Client{client: client, health: health, requestTimeout: requestTimeout, healthTimeout: healthTimeout, healthCacheTTL: healthCacheTTL}
+}
+
+func (c *Client) ServiceInfo(ctx context.Context) (ports.ConnectedServiceInfo, error) {
+	fallback := ports.ConnectedServiceInfo{Service: serviceName}
+	if c.client == nil {
+		return fallback, ports.ErrWorkbenchUnavailable
+	}
+	c.infoMu.Lock()
+	defer c.infoMu.Unlock()
+	if !c.serviceInfoAt.IsZero() && time.Since(c.serviceInfoAt) < c.healthCacheTTL {
+		return c.cachedServiceInfo, c.serviceInfoErr
+	}
+	callCtx, cancel := context.WithTimeout(ctx, c.healthTimeout)
+	defer cancel()
+	response, err := c.client.GetServiceInfo(callCtx, &workbenchpb.GetServiceInfoRequest{})
+	if err != nil {
+		c.cacheServiceInfo(fallback, mapError(err))
+		return c.cachedServiceInfo, c.serviceInfoErr
+	}
+	service := response.GetService()
+	if service == "" {
+		service = serviceName
+	}
+	c.cacheServiceInfo(ports.ConnectedServiceInfo{Service: service, Version: response.GetVersion(), Env: response.GetEnv()}, nil)
+	return c.cachedServiceInfo, nil
+}
+
+func (c *Client) cacheServiceInfo(info ports.ConnectedServiceInfo, err error) {
+	c.cachedServiceInfo = info
+	c.serviceInfoErr = err
+	c.serviceInfoAt = time.Now()
 }
 
 func (c *Client) Capabilities(ctx context.Context) ([]string, error) {

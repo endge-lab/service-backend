@@ -74,7 +74,11 @@ AUTH_DEV_PLATFORM_ADMIN=true
 изменением backend вручную увеличьте patch, minor или major номер в формате
 `X.Y.Z`. Локальная, Docker- и удалённая сборки вшивают это значение в бинарник;
 Kubernetes его не переопределяет. Публичные `GET /health` и `GET /version`
-возвращают тот же номер.
+возвращают тот же номер. `GET /version` дополнительно запрашивает metadata
+подключённых backend-сервисов через их штатный transport и возвращает массив
+`services`. Недоступный сервис остаётся в массиве со статусом `unavailable`, но
+без внутренних адресов и infrastructure error; это не меняет liveness backend.
+Результат кешируется на `AI_WORKBENCH_HEALTH_CACHE_TTL`.
 
 ## Production OIDC
 

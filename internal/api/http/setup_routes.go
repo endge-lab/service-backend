@@ -43,6 +43,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/vocab"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/workspace"
 	"github.com/endge-lab/service-backend/internal/config"
+	"github.com/endge-lab/service-backend/internal/usecase/service_info"
 	"github.com/gofiber/fiber/v2"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/fx"
@@ -92,7 +93,7 @@ type Handlers struct {
 	Release           *release.Handler
 }
 
-func SetupRoutes(app *fiber.App, cfg *config.Config, handlers Handlers, authMiddleware httpmiddleware.AuthMiddleware, meter metric.Meter, logger *zap.Logger) {
+func SetupRoutes(app *fiber.App, cfg *config.Config, connectedServices *service_info.UseCase, handlers Handlers, authMiddleware httpmiddleware.AuthMiddleware, meter metric.Meter, logger *zap.Logger) {
 	httpmiddleware.Register(app, cfg, meter, logger)
 	var router fiber.Router = app
 	if cfg.HTTPBasePath != "" {
@@ -101,7 +102,7 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, handlers Handlers, authMidd
 	if !cfg.App.IsProduction() {
 		openapi.RegisterRoutes(router)
 	}
-	health.RegisterRoutes(router, health.Config{Service: cfg.App.Name, Version: cfg.App.Version, Env: cfg.App.Env})
+	health.RegisterRoutes(router, health.Config{Service: cfg.App.Name, Version: cfg.App.Version, Env: cfg.App.Env}, connectedServices)
 	configuratorauth.RegisterPublicRoutes(router, handlers.ConfiguratorAuth)
 	router.Get("/auth/session", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve(), handlers.Session.Current)
 	api := router.Group("/api", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve())
