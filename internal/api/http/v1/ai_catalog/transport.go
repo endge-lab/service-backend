@@ -11,6 +11,23 @@ type CreateConnectionRequest struct {
 	Enabled    bool   `json:"enabled"`
 }
 
+type InitialModelRequest struct {
+	ProviderModelID string `json:"providerModelId" validate:"required,max=160"`
+	DisplayName     string `json:"displayName" validate:"required,max=160"`
+	Enabled         bool   `json:"enabled"`
+	Default         bool   `json:"isDefault"`
+}
+
+type CreateConnectionWithModelRequest struct {
+	Name       string              `json:"name" validate:"required,max=160"`
+	Adapter    string              `json:"adapter" validate:"required,oneof=anthropic ollama"`
+	BaseURL    string              `json:"baseUrl"`
+	Credential string              `json:"credential"`
+	Visibility string              `json:"visibility" validate:"omitempty,oneof=public private"`
+	Enabled    bool                `json:"enabled"`
+	Model      InitialModelRequest `json:"model" validate:"required"`
+}
+
 type PatchConnectionRequest struct {
 	Name    *string `json:"name" validate:"omitempty,max=160"`
 	BaseURL *string `json:"baseUrl"`
@@ -42,6 +59,11 @@ type AdaptersResponse struct {
 
 type ConnectionResponse = entities.AIProviderConnection
 type ModelResponse = entities.AIModelProfile
+
+type ConnectionWithModelResponse struct {
+	Connection entities.AIProviderConnection `json:"connection"`
+	Model      entities.AIModelProfile       `json:"model"`
+}
 
 type ConnectionsResponse struct {
 	Items []entities.AIProviderConnection `json:"items"`

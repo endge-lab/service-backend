@@ -36,9 +36,9 @@ func (h *Handler) Adapters(c *fiber.Ctx) error {
 	return c.JSON(AdaptersResponse{Items: items})
 }
 
-// ListConnections возвращает управляемые пользователем connections без credential.
+// ListConnections возвращает доступные пользователю connections без credential.
 // @Summary Получить AI connections
-// @Description Platform Admin получает публичные и свои приватные connections; остальные пользователи — только свои приватные. Credential не возвращается.
+// @Description Пользователь получает публичные и свои приватные connections. Изменять публичные connections может только Platform Admin. Credential не возвращается.
 // @ID listAIProviderConnections
 // @Tags AI catalog
 // @Produce json
@@ -79,6 +79,41 @@ func (h *Handler) CreateConnection(c *fiber.Ctx) error {
 		return respond.RespondDomainError(c, nil, err)
 	}
 	return c.Status(fiber.StatusCreated).JSON(value)
+}
+
+// CreateConnectionWithModel атомарно создаёт connection и первый model profile.
+// @Summary Создать AI connection с моделью
+// @Description Создаёт connection и первый model profile в одной транзакции; при ошибке ни одна запись не сохраняется.
+// @ID createAIProviderConnectionWithModel
+// @Tags AI catalog
+// @Accept json
+// @Produce json
+// @Param request body CreateConnectionWithModelRequest true "Connection и первая модель"
+// @Success 201 {object} ConnectionWithModelResponse
+// @Failure 400 {object} shared.ErrorResponse
+// @Failure 401 {object} shared.ErrorResponse
+// @Failure 403 {object} shared.ErrorResponse
+// @Failure 409 {object} shared.ErrorResponse
+// @Security BearerAuth
+// @Router /api/v1/ai/provider-connections/with-model [post]
+func (h *Handler) CreateConnectionWithModel(c *fiber.Ctx) error {
+	request, err := shared.DecodeAndValidate[CreateConnectionWithModelRequest](c, h.validator)
+	if err != nil {
+		return respond.WriteErrorResponse(c, err)
+	}
+	value, err := h.usecase.CreateConnectionWithModel(c.UserContext(), resourceusecase.CreateConnectionWithModelInput{
+		Name: request.Name, Adapter: request.Adapter, BaseURL: request.BaseURL, Credential: request.Credential,
+		Visibility: request.Visibility, Enabled: request.Enabled,
+		ProviderModelID: request.Model.ProviderModelID, DisplayName: request.Model.DisplayName,
+		ModelEnabled: request.Model.Enabled, MakeDefault: request.Model.Default,
+	})
+	if err != nil {
+		return respond.RespondDomainError(c, nil, err)
+	}
+	return c.Status(fiber.StatusCreated).JSON(ConnectionWithModelResponse{
+		Connection: value.Connection,
+		Model:      value.Model,
+	})
 }
 
 // PatchConnection изменяет несекретные настройки connection.

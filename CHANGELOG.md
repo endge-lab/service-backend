@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.6.0 — 2026-08-27
+
+### Добавлено
+
+- Атомарное создание AI connection вместе с первым model profile.
+- Единая выдача public connections и собственных private connections с явным `canManage`.
+
 ## 0.3.6 — 2026-08-25
 
 ### Добавлено

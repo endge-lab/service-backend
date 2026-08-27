@@ -1365,9 +1365,9 @@ paths:
     get:
       security:
         - BearerAuth: []
-      description: Platform Admin получает публичные и свои приватные connections;
-        остальные пользователи — только свои приватные. Credential не
-        возвращается.
+      description: Пользователь получает публичные и свои приватные connections.
+        Изменять публичные connections может только Platform Admin. Credential
+        не возвращается.
       tags:
         - AI catalog
       summary: Получить AI connections
@@ -1428,6 +1428,54 @@ paths:
                 $ref: "#/components/schemas/shared.ErrorResponse"
         "403":
           description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/ai/provider-connections/with-model:
+    post:
+      security:
+        - BearerAuth: []
+      description: Создаёт connection и первый model profile в одной транзакции; при
+        ошибке ни одна запись не сохраняется.
+      tags:
+        - AI catalog
+      summary: Создать AI connection с моделью
+      operationId: createAIProviderConnectionWithModel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ai_catalog.CreateConnectionWithModelRequest"
+        description: Connection и первая модель
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ai_catalog.ConnectionWithModelResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Conflict
           content:
             application/json:
               schema:
@@ -14952,6 +15000,13 @@ components:
           type: string
         visibility:
           type: string
+    ai_catalog.ConnectionWithModelResponse:
+      type: object
+      properties:
+        connection:
+          $ref: "#/components/schemas/entities.AIProviderConnection"
+        model:
+          $ref: "#/components/schemas/entities.AIModelProfile"
     ai_catalog.ConnectionsResponse:
       type: object
       properties:
@@ -14986,6 +15041,34 @@ components:
           enum:
             - public
             - private
+    ai_catalog.CreateConnectionWithModelRequest:
+      type: object
+      required:
+        - adapter
+        - model
+        - name
+      properties:
+        adapter:
+          type: string
+          enum:
+            - anthropic
+            - ollama
+        baseUrl:
+          type: string
+        credential:
+          type: string
+        enabled:
+          type: boolean
+        model:
+          $ref: "#/components/schemas/ai_catalog.InitialModelRequest"
+        name:
+          type: string
+          maxLength: 160
+        visibility:
+          type: string
+          enum:
+            - public
+            - private
     ai_catalog.CreateModelRequest:
       type: object
       required:
@@ -14995,6 +15078,22 @@ components:
       properties:
         connectionId:
           type: string
+        displayName:
+          type: string
+          maxLength: 160
+        enabled:
+          type: boolean
+        isDefault:
+          type: boolean
+        providerModelId:
+          type: string
+          maxLength: 160
+    ai_catalog.InitialModelRequest:
+      type: object
+      required:
+        - displayName
+        - providerModelId
+      properties:
         displayName:
           type: string
           maxLength: 160

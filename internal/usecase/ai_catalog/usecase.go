@@ -27,6 +27,24 @@ type ModelPatch struct {
 	Default         *bool
 }
 
+type CreateConnectionWithModelInput struct {
+	Name            string
+	Adapter         string
+	BaseURL         string
+	Credential      string
+	Visibility      string
+	Enabled         bool
+	ProviderModelID string
+	DisplayName     string
+	ModelEnabled    bool
+	MakeDefault     bool
+}
+
+type CreatedConnectionWithModel struct {
+	Connection entities.AIProviderConnection
+	Model      entities.AIModelProfile
+}
+
 type UseCase struct {
 	repository ports.AICatalogRepository
 	tx         ports.TxManager
@@ -55,10 +73,7 @@ func (u *UseCase) ListConnections(ctx context.Context) ([]entities.AIProviderCon
 	}
 	result := make([]entities.AIProviderConnection, 0, len(items))
 	for _, item := range items {
-		item = exposeConnection(item, actor)
-		if item.CanManage {
-			result = append(result, item)
-		}
+		result = append(result, exposeConnection(item, actor))
 	}
 	return result, nil
 }
@@ -108,6 +123,95 @@ func (u *UseCase) CreateConnection(ctx context.Context, name, adapter, baseURL, 
 		created = &value
 	}
 	return created, shared.MapConflict(err)
+}
+
+func (u *UseCase) CreateConnectionWithModel(ctx context.Context, input CreateConnectionWithModelInput) (*CreatedConnectionWithModel, error) {
+	actor, err := shared.Actor(ctx)
+	if err != nil {
+		return nil, err
+	}
+	visibility, err := normalizeVisibility(input.Visibility, actor.PlatformAdmin)
+	if err != nil {
+		return nil, err
+	}
+	if visibility == entities.AIVisibilityPublic && !actor.PlatformAdmin {
+		return nil, domainerrors.Forbidden("platform_admin_required", "Platform Admin role is required for public AI connections")
+	}
+	if input.MakeDefault && visibility == entities.AIVisibilityPrivate {
+		return nil, domainerrors.InvalidInput("ai.private_default_forbidden", "Private AI models cannot be the platform default")
+	}
+
+	connectionID := uuid.NewString()
+	name, err := normalizeName(input.Name, "connection name")
+	if err != nil {
+		return nil, err
+	}
+	adapter := strings.ToLower(strings.TrimSpace(input.Adapter))
+	baseURL, err := normalizeBaseURL(adapter, input.BaseURL)
+	if err != nil {
+		return nil, err
+	}
+	if adapter != "anthropic" && adapter != "ollama" {
+		return nil, domainerrors.InvalidInput("ai.adapter_invalid", "adapter must be anthropic or ollama")
+	}
+	providerModelID, err := normalizeName(input.ProviderModelID, "provider model id")
+	if err != nil {
+		return nil, err
+	}
+	displayName, err := normalizeName(input.DisplayName, "display name")
+	if err != nil {
+		return nil, err
+	}
+
+	var encrypted []byte
+	if credential := strings.TrimSpace(input.Credential); credential != "" {
+		encrypted, err = u.keyring.Encrypt(credential, credentialAAD(connectionID))
+		if err != nil {
+			return nil, fmt.Errorf("encrypt provider credential: %w", err)
+		}
+	}
+	ownerUserID := ""
+	if visibility == entities.AIVisibilityPrivate {
+		ownerUserID = actor.User.ID
+	}
+	connection := entities.AIProviderConnection{
+		ID: connectionID, Name: name, Adapter: adapter, BaseURL: baseURL, Visibility: visibility,
+		OwnerUserID: ownerUserID, Enabled: input.Enabled, CreatedBy: actor.User.ID,
+	}
+	model := entities.AIModelProfile{
+		ID: uuid.NewString(), ConnectionID: connectionID, ProviderModelID: providerModelID,
+		DisplayName: displayName, Enabled: input.ModelEnabled, Default: input.ModelEnabled && input.MakeDefault, CreatedBy: actor.User.ID,
+	}
+
+	var createdConnection *entities.AIProviderConnection
+	var createdModel *entities.AIModelProfile
+	err = u.tx.WithinTransaction(ctx, func(txctx context.Context) error {
+		var createErr error
+		createdConnection, createErr = u.repository.InsertAIProviderConnection(txctx, connection, encrypted)
+		if createErr != nil {
+			return shared.MapConflict(createErr)
+		}
+		if model.Default {
+			if clearErr := u.repository.ClearAIModelDefaults(txctx, model.ID); clearErr != nil {
+				return clearErr
+			}
+		}
+		createdModel, createErr = u.repository.InsertAIModelProfile(txctx, model)
+		if createErr != nil {
+			return shared.MapConflict(createErr)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if createdConnection == nil || createdModel == nil {
+		return nil, fmt.Errorf("create AI connection with model: repository returned an empty result")
+	}
+	createdConnection.ModelCount = 1
+	createdConnectionValue := exposeConnection(*createdConnection, actor)
+	createdModelValue := exposeModel(*createdModel, actor)
+	return &CreatedConnectionWithModel{Connection: createdConnectionValue, Model: createdModelValue}, nil
 }
 
 func (u *UseCase) PatchConnection(ctx context.Context, id string, patch ConnectionPatch) (*entities.AIProviderConnection, error) {

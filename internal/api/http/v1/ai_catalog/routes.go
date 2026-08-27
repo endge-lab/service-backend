@@ -8,6 +8,7 @@ func RegisterRoutes(router fiber.Router, handler *Handler) {
 	connections := root.Group("/provider-connections")
 	connections.Get("/", handler.ListConnections)
 	connections.Post("/", handler.CreateConnection)
+	connections.Post("/with-model", handler.CreateConnectionWithModel)
 	connections.Patch("/:id", handler.PatchConnection)
 	connections.Put("/:id/credential", handler.ReplaceCredential)
 	connections.Delete("/:id", handler.DeleteConnection)

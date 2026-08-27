@@ -1370,9 +1370,9 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Platform Admin получает публичные и свои приватные connections;\n" +
-		"        остальные пользователи — только свои приватные. Credential не\n" +
-		"        возвращается.\n" +
+		"      description: Пользователь получает публичные и свои приватные connections.\n" +
+		"        Изменять публичные connections может только Platform Admin. Credential\n" +
+		"        не возвращается.\n" +
 		"      tags:\n" +
 		"        - AI catalog\n" +
 		"      summary: Получить AI connections\n" +
@@ -1433,6 +1433,54 @@ var openAPI3YAML = []byte(
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"403\":\n" +
 		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/ai/provider-connections/with-model:\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт connection и первый model profile в одной транзакции; при\n" +
+		"        ошибке ни одна запись не сохраняется.\n" +
+		"      tags:\n" +
+		"        - AI catalog\n" +
+		"      summary: Создать AI connection с моделью\n" +
+		"      operationId: createAIProviderConnectionWithModel\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/ai_catalog.CreateConnectionWithModelRequest\"\n" +
+		"        description: Connection и первая модель\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Created\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/ai_catalog.ConnectionWithModelResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Conflict\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
@@ -14957,6 +15005,13 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        visibility:\n" +
 		"          type: string\n" +
+		"    ai_catalog.ConnectionWithModelResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        connection:\n" +
+		"          $ref: \"#/components/schemas/entities.AIProviderConnection\"\n" +
+		"        model:\n" +
+		"          $ref: \"#/components/schemas/entities.AIModelProfile\"\n" +
 		"    ai_catalog.ConnectionsResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -14991,6 +15046,34 @@ var openAPI3YAML = []byte(
 		"          enum:\n" +
 		"            - public\n" +
 		"            - private\n" +
+		"    ai_catalog.CreateConnectionWithModelRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - adapter\n" +
+		"        - model\n" +
+		"        - name\n" +
+		"      properties:\n" +
+		"        adapter:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - anthropic\n" +
+		"            - ollama\n" +
+		"        baseUrl:\n" +
+		"          type: string\n" +
+		"        credential:\n" +
+		"          type: string\n" +
+		"        enabled:\n" +
+		"          type: boolean\n" +
+		"        model:\n" +
+		"          $ref: \"#/components/schemas/ai_catalog.InitialModelRequest\"\n" +
+		"        name:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"        visibility:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - public\n" +
+		"            - private\n" +
 		"    ai_catalog.CreateModelRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -15000,6 +15083,22 @@ var openAPI3YAML = []byte(
 		"      properties:\n" +
 		"        connectionId:\n" +
 		"          type: string\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"        enabled:\n" +
+		"          type: boolean\n" +
+		"        isDefault:\n" +
+		"          type: boolean\n" +
+		"        providerModelId:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"    ai_catalog.InitialModelRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - providerModelId\n" +
+		"      properties:\n" +
 		"        displayName:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
