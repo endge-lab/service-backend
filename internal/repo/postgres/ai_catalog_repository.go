@@ -7,16 +7,16 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 )
 
-const aiProviderConnectionColumns = `c.id::text,c.name,c.adapter,c.base_url,c.credential_encrypted IS NOT NULL,c.enabled,
+const aiProviderConnectionColumns = `c.id::text,c.name,c.adapter,c.base_url,c.visibility,COALESCE(c.owner_user_id::text,''),c.credential_encrypted IS NOT NULL,c.enabled,
     (SELECT count(*) FROM ai_model_profiles p WHERE p.connection_id=c.id)::int,
     c.created_by::text,c.updated_by::text,c.created_at,c.updated_at`
 
-const aiModelProfileColumns = `p.id::text,p.connection_id::text,c.name,c.adapter,p.provider_model_id,p.display_name,
+const aiModelProfileColumns = `p.id::text,p.connection_id::text,c.name,c.adapter,c.visibility,COALESCE(c.owner_user_id::text,''),p.provider_model_id,p.display_name,
     p.enabled,p.is_default,p.created_by::text,p.updated_by::text,p.created_at,p.updated_at`
 
 func scanAIProviderConnection(row scanner) (*entities.AIProviderConnection, error) {
 	value := &entities.AIProviderConnection{}
-	if err := row.Scan(&value.ID, &value.Name, &value.Adapter, &value.BaseURL, &value.HasCredential, &value.Enabled,
+	if err := row.Scan(&value.ID, &value.Name, &value.Adapter, &value.BaseURL, &value.Visibility, &value.OwnerUserID, &value.HasCredential, &value.Enabled,
 		&value.ModelCount, &value.CreatedBy, &value.UpdatedBy, &value.CreatedAt, &value.UpdatedAt); err != nil {
 		return nil, repositoryError(err)
 	}
@@ -25,7 +25,7 @@ func scanAIProviderConnection(row scanner) (*entities.AIProviderConnection, erro
 
 func scanAIModelProfile(row scanner) (*entities.AIModelProfile, error) {
 	value := &entities.AIModelProfile{}
-	if err := row.Scan(&value.ID, &value.ConnectionID, &value.ConnectionName, &value.Adapter,
+	if err := row.Scan(&value.ID, &value.ConnectionID, &value.ConnectionName, &value.Adapter, &value.Visibility, &value.OwnerUserID,
 		&value.ProviderModelID, &value.DisplayName, &value.Enabled, &value.Default,
 		&value.CreatedBy, &value.UpdatedBy, &value.CreatedAt, &value.UpdatedAt); err != nil {
 		return nil, repositoryError(err)
@@ -33,8 +33,9 @@ func scanAIModelProfile(row scanner) (*entities.AIModelProfile, error) {
 	return value, nil
 }
 
-func (r *EndgeRepository) ListAIProviderConnections(ctx context.Context) ([]entities.AIProviderConnection, error) {
-	rows, err := r.executor(ctx).Query(ctx, `SELECT `+aiProviderConnectionColumns+` FROM ai_provider_connections c ORDER BY lower(c.name),c.id`)
+func (r *EndgeRepository) ListAIProviderConnections(ctx context.Context, actorID string) ([]entities.AIProviderConnection, error) {
+	rows, err := r.executor(ctx).Query(ctx, `SELECT `+aiProviderConnectionColumns+` FROM ai_provider_connections c
+		WHERE c.visibility='public' OR c.owner_user_id=$1 ORDER BY lower(c.name),c.id`, actorID)
 	if err != nil {
 		return nil, err
 	}
@@ -50,10 +51,12 @@ func (r *EndgeRepository) ListAIProviderConnections(ctx context.Context) ([]enti
 	return result, rows.Err()
 }
 
-func (r *EndgeRepository) GetAIProviderConnection(ctx context.Context, id string) (*ports.AIProviderConnectionRecord, error) {
-	row := r.executor(ctx).QueryRow(ctx, `SELECT `+aiProviderConnectionColumns+`,c.credential_encrypted FROM ai_provider_connections c WHERE c.id=$1`, id)
+func (r *EndgeRepository) GetAIProviderConnection(ctx context.Context, id, actorID string) (*ports.AIProviderConnectionRecord, error) {
+	row := r.executor(ctx).QueryRow(ctx, `SELECT `+aiProviderConnectionColumns+`,c.credential_encrypted FROM ai_provider_connections c
+		WHERE c.id=$1 AND (c.visibility='public' OR c.owner_user_id=$2)`, id, actorID)
 	record := &ports.AIProviderConnectionRecord{}
 	if err := row.Scan(&record.Connection.ID, &record.Connection.Name, &record.Connection.Adapter, &record.Connection.BaseURL,
+		&record.Connection.Visibility, &record.Connection.OwnerUserID,
 		&record.Connection.HasCredential, &record.Connection.Enabled, &record.Connection.ModelCount,
 		&record.Connection.CreatedBy, &record.Connection.UpdatedBy, &record.Connection.CreatedAt, &record.Connection.UpdatedAt,
 		&record.Credential); err != nil {
@@ -64,9 +67,10 @@ func (r *EndgeRepository) GetAIProviderConnection(ctx context.Context, id string
 
 func (r *EndgeRepository) InsertAIProviderConnection(ctx context.Context, value entities.AIProviderConnection, credential []byte) (*entities.AIProviderConnection, error) {
 	return scanAIProviderConnection(r.executor(ctx).QueryRow(ctx, `INSERT INTO ai_provider_connections AS c(
-		id,name,adapter,base_url,credential_encrypted,enabled,created_by,updated_by
-	) VALUES($1,$2,$3,$4,$5,$6,$7,$7) RETURNING `+aiProviderConnectionColumns,
-		value.ID, value.Name, value.Adapter, value.BaseURL, nullableAIBytes(credential), value.Enabled, value.CreatedBy))
+		id,name,adapter,base_url,visibility,owner_user_id,credential_encrypted,enabled,created_by,updated_by
+	) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$9) RETURNING `+aiProviderConnectionColumns,
+		value.ID, value.Name, value.Adapter, value.BaseURL, value.Visibility, nullableAIString(value.OwnerUserID),
+		nullableAIBytes(credential), value.Enabled, value.CreatedBy))
 }
 
 func (r *EndgeRepository) UpdateAIProviderConnection(ctx context.Context, value entities.AIProviderConnection) (*entities.AIProviderConnection, error) {
@@ -92,11 +96,11 @@ func (r *EndgeRepository) DeleteAIProviderConnection(ctx context.Context, id str
 	return nil
 }
 
-func (r *EndgeRepository) ListAIModelProfiles(ctx context.Context, enabledOnly bool) ([]entities.AIModelProfile, error) {
+func (r *EndgeRepository) ListAIModelProfiles(ctx context.Context, enabledOnly bool, actorID string) ([]entities.AIModelProfile, error) {
 	rows, err := r.executor(ctx).Query(ctx, `SELECT `+aiModelProfileColumns+` FROM ai_model_profiles p
 		JOIN ai_provider_connections c ON c.id=p.connection_id
-		WHERE NOT $1 OR (p.enabled AND c.enabled)
-		ORDER BY p.is_default DESC,lower(p.display_name),p.id`, enabledOnly)
+		WHERE (c.visibility='public' OR c.owner_user_id=$2) AND (NOT $1 OR (p.enabled AND c.enabled))
+		ORDER BY p.is_default DESC,lower(p.display_name),p.id`, enabledOnly, actorID)
 	if err != nil {
 		return nil, err
 	}
@@ -112,9 +116,10 @@ func (r *EndgeRepository) ListAIModelProfiles(ctx context.Context, enabledOnly b
 	return result, rows.Err()
 }
 
-func (r *EndgeRepository) GetAIModelProfile(ctx context.Context, id string) (*entities.AIModelProfile, error) {
+func (r *EndgeRepository) GetAIModelProfile(ctx context.Context, id, actorID string) (*entities.AIModelProfile, error) {
 	return scanAIModelProfile(r.executor(ctx).QueryRow(ctx, `SELECT `+aiModelProfileColumns+` FROM ai_model_profiles p
-		JOIN ai_provider_connections c ON c.id=p.connection_id WHERE p.id=$1`, id))
+		JOIN ai_provider_connections c ON c.id=p.connection_id
+		WHERE p.id=$1 AND (c.visibility='public' OR c.owner_user_id=$2)`, id, actorID))
 }
 
 func (r *EndgeRepository) InsertAIModelProfile(ctx context.Context, value entities.AIModelProfile) (*entities.AIModelProfile, error) {
@@ -125,7 +130,7 @@ func (r *EndgeRepository) InsertAIModelProfile(ctx context.Context, value entiti
 	if err != nil {
 		return nil, err
 	}
-	return r.GetAIModelProfile(ctx, value.ID)
+	return r.GetAIModelProfile(ctx, value.ID, value.CreatedBy)
 }
 
 func (r *EndgeRepository) UpdateAIModelProfile(ctx context.Context, value entities.AIModelProfile) (*entities.AIModelProfile, error) {
@@ -138,11 +143,18 @@ func (r *EndgeRepository) UpdateAIModelProfile(ctx context.Context, value entiti
 	if tag.RowsAffected() == 0 {
 		return nil, ports.ErrNotFound
 	}
-	return r.GetAIModelProfile(ctx, value.ID)
+	return r.GetAIModelProfile(ctx, value.ID, value.UpdatedBy)
 }
 
 func nullableAIBytes(value []byte) any {
 	if len(value) == 0 {
+		return nil
+	}
+	return value
+}
+
+func nullableAIString(value string) any {
+	if value == "" {
 		return nil
 	}
 	return value

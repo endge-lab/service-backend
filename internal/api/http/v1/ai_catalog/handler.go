@@ -19,7 +19,7 @@ func NewHandler(usecase UseCase, validator appvalidator.Validator) *Handler {
 
 // Adapters возвращает поддерживаемые backend-ом типы AI-провайдеров.
 // @Summary Получить AI adapters
-// @Description Возвращает фиксированный список adapter IDs, поддерживаемых платформой.
+// @Description Возвращает фиксированный список adapter IDs авторизованному пользователю.
 // @ID listAIProviderAdapters
 // @Tags AI catalog
 // @Produce json
@@ -36,9 +36,9 @@ func (h *Handler) Adapters(c *fiber.Ctx) error {
 	return c.JSON(AdaptersResponse{Items: items})
 }
 
-// ListConnections возвращает каталог connections без credential.
+// ListConnections возвращает управляемые пользователем connections без credential.
 // @Summary Получить AI connections
-// @Description Возвращает connections без значения credential, только с признаком его наличия.
+// @Description Platform Admin получает публичные и свои приватные connections; остальные пользователи — только свои приватные. Credential не возвращается.
 // @ID listAIProviderConnections
 // @Tags AI catalog
 // @Produce json
@@ -57,7 +57,7 @@ func (h *Handler) ListConnections(c *fiber.Ctx) error {
 
 // CreateConnection создаёт connection; credential сохраняется зашифрованным.
 // @Summary Создать AI connection
-// @Description Создаёт connection платформы и сохраняет переданный credential в зашифрованном виде.
+// @Description Создаёт public connection для Platform Admin или private connection для текущего пользователя; credential сохраняется зашифрованным.
 // @ID createAIProviderConnection
 // @Tags AI catalog
 // @Accept json
@@ -74,7 +74,7 @@ func (h *Handler) CreateConnection(c *fiber.Ctx) error {
 	if err != nil {
 		return respond.WriteErrorResponse(c, err)
 	}
-	value, err := h.usecase.CreateConnection(c.UserContext(), request.Name, request.Adapter, request.BaseURL, request.Credential, request.Enabled)
+	value, err := h.usecase.CreateConnection(c.UserContext(), request.Name, request.Adapter, request.BaseURL, request.Credential, request.Visibility, request.Enabled)
 	if err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}
@@ -160,7 +160,7 @@ func (h *Handler) DeleteConnection(c *fiber.Ctx) error {
 
 // ListModels возвращает model profiles платформы.
 // @Summary Получить AI model profiles
-// @Description Возвращает все model profiles платформы без soft-delete фильтрации.
+// @Description Возвращает публичные profiles и приватные profiles текущего пользователя без soft-delete фильтрации.
 // @ID listAIModelProfiles
 // @Tags AI catalog
 // @Produce json
@@ -179,7 +179,7 @@ func (h *Handler) ListModels(c *fiber.Ctx) error {
 
 // CreateModel создаёт model profile без автоматического default.
 // @Summary Создать AI model profile
-// @Description Создаёт model profile; default назначается только явно.
+// @Description Создаёт model profile в доступном пользователю connection; private profile не может быть platform default.
 // @ID createAIModelProfile
 // @Tags AI catalog
 // @Accept json

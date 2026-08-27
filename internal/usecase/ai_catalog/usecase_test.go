@@ -28,12 +28,18 @@ type catalogStub struct {
 	credential  []byte
 }
 
-func (r *catalogStub) ListAIProviderConnections(context.Context) ([]entities.AIProviderConnection, error) {
-	return r.connections, nil
-}
-func (r *catalogStub) GetAIProviderConnection(_ context.Context, id string) (*ports.AIProviderConnectionRecord, error) {
+func (r *catalogStub) ListAIProviderConnections(_ context.Context, actorID string) ([]entities.AIProviderConnection, error) {
+	result := make([]entities.AIProviderConnection, 0, len(r.connections))
 	for _, value := range r.connections {
-		if value.ID == id {
+		if value.Visibility == entities.AIVisibilityPublic || value.OwnerUserID == actorID {
+			result = append(result, value)
+		}
+	}
+	return result, nil
+}
+func (r *catalogStub) GetAIProviderConnection(_ context.Context, id, actorID string) (*ports.AIProviderConnectionRecord, error) {
+	for _, value := range r.connections {
+		if value.ID == id && (value.Visibility == entities.AIVisibilityPublic || value.OwnerUserID == actorID) {
 			return &ports.AIProviderConnectionRecord{Connection: value, Credential: r.credential}, nil
 		}
 	}
@@ -57,12 +63,18 @@ func (r *catalogStub) DeleteAIProviderConnection(_ context.Context, id string) e
 	r.deleted = id
 	return nil
 }
-func (r *catalogStub) ListAIModelProfiles(context.Context, bool) ([]entities.AIModelProfile, error) {
-	return r.models, nil
-}
-func (r *catalogStub) GetAIModelProfile(_ context.Context, id string) (*entities.AIModelProfile, error) {
+func (r *catalogStub) ListAIModelProfiles(_ context.Context, _ bool, actorID string) ([]entities.AIModelProfile, error) {
+	result := make([]entities.AIModelProfile, 0, len(r.models))
 	for _, value := range r.models {
-		if value.ID == id {
+		if value.Visibility == entities.AIVisibilityPublic || value.OwnerUserID == actorID {
+			result = append(result, value)
+		}
+	}
+	return result, nil
+}
+func (r *catalogStub) GetAIModelProfile(_ context.Context, id, actorID string) (*entities.AIModelProfile, error) {
+	for _, value := range r.models {
+		if value.ID == id && (value.Visibility == entities.AIVisibilityPublic || value.OwnerUserID == actorID) {
 			copy := value
 			return &copy, nil
 		}
@@ -70,6 +82,13 @@ func (r *catalogStub) GetAIModelProfile(_ context.Context, id string) (*entities
 	return nil, domainerrors.ErrNotFound
 }
 func (r *catalogStub) InsertAIModelProfile(_ context.Context, value entities.AIModelProfile) (*entities.AIModelProfile, error) {
+	for _, connection := range r.connections {
+		if connection.ID == value.ConnectionID {
+			value.Visibility = connection.Visibility
+			value.OwnerUserID = connection.OwnerUserID
+			break
+		}
+	}
 	r.models = append(r.models, value)
 	return &value, nil
 }
@@ -85,11 +104,12 @@ func (r *catalogStub) DeleteAIModelProfile(_ context.Context, id string) error {
 	return nil
 }
 
-func TestCatalogStartsEmptyAndRequiresPlatformAdminForManagement(t *testing.T) {
+func TestCatalogStartsEmptyForAuthorizedUser(t *testing.T) {
 	repo := &catalogStub{}
 	usecase := newTestUseCase(t, repo)
-	if _, err := usecase.ListConnections(actorContext(false)); domainerrors.HTTPStatusOf(err) != 403 {
-		t.Fatalf("non platform admin status = %d, want 403", domainerrors.HTTPStatusOf(err))
+	privateConnections, err := usecase.ListConnections(actorContext(false))
+	if err != nil || len(privateConnections) != 0 {
+		t.Fatalf("user catalog = %#v, %v", privateConnections, err)
 	}
 	connections, err := usecase.ListConnections(actorContext(true))
 	if err != nil || len(connections) != 0 {
@@ -100,7 +120,7 @@ func TestCatalogStartsEmptyAndRequiresPlatformAdminForManagement(t *testing.T) {
 func TestCreateConnectionEncryptsCredentialAndDeleteIsPhysical(t *testing.T) {
 	repo := &catalogStub{}
 	usecase := newTestUseCase(t, repo)
-	created, err := usecase.CreateConnection(actorContext(true), "Local", "ollama", "http://localhost:11434", "secret", true)
+	created, err := usecase.CreateConnection(actorContext(true), "Local", "ollama", "http://localhost:11434", "secret", "public", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +134,7 @@ func TestCreateConnectionEncryptsCredentialAndDeleteIsPhysical(t *testing.T) {
 
 func TestDefaultIsExplicitAndDeletingDoesNotSelectReplacement(t *testing.T) {
 	connectionID := "d58d7f5f-b19e-440c-a090-2ecf39dd7298"
-	repo := &catalogStub{connections: []entities.AIProviderConnection{{ID: connectionID, Enabled: true, Adapter: "ollama"}}}
+	repo := &catalogStub{connections: []entities.AIProviderConnection{{ID: connectionID, Enabled: true, Adapter: "ollama", Visibility: entities.AIVisibilityPublic}}}
 	usecase := newTestUseCase(t, repo)
 	first, err := usecase.CreateModel(actorContext(true), connectionID, "model-a", "Model A", true, false)
 	if err != nil || first.Default || repo.cleared {
@@ -127,6 +147,41 @@ func TestDefaultIsExplicitAndDeletingDoesNotSelectReplacement(t *testing.T) {
 	repo.cleared = false
 	if err := usecase.DeleteModel(actorContext(true), second.ID); err != nil || repo.cleared {
 		t.Fatalf("delete selected replacement: cleared=%v err=%v", repo.cleared, err)
+	}
+}
+
+func TestPrivateConnectionsAreOwnedAndPublicCreationRequiresPlatformAdmin(t *testing.T) {
+	repo := &catalogStub{}
+	usecase := newTestUseCase(t, repo)
+	owner := actorContext(false)
+
+	privateConnection, err := usecase.CreateConnection(owner, "Personal", "anthropic", "", "secret", "private", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if privateConnection.Visibility != entities.AIVisibilityPrivate || !privateConnection.OwnedByMe || !privateConnection.CanManage {
+		t.Fatalf("private ownership was not exposed: %#v", privateConnection)
+	}
+	if _, err := usecase.CreateConnection(owner, "Shared", "anthropic", "", "secret", "public", true); domainerrors.HTTPStatusOf(err) != 403 {
+		t.Fatalf("public creation status = %d, want 403", domainerrors.HTTPStatusOf(err))
+	}
+
+	other := entities.WithCurrentActor(context.Background(), entities.CurrentActor{User: &entities.User{ID: "2f1c89e4-fbdc-4d42-8e9b-4c9f64db9857"}})
+	connections, err := usecase.ListConnections(other)
+	if err != nil || len(connections) != 0 {
+		t.Fatalf("other user saw private connection: %#v, %v", connections, err)
+	}
+}
+
+func TestPrivateModelCannotBecomePlatformDefault(t *testing.T) {
+	connectionID := "7b1a2bd6-133d-46ed-9adf-b074b4920553"
+	repo := &catalogStub{connections: []entities.AIProviderConnection{{
+		ID: connectionID, Enabled: true, Adapter: "anthropic", Visibility: entities.AIVisibilityPrivate,
+		OwnerUserID: "59c995d6-61e8-45f1-ad09-baccdc9d62fc",
+	}}}
+	usecase := newTestUseCase(t, repo)
+	if _, err := usecase.CreateModel(actorContext(false), connectionID, "claude", "Claude", true, true); domainerrors.HTTPStatusOf(err) != 400 {
+		t.Fatalf("private default status = %d, want 400", domainerrors.HTTPStatusOf(err))
 	}
 }
 

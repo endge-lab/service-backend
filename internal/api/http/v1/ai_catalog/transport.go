@@ -7,6 +7,7 @@ type CreateConnectionRequest struct {
 	Adapter    string `json:"adapter" validate:"required,oneof=anthropic ollama"`
 	BaseURL    string `json:"baseUrl"`
 	Credential string `json:"credential"`
+	Visibility string `json:"visibility" validate:"omitempty,oneof=public private"`
 	Enabled    bool   `json:"enabled"`
 }
 

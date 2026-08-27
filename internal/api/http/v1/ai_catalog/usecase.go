@@ -10,7 +10,7 @@ import (
 type UseCase interface {
 	Adapters(context.Context) ([]string, error)
 	ListConnections(context.Context) ([]entities.AIProviderConnection, error)
-	CreateConnection(context.Context, string, string, string, string, bool) (*entities.AIProviderConnection, error)
+	CreateConnection(context.Context, string, string, string, string, string, bool) (*entities.AIProviderConnection, error)
 	PatchConnection(context.Context, string, resourceusecase.ConnectionPatch) (*entities.AIProviderConnection, error)
 	ReplaceCredential(context.Context, string, string) (*entities.AIProviderConnection, error)
 	DeleteConnection(context.Context, string) error

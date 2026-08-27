@@ -1170,7 +1170,8 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает все model profiles платформы без soft-delete фильтрации.\n" +
+		"      description: Возвращает публичные profiles и приватные profiles текущего\n" +
+		"        пользователя без soft-delete фильтрации.\n" +
 		"      tags:\n" +
 		"        - AI catalog\n" +
 		"      summary: Получить AI model profiles\n" +
@@ -1197,7 +1198,8 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Создаёт model profile; default назначается только явно.\n" +
+		"      description: Создаёт model profile в доступном пользователю connection; private\n" +
+		"        profile не может быть platform default.\n" +
 		"      tags:\n" +
 		"        - AI catalog\n" +
 		"      summary: Создать AI model profile\n" +
@@ -1340,7 +1342,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает фиксированный список adapter IDs, поддерживаемых платформой.\n" +
+		"      description: Возвращает фиксированный список adapter IDs авторизованному пользователю.\n" +
 		"      tags:\n" +
 		"        - AI catalog\n" +
 		"      summary: Получить AI adapters\n" +
@@ -1368,8 +1370,9 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает connections без значения credential, только с признаком\n" +
-		"        его наличия.\n" +
+		"      description: Platform Admin получает публичные и свои приватные connections;\n" +
+		"        остальные пользователи — только свои приватные. Credential не\n" +
+		"        возвращается.\n" +
 		"      tags:\n" +
 		"        - AI catalog\n" +
 		"      summary: Получить AI connections\n" +
@@ -1396,8 +1399,8 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Создаёт connection платформы и сохраняет переданный credential в\n" +
-		"        зашифрованном виде.\n" +
+		"      description: Создаёт public connection для Platform Admin или private connection\n" +
+		"        для текущего пользователя; credential сохраняется зашифрованным.\n" +
 		"      tags:\n" +
 		"        - AI catalog\n" +
 		"      summary: Создать AI connection\n" +
@@ -14930,6 +14933,8 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        baseUrl:\n" +
 		"          type: string\n" +
+		"        canManage:\n" +
+		"          type: boolean\n" +
 		"        createdAt:\n" +
 		"          type: string\n" +
 		"        createdBy:\n" +
@@ -14944,9 +14949,13 @@ var openAPI3YAML = []byte(
 		"          type: integer\n" +
 		"        name:\n" +
 		"          type: string\n" +
+		"        ownedByMe:\n" +
+		"          type: boolean\n" +
 		"        updatedAt:\n" +
 		"          type: string\n" +
 		"        updatedBy:\n" +
+		"          type: string\n" +
+		"        visibility:\n" +
 		"          type: string\n" +
 		"    ai_catalog.ConnectionsResponse:\n" +
 		"      type: object\n" +
@@ -14977,6 +14986,11 @@ var openAPI3YAML = []byte(
 		"        name:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
+		"        visibility:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - public\n" +
+		"            - private\n" +
 		"    ai_catalog.CreateModelRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -15001,6 +15015,8 @@ var openAPI3YAML = []byte(
 		"      properties:\n" +
 		"        adapter:\n" +
 		"          type: string\n" +
+		"        canManage:\n" +
+		"          type: boolean\n" +
 		"        connectionId:\n" +
 		"          type: string\n" +
 		"        connectionName:\n" +
@@ -15017,11 +15033,15 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        isDefault:\n" +
 		"          type: boolean\n" +
+		"        ownedByMe:\n" +
+		"          type: boolean\n" +
 		"        providerModelId:\n" +
 		"          type: string\n" +
 		"        updatedAt:\n" +
 		"          type: string\n" +
 		"        updatedBy:\n" +
+		"          type: string\n" +
+		"        visibility:\n" +
 		"          type: string\n" +
 		"    ai_catalog.ModelsResponse:\n" +
 		"      type: object\n" +
@@ -16893,6 +16913,8 @@ var openAPI3YAML = []byte(
 		"      properties:\n" +
 		"        adapter:\n" +
 		"          type: string\n" +
+		"        canManage:\n" +
+		"          type: boolean\n" +
 		"        connectionId:\n" +
 		"          type: string\n" +
 		"        connectionName:\n" +
@@ -16909,11 +16931,15 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        isDefault:\n" +
 		"          type: boolean\n" +
+		"        ownedByMe:\n" +
+		"          type: boolean\n" +
 		"        providerModelId:\n" +
 		"          type: string\n" +
 		"        updatedAt:\n" +
 		"          type: string\n" +
 		"        updatedBy:\n" +
+		"          type: string\n" +
+		"        visibility:\n" +
 		"          type: string\n" +
 		"    entities.AIModelSnapshot:\n" +
 		"      type: object\n" +
@@ -16935,6 +16961,8 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        baseUrl:\n" +
 		"          type: string\n" +
+		"        canManage:\n" +
+		"          type: boolean\n" +
 		"        createdAt:\n" +
 		"          type: string\n" +
 		"        createdBy:\n" +
@@ -16949,9 +16977,13 @@ var openAPI3YAML = []byte(
 		"          type: integer\n" +
 		"        name:\n" +
 		"          type: string\n" +
+		"        ownedByMe:\n" +
+		"          type: boolean\n" +
 		"        updatedAt:\n" +
 		"          type: string\n" +
 		"        updatedBy:\n" +
+		"          type: string\n" +
+		"        visibility:\n" +
 		"          type: string\n" +
 		"    entities.Actor:\n" +
 		"      type: object\n" +

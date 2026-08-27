@@ -2,11 +2,20 @@ package entities
 
 import "time"
 
+const (
+	AIVisibilityPublic  = "public"
+	AIVisibilityPrivate = "private"
+)
+
 type AIProviderConnection struct {
 	ID            string    `json:"id"`
 	Name          string    `json:"name"`
 	Adapter       string    `json:"adapter"`
 	BaseURL       string    `json:"baseUrl"`
+	Visibility    string    `json:"visibility"`
+	OwnerUserID   string    `json:"-"`
+	OwnedByMe     bool      `json:"ownedByMe"`
+	CanManage     bool      `json:"canManage"`
 	HasCredential bool      `json:"hasCredential"`
 	Enabled       bool      `json:"enabled"`
 	ModelCount    int       `json:"modelCount"`
@@ -21,6 +30,10 @@ type AIModelProfile struct {
 	ConnectionID    string    `json:"connectionId"`
 	ConnectionName  string    `json:"connectionName"`
 	Adapter         string    `json:"adapter"`
+	Visibility      string    `json:"visibility"`
+	OwnerUserID     string    `json:"-"`
+	OwnedByMe       bool      `json:"ownedByMe"`
+	CanManage       bool      `json:"canManage"`
 	ProviderModelID string    `json:"providerModelId"`
 	DisplayName     string    `json:"displayName"`
 	Enabled         bool      `json:"enabled"`

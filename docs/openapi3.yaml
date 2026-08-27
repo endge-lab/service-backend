@@ -1165,7 +1165,8 @@ paths:
     get:
       security:
         - BearerAuth: []
-      description: Возвращает все model profiles платформы без soft-delete фильтрации.
+      description: Возвращает публичные profiles и приватные profiles текущего
+        пользователя без soft-delete фильтрации.
       tags:
         - AI catalog
       summary: Получить AI model profiles
@@ -1192,7 +1193,8 @@ paths:
     post:
       security:
         - BearerAuth: []
-      description: Создаёт model profile; default назначается только явно.
+      description: Создаёт model profile в доступном пользователю connection; private
+        profile не может быть platform default.
       tags:
         - AI catalog
       summary: Создать AI model profile
@@ -1335,7 +1337,7 @@ paths:
     get:
       security:
         - BearerAuth: []
-      description: Возвращает фиксированный список adapter IDs, поддерживаемых платформой.
+      description: Возвращает фиксированный список adapter IDs авторизованному пользователю.
       tags:
         - AI catalog
       summary: Получить AI adapters
@@ -1363,8 +1365,9 @@ paths:
     get:
       security:
         - BearerAuth: []
-      description: Возвращает connections без значения credential, только с признаком
-        его наличия.
+      description: Platform Admin получает публичные и свои приватные connections;
+        остальные пользователи — только свои приватные. Credential не
+        возвращается.
       tags:
         - AI catalog
       summary: Получить AI connections
@@ -1391,8 +1394,8 @@ paths:
     post:
       security:
         - BearerAuth: []
-      description: Создаёт connection платформы и сохраняет переданный credential в
-        зашифрованном виде.
+      description: Создаёт public connection для Platform Admin или private connection
+        для текущего пользователя; credential сохраняется зашифрованным.
       tags:
         - AI catalog
       summary: Создать AI connection
@@ -14925,6 +14928,8 @@ components:
           type: string
         baseUrl:
           type: string
+        canManage:
+          type: boolean
         createdAt:
           type: string
         createdBy:
@@ -14939,9 +14944,13 @@ components:
           type: integer
         name:
           type: string
+        ownedByMe:
+          type: boolean
         updatedAt:
           type: string
         updatedBy:
+          type: string
+        visibility:
           type: string
     ai_catalog.ConnectionsResponse:
       type: object
@@ -14972,6 +14981,11 @@ components:
         name:
           type: string
           maxLength: 160
+        visibility:
+          type: string
+          enum:
+            - public
+            - private
     ai_catalog.CreateModelRequest:
       type: object
       required:
@@ -14996,6 +15010,8 @@ components:
       properties:
         adapter:
           type: string
+        canManage:
+          type: boolean
         connectionId:
           type: string
         connectionName:
@@ -15012,11 +15028,15 @@ components:
           type: string
         isDefault:
           type: boolean
+        ownedByMe:
+          type: boolean
         providerModelId:
           type: string
         updatedAt:
           type: string
         updatedBy:
+          type: string
+        visibility:
           type: string
     ai_catalog.ModelsResponse:
       type: object
@@ -16888,6 +16908,8 @@ components:
       properties:
         adapter:
           type: string
+        canManage:
+          type: boolean
         connectionId:
           type: string
         connectionName:
@@ -16904,11 +16926,15 @@ components:
           type: string
         isDefault:
           type: boolean
+        ownedByMe:
+          type: boolean
         providerModelId:
           type: string
         updatedAt:
           type: string
         updatedBy:
+          type: string
+        visibility:
           type: string
     entities.AIModelSnapshot:
       type: object
@@ -16930,6 +16956,8 @@ components:
           type: string
         baseUrl:
           type: string
+        canManage:
+          type: boolean
         createdAt:
           type: string
         createdBy:
@@ -16944,9 +16972,13 @@ components:
           type: integer
         name:
           type: string
+        ownedByMe:
+          type: boolean
         updatedAt:
           type: string
         updatedBy:
+          type: string
+        visibility:
           type: string
     entities.Actor:
       type: object

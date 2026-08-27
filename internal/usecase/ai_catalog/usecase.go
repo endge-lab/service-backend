@@ -38,23 +38,42 @@ func NewUseCase(repository ports.AICatalogRepository, tx ports.TxManager, keyrin
 }
 
 func (u *UseCase) Adapters(ctx context.Context) ([]string, error) {
-	if _, err := platformAdmin(ctx); err != nil {
+	if _, err := shared.Actor(ctx); err != nil {
 		return nil, err
 	}
 	return []string{"anthropic", "ollama"}, nil
 }
 
 func (u *UseCase) ListConnections(ctx context.Context) ([]entities.AIProviderConnection, error) {
-	if _, err := platformAdmin(ctx); err != nil {
-		return nil, err
-	}
-	return u.repository.ListAIProviderConnections(ctx)
-}
-
-func (u *UseCase) CreateConnection(ctx context.Context, name, adapter, baseURL, credential string, enabled bool) (*entities.AIProviderConnection, error) {
-	actor, err := platformAdmin(ctx)
+	actor, err := shared.Actor(ctx)
 	if err != nil {
 		return nil, err
+	}
+	items, err := u.repository.ListAIProviderConnections(ctx, actor.User.ID)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]entities.AIProviderConnection, 0, len(items))
+	for _, item := range items {
+		item = exposeConnection(item, actor)
+		if item.CanManage {
+			result = append(result, item)
+		}
+	}
+	return result, nil
+}
+
+func (u *UseCase) CreateConnection(ctx context.Context, name, adapter, baseURL, credential, visibility string, enabled bool) (*entities.AIProviderConnection, error) {
+	actor, err := shared.Actor(ctx)
+	if err != nil {
+		return nil, err
+	}
+	visibility, err = normalizeVisibility(visibility, actor.PlatformAdmin)
+	if err != nil {
+		return nil, err
+	}
+	if visibility == entities.AIVisibilityPublic && !actor.PlatformAdmin {
+		return nil, domainerrors.Forbidden("platform_admin_required", "Platform Admin role is required for public AI connections")
 	}
 	id := uuid.NewString()
 	name, err = normalizeName(name, "connection name")
@@ -76,20 +95,32 @@ func (u *UseCase) CreateConnection(ctx context.Context, name, adapter, baseURL, 
 			return nil, fmt.Errorf("encrypt provider credential: %w", err)
 		}
 	}
+	ownerUserID := ""
+	if visibility == entities.AIVisibilityPrivate {
+		ownerUserID = actor.User.ID
+	}
 	created, err := u.repository.InsertAIProviderConnection(ctx, entities.AIProviderConnection{
-		ID: id, Name: name, Adapter: adapter, BaseURL: baseURL, Enabled: enabled, CreatedBy: actor.User.ID,
+		ID: id, Name: name, Adapter: adapter, BaseURL: baseURL, Visibility: visibility,
+		OwnerUserID: ownerUserID, Enabled: enabled, CreatedBy: actor.User.ID,
 	}, encrypted)
+	if created != nil {
+		value := exposeConnection(*created, actor)
+		created = &value
+	}
 	return created, shared.MapConflict(err)
 }
 
 func (u *UseCase) PatchConnection(ctx context.Context, id string, patch ConnectionPatch) (*entities.AIProviderConnection, error) {
-	actor, err := platformAdmin(ctx)
+	actor, err := shared.Actor(ctx)
 	if err != nil {
 		return nil, err
 	}
-	record, err := u.repository.GetAIProviderConnection(ctx, id)
+	record, err := u.repository.GetAIProviderConnection(ctx, id, actor.User.ID)
 	if err != nil {
 		return nil, shared.MapNotFound(err)
+	}
+	if !canManageConnection(record.Connection, actor) {
+		return nil, domainerrors.Forbidden("ai.connection_forbidden", "AI connection cannot be managed by this user")
 	}
 	value := record.Connection
 	if patch.Name != nil {
@@ -109,16 +140,27 @@ func (u *UseCase) PatchConnection(ctx context.Context, id string, patch Connecti
 	}
 	value.UpdatedBy = actor.User.ID
 	updated, err := u.repository.UpdateAIProviderConnection(ctx, value)
+	if updated != nil {
+		result := exposeConnection(*updated, actor)
+		updated = &result
+	}
 	return updated, shared.MapConflict(shared.MapNotFound(err))
 }
 
 func (u *UseCase) ReplaceCredential(ctx context.Context, id, credential string) (*entities.AIProviderConnection, error) {
-	actor, err := platformAdmin(ctx)
+	actor, err := shared.Actor(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if _, err := uuid.Parse(id); err != nil {
 		return nil, domainerrors.NotFound("ai.connection_not_found", "AI provider connection not found")
+	}
+	record, err := u.repository.GetAIProviderConnection(ctx, id, actor.User.ID)
+	if err != nil {
+		return nil, shared.MapNotFound(err)
+	}
+	if !canManageConnection(record.Connection, actor) {
+		return nil, domainerrors.Forbidden("ai.connection_forbidden", "AI connection cannot be managed by this user")
 	}
 	credential = strings.TrimSpace(credential)
 	if credential == "" {
@@ -129,37 +171,63 @@ func (u *UseCase) ReplaceCredential(ctx context.Context, id, credential string) 
 		return nil, fmt.Errorf("encrypt provider credential: %w", err)
 	}
 	updated, err := u.repository.UpdateAIProviderCredential(ctx, id, actor.User.ID, encrypted)
+	if updated != nil {
+		result := exposeConnection(*updated, actor)
+		updated = &result
+	}
 	return updated, shared.MapNotFound(err)
 }
 
 func (u *UseCase) DeleteConnection(ctx context.Context, id string) error {
-	if _, err := platformAdmin(ctx); err != nil {
+	actor, err := shared.Actor(ctx)
+	if err != nil {
 		return err
 	}
 	if _, err := uuid.Parse(id); err != nil {
 		return domainerrors.NotFound("ai.connection_not_found", "AI provider connection not found")
 	}
+	record, err := u.repository.GetAIProviderConnection(ctx, id, actor.User.ID)
+	if err != nil {
+		return shared.MapNotFound(err)
+	}
+	if !canManageConnection(record.Connection, actor) {
+		return domainerrors.Forbidden("ai.connection_forbidden", "AI connection cannot be managed by this user")
+	}
 	return shared.MapNotFound(u.repository.DeleteAIProviderConnection(ctx, id))
 }
 
 func (u *UseCase) ListModels(ctx context.Context, enabledOnly bool) ([]entities.AIModelProfile, error) {
-	if !enabledOnly {
-		if _, err := platformAdmin(ctx); err != nil {
-			return nil, err
-		}
-	} else if _, err := shared.Actor(ctx); err != nil {
+	actor, err := shared.Actor(ctx)
+	if err != nil {
 		return nil, err
 	}
-	return u.repository.ListAIModelProfiles(ctx, enabledOnly)
+	items, err := u.repository.ListAIModelProfiles(ctx, enabledOnly, actor.User.ID)
+	if err != nil {
+		return nil, err
+	}
+	for index := range items {
+		items[index] = exposeModel(items[index], actor)
+	}
+	return items, nil
 }
 
 func (u *UseCase) CreateModel(ctx context.Context, connectionID, providerModelID, displayName string, enabled, makeDefault bool) (*entities.AIModelProfile, error) {
-	actor, err := platformAdmin(ctx)
+	actor, err := shared.Actor(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if _, err := uuid.Parse(connectionID); err != nil {
 		return nil, domainerrors.NotFound("ai.connection_not_found", "AI provider connection not found")
+	}
+	connection, err := u.repository.GetAIProviderConnection(ctx, connectionID, actor.User.ID)
+	if err != nil {
+		return nil, shared.MapNotFound(err)
+	}
+	if !canManageConnection(connection.Connection, actor) {
+		return nil, domainerrors.Forbidden("ai.connection_forbidden", "AI connection cannot be managed by this user")
+	}
+	if makeDefault && connection.Connection.Visibility == entities.AIVisibilityPrivate {
+		return nil, domainerrors.InvalidInput("ai.private_default_forbidden", "Private AI models cannot be the platform default")
 	}
 	providerModelID, err = normalizeName(providerModelID, "provider model id")
 	if err != nil {
@@ -187,17 +255,29 @@ func (u *UseCase) CreateModel(ctx context.Context, connectionID, providerModelID
 		}
 		return nil
 	})
+	if created != nil {
+		created.Visibility = connection.Connection.Visibility
+		created.OwnerUserID = connection.Connection.OwnerUserID
+		value := exposeModel(*created, actor)
+		created = &value
+	}
 	return created, err
 }
 
 func (u *UseCase) PatchModel(ctx context.Context, id string, patch ModelPatch) (*entities.AIModelProfile, error) {
-	actor, err := platformAdmin(ctx)
+	actor, err := shared.Actor(ctx)
 	if err != nil {
 		return nil, err
 	}
-	value, err := u.repository.GetAIModelProfile(ctx, id)
+	value, err := u.repository.GetAIModelProfile(ctx, id, actor.User.ID)
 	if err != nil {
 		return nil, shared.MapNotFound(err)
+	}
+	if !canManageModel(*value, actor) {
+		return nil, domainerrors.Forbidden("ai.model_forbidden", "AI model cannot be managed by this user")
+	}
+	if patch.Default != nil && *patch.Default && value.Visibility == entities.AIVisibilityPrivate {
+		return nil, domainerrors.InvalidInput("ai.private_default_forbidden", "Private AI models cannot be the platform default")
 	}
 	if patch.ProviderModelID != nil {
 		value.ProviderModelID, err = normalizeName(*patch.ProviderModelID, "provider model id")
@@ -235,40 +315,85 @@ func (u *UseCase) PatchModel(ctx context.Context, id string, patch ModelPatch) (
 		}
 		return nil
 	})
+	if updated != nil {
+		result := exposeModel(*updated, actor)
+		updated = &result
+	}
 	return updated, err
 }
 
 func (u *UseCase) DeleteModel(ctx context.Context, id string) error {
-	if _, err := platformAdmin(ctx); err != nil {
+	actor, err := shared.Actor(ctx)
+	if err != nil {
 		return err
 	}
 	if _, err := uuid.Parse(id); err != nil {
 		return domainerrors.NotFound("ai.model_not_found", "AI model profile not found")
 	}
+	value, err := u.repository.GetAIModelProfile(ctx, id, actor.User.ID)
+	if err != nil {
+		return shared.MapNotFound(err)
+	}
+	if !canManageModel(*value, actor) {
+		return domainerrors.Forbidden("ai.model_forbidden", "AI model cannot be managed by this user")
+	}
 	return shared.MapNotFound(u.repository.DeleteAIModelProfile(ctx, id))
 }
 
 func (u *UseCase) ResolveEnabledModel(ctx context.Context, id string) (*entities.AIModelProfile, error) {
-	value, err := u.repository.GetAIModelProfile(ctx, id)
+	actor, err := shared.Actor(ctx)
+	if err != nil {
+		return nil, err
+	}
+	value, err := u.repository.GetAIModelProfile(ctx, id, actor.User.ID)
 	if err != nil {
 		return nil, domainerrors.Conflict("ai.model_unavailable", "Selected AI model is no longer available")
 	}
-	connection, err := u.repository.GetAIProviderConnection(ctx, value.ConnectionID)
+	connection, err := u.repository.GetAIProviderConnection(ctx, value.ConnectionID, actor.User.ID)
 	if err != nil || !value.Enabled || !connection.Connection.Enabled {
 		return nil, domainerrors.Conflict("ai.model_unavailable", "Selected AI model is no longer available")
 	}
 	return value, nil
 }
 
-func platformAdmin(ctx context.Context) (entities.CurrentActor, error) {
-	actor, err := shared.Actor(ctx)
-	if err != nil {
-		return actor, err
+func exposeConnection(value entities.AIProviderConnection, actor entities.CurrentActor) entities.AIProviderConnection {
+	value.OwnedByMe = value.Visibility == entities.AIVisibilityPrivate && value.OwnerUserID == actor.User.ID
+	value.CanManage = canManageConnection(value, actor)
+	return value
+}
+
+func exposeModel(value entities.AIModelProfile, actor entities.CurrentActor) entities.AIModelProfile {
+	value.OwnedByMe = value.Visibility == entities.AIVisibilityPrivate && value.OwnerUserID == actor.User.ID
+	value.CanManage = canManageModel(value, actor)
+	return value
+}
+
+func canManageConnection(value entities.AIProviderConnection, actor entities.CurrentActor) bool {
+	if value.Visibility == entities.AIVisibilityPublic {
+		return actor.PlatformAdmin
 	}
-	if !actor.PlatformAdmin {
-		return actor, domainerrors.Forbidden("platform_admin_required", "Platform Admin role is required")
+	return value.Visibility == entities.AIVisibilityPrivate && value.OwnerUserID == actor.User.ID
+}
+
+func canManageModel(value entities.AIModelProfile, actor entities.CurrentActor) bool {
+	if value.Visibility == entities.AIVisibilityPublic {
+		return actor.PlatformAdmin
 	}
-	return actor, nil
+	return value.Visibility == entities.AIVisibilityPrivate && value.OwnerUserID == actor.User.ID
+}
+
+func normalizeVisibility(value string, platformAdmin bool) (string, error) {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "" {
+		if platformAdmin {
+			return entities.AIVisibilityPublic, nil
+		}
+		return entities.AIVisibilityPrivate, nil
+	}
+	if value != entities.AIVisibilityPublic && value != entities.AIVisibilityPrivate {
+		return "", domainerrors.InvalidInput("ai.visibility_invalid", "visibility must be public or private")
+	}
+	return value, nil
 }
 
 func normalizeName(value, field string) (string, error) {
