@@ -45,6 +45,14 @@ type CreatedConnectionWithModel struct {
 	Model      entities.AIModelProfile
 }
 
+// ProviderAccess is decrypted only while preparing an authorized Workbench
+// run. Callers must not persist, log or expose Credential.
+type ProviderAccess struct {
+	ConnectionID string
+	BaseURL      string
+	Credential   string
+}
+
 type UseCase struct {
 	repository ports.AICatalogRepository
 	tx         ports.TxManager
@@ -458,6 +466,30 @@ func (u *UseCase) ResolveEnabledModel(ctx context.Context, id string) (*entities
 		return nil, domainerrors.Conflict("ai.model_unavailable", "Selected AI model is no longer available")
 	}
 	return value, nil
+}
+
+func (u *UseCase) ResolveProviderAccess(ctx context.Context, connectionID string) (ProviderAccess, error) {
+	actor, err := shared.Actor(ctx)
+	if err != nil {
+		return ProviderAccess{}, err
+	}
+	record, err := u.repository.GetAIProviderConnection(ctx, connectionID, actor.User.ID)
+	if err != nil || !record.Connection.Enabled {
+		return ProviderAccess{}, domainerrors.Conflict("ai.model_unavailable", "Selected AI model is no longer available")
+	}
+
+	credential := ""
+	if len(record.Credential) > 0 {
+		credential, err = u.keyring.Decrypt(record.Credential, credentialAAD(record.Connection.ID))
+		if err != nil {
+			return ProviderAccess{}, fmt.Errorf("decrypt AI provider credential: %w", err)
+		}
+	}
+	return ProviderAccess{
+		ConnectionID: record.Connection.ID,
+		BaseURL:      record.Connection.BaseURL,
+		Credential:   credential,
+	}, nil
 }
 
 func exposeConnection(value entities.AIProviderConnection, actor entities.CurrentActor) entities.AIProviderConnection {

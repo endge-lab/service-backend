@@ -30,6 +30,14 @@ type WorkbenchWorkspace struct {
 	Head       int64
 }
 
+// WorkbenchProviderAccess exists only for the duration of one authorized run.
+// It must never be persisted or exposed through public HTTP responses.
+type WorkbenchProviderAccess struct {
+	ConnectionID string
+	BaseURL      string
+	Credential   string
+}
+
 type WorkbenchRunRequest struct {
 	RequestID      string
 	Actor          WorkbenchActor
@@ -39,6 +47,7 @@ type WorkbenchRunRequest struct {
 	Model          entities.AIModelSnapshot
 	Snapshot       json.RawMessage
 	SnapshotSHA256 string
+	ProviderAccess WorkbenchProviderAccess
 }
 
 type ConnectedServiceInfo struct {

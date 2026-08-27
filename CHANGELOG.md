@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.8.0 — 2026-08-27
+
+### Добавлено
+
+- Backend расшифровывает credential выбранного AI connection только для авторизованного run и передаёт ephemeral provider access в Workbench по gRPC.
+
 ## 0.7.0 — 2026-08-27
 
 ### Добавлено

@@ -132,6 +132,27 @@ func TestCreateConnectionEncryptsCredentialAndDeleteIsPhysical(t *testing.T) {
 	}
 }
 
+func TestResolveProviderAccessDecryptsCredentialOnlyForOwner(t *testing.T) {
+	repo := &catalogStub{}
+	usecase := newTestUseCase(t, repo)
+	created, err := usecase.CreateConnection(actorContext(false), "Personal", "ollama", "https://ollama.com", "test-credential", "private", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	access, err := usecase.ResolveProviderAccess(actorContext(false), created.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if access.ConnectionID != created.ID || access.BaseURL != "https://ollama.com" || access.Credential != "test-credential" {
+		t.Fatal("resolved provider access does not match the owned connection")
+	}
+
+	other := entities.WithCurrentActor(context.Background(), entities.CurrentActor{User: &entities.User{ID: "2f1c89e4-fbdc-4d42-8e9b-4c9f64db9857"}})
+	if _, err := usecase.ResolveProviderAccess(other, created.ID); domainerrors.HTTPStatusOf(err) != 409 {
+		t.Fatalf("private provider access status = %d, want 409", domainerrors.HTTPStatusOf(err))
+	}
+}
+
 func TestDefaultIsExplicitAndDeletingDoesNotSelectReplacement(t *testing.T) {
 	connectionID := "d58d7f5f-b19e-440c-a090-2ecf39dd7298"
 	repo := &catalogStub{connections: []entities.AIProviderConnection{{ID: connectionID, Enabled: true, Adapter: "ollama", Visibility: entities.AIVisibilityPublic}}}

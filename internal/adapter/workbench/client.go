@@ -203,6 +203,11 @@ func (c *Client) Run(ctx context.Context, request ports.WorkbenchRunRequest, emi
 		RequestId: request.RequestID, Actor: actorToProto(request.Actor), Workspace: workspaceToProto(request.Workspace),
 		ConversationId: request.ConversationID, Prompt: request.Prompt, Model: modelToProto(request.Model),
 		Snapshot: &workbenchpb.WorkspaceSnapshot{Payload: request.Snapshot, Generation: request.Workspace.Generation, HeadRevisionId: formatHead(request.Workspace.Head), Sha256: request.SnapshotSHA256},
+		ProviderAccess: &workbenchpb.ProviderAccess{
+			ConnectionId: request.ProviderAccess.ConnectionID,
+			BaseUrl:      request.ProviderAccess.BaseURL,
+			Credential:   request.ProviderAccess.Credential,
+		},
 	})
 	if err != nil {
 		return mapError(err)

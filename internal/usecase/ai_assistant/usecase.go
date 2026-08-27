@@ -141,6 +141,10 @@ func (u *UseCase) PrepareRun(ctx context.Context, requestID, conversationID, mod
 	if err != nil {
 		return PreparedRun{}, err
 	}
+	providerAccess, err := u.catalog.ResolveProviderAccess(ctx, model.ConnectionID)
+	if err != nil {
+		return PreparedRun{}, err
+	}
 	snapshot, err := u.workspace.ExportLive(ctx)
 	if err != nil {
 		return PreparedRun{}, err
@@ -150,6 +154,11 @@ func (u *UseCase) PrepareRun(ctx context.Context, requestID, conversationID, mod
 		RequestID: requestID, Actor: actorProjection(actor), Workspace: workspaceProjection(workspace),
 		ConversationID: conversationID, Prompt: strings.TrimSpace(prompt), Model: modelSnapshot(*model),
 		Snapshot: snapshot, SnapshotSHA256: hex.EncodeToString(digest[:]),
+		ProviderAccess: ports.WorkbenchProviderAccess{
+			ConnectionID: providerAccess.ConnectionID,
+			BaseURL:      providerAccess.BaseURL,
+			Credential:   providerAccess.Credential,
+		},
 	}}, nil
 }
 
