@@ -3,7 +3,7 @@ package workbench
 import (
 	"testing"
 
-	"github.com/endge-lab/service-backend/internal/adapter/workbenchpb"
+	workbenchpb "github.com/endge-lab/service-backend/internal/adapter/workbenchpb"
 )
 
 func TestClarificationRequiredEventMapping(t *testing.T) {
