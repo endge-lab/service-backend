@@ -71,12 +71,31 @@ type AIMessage struct {
 	CreatedAt      time.Time `json:"createdAt"`
 }
 
+type AIClarificationCandidate struct {
+	CandidateID  string `json:"candidateId"`
+	DocumentType string `json:"documentType"`
+	Identity     string `json:"identity"`
+	DisplayName  string `json:"displayName"`
+}
+
+type AIClarification struct {
+	ID            string                     `json:"id"`
+	InteractionID string                     `json:"interactionId"`
+	TaskID        string                     `json:"taskId"`
+	Slot          string                     `json:"slot"`
+	Question      string                     `json:"question"`
+	Candidates    []AIClarificationCandidate `json:"candidates"`
+	PlanVersion   int32                      `json:"planVersion"`
+}
+
 type AIRunEvent struct {
-	Type         string    `json:"type"`
-	RunID        string    `json:"runId,omitempty"`
-	MessageID    string    `json:"messageId,omitempty"`
-	Delta        string    `json:"delta,omitempty"`
-	ErrorCode    string    `json:"errorCode,omitempty"`
-	ErrorMessage string    `json:"errorMessage,omitempty"`
-	CreatedAt    time.Time `json:"createdAt"`
+	Type          string           `json:"type"`
+	RunID         string           `json:"runId,omitempty"`
+	MessageID     string           `json:"messageId,omitempty"`
+	Delta         string           `json:"delta,omitempty"`
+	ErrorCode     string           `json:"errorCode,omitempty"`
+	ErrorMessage  string           `json:"errorMessage,omitempty"`
+	InteractionID string           `json:"interactionId,omitempty"`
+	Clarification *AIClarification `json:"clarification,omitempty"`
+	CreatedAt     time.Time        `json:"createdAt"`
 }

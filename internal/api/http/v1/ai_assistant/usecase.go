@@ -14,7 +14,7 @@ type UseCase interface {
 	ResetConversation(context.Context, string, string) (*entities.AIConversation, error)
 	UpdateConversationModel(context.Context, string, string) (*entities.AIConversation, error)
 	ListMessages(context.Context, string, int, string) (resourceusecase.MessagePage, error)
-	PrepareRun(context.Context, string, string, string, string) (resourceusecase.PreparedRun, error)
+	PrepareRun(context.Context, resourceusecase.RunCommand) (resourceusecase.PreparedRun, error)
 	RunPrepared(context.Context, resourceusecase.PreparedRun, func(entities.AIRunEvent) error) error
 }
 

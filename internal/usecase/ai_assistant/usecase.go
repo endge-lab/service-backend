@@ -31,8 +31,19 @@ type ConversationPage struct {
 }
 
 type MessagePage struct {
-	Items      []entities.AIMessage
-	NextCursor string
+	Items             []entities.AIMessage
+	NextCursor        string
+	OpenClarification *entities.AIClarification
+}
+
+type RunCommand struct {
+	RequestID              string
+	ConversationID         string
+	ModelProfileID         string
+	Prompt                 string
+	InteractionID          string
+	ReplyToClarificationID string
+	SelectedCandidateID    string
 }
 
 // PreparedRun contains the immutable input assembled while the HTTP request is
@@ -125,19 +136,27 @@ func (u *UseCase) ListMessages(ctx context.Context, conversationID string, limit
 	if err != nil {
 		return MessagePage{}, err
 	}
-	items, next, err := u.workbench.ListMessages(ctx, actor.User.ID, workspace.Workspace.ID, conversationID, limit, cursor)
-	return MessagePage{Items: items, NextCursor: next}, mapWorkbenchError(err)
+	items, next, clarification, err := u.workbench.ListMessages(ctx, actor.User.ID, workspace.Workspace.ID, conversationID, limit, cursor)
+	return MessagePage{Items: items, NextCursor: next, OpenClarification: clarification}, mapWorkbenchError(err)
 }
 
-func (u *UseCase) PrepareRun(ctx context.Context, requestID, conversationID, modelProfileID, prompt string) (PreparedRun, error) {
+func (u *UseCase) PrepareRun(ctx context.Context, command RunCommand) (PreparedRun, error) {
 	actor, workspace, err := chatContext(ctx)
 	if err != nil {
 		return PreparedRun{}, err
 	}
-	if _, err := uuid.Parse(requestID); err != nil || strings.TrimSpace(prompt) == "" {
+	if _, err := uuid.Parse(command.RequestID); err != nil || strings.TrimSpace(command.Prompt) == "" {
 		return PreparedRun{}, domainerrors.InvalidInput("ai.run_invalid", "requestId and prompt are required")
 	}
-	model, err := u.catalog.ResolveEnabledModel(ctx, modelProfileID)
+	if (command.ReplyToClarificationID != "" && command.InteractionID == "") ||
+		(command.SelectedCandidateID != "" && (command.InteractionID == "" || command.ReplyToClarificationID == "")) {
+		return PreparedRun{}, domainerrors.InvalidInput("ai.clarification_linkage_invalid", "clarification linkage is incomplete")
+	}
+	if (command.InteractionID != "" && !validUUID(command.InteractionID)) ||
+		(command.ReplyToClarificationID != "" && !validUUID(command.ReplyToClarificationID)) {
+		return PreparedRun{}, domainerrors.InvalidInput("ai.clarification_linkage_invalid", "clarification linkage is invalid")
+	}
+	model, err := u.catalog.ResolveEnabledModel(ctx, command.ModelProfileID)
 	if err != nil {
 		return PreparedRun{}, err
 	}
@@ -151,15 +170,22 @@ func (u *UseCase) PrepareRun(ctx context.Context, requestID, conversationID, mod
 	}
 	digest := sha256.Sum256(snapshot)
 	return PreparedRun{request: ports.WorkbenchRunRequest{
-		RequestID: requestID, Actor: actorProjection(actor), Workspace: workspaceProjection(workspace),
-		ConversationID: conversationID, Prompt: strings.TrimSpace(prompt), Model: modelSnapshot(*model),
+		RequestID: command.RequestID, Actor: actorProjection(actor), Workspace: workspaceProjection(workspace),
+		ConversationID: command.ConversationID, Prompt: strings.TrimSpace(command.Prompt), Model: modelSnapshot(*model),
 		Snapshot: snapshot, SnapshotSHA256: hex.EncodeToString(digest[:]),
+		InteractionID: command.InteractionID, ReplyToClarificationID: command.ReplyToClarificationID,
+		SelectedCandidateID: command.SelectedCandidateID,
 		ProviderAccess: ports.WorkbenchProviderAccess{
 			ConnectionID: providerAccess.ConnectionID,
 			BaseURL:      providerAccess.BaseURL,
 			Credential:   providerAccess.Credential,
 		},
 	}}, nil
+}
+
+func validUUID(value string) bool {
+	_, err := uuid.Parse(value)
+	return err == nil
 }
 
 func (u *UseCase) RunPrepared(ctx context.Context, prepared PreparedRun, emit func(entities.AIRunEvent) error) error {

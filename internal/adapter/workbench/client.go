@@ -169,9 +169,9 @@ func (c *Client) UpdateConversationModel(ctx context.Context, actorID, workspace
 	return &value, nil
 }
 
-func (c *Client) ListMessages(ctx context.Context, actorID, workspaceID, conversationID string, limit int, cursor string) ([]entities.AIMessage, string, error) {
+func (c *Client) ListMessages(ctx context.Context, actorID, workspaceID, conversationID string, limit int, cursor string) ([]entities.AIMessage, string, *entities.AIClarification, error) {
 	if c.client == nil {
-		return nil, "", ports.ErrWorkbenchUnavailable
+		return nil, "", nil, ports.ErrWorkbenchUnavailable
 	}
 	callCtx, cancel := c.callContext(ctx)
 	defer cancel()
@@ -179,7 +179,7 @@ func (c *Client) ListMessages(ctx context.Context, actorID, workspaceID, convers
 		ActorId: actorID, WorkspaceId: workspaceID, ConversationId: conversationID, Limit: uint32(limit), Cursor: cursor,
 	})
 	if err != nil {
-		return nil, "", mapError(err)
+		return nil, "", nil, mapError(err)
 	}
 	items := make([]entities.AIMessage, 0, len(response.GetItems()))
 	for _, item := range response.GetItems() {
@@ -192,7 +192,7 @@ func (c *Client) ListMessages(ctx context.Context, actorID, workspaceID, convers
 			Sequence: item.GetSequence(), CreatedAt: item.GetCreatedAt().AsTime(),
 		})
 	}
-	return items, response.GetNextCursor(), nil
+	return items, response.GetNextCursor(), clarificationFromProto(response.GetOpenClarification()), nil
 }
 
 func (c *Client) Run(ctx context.Context, request ports.WorkbenchRunRequest, emit func(entities.AIRunEvent) error) error {
@@ -208,6 +208,8 @@ func (c *Client) Run(ctx context.Context, request ports.WorkbenchRunRequest, emi
 			BaseUrl:      request.ProviderAccess.BaseURL,
 			Credential:   request.ProviderAccess.Credential,
 		},
+		InteractionId: request.InteractionID, ReplyToClarificationId: request.ReplyToClarificationID,
+		SelectedCandidateId: request.SelectedCandidateID,
 	})
 	if err != nil {
 		return mapError(err)
@@ -266,8 +268,32 @@ func runEventFromProto(value *workbenchpb.RunResponse) entities.AIRunEvent {
 		eventType = "content_delta"
 	case workbenchpb.RunEventType_RUN_EVENT_TYPE_COMPLETED:
 		eventType = "completed"
+	case workbenchpb.RunEventType_RUN_EVENT_TYPE_CLARIFICATION_REQUIRED:
+		eventType = "clarification_required"
 	}
-	return entities.AIRunEvent{Type: eventType, RunID: value.GetRunId(), MessageID: value.GetMessageId(), Delta: value.GetDelta(), ErrorCode: value.GetErrorCode(), ErrorMessage: value.GetErrorMessage(), CreatedAt: value.GetCreatedAt().AsTime()}
+	return entities.AIRunEvent{
+		Type: eventType, RunID: value.GetRunId(), MessageID: value.GetMessageId(), Delta: value.GetDelta(),
+		ErrorCode: value.GetErrorCode(), ErrorMessage: value.GetErrorMessage(), InteractionID: value.GetInteractionId(),
+		Clarification: clarificationFromProto(value.GetClarification()), CreatedAt: value.GetCreatedAt().AsTime(),
+	}
+}
+
+func clarificationFromProto(value *workbenchpb.Clarification) *entities.AIClarification {
+	if value == nil {
+		return nil
+	}
+	result := &entities.AIClarification{
+		ID: value.GetId(), InteractionID: value.GetInteractionId(), TaskID: value.GetTaskId(), Slot: value.GetSlot(),
+		Question: value.GetQuestion(), PlanVersion: value.GetPlanVersion(),
+		Candidates: make([]entities.AIClarificationCandidate, 0, len(value.GetCandidates())),
+	}
+	for _, candidate := range value.GetCandidates() {
+		result.Candidates = append(result.Candidates, entities.AIClarificationCandidate{
+			CandidateID: candidate.GetCandidateId(), DocumentType: candidate.GetDocumentType(),
+			Identity: candidate.GetIdentity(), DisplayName: candidate.GetDisplayName(),
+		})
+	}
+	return result
 }
 
 func mapError(err error) error {

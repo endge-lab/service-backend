@@ -11,6 +11,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/shared"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	resourceusecase "github.com/endge-lab/service-backend/internal/usecase/ai_assistant"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/valyala/fasthttp"
@@ -190,7 +191,7 @@ func (h *Handler) ListMessages(c *fiber.Ctx) error {
 	if err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}
-	return c.JSON(MessageListResponse{Items: page.Items, NextCursor: page.NextCursor})
+	return c.JSON(MessageListResponse{Items: page.Items, NextCursor: page.NextCursor, OpenClarification: page.OpenClarification})
 }
 
 // Run формирует ExportLive snapshot и проксирует server-stream Workbench как SSE.
@@ -203,7 +204,7 @@ func (h *Handler) ListMessages(c *fiber.Ctx) error {
 // @Param X-Endge-Workspace header string true "Workspace identity"
 // @Param id path string true "Conversation ID"
 // @Param request body RunRequest true "Prompt и request ID"
-// @Success 200 {string} string "SSE events: started, content_delta, completed или failed"
+// @Success 200 {string} string "SSE events: started, content_delta, clarification_required, completed или failed"
 // @Failure 400 {object} shared.ErrorResponse
 // @Failure 401 {object} shared.ErrorResponse
 // @Failure 403 {object} shared.ErrorResponse
@@ -220,15 +221,21 @@ func (h *Handler) Run(c *fiber.Ctx) error {
 		return respond.WriteErrorResponse(c, err)
 	}
 	conversationID := c.Params("id")
-	prepared, err := h.usecase.PrepareRun(c.UserContext(), request.RequestID, conversationID, request.ModelProfileID, request.Prompt)
+	prepared, err := h.usecase.PrepareRun(c.UserContext(), resourceusecase.RunCommand{
+		RequestID: request.RequestID, ConversationID: conversationID, ModelProfileID: request.ModelProfileID, Prompt: request.Prompt,
+		InteractionID: request.InteractionID, ReplyToClarificationID: request.ReplyToClarificationID,
+		SelectedCandidateID: request.SelectedCandidateID,
+	})
 	if err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}
-	streamContext := context.WithoutCancel(c.UserContext())
+	streamBaseContext := context.WithoutCancel(c.UserContext())
 	c.Set(fiber.HeaderContentType, "text/event-stream")
 	c.Set(fiber.HeaderCacheControl, "no-cache")
 	c.Set(fiber.HeaderConnection, "keep-alive")
 	c.Context().SetBodyStreamWriter(fasthttp.StreamWriter(func(writer *bufio.Writer) {
+		streamContext, cancel := context.WithCancel(streamBaseContext)
+		defer cancel()
 		writeEvent := func(event entities.AIRunEvent) error {
 			payload, err := json.Marshal(event)
 			if err != nil {

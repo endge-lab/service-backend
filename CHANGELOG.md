@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.9.0 — 2026-08-28
+
+### Добавлено
+
+- Backend проксирует Interaction linkage, terminal `clarification_required` и открытое уточнение через существующие gRPC, SSE и messages contracts.
+- Старый run payload без linkage-полей остаётся совместимым.
+
 ## 0.8.0 — 2026-08-27
 
 ### Добавлено

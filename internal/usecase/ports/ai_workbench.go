@@ -39,15 +39,18 @@ type WorkbenchProviderAccess struct {
 }
 
 type WorkbenchRunRequest struct {
-	RequestID      string
-	Actor          WorkbenchActor
-	Workspace      WorkbenchWorkspace
-	ConversationID string
-	Prompt         string
-	Model          entities.AIModelSnapshot
-	Snapshot       json.RawMessage
-	SnapshotSHA256 string
-	ProviderAccess WorkbenchProviderAccess
+	RequestID              string
+	Actor                  WorkbenchActor
+	Workspace              WorkbenchWorkspace
+	ConversationID         string
+	Prompt                 string
+	Model                  entities.AIModelSnapshot
+	Snapshot               json.RawMessage
+	SnapshotSHA256         string
+	ProviderAccess         WorkbenchProviderAccess
+	InteractionID          string
+	ReplyToClarificationID string
+	SelectedCandidateID    string
 }
 
 type ConnectedServiceInfo struct {
@@ -66,6 +69,6 @@ type AIWorkbenchGateway interface {
 	CreateConversation(context.Context, WorkbenchActor, WorkbenchWorkspace, entities.AIModelSnapshot) (*entities.AIConversation, error)
 	ResetConversation(context.Context, WorkbenchActor, WorkbenchWorkspace, string, entities.AIModelSnapshot) (*entities.AIConversation, error)
 	UpdateConversationModel(context.Context, string, string, string, entities.AIModelSnapshot) (*entities.AIConversation, error)
-	ListMessages(context.Context, string, string, string, int, string) ([]entities.AIMessage, string, error)
+	ListMessages(context.Context, string, string, string, int, string) ([]entities.AIMessage, string, *entities.AIClarification, error)
 	Run(context.Context, WorkbenchRunRequest, func(entities.AIRunEvent) error) error
 }

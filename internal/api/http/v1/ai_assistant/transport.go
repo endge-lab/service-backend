@@ -18,9 +18,12 @@ type PatchConversationRequest struct {
 }
 
 type RunRequest struct {
-	RequestID      string `json:"requestId" validate:"required,uuid"`
-	ModelProfileID string `json:"modelProfileId" validate:"required,uuid"`
-	Prompt         string `json:"prompt" validate:"required,max=20000"`
+	RequestID              string `json:"requestId" validate:"required,uuid"`
+	ModelProfileID         string `json:"modelProfileId" validate:"required,uuid"`
+	Prompt                 string `json:"prompt" validate:"required,max=20000"`
+	InteractionID          string `json:"interactionId" validate:"omitempty,uuid"`
+	ReplyToClarificationID string `json:"replyToClarificationId" validate:"omitempty,uuid"`
+	SelectedCandidateID    string `json:"selectedCandidateId" validate:"omitempty,max=128"`
 }
 
 type ConversationListResponse struct {
@@ -29,8 +32,9 @@ type ConversationListResponse struct {
 }
 
 type MessageListResponse struct {
-	Items      []entities.AIMessage `json:"items"`
-	NextCursor string               `json:"nextCursor,omitempty"`
+	Items             []entities.AIMessage      `json:"items"`
+	NextCursor        string                    `json:"nextCursor,omitempty"`
+	OpenClarification *entities.AIClarification `json:"openClarification,omitempty"`
 }
 
 type CapabilitiesResponse struct {

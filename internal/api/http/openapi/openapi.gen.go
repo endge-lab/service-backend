@@ -1113,7 +1113,8 @@ var openAPI3YAML = []byte(
 		"        required: true\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
-		"          description: \"SSE events: started, content_delta, completed или failed\"\n" +
+		"          description: \"SSE events: started, content_delta, clarification_required,\n" +
+		"            completed или failed\"\n" +
 		"          content:\n" +
 		"            text/event-stream:\n" +
 		"              schema:\n" +
@@ -14938,6 +14939,8 @@ var openAPI3YAML = []byte(
 		"            $ref: \"#/components/schemas/entities.AIMessage\"\n" +
 		"        nextCursor:\n" +
 		"          type: string\n" +
+		"        openClarification:\n" +
+		"          $ref: \"#/components/schemas/entities.AIClarification\"\n" +
 		"    ai_assistant.PatchConversationRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -14961,13 +14964,20 @@ var openAPI3YAML = []byte(
 		"        - prompt\n" +
 		"        - requestId\n" +
 		"      properties:\n" +
+		"        interactionId:\n" +
+		"          type: string\n" +
 		"        modelProfileId:\n" +
 		"          type: string\n" +
 		"        prompt:\n" +
 		"          type: string\n" +
 		"          maxLength: 20000\n" +
+		"        replyToClarificationId:\n" +
+		"          type: string\n" +
 		"        requestId:\n" +
 		"          type: string\n" +
+		"        selectedCandidateId:\n" +
+		"          type: string\n" +
+		"          maxLength: 128\n" +
 		"    ai_catalog.AdaptersResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -16976,6 +16986,36 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    entities.AIClarification:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        candidates:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/entities.AIClarificationCandidate\"\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"        interactionId:\n" +
+		"          type: string\n" +
+		"        planVersion:\n" +
+		"          type: integer\n" +
+		"        question:\n" +
+		"          type: string\n" +
+		"        slot:\n" +
+		"          type: string\n" +
+		"        taskId:\n" +
+		"          type: string\n" +
+		"    entities.AIClarificationCandidate:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        candidateId:\n" +
+		"          type: string\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"        documentType:\n" +
+		"          type: string\n" +
+		"        identity:\n" +
+		"          type: string\n" +
 		"    entities.AIConversation:\n" +
 		"      type: object\n" +
 		"      properties:\n" +

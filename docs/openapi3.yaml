@@ -1108,7 +1108,8 @@ paths:
         required: true
       responses:
         "200":
-          description: "SSE events: started, content_delta, completed или failed"
+          description: "SSE events: started, content_delta, clarification_required,
+            completed или failed"
           content:
             text/event-stream:
               schema:
@@ -14933,6 +14934,8 @@ components:
             $ref: "#/components/schemas/entities.AIMessage"
         nextCursor:
           type: string
+        openClarification:
+          $ref: "#/components/schemas/entities.AIClarification"
     ai_assistant.PatchConversationRequest:
       type: object
       required:
@@ -14956,13 +14959,20 @@ components:
         - prompt
         - requestId
       properties:
+        interactionId:
+          type: string
         modelProfileId:
           type: string
         prompt:
           type: string
           maxLength: 20000
+        replyToClarificationId:
+          type: string
         requestId:
           type: string
+        selectedCandidateId:
+          type: string
+          maxLength: 128
     ai_catalog.AdaptersResponse:
       type: object
       properties:
@@ -16971,6 +16981,36 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+    entities.AIClarification:
+      type: object
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.AIClarificationCandidate"
+        id:
+          type: string
+        interactionId:
+          type: string
+        planVersion:
+          type: integer
+        question:
+          type: string
+        slot:
+          type: string
+        taskId:
+          type: string
+    entities.AIClarificationCandidate:
+      type: object
+      properties:
+        candidateId:
+          type: string
+        displayName:
+          type: string
+        documentType:
+          type: string
+        identity:
+          type: string
     entities.AIConversation:
       type: object
       properties:
