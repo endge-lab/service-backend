@@ -29,6 +29,9 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 	if !canAdmin(scope.Role) {
 		return nil, domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
 	}
+	if schemaErr := validateWorkspaceSchemaVersion(bundle.SchemaVersion, s.schemaVersion); schemaErr != nil {
+		return nil, schemaErr
+	}
 	providedDomainVersion := bundle.DomainVersion
 	computedSourceDomainVersion, normalization, versionErr := normalizePortableBundleForImport(&bundle)
 	if versionErr != nil {
@@ -59,10 +62,6 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 	if bundle.Kind != "workspace-snapshot" {
 		plan.Valid = false
 		plan.ValidationErrors = append(plan.ValidationErrors, "kind must be workspace-snapshot")
-	}
-	if bundle.SchemaVersion != SchemaVersion {
-		plan.Valid = false
-		plan.ValidationErrors = append(plan.ValidationErrors, fmt.Sprintf("unsupported schemaVersion %d", bundle.SchemaVersion))
 	}
 	if stringField(bundle.Workspace, "displayName") == "" {
 		plan.Valid = false
@@ -213,6 +212,22 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 	plan.ID = stored.ID
 	plan.ExpiresAt = &stored.ExpiresAt
 	return plan, nil
+}
+
+func validateWorkspaceSchemaVersion(exported int, supported int) error {
+	if exported == supported {
+		return nil
+	}
+	return domainerrors.WithDetails(
+		domainerrors.InvalidInput(
+			"workspace_schema_unsupported",
+			fmt.Sprintf("Версия схемы экспорта %d не поддерживается backend; обновите исходный backend и сформируйте новый экспорт", exported),
+		),
+		map[string]any{
+			"exportedSchemaVersion":  exported,
+			"supportedSchemaVersion": supported,
+		},
+	)
 }
 
 // Import приводит domain state к ранее проверенному snapshot через обратимые revisions.

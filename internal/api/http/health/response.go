@@ -8,10 +8,11 @@ type HealthResponse struct {
 }
 
 type VersionResponse struct {
-	Service  string                     `json:"service" example:"service-backend"`
-	Version  string                     `json:"version" example:"1.0.0"`
-	Env      string                     `json:"env" example:"development"`
-	Services []ConnectedServiceResponse `json:"services"`
+	Service                string                     `json:"service" example:"service-backend"`
+	Version                string                     `json:"version" example:"1.0.0"`
+	WorkspaceSchemaVersion int                        `json:"workspaceSchemaVersion" example:"1"`
+	Env                    string                     `json:"env" example:"development"`
+	Services               []ConnectedServiceResponse `json:"services"`
 }
 
 type ConnectedServiceResponse struct {

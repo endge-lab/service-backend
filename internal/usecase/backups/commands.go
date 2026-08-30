@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"strings"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
@@ -40,10 +41,14 @@ func (s *UseCase) Create(ctx context.Context, description *string) (result *enti
 		if txErr != nil {
 			return txErr
 		}
+		var bundle entities.PortableBundle
+		if txErr = json.Unmarshal(raw, &bundle); txErr != nil {
+			return txErr
+		}
 		sum := sha256.Sum256(raw)
 		result, txErr = s.backups.CreateSnapshotBackup(txctx, entities.SnapshotBackup{
 			ID: uuid.NewString(), WorkspaceID: scope.Workspace.ID, Kind: "manual", Description: description,
-			SchemaVersion: 1, Checksum: hex.EncodeToString(sum[:]), Data: raw, CreatedBy: entities.Actor{ID: current.User.ID},
+			SchemaVersion: bundle.SchemaVersion, Checksum: hex.EncodeToString(sum[:]), Data: raw, CreatedBy: entities.Actor{ID: current.User.ID},
 		})
 		return txErr
 	})

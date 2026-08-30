@@ -157,7 +157,7 @@ func TestCommitReleaseBackupAndImportFlow(t *testing.T) {
 	if !strings.HasPrefix(exportedDomainVersion, "dv2:sha256:") {
 		t.Fatalf("export не вернул канонический dv2 domainVersion: %q", exportedDomainVersion)
 	}
-	importPlan := perform(t, app, http.MethodPost, "/api/v1/domain/import/plan", map[string]any{"snapshot": snapshot}, headers)
+	importPlan := perform(t, app, http.MethodPost, "/api/v1/domain/import/plan", snapshot, headers)
 	assertStatus(t, importPlan, fiber.StatusOK)
 	planBody := decodeObject(t, importPlan)
 	if valid, _ := planBody["valid"].(bool); !valid {
@@ -213,7 +213,7 @@ func TestCommitReleaseBackupAndImportFlow(t *testing.T) {
 	assertStatus(t, stillPresent, fiber.StatusOK)
 	stillPresent.Body.Close()
 
-	freshPlan := perform(t, app, http.MethodPost, "/api/v1/domain/import/plan", map[string]any{"snapshot": snapshot}, headers)
+	freshPlan := perform(t, app, http.MethodPost, "/api/v1/domain/import/plan", snapshot, headers)
 	assertStatus(t, freshPlan, fiber.StatusOK)
 	freshPlanBody := decodeObject(t, freshPlan)
 	importHeaders["If-Match"] = stringField(t, freshPlanBody, "targetETag")
@@ -246,7 +246,7 @@ func TestCommitReleaseBackupAndImportFlow(t *testing.T) {
 		}
 	}
 	documents["queries"] = filteredQueries
-	deletePlan := perform(t, app, http.MethodPost, "/api/v1/domain/import/plan", map[string]any{"snapshot": withoutQuery}, headers)
+	deletePlan := perform(t, app, http.MethodPost, "/api/v1/domain/import/plan", withoutQuery, headers)
 	assertStatus(t, deletePlan, fiber.StatusOK)
 	deletePlanBody := decodeObject(t, deletePlan)
 	if numberField(t, deletePlanBody, "deletes") < 1 {
@@ -271,7 +271,7 @@ func TestCommitReleaseBackupAndImportFlow(t *testing.T) {
 	secretSnapshot := cloneJSON(snapshot)
 	workspace := objectField(t, secretSnapshot, "workspace")
 	workspace["configuration"] = map[string]any{"nested": map[string]any{"password": "forbidden"}}
-	secretPlan := perform(t, app, http.MethodPost, "/api/v1/domain/import/plan", map[string]any{"snapshot": secretSnapshot}, headers)
+	secretPlan := perform(t, app, http.MethodPost, "/api/v1/domain/import/plan", secretSnapshot, headers)
 	assertStatus(t, secretPlan, fiber.StatusOK)
 	secretPlanBody := decodeObject(t, secretPlan)
 	if valid, _ := secretPlanBody["valid"].(bool); valid {

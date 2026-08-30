@@ -27,9 +27,14 @@ type queryExecutor interface {
 	QueryRow(context.Context, string, ...any) pgx.Row
 }
 
-type EndgeRepository struct{ pool *pgxpool.Pool }
+type EndgeRepository struct {
+	pool                   *pgxpool.Pool
+	workspaceSchemaVersion int
+}
 
-func NewEndgeRepository(pool *pgxpool.Pool) *EndgeRepository { return &EndgeRepository{pool: pool} }
+func NewEndgeRepository(pool *pgxpool.Pool, workspaceSchemaVersion int) *EndgeRepository {
+	return &EndgeRepository{pool: pool, workspaceSchemaVersion: workspaceSchemaVersion}
+}
 
 func (r *EndgeRepository) executor(ctx context.Context) queryExecutor {
 	if tx, ok := txFromContext(ctx); ok {

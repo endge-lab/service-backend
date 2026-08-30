@@ -214,7 +214,7 @@ func newRepositoryFixture(t *testing.T) *repositoryFixture {
 	if _, err := database.Pool.Exec(context.Background(), `INSERT INTO service_users(id,provider_id,subject,issuer,username,display_name) VALUES($1,'integration',$2,'urn:endge:test','tester','Integration Tester')`, userID, "subject-"+userID); err != nil {
 		t.Fatalf("создать тестового пользователя: %v", err)
 	}
-	store := postgres.NewEndgeRepository(database.Pool)
+	store := postgres.NewEndgeRepository(database.Pool, 1)
 	tx := postgres.NewTxManager(database.Pool, observability.NewCore(nil, zap.NewNop()), nil)
 	recorder := history.NewRecorder(store)
 	cfg := support.DevConfig()
@@ -222,7 +222,7 @@ func newRepositoryFixture(t *testing.T) *repositoryFixture {
 	if err != nil {
 		t.Fatalf("создать reader artifact: %v", err)
 	}
-	coordinator := workspace_state.NewCoordinator(store, tx, artifacts)
+	coordinator := workspace_state.NewCoordinator(store, tx, artifacts, 1)
 	lifecycle := documents.NewLifecycle(store, tx, recorder)
 	workspaceUseCase := workspaces.NewUseCase(store, store, store, tx, recorder)
 	actor := entities.CurrentActor{User: &entities.User{ID: userID, ProviderID: "integration", Subject: "subject-" + userID, Issuer: "urn:endge:test", Username: "tester", DisplayName: "Integration Tester", Active: true}, PlatformAdmin: true}

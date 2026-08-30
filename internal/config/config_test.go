@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"testing"
 	"time"
+
+	"github.com/endge-lab/service-backend/internal/buildinfo"
 )
 
 // TestIdentityConfigRejectsUnsafeProductionModes проверяет fail-closed production auth.
@@ -44,6 +46,14 @@ func TestLoadHonorsPostgresDatabaseEnvironment(t *testing.T) {
 // TestLoadFromEnvironmentWithoutYAML проверяет container-first конфигурацию:
 // все средовые значения могут прийти через process environment без config file.
 func TestLoadFromEnvironmentWithoutYAML(t *testing.T) {
+	previousVersion := buildinfo.Version
+	previousSchemaVersion := buildinfo.WorkspaceSchemaVersion
+	buildinfo.Version = "0.10.0"
+	buildinfo.WorkspaceSchemaVersion = "1"
+	t.Cleanup(func() {
+		buildinfo.Version = previousVersion
+		buildinfo.WorkspaceSchemaVersion = previousSchemaVersion
+	})
 	t.Chdir(t.TempDir())
 	t.Setenv("CONFIG_PATH", "")
 	t.Setenv("APP_ENV", "development")

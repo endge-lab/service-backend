@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"github.com/endge-lab/service-backend/internal/config"
 	"github.com/endge-lab/service-backend/internal/repo/postgres"
 	"github.com/endge-lab/service-backend/internal/repo/postgres/sqlc"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
@@ -8,6 +9,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/fx"
 )
+
+func newEndgeRepository(pool *pgxpool.Pool, cfg *config.Config) *postgres.EndgeRepository {
+	return postgres.NewEndgeRepository(pool, cfg.WorkspaceSchemaVersion)
+}
 
 type endgeRepositoryPorts struct {
 	fx.Out
@@ -50,7 +55,7 @@ func RepositoryModules() fx.Option {
 		postgres.NewRepositoryMetrics,
 		func(db *pgxpool.Pool) *sqlc.Queries { return sqlc.New(db) },
 		fx.Annotate(postgres.NewUserRepository, fx.As(new(ports.UserRepository))),
-		postgres.NewEndgeRepository,
+		newEndgeRepository,
 		exposeEndgeRepository,
 		postgres.NewProjectRepository,
 		postgres.NewTenantRepository,

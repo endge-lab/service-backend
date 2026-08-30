@@ -18,7 +18,8 @@ export
 APP_NAME ?= service-backend
 MAIN := ./cmd
 BIN := ./tmp/$(APP_NAME)
-BACKEND_VERSION := $(strip $(shell tr -d '[:space:]' < VERSION))
+APP_VERSION := $(strip $(shell sed -n 's/^APP_VERSION=//p' VERSION))
+WORKSPACE_SCHEMA_VERSION := $(strip $(shell sed -n 's/^WORKSPACE_SCHEMA_VERSION=//p' VERSION))
 BUILDINFO_PACKAGE := github.com/endge-lab/service-backend/internal/buildinfo
 GOCACHE ?= /tmp/$(APP_NAME)-go-build
 SQLC_VERSION ?= v1.31.1
@@ -47,12 +48,15 @@ POSTGRES_SCHEMA ?= public
 POSTGRES_SSLMODE ?= disable
 POSTGRES_DSN := postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DATABASE)?sslmode=$(POSTGRES_SSLMODE)&search_path=$(POSTGRES_SCHEMA)
 
-LDFLAGS := -s -w -X $(BUILDINFO_PACKAGE).Version=$(BACKEND_VERSION)
+LDFLAGS := -s -w -X $(BUILDINFO_PACKAGE).Version=$(APP_VERSION) -X $(BUILDINFO_PACKAGE).WorkspaceSchemaVersion=$(WORKSPACE_SCHEMA_VERSION)
 
 .PHONY: validate-version
 validate-version:
 	@test -f VERSION
-	@grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$$' VERSION
+	@test "$$(grep -Ec '^(APP_VERSION|WORKSPACE_SCHEMA_VERSION)=' VERSION)" -eq 2
+	@test "$$(grep -Evc '^(APP_VERSION=[0-9]+\.[0-9]+\.[0-9]+|WORKSPACE_SCHEMA_VERSION=[1-9][0-9]*)$$' VERSION)" -eq 0
+	@grep -Eq '^APP_VERSION=[0-9]+\.[0-9]+\.[0-9]+$$' VERSION
+	@grep -Eq '^WORKSPACE_SCHEMA_VERSION=[1-9][0-9]*$$' VERSION
 
 .PHONY: all
 all: mod lint test build

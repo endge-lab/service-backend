@@ -52,7 +52,7 @@ func (s *Coordinator) recordRevision(ctx context.Context, doc entities.Document,
 		return nil, err
 	}
 	snapshot := mustJSON(doc)
-	value := entities.Revision{ID: uuid.NewString(), WorkspaceID: doc.WorkspaceID, DocumentType: doc.Type, DocumentID: doc.ID, DocumentIdentity: doc.Identity, RevisionNumber: doc.Revision, WorkspaceSequence: &sequence, Operation: operation, ParentRevisionID: parent, RestoredFromRevisionID: restored, MutationBatchID: batch, SnapshotVersion: SchemaVersion, Snapshot: snapshot, Checksum: checksum(snapshot), CreatedBy: doc.UpdatedBy}
+	value := entities.Revision{ID: uuid.NewString(), WorkspaceID: doc.WorkspaceID, DocumentType: doc.Type, DocumentID: doc.ID, DocumentIdentity: doc.Identity, RevisionNumber: doc.Revision, WorkspaceSequence: &sequence, Operation: operation, ParentRevisionID: parent, RestoredFromRevisionID: restored, MutationBatchID: batch, SnapshotVersion: workspaceRevisionSnapshotVersion, Snapshot: snapshot, Checksum: checksum(snapshot), CreatedBy: doc.UpdatedBy}
 	return s.repository.InsertRevision(ctx, value)
 }
 
@@ -74,7 +74,7 @@ func (s *Coordinator) recordWorkspaceRevision(ctx context.Context, workspace ent
 		return nil, err
 	}
 	snapshot := mustJSON(workspace)
-	value := entities.Revision{ID: uuid.NewString(), WorkspaceID: workspace.ID, DocumentType: "workspaces", DocumentID: workspace.ID, DocumentIdentity: workspace.Identity, RevisionNumber: workspace.Revision, WorkspaceSequence: &sequence, Operation: operation, ParentRevisionID: parent, MutationBatchID: batch, SnapshotVersion: SchemaVersion, Snapshot: snapshot, Checksum: checksum(snapshot), CreatedBy: workspace.UpdatedBy}
+	value := entities.Revision{ID: uuid.NewString(), WorkspaceID: workspace.ID, DocumentType: "workspaces", DocumentID: workspace.ID, DocumentIdentity: workspace.Identity, RevisionNumber: workspace.Revision, WorkspaceSequence: &sequence, Operation: operation, ParentRevisionID: parent, MutationBatchID: batch, SnapshotVersion: workspaceRevisionSnapshotVersion, Snapshot: snapshot, Checksum: checksum(snapshot), CreatedBy: workspace.UpdatedBy}
 	return s.repository.InsertRevision(ctx, value)
 }
 

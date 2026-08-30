@@ -4,11 +4,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"strings"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/usecase/history"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 	"github.com/google/uuid"
 )
@@ -37,12 +37,16 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (*entities.Rele
 	if err != nil {
 		return nil, err
 	}
+	var portable entities.PortableBundle
+	if err = json.Unmarshal(bundle, &portable); err != nil {
+		return nil, err
+	}
 	displayName := strings.TrimSpace(input.DisplayName)
 	if displayName == "" {
 		displayName = identity
 	}
 	sum := sha256.Sum256(bundle)
-	value := entities.Release{ID: uuid.NewString(), WorkspaceID: scope.Workspace.ID, Identity: identity, DisplayName: displayName, Description: input.Description, SourceCommitID: commit.ID, HeadSequence: commit.HeadSequence, SchemaVersion: history.SnapshotVersion, Checksum: hex.EncodeToString(sum[:]), CreatedBy: entities.Actor{ID: current.User.ID}}
+	value := entities.Release{ID: uuid.NewString(), WorkspaceID: scope.Workspace.ID, Identity: identity, DisplayName: displayName, Description: input.Description, SourceCommitID: commit.ID, HeadSequence: commit.HeadSequence, SchemaVersion: portable.SchemaVersion, Checksum: hex.EncodeToString(sum[:]), CreatedBy: entities.Actor{ID: current.User.ID}}
 	created, err := s.releases.CreateRelease(ctx, value, bundle)
 	return created, shared.MapConflict(err)
 }

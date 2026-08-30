@@ -70,11 +70,19 @@ AUTH_DEV_PLATFORM_ADMIN=true
 
 ## Версия backend
 
-Единственный источник версии сервиса — корневой файл `VERSION`. Перед каждым
-изменением backend вручную увеличьте patch, minor или major номер в формате
-`X.Y.Z`. Локальная, Docker- и удалённая сборки вшивают это значение в бинарник;
-Kubernetes его не переопределяет. Публичные `GET /health` и `GET /version`
-возвращают тот же номер. `GET /version` дополнительно запрашивает metadata
+Единственный источник build metadata сервиса — корневой файл `VERSION`:
+
+```text
+APP_VERSION=0.10.0
+WORKSPACE_SCHEMA_VERSION=1
+```
+
+Перед каждым изменением backend повышается `APP_VERSION` по SemVer.
+`WORKSPACE_SCHEMA_VERSION` повышается только при несовместимом изменении полного
+workspace export/import contract. Локальная, Docker- и удалённая сборки вшивают
+оба значения в бинарник; Kubernetes их не переопределяет. Публичный
+`GET /version` возвращает оба значения, а `GET /health` — версию application.
+`GET /version` дополнительно запрашивает metadata
 подключённых backend-сервисов через их штатный transport и возвращает массив
 `services`. Недоступный сервис остаётся в массиве со статусом `unavailable`, но
 без внутренних адресов и infrastructure error; это не меняет liveness backend.
@@ -197,6 +205,11 @@ server-only полем `state`. `GET /api/v1/domain/export` отдаёт тот 
 hash независимо от legacy-представления Action, Vocab и совместимых defaults.
 Snapshot с `dv1:sha256` по-прежнему проверяется старым алгоритмом, но после
 успешного import сохраняется уже с актуальным `dv2`.
+
+Поле `schemaVersion` полного snapshot должно точно совпадать со встроенным
+`WORKSPACE_SCHEMA_VERSION`. При несовпадении backend возвращает
+`workspace_schema_unsupported`; файл нужно заново экспортировать из обновлённого
+исходного backend. Frontend не мигрирует и не формирует этот контракт.
 
 Безопасный импорт полного domain snapshot выполняется в два шага:
 

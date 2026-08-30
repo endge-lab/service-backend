@@ -9,7 +9,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 )
 
-const SchemaVersion = 1
+const workspaceRevisionSnapshotVersion = 1
 
 var Collections = []string{"projects", "tenants", "environments", "folders", "types", "queries", "data-views", "compositions", "stores", "streams", "updates", "mocks", "components", "actions", "filters", "converters", "computations", "vocabs", "i18n-bundles", "auth-profiles", "navigations", "styles", "configurations"}
 var UnsupportedCollections = []string{"parameters", "legacyComponents", "componentsDSL", "componentsTable", "versions", "pages", "pageTemplates", "page-templates", "policies"}
@@ -29,17 +29,18 @@ type Repository interface {
 
 // Coordinator координирует импорт и восстановление состояния рабочего пространства.
 type Coordinator struct {
-	repository Repository
-	tx         ports.TxManager
-	artifacts  ports.ReleaseArtifactReader
+	repository    Repository
+	tx            ports.TxManager
+	artifacts     ports.ReleaseArtifactReader
+	schemaVersion int
 }
 
 // mutationBatchContextKey задаёт закрытый тип ключа контекста для пакета мутаций.
 type mutationBatchContextKey struct{}
 
 // NewCoordinator создаёт координатор операций над состоянием рабочего пространства.
-func NewCoordinator(repository Repository, tx ports.TxManager, artifacts ports.ReleaseArtifactReader) *Coordinator {
-	return &Coordinator{repository: repository, tx: tx, artifacts: artifacts}
+func NewCoordinator(repository Repository, tx ports.TxManager, artifacts ports.ReleaseArtifactReader, schemaVersion int) *Coordinator {
+	return &Coordinator{repository: repository, tx: tx, artifacts: artifacts, schemaVersion: schemaVersion}
 }
 
 // actor возвращает текущего пользователя из контекста.

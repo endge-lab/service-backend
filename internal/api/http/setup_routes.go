@@ -102,7 +102,12 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, connectedServices *service_
 	if !cfg.App.IsProduction() {
 		openapi.RegisterRoutes(router)
 	}
-	health.RegisterRoutes(router, health.Config{Service: cfg.App.Name, Version: cfg.App.Version, Env: cfg.App.Env}, connectedServices)
+	health.RegisterRoutes(router, health.Config{
+		Service:                cfg.App.Name,
+		Version:                cfg.App.Version,
+		WorkspaceSchemaVersion: cfg.WorkspaceSchemaVersion,
+		Env:                    cfg.App.Env,
+	}, connectedServices)
 	configuratorauth.RegisterPublicRoutes(router, handlers.ConfiguratorAuth)
 	router.Get("/auth/session", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve(), handlers.Session.Current)
 	api := router.Group("/api", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve())

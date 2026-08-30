@@ -49,7 +49,7 @@ import (
 func UseCaseModules() fx.Option {
 	return fx.Options(fx.Provide(
 		releaseArtifactCacheConfig,
-		workspace_state.NewCoordinator,
+		newWorkspaceStateCoordinator,
 		history.NewRecorder,
 		documents.NewLifecycle,
 		access_control.NewUseCase,
@@ -94,4 +94,8 @@ func UseCaseModules() fx.Option {
 
 func releaseArtifactCacheConfig(cfg *config.Config) config.ReleaseArtifactCacheConfig {
 	return cfg.ReleaseArtifactCache
+}
+
+func newWorkspaceStateCoordinator(repository workspace_state.Repository, tx ports.TxManager, artifacts ports.ReleaseArtifactReader, cfg *config.Config) *workspace_state.Coordinator {
+	return workspace_state.NewCoordinator(repository, tx, artifacts, cfg.WorkspaceSchemaVersion)
 }

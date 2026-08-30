@@ -85,7 +85,7 @@ func (r *EndgeRepository) ExportWorkspace(ctx context.Context, workspaceID strin
 	var workspaceConfiguration map[string]any
 	_ = json.Unmarshal(workspace.Configuration, &workspaceConfiguration)
 	configurationdomain.RemoveLegacySSE(workspaceConfiguration)
-	bundle := entities.PortableBundle{Kind: "workspace-snapshot", SchemaVersion: 1, Workspace: map[string]any{"identity": workspace.Identity, "displayName": workspace.DisplayName, "description": workspace.Description, "dataMode": workspace.DataMode, "configuration": workspaceConfiguration, "meta": json.RawMessage(workspace.Meta), "active": workspace.Active}, Documents: map[string][]map[string]any{}, InstalledIntegrations: []map[string]any{}}
+	bundle := entities.PortableBundle{Kind: "workspace-snapshot", SchemaVersion: r.workspaceSchemaVersion, Workspace: map[string]any{"identity": workspace.Identity, "displayName": workspace.DisplayName, "description": workspace.Description, "dataMode": workspace.DataMode, "configuration": workspaceConfiguration, "meta": json.RawMessage(workspace.Meta), "active": workspace.Active}, Documents: map[string][]map[string]any{}, InstalledIntegrations: []map[string]any{}}
 	documents := map[string][]entities.Document{}
 	if head == nil {
 		for kind := range documentTables {

@@ -13,11 +13,15 @@ RUN go mod download
 
 COPY . .
 
-RUN backend_version="$(tr -d '[:space:]' < VERSION)" \
-  && echo "$backend_version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' \
+RUN app_version="$(sed -n 's/^APP_VERSION=//p' VERSION)" \
+  && workspace_schema_version="$(sed -n 's/^WORKSPACE_SCHEMA_VERSION=//p' VERSION)" \
+  && test "$(grep -Ec '^(APP_VERSION|WORKSPACE_SCHEMA_VERSION)=' VERSION)" -eq 2 \
+  && test "$(grep -Evc '^(APP_VERSION=[0-9]+\.[0-9]+\.[0-9]+|WORKSPACE_SCHEMA_VERSION=[1-9][0-9]*)$' VERSION)" -eq 0 \
+  && echo "$app_version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' \
+  && echo "$workspace_schema_version" | grep -Eq '^[1-9][0-9]*$' \
   && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
   go build -trimpath \
-  -ldflags="-s -w -X github.com/endge-lab/service-backend/internal/buildinfo.Version=$backend_version" \
+  -ldflags="-s -w -X github.com/endge-lab/service-backend/internal/buildinfo.Version=$app_version -X github.com/endge-lab/service-backend/internal/buildinfo.WorkspaceSchemaVersion=$workspace_schema_version" \
   -buildvcs=false -o /out/service-backend ./cmd
 
 FROM ${BASE_RUNTIME_IMAGE}

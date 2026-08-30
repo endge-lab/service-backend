@@ -6045,7 +6045,7 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/domain.ImportPlanRequest\"\n" +
+		"              $ref: \"#/components/schemas/entities.PortableBundle\"\n" +
 		"        description: Полный workspace snapshot\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -16725,13 +16725,6 @@ var openAPI3YAML = []byte(
 		"        workspace:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
-		"    domain.ImportPlanRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - snapshot\n" +
-		"      properties:\n" +
-		"        snapshot:\n" +
-		"          $ref: \"#/components/schemas/entities.PortableBundle\"\n" +
 		"    domain.ImportPlanResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -17722,6 +17715,9 @@ var openAPI3YAML = []byte(
 		"        version:\n" +
 		"          type: string\n" +
 		"          example: 1.0.0\n" +
+		"        workspaceSchemaVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
 		"    i18n_bundle.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +

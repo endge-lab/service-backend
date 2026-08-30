@@ -20,7 +20,7 @@ func (r *EndgeRepository) ExportLiveWorkspace(ctx context.Context, workspaceID s
 	_ = json.Unmarshal(workspace.Configuration, &workspaceConfiguration)
 	configurationdomain.RemoveLegacySSE(workspaceConfiguration)
 	bundle := entities.PortableBundle{
-		Kind: "workspace-snapshot", SchemaVersion: 1,
+		Kind: "workspace-snapshot", SchemaVersion: r.workspaceSchemaVersion,
 		Workspace: map[string]any{
 			"identity": workspace.Identity, "displayName": workspace.DisplayName, "description": workspace.Description,
 			"dataMode": workspace.DataMode, "configuration": workspaceConfiguration, "meta": json.RawMessage(workspace.Meta),

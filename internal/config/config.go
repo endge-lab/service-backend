@@ -82,13 +82,14 @@ type EncryptionConfig struct {
 
 type Config struct {
 	*kitconfig.ServiceConfig
-	HTTPBasePath         string
-	Identity             IdentityConfig
-	ConfiguratorAuth     ConfiguratorAuthConfig
-	Encryption           EncryptionConfig
-	Snapshots            SnapshotConfig
-	ReleaseArtifactCache ReleaseArtifactCacheConfig
-	AIWorkbench          AIWorkbenchConfig
+	WorkspaceSchemaVersion int
+	HTTPBasePath           string
+	Identity               IdentityConfig
+	ConfiguratorAuth       ConfiguratorAuthConfig
+	Encryption             EncryptionConfig
+	Snapshots              SnapshotConfig
+	ReleaseArtifactCache   ReleaseArtifactCacheConfig
+	AIWorkbench            AIWorkbenchConfig
 }
 
 // SnapshotConfig задаёт срок хранения временных страховочных копий импорта.
@@ -130,7 +131,11 @@ func Load() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	base.App.Version = buildinfo.Resolve(base.App.Version)
+	buildMetadata, err := buildinfo.Resolve(base.App.Version)
+	if err != nil {
+		return nil, fmt.Errorf("load build metadata: %w", err)
+	}
+	base.App.Version = buildMetadata.AppVersion
 	httpBasePath, err := normalizeHTTPBasePath(os.Getenv("HTTP_BASE_PATH"))
 	if err != nil {
 		return nil, err
@@ -217,13 +222,14 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 	return &Config{
-		ServiceConfig:        base,
-		HTTPBasePath:         httpBasePath,
-		Identity:             identity,
-		ConfiguratorAuth:     configuratorAuth,
-		Encryption:           encryption,
-		ReleaseArtifactCache: releaseArtifactCache,
-		AIWorkbench:          aiWorkbench,
+		ServiceConfig:          base,
+		WorkspaceSchemaVersion: buildMetadata.WorkspaceSchemaVersion,
+		HTTPBasePath:           httpBasePath,
+		Identity:               identity,
+		ConfiguratorAuth:       configuratorAuth,
+		Encryption:             encryption,
+		ReleaseArtifactCache:   releaseArtifactCache,
+		AIWorkbench:            aiWorkbench,
 		Snapshots: SnapshotConfig{
 			ImportBackupRetentionDays: envInt("IMPORT_BACKUP_RETENTION_DAYS", 7),
 		},

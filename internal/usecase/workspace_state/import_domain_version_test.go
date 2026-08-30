@@ -11,7 +11,7 @@ import (
 func TestFinalizeImportDomainVersionKeepsCanonicalHashWhileApplyingSFCEditingDefaults(t *testing.T) {
 	bundle := entities.PortableBundle{
 		Kind:          "workspace-snapshot",
-		SchemaVersion: SchemaVersion,
+		SchemaVersion: 1,
 		Workspace: map[string]any{
 			"displayName":   "Imported workspace",
 			"dataMode":      "development",
@@ -51,7 +51,7 @@ func TestFinalizeImportDomainVersionKeepsCanonicalHashWhileApplyingSFCEditingDef
 func TestLegacyDV1IsVerifiedBeforeCanonicalActionMigrationAndStoredAsDV2(t *testing.T) {
 	bundle := entities.PortableBundle{
 		Kind:          "workspace-snapshot",
-		SchemaVersion: SchemaVersion,
+		SchemaVersion: 1,
 		Workspace: map[string]any{
 			"displayName": "Imported workspace",
 			"dataMode":    "development",

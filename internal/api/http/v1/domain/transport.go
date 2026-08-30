@@ -7,10 +7,6 @@ type ImportRequest struct {
 	Confirmation string `json:"confirmation" validate:"required,max=160" example:"default"`
 }
 
-type ImportPlanRequest struct {
-	Snapshot entities.PortableBundle `json:"snapshot" validate:"required"`
-}
-
 type ExportResponse struct {
 	entities.PortableBundle
 }

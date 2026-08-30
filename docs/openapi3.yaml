@@ -6040,7 +6040,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/domain.ImportPlanRequest"
+              $ref: "#/components/schemas/entities.PortableBundle"
         description: Полный workspace snapshot
         required: true
       responses:
@@ -16720,13 +16720,6 @@ components:
         workspace:
           type: object
           additionalProperties: {}
-    domain.ImportPlanRequest:
-      type: object
-      required:
-        - snapshot
-      properties:
-        snapshot:
-          $ref: "#/components/schemas/entities.PortableBundle"
     domain.ImportPlanResponse:
       type: object
       properties:
@@ -17717,6 +17710,9 @@ components:
         version:
           type: string
           example: 1.0.0
+        workspaceSchemaVersion:
+          type: integer
+          example: 1
     i18n_bundle.CreateRequest:
       type: object
       required:

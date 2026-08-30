@@ -9,9 +9,10 @@ import (
 )
 
 type Config struct {
-	Service string
-	Version string
-	Env     string
+	Service                string
+	Version                string
+	WorkspaceSchemaVersion int
+	Env                    string
 }
 
 type ConnectedServices interface {
@@ -64,10 +65,11 @@ func versionHandler(cfg Config, connectedServices ConnectedServices) fiber.Handl
 			})
 		}
 		return c.JSON(VersionResponse{
-			Service:  cfg.Service,
-			Version:  cfg.Version,
-			Env:      cfg.Env,
-			Services: responseServices,
+			Service:                cfg.Service,
+			Version:                cfg.Version,
+			WorkspaceSchemaVersion: cfg.WorkspaceSchemaVersion,
+			Env:                    cfg.Env,
+			Services:               responseServices,
 		})
 	}
 }

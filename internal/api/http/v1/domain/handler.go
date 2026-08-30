@@ -119,7 +119,7 @@ func (h *Handler) Export(c *fiber.Ctx) error {
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
 // @Accept json
-// @Param request body ImportPlanRequest true "Полный workspace snapshot"
+// @Param request body entities.PortableBundle true "Полный workspace snapshot"
 // @Success 200 {object} ImportPlanResponse "План импорта"
 // @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
 // @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
@@ -129,11 +129,11 @@ func (h *Handler) Export(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/domain/import/plan [post]
 func (h *Handler) PlanImport(c *fiber.Ctx) error {
-	request, err := shared.DecodeAndValidate[ImportPlanRequest](c, h.validator)
+	snapshot, err := shared.DecodeAndValidate[entities.PortableBundle](c, h.validator)
 	if err != nil {
 		return respond.WriteErrorResponse(c, err)
 	}
-	value, err := h.usecase.PlanImport(c.UserContext(), request.Snapshot)
+	value, err := h.usecase.PlanImport(c.UserContext(), snapshot)
 	if err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}
