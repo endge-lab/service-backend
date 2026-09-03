@@ -23,6 +23,10 @@ require (
 	google.golang.org/grpc v1.82.0
 )
 
+// Local development: use the adjacent service-kit-go checkout so IDE runs
+// immediately pick up shared-library changes.
+//replace github.com/endge-lab/service-kit-go => ../service-kit-go
+
 require (
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
