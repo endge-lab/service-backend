@@ -108,16 +108,17 @@ func (r *EndgeRepository) GetDocument(ctx context.Context, workspaceID, kind, id
 func documentSelect(table, kind string) string {
 	data := "d.data"
 	folderJoin := "LEFT JOIN folders f ON f.id=d.folder_id AND f.workspace_id=d.workspace_id"
-	if kind == entities.CollectionFolders {
+	switch kind {
+	case entities.CollectionFolders:
 		data = `jsonb_build_object('entityType',d.entity_type,'parentIdentity',pf.identity,'isRoot',d.is_root)`
 		folderJoin = "LEFT JOIN folders f ON f.id=d.parent_id AND f.workspace_id=d.workspace_id LEFT JOIN folders pf ON pf.id=d.parent_id AND pf.workspace_id=d.workspace_id"
-	} else if kind == entities.CollectionUpdates {
+	case entities.CollectionUpdates:
 		data = `(d.data - 'storeIdentity') || jsonb_build_object('storeIdentity',store.identity)`
 		folderJoin += " JOIN stores store ON store.id=d.store_id AND store.workspace_id=d.workspace_id"
-	} else if kind == entities.CollectionVocabs {
+	case entities.CollectionVocabs:
 		data = `(d.data - 'authProfileIdentity') || jsonb_build_object('authProfileIdentity',auth_profile.identity)`
 		folderJoin += " LEFT JOIN auth_profiles auth_profile ON auth_profile.id=d.auth_profile_id AND auth_profile.workspace_id=d.workspace_id"
-	} else if kind == entities.CollectionProjects {
+	case entities.CollectionProjects:
 		data = `(d.data - 'navigationIdentity') || jsonb_build_object('navigationIdentity',navigation.identity)`
 		folderJoin += " LEFT JOIN navigations navigation ON navigation.id=d.navigation_id AND navigation.workspace_id=d.workspace_id"
 	}
