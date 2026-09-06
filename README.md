@@ -73,7 +73,7 @@ AUTH_DEV_PLATFORM_ADMIN=true
 Единственный источник build metadata сервиса — корневой файл `VERSION`:
 
 ```text
-APP_VERSION=0.10.0
+APP_VERSION=0.9.0
 WORKSPACE_SCHEMA_VERSION=1
 ```
 
