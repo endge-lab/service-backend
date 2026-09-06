@@ -262,6 +262,8 @@ func conversationFromProto(value *workbenchpb.Conversation) entities.AIConversat
 func runEventFromProto(value *workbenchpb.RunResponse) entities.AIRunEvent {
 	eventType := "failed"
 	switch value.GetType() {
+	case workbenchpb.RunEventType_RUN_EVENT_TYPE_UNSPECIFIED, workbenchpb.RunEventType_RUN_EVENT_TYPE_FAILED:
+		eventType = "failed"
 	case workbenchpb.RunEventType_RUN_EVENT_TYPE_STARTED:
 		eventType = "started"
 	case workbenchpb.RunEventType_RUN_EVENT_TYPE_CONTENT_DELTA:
@@ -301,14 +303,17 @@ func mapError(err error) error {
 		return ports.ErrWorkbenchUnavailable
 	}
 	switch status.Code(err) {
+	case codes.OK, codes.Canceled, codes.Unknown, codes.PermissionDenied, codes.ResourceExhausted, codes.OutOfRange,
+		codes.Unimplemented, codes.Internal, codes.DataLoss:
+		return ports.ErrWorkbenchBadGateway
+	case codes.DeadlineExceeded:
+		return ports.ErrWorkbenchTimeout
 	case codes.InvalidArgument:
 		return ports.ErrWorkbenchInvalid
 	case codes.NotFound:
 		return ports.ErrWorkbenchNotFound
 	case codes.FailedPrecondition, codes.AlreadyExists, codes.Aborted:
 		return ports.ErrWorkbenchConflict
-	case codes.DeadlineExceeded:
-		return ports.ErrWorkbenchTimeout
 	case codes.Unavailable, codes.Unauthenticated:
 		return ports.ErrWorkbenchUnavailable
 	default:

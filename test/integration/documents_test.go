@@ -7,8 +7,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 	"testing"
 
+	"github.com/endge-lab/service-backend/internal/config"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	"github.com/endge-lab/service-backend/internal/observability"
 	"github.com/endge-lab/service-backend/internal/repo/postgres"
@@ -38,6 +40,27 @@ type repositoryFixture struct {
 	commits    *commits.UseCase
 	releases   *releases.UseCase
 	resources  map[string]ports.DocumentResourceRepository
+}
+
+// countingArtifactRepository считает только физические чтения большого JSON из PostgreSQL.
+// Через него можно отличить cache hit Reader от повторного repository read.
+type countingArtifactRepository struct {
+	repository ports.ReleaseArtifactRepository
+	mu         sync.Mutex
+	calls      int
+}
+
+func (r *countingArtifactRepository) GetReleaseArtifact(ctx context.Context, workspaceID, releaseID string) (*entities.ReleaseArtifact, error) {
+	r.mu.Lock()
+	r.calls++
+	r.mu.Unlock()
+	return r.repository.GetReleaseArtifact(ctx, workspaceID, releaseID)
+}
+
+func (r *countingArtifactRepository) callCount() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.calls
 }
 
 // TestEveryDocumentRepositoryLifecycle проверяет общий CRUD и историю всех 22 таблиц документов.
@@ -133,7 +156,8 @@ func TestTransactionRollbackLeavesNoPartialDocument(t *testing.T) {
 	}
 }
 
-// TestCommitSquashReleaseAndRestore проверяет критическую цепочку истории workspace.
+// TestCommitSquashReleaseAndRestore проверяет критическую цепочку истории workspace:
+// после нового release alias last обязан разрешиться в его metadata, а restore — вернуть snapshot первого release.
 func TestCommitSquashReleaseAndRestore(t *testing.T) {
 	fixture := newRepositoryFixture(t)
 	queryRepository := fixture.resources["queries"]
@@ -204,6 +228,91 @@ func TestCommitSquashReleaseAndRestore(t *testing.T) {
 	restored, err := queryRepository.Get(fixture.ctx, scope.Workspace.ID, created.Identity, false)
 	if err != nil || string(restored.Data) != string(updated.Data) {
 		t.Fatalf("release restore не вернул snapshot: value=%#v err=%v", restored, err)
+	}
+}
+
+// TestReleaseExportAndRestoreShareArtifactReader проверяет один cache owner для трёх путей:
+// export делает единственное PostgreSQL чтение, а restore plan и restore получают те же bytes из LRU.
+func TestReleaseExportAndRestoreShareArtifactReader(t *testing.T) {
+	fixture := newRepositoryFixture(t)
+	artifactRepository := &countingArtifactRepository{repository: fixture.store}
+	artifacts, err := release_artifacts.NewReader(artifactRepository, config.ReleaseArtifactCacheConfig{
+		Enabled: true, MaxBytes: 64 * 1024 * 1024, MaxItemBytes: 16 * 1024 * 1024,
+	}, noop.NewMeterProvider().Meter("integration"))
+	if err != nil {
+		t.Fatalf("создать artifact reader: %v", err)
+	}
+	coordinator := workspace_state.NewCoordinator(fixture.store, fixture.tx, artifacts, 1)
+	releaseUseCase := releases.NewUseCase(fixture.store, fixture.store, fixture.store, coordinator, artifacts)
+	queryRepository := fixture.resources["queries"]
+
+	created, err := fixture.lifecycle.Create(fixture.ctx, documents.Definition{Collection: "queries"}, queryRepository, createInput(t, map[string]any{
+		"identity": "shared-artifact-query", "displayName": "Shared artifact query", "source": "query {}", "sourceVersion": 2,
+	}))
+	if err != nil {
+		t.Fatalf("создать query: %v", err)
+	}
+	scope, err := fixture.workspaces.Authorize(fixture.ctx, "default")
+	if err != nil {
+		t.Fatalf("обновить workspace scope: %v", err)
+	}
+	fixture.ctx = entities.WithWorkspaceAccess(fixture.ctx, scope)
+	commit, err := fixture.commits.Create(fixture.ctx, "Shared artifact baseline", "preserve", scope.Workspace.HeadSequence)
+	if err != nil {
+		t.Fatalf("создать commit: %v", err)
+	}
+	release, err := releaseUseCase.Create(fixture.ctx, releases.CreateInput{Identity: "shared-artifact-release", DisplayName: "Shared artifact release", SourceCommitID: commit.ID})
+	if err != nil {
+		t.Fatalf("создать release: %v", err)
+	}
+
+	metadata, err := releaseUseCase.Get(fixture.ctx, release.Identity)
+	if err != nil {
+		t.Fatalf("получить release metadata: %v", err)
+	}
+	artifact, err := releaseUseCase.GetArtifact(fixture.ctx, *metadata)
+	if err != nil || len(artifact.Data) == 0 {
+		t.Fatalf("export artifact: value=%#v err=%v", artifact, err)
+	}
+	if artifactRepository.callCount() != 1 {
+		t.Fatalf("artifact repository calls after export = %d, want 1", artifactRepository.callCount())
+	}
+
+	changed, err := fixture.lifecycle.Patch(fixture.ctx, documents.Definition{Collection: "queries"}, queryRepository, created.Identity, patchInput(t, map[string]any{"source": "query { changed }"}), created.Revision)
+	if err != nil {
+		t.Fatalf("изменить query после release: %v", err)
+	}
+	scope, err = fixture.workspaces.Authorize(fixture.ctx, "default")
+	if err != nil {
+		t.Fatalf("обновить workspace scope после patch: %v", err)
+	}
+	fixture.ctx = entities.WithWorkspaceAccess(fixture.ctx, scope)
+
+	plan, err := releaseUseCase.PlanRestore(fixture.ctx, release.Identity)
+	if err != nil || !plan.Valid || plan.Updates == 0 {
+		t.Fatalf("release restore plan: value=%#v err=%v", plan, err)
+	}
+	if artifactRepository.callCount() != 1 {
+		t.Fatalf("artifact repository calls after restore plan = %d, want 1", artifactRepository.callCount())
+	}
+
+	restoredCommit, err := releaseUseCase.Restore(fixture.ctx, release.Identity, scope.Workspace.HeadSequence)
+	if err != nil || restoredCommit.Operation != "release_restore" {
+		t.Fatalf("restore release: commit=%#v err=%v", restoredCommit, err)
+	}
+	if artifactRepository.callCount() != 1 {
+		t.Fatalf("artifact repository calls after restore = %d, want 1", artifactRepository.callCount())
+	}
+	restored, err := queryRepository.Get(fixture.ctx, scope.Workspace.ID, created.Identity, false)
+	if err != nil {
+		t.Fatalf("восстановить исходный query snapshot: value=%#v err=%v", restored, err)
+	}
+	var restoredData map[string]any
+	if err = json.Unmarshal(restored.Data, &restoredData); err != nil || restoredData["source"] != "query {}" || restoredData["sourceVersion"] != float64(2) {
+		t.Fatalf("восстановить исходный query snapshot: data=%s err=%v", restored.Data, err)
+	}
+	if changed.Revision != 2 {
+		t.Fatalf("query before restore revision = %d, want 2", changed.Revision)
 	}
 }
 

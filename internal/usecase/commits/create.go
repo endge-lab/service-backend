@@ -17,9 +17,9 @@ func (s *UseCase) Create(ctx context.Context, message, policy string, expected i
 		return nil, err
 	}
 	if policy == "" {
-		policy = "preserve"
+		policy = entities.RevisionPolicyPreserve
 	}
-	if policy != "preserve" && policy != "squash" {
+	if policy != entities.RevisionPolicyPreserve && policy != entities.RevisionPolicySquash {
 		return nil, domainerrors.InvalidInput("revision_policy_invalid", "revisionPolicy must be preserve or squash")
 	}
 	latest, err := s.repository.LatestCommit(ctx, scope.Workspace.ID)
@@ -36,7 +36,7 @@ func (s *UseCase) Create(ctx context.Context, message, policy string, expected i
 	if len(pending) == 0 {
 		return nil, domainerrors.Conflict("nothing_to_commit", "There are no pending revisions")
 	}
-	if policy == "squash" && !shared.CanAdmin(scope.Role) {
+	if policy == entities.RevisionPolicySquash && !shared.CanAdmin(scope.Role) {
 		for _, revision := range pending {
 			if revision.CreatedBy.ID != current.User.ID {
 				return nil, domainerrors.Forbidden("shared_squash_requires_admin", "Shared squash requires Workspace Admin")
@@ -45,7 +45,7 @@ func (s *UseCase) Create(ctx context.Context, message, policy string, expected i
 	}
 	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
 		selected := pending
-		if policy == "squash" {
+		if policy == entities.RevisionPolicySquash {
 			batchID, txErr := s.revisions.CreateMutationBatch(txctx, &scope.Workspace.ID, "commit_squash", current.User.ID)
 			if txErr != nil {
 				return txErr

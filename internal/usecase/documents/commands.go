@@ -80,7 +80,7 @@ func (s *Lifecycle) Patch(ctx context.Context, definition Definition, repository
 	if existing.Revision != expected {
 		return nil, shared.RevisionConflict()
 	}
-	if definition.Collection == "folders" && isSystemFolder(*existing) {
+	if definition.Collection == entities.CollectionFolders && isSystemFolder(*existing) {
 		return nil, domainerrors.Conflict("system_folder_immutable", "Root and system folders cannot be changed")
 	}
 	next := applyPatch(*existing, patch, current.User.ID)
@@ -94,7 +94,7 @@ func (s *Lifecycle) Patch(ctx context.Context, definition Definition, repository
 	if err != nil {
 		return nil, err
 	}
-	if definition.Collection == "folders" && folderID != nil {
+	if definition.Collection == entities.CollectionFolders && folderID != nil {
 		if *folderID == existing.ID {
 			return nil, domainerrors.InvalidInput("folder_self_parent", "Folder cannot be its own parent")
 		}
@@ -140,7 +140,7 @@ func (s *Lifecycle) Delete(ctx context.Context, definition Definition, repositor
 	if existing.DeletedAt != nil {
 		return existing, nil
 	}
-	if definition.Collection == "folders" && isSystemFolder(*existing) {
+	if definition.Collection == entities.CollectionFolders && isSystemFolder(*existing) {
 		return nil, domainerrors.Conflict("system_folder_immutable", "Root and system folders cannot be deleted")
 	}
 	now := time.Now().UTC()
@@ -151,7 +151,7 @@ func (s *Lifecycle) Delete(ctx context.Context, definition Definition, repositor
 		return nil, err
 	}
 	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
-		if definition.Collection == "folders" {
+		if definition.Collection == entities.CollectionFolders {
 			txctx, err = s.history.BeginBatch(txctx, &scope.Workspace.ID, "delete", current.User.ID)
 			if err != nil {
 				return err
@@ -198,7 +198,7 @@ func (s *Lifecycle) Restore(ctx context.Context, definition Definition, reposito
 	}
 	next := *existing
 	next.DeletedAt, next.Active, next.UpdatedBy = nil, true, entities.Actor{ID: current.User.ID}
-	if definition.Collection == "folders" {
+	if definition.Collection == entities.CollectionFolders {
 		var data map[string]any
 		_ = json.Unmarshal(next.Data, &data)
 		delete(data, "parentIdentity")

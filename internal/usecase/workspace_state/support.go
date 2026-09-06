@@ -88,11 +88,11 @@ func (s *Coordinator) mutationBatch(ctx context.Context, workspaceID *string, op
 
 // resolveFolder разрешает identity папки в её внутренний идентификатор.
 func (s *Coordinator) resolveFolder(ctx context.Context, scope entities.WorkspaceAccess, kind string, input map[string]any) (*string, error) {
-	if kind == "configurations" {
+	if kind == entities.CollectionConfigurations {
 		return nil, nil
 	}
 	identity := stringField(input, "folderIdentity")
-	if kind == "folders" {
+	if kind == entities.CollectionFolders {
 		entityType := entities.FolderEntityType(stringField(input, "entityType"))
 		if entityType == "" {
 			return nil, domainerrors.InvalidInput("folder_entity_type_required", "entityType is required")
@@ -114,12 +114,12 @@ func (s *Coordinator) resolveFolder(ctx context.Context, scope entities.Workspac
 
 // resolveDocumentFolder разрешает папку, указанную в документе.
 func (s *Coordinator) resolveDocumentFolder(ctx context.Context, scope entities.WorkspaceAccess, doc entities.Document) (*string, error) {
-	if doc.Type == "configurations" {
+	if doc.Type == entities.CollectionConfigurations {
 		return nil, nil
 	}
 	var data map[string]any
 	_ = json.Unmarshal(doc.Data, &data)
-	if doc.Type == "folders" {
+	if doc.Type == entities.CollectionFolders {
 		entityType := entities.FolderEntityType(stringField(data, "entityType"))
 		parent := stringField(data, "parentIdentity")
 		if parent == "" && !boolValue(data["isRoot"]) {
@@ -143,15 +143,15 @@ func (s *Coordinator) resolveDocumentFolder(ctx context.Context, scope entities.
 // resolvableFolderIdentity сопоставляет legacy-корень streams с общим корнем queries.
 // Старые revisions хранят root-streams, а актуальная схема использует root-queries.
 func resolvableFolderIdentity(identity, entityType string) string {
-	if identity == "root-streams" && entityType == entities.FolderEntityType("streams") {
-		return entities.RootFolderIdentity("streams")
+	if identity == entities.LegacyRootStreamsIdentity && entityType == entities.FolderEntityType(entities.CollectionStreams) {
+		return entities.RootFolderIdentity(entities.CollectionStreams)
 	}
 	return identity
 }
 
 // replaceStructuredRelations обновляет структурированные связи документа.
 func (s *Coordinator) replaceStructuredRelations(ctx context.Context, document entities.Document) error {
-	if document.Type != "projects" {
+	if document.Type != entities.CollectionProjects {
 		return nil
 	}
 	var data map[string]any
@@ -219,16 +219,6 @@ func replaceDocumentFromInput(existing entities.Document, input map[string]any, 
 	return next
 }
 
-// documentAsInput преобразует доменный документ в данные для повторной проверки.
-func documentAsInput(doc entities.Document) map[string]any {
-	var result map[string]any
-	_ = json.Unmarshal(doc.Data, &result)
-	result["identity"] = doc.Identity
-	result["displayName"] = doc.DisplayName
-	result["managedBy"] = doc.ManagedBy
-	return result
-}
-
 // commitChanges формирует изменения коммита по выполненным операциям.
 func commitChanges(revisions []entities.Revision) []entities.CommitChange {
 	groups := map[string][]entities.Revision{}
@@ -258,7 +248,7 @@ func validateDocument(kind string, input map[string]any) error {
 		return domainerrors.InvalidInput("display_name_required", "displayName is required")
 	}
 	managed := defaultString(stringField(input, "managedBy"), "user")
-	if !slices.Contains([]string{"user", "system", "integration"}, managed) {
+	if !slices.Contains([]string{"user", entities.ManagedBySystem, "integration"}, managed) {
 		return domainerrors.InvalidInput("managed_by_invalid", "managedBy is invalid")
 	}
 	if source, ok := input["source"]; ok {
@@ -270,7 +260,7 @@ func validateDocument(kind string, input map[string]any) error {
 			return domainerrors.InvalidInput("source_too_large", "source exceeds 8 MiB")
 		}
 	}
-	versionedSourceKinds := []string{"types", "queries", "data-views", "stores", "streams", "updates", "actions", "filters", "computations", "compositions", "styles", "configurations"}
+	versionedSourceKinds := []string{entities.CollectionTypes, entities.CollectionQueries, entities.CollectionDataViews, entities.CollectionStores, entities.CollectionStreams, entities.CollectionUpdates, entities.CollectionActions, entities.CollectionFilters, entities.CollectionComputations, entities.CollectionCompositions, entities.CollectionStyles, entities.CollectionConfigurations}
 	if slices.Contains(versionedSourceKinds, kind) {
 		_, hasSource := input["source"]
 		version, hasVersion := numberField(input, "sourceVersion")
@@ -286,10 +276,10 @@ func validateDocument(kind string, input map[string]any) error {
 			return domainerrors.InvalidInput("query_source_version_invalid", "Query sourceVersion must be 2")
 		}
 	}
-	if kind == "actions" && strings.TrimSpace(stringField(input, "source")) == "" {
+	if kind == entities.CollectionActions && strings.TrimSpace(stringField(input, "source")) == "" {
 		return domainerrors.InvalidInput("action_source_invalid", "Action source must not be empty")
 	}
-	if kind == "configurations" {
+	if kind == entities.CollectionConfigurations {
 		version, hasVersion := numberField(input, "sourceVersion")
 		if _, hasSource := input["source"].(string); !hasSource || !hasVersion || version != 1 {
 			return domainerrors.InvalidInput("configuration_source_version_invalid", "Configuration source and sourceVersion 1 are required")
@@ -298,13 +288,13 @@ func validateDocument(kind string, input map[string]any) error {
 			return domainerrors.InvalidInput("configuration_folder_unsupported", "Configuration documents do not support folders")
 		}
 	}
-	if kind == "tenants" && stringField(input, "code") == "" {
+	if kind == entities.CollectionTenants && stringField(input, "code") == "" {
 		return domainerrors.InvalidInput("tenant_code_required", "code is required")
 	}
-	if kind == "updates" && stringField(input, "storeIdentity") == "" {
+	if kind == entities.CollectionUpdates && stringField(input, "storeIdentity") == "" {
 		return domainerrors.InvalidInput("update_store_required", "storeIdentity is required")
 	}
-	if kind == "components" {
+	if kind == entities.CollectionComponents {
 		if _, ok := input["source"].(string); !ok {
 			return domainerrors.InvalidInput("component_source_required", "source is required")
 		}
@@ -317,12 +307,12 @@ func validateDocument(kind string, input map[string]any) error {
 			return domainerrors.InvalidInput("computation_contract_version_invalid", "contractVersion must be positive")
 		}
 	}
-	if kind == "auth-profiles" {
+	if kind == entities.CollectionAuthProfiles {
 		if err := shared.ValidateAuthProfile(input); err != nil {
 			return err
 		}
 	}
-	if kind == "vocabs" {
+	if kind == entities.CollectionVocabs {
 		source, hasSource := input["source"].(string)
 		version, hasVersion := numberField(input, "sourceVersion")
 		if hasSource != hasVersion {
@@ -344,9 +334,9 @@ func validateDocument(kind string, input map[string]any) error {
 	if err := validateProjectContract(kind, input); err != nil {
 		return err
 	}
-	if kind == "folders" {
+	if kind == entities.CollectionFolders {
 		entityType := stringField(input, "entityType")
-		if !slices.Contains(Collections, entityType) || entityType == "folders" {
+		if !slices.Contains(Collections, entityType) || entityType == entities.CollectionFolders {
 			return domainerrors.InvalidInput("folder_entity_type_invalid", "entityType must be a folderable collection")
 		}
 		if _, exists := input["isSystem"]; exists {
@@ -361,7 +351,7 @@ func validateDocument(kind string, input map[string]any) error {
 
 // validateProjectContract проверяет контракт проекта и запрещённые устаревшие поля.
 func validateProjectContract(kind string, input map[string]any) error {
-	if kind != "projects" {
+	if kind != entities.CollectionProjects {
 		return nil
 	}
 	for _, field := range []string{"navigation", "navigationId", "sortOrder", "sort_order"} {
@@ -387,55 +377,9 @@ func validateIdentity(value string) error {
 // validateSecrets проверяет, что входные данные не содержат открытых секретов.
 func validateSecrets(value any) error { return shared.ValidateSecrets(value) }
 
-// rejectReadOnly отклоняет изменение серверных полей только для чтения.
-func rejectReadOnly(input map[string]any) error {
-	for _, field := range readOnlyFields {
-		if _, ok := input[field]; ok {
-			return domainerrors.WithDetails(domainerrors.InvalidInput("read_only_field", "Actor and audit fields are read-only"), map[string]any{"field": field})
-		}
-	}
-	return nil
-}
-
 // checksumContent вычисляет контрольную сумму содержимого документа.
 func checksumContent(doc entities.Document) string {
 	return checksum(mustJSON(map[string]any{"identity": doc.Identity, "displayName": doc.DisplayName, "description": doc.Description, "folderIdentity": doc.FolderIdentity, "managedBy": doc.ManagedBy, "managedById": doc.ManagedByID, "meta": doc.Meta, "data": doc.Data, "active": doc.Active, "deletedAt": doc.DeletedAt}))
-}
-
-// applyWorkspacePatch применяет частичное обновление к рабочему пространству.
-func applyWorkspacePatch(workspace entities.Workspace, patch map[string]any) entities.Workspace {
-	if value, ok := patch["identity"].(string); ok {
-		workspace.Identity = strings.TrimSpace(value)
-	}
-	if value, ok := patch["displayName"].(string); ok {
-		workspace.DisplayName = value
-	}
-	if _, ok := patch["description"]; ok {
-		workspace.Description = optionalString(patch, "description")
-	}
-	if value, ok := patch["dataMode"].(string); ok {
-		workspace.DataMode = value
-	}
-	if value, ok := patch["configuration"]; ok {
-		workspace.Configuration = mustJSON(value)
-	}
-	if value, ok := patch["meta"]; ok {
-		workspace.Meta = mustJSON(value)
-	}
-	if value, ok := patch["active"].(bool); ok {
-		workspace.Active = value
-	}
-	return workspace
-}
-
-// checksumWorkspace вычисляет контрольную сумму рабочего пространства.
-func checksumWorkspace(workspace entities.Workspace) string {
-	return checksum(mustJSON(map[string]any{"identity": workspace.Identity, "displayName": workspace.DisplayName, "description": workspace.Description, "dataMode": workspace.DataMode, "configuration": workspace.Configuration, "meta": workspace.Meta, "active": workspace.Active}))
-}
-
-// checksumIntegration вычисляет контрольную сумму интеграции.
-func checksumIntegration(integration entities.Integration) string {
-	return checksum(mustJSON(map[string]any{"identity": integration.Identity, "displayName": integration.DisplayName, "description": integration.Description, "version": integration.Version, "managedBy": integration.ManagedBy, "managedById": integration.ManagedByID, "meta": integration.Meta, "active": integration.Active, "deletedAt": integration.DeletedAt}))
 }
 
 // checksum вычисляет SHA-256 контрольную сумму сериализованных данных.
@@ -521,36 +465,6 @@ func copyMap(input map[string]any) map[string]any {
 		result[key] = value
 	}
 	return result
-}
-
-// joinPath безопасно объединяет части пути переносимого пакета.
-func joinPath(left, right string) string {
-	if left == "" {
-		return right
-	}
-	return left + "." + right
-}
-
-// integrationItems преобразует интеграции в элементы переносимого пакета.
-func integrationItems(input map[string]any) ([]map[string]any, error) {
-	value, ok := input["installedIntegrations"]
-	if !ok || value == nil {
-		return nil, nil
-	}
-	raw, err := json.Marshal(value)
-	if err != nil {
-		return nil, domainerrors.InvalidInput("installed_integrations_invalid", "installedIntegrations is invalid")
-	}
-	var result []map[string]any
-	if err = json.Unmarshal(raw, &result); err != nil {
-		return nil, domainerrors.InvalidInput("installed_integrations_invalid", "installedIntegrations must be an array")
-	}
-	for _, item := range result {
-		if _, ok := item["configuration"]; !ok {
-			item["configuration"] = map[string]any{}
-		}
-	}
-	return result, nil
 }
 
 type portableBundleNormalization struct {
@@ -652,42 +566,6 @@ func orderPortableItems(kind string, items []map[string]any) ([]map[string]any, 
 		}
 	}
 	return result, nil
-}
-
-// applyStructuredIdentityMap переписывает структурированные ссылки по карте identity.
-func applyStructuredIdentityMap(kind string, item map[string]any, identityMap map[string]string) {
-	mapField := func(field, targetType string) {
-		value := stringField(item, field)
-		if mapped, ok := identityMap[targetType+":"+value]; value != "" && ok {
-			item[field] = mapped
-		}
-	}
-	mapField("folderIdentity", "folders")
-	switch kind {
-	case "folders":
-		mapField("parentIdentity", "folders")
-	case "updates":
-		mapField("storeIdentity", "stores")
-	case "vocabs":
-		mapField("authProfileIdentity", "auth-profiles")
-	case "projects":
-		mapField("navigationIdentity", "navigations")
-		for _, field := range []string{"allowedEnvironments", "allowedEnvironmentIdentities"} {
-			values, ok := item[field].([]any)
-			if !ok {
-				continue
-			}
-			for index, value := range values {
-				identity, ok := value.(string)
-				if !ok {
-					continue
-				}
-				if mapped, exists := identityMap["environments:"+identity]; exists {
-					values[index] = mapped
-				}
-			}
-		}
-	}
 }
 
 // preconditionError создаёт ошибку отсутствующей обязательной предусловной версии.

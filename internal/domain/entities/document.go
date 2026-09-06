@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const ManagedBySystem = "system"
+
 type Document struct {
 	ID             string          `json:"id"`
 	WorkspaceID    string          `json:"-"`

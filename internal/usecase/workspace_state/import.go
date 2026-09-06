@@ -89,7 +89,7 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 	seen := map[string]bool{}
 	for _, kind := range Collections {
 		if _, exists := bundle.Documents[kind]; !exists {
-			if kind == "configurations" {
+			if kind == entities.CollectionConfigurations {
 				continue
 			}
 			plan.Valid = false
@@ -324,7 +324,7 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 				}
 				document := documentFromInput(kind, live.ID, item, current.User.ID)
 				operation := "create"
-				stored := &document
+				var stored *entities.Document
 				if previous, exists := existing[kind][identity]; exists {
 					document = replaceDocumentFromInput(previous, item, current.User.ID)
 					operation = "update"
@@ -419,11 +419,12 @@ func (s *Coordinator) planSnapshotChanges(ctx context.Context, workspaceID strin
 	for kind, identities := range incoming {
 		for identity := range identities {
 			document, exists := existing[kind][identity]
-			if !exists {
+			switch {
+			case !exists:
 				plan.Creates++
-			} else if document.DeletedAt != nil {
+			case document.DeletedAt != nil:
 				plan.Restores++
-			} else {
+			default:
 				plan.Updates++
 			}
 		}
@@ -463,12 +464,12 @@ func documentsMissingFromSnapshot(existing map[string]map[string]entities.Docume
 	order := restoreOrder()
 	for index := len(order) - 1; index >= 0; index-- {
 		kind := order[index]
-		if kind == "folders" {
+		if kind == entities.CollectionFolders {
 			continue
 		}
 		documents := []entities.Document{}
 		for identity, document := range existing[kind] {
-			if !incoming[kind][identity] && document.DeletedAt == nil && document.ManagedBy != "system" {
+			if !incoming[kind][identity] && document.DeletedAt == nil && document.ManagedBy != entities.ManagedBySystem {
 				documents = append(documents, document)
 			}
 		}
@@ -476,14 +477,14 @@ func documentsMissingFromSnapshot(existing map[string]map[string]entities.Docume
 		result = append(result, documents...)
 	}
 	folders := []entities.Document{}
-	for identity, document := range existing["folders"] {
-		if !incoming["folders"][identity] && document.DeletedAt == nil && document.ManagedBy != "system" {
+	for identity, document := range existing[entities.CollectionFolders] {
+		if !incoming[entities.CollectionFolders][identity] && document.DeletedAt == nil && document.ManagedBy != entities.ManagedBySystem {
 			folders = append(folders, document)
 		}
 	}
 	sort.Slice(folders, func(i, j int) bool {
-		left := folderDepth(folders[i], existing["folders"])
-		right := folderDepth(folders[j], existing["folders"])
+		left := folderDepth(folders[i], existing[entities.CollectionFolders])
+		right := folderDepth(folders[j], existing[entities.CollectionFolders])
 		if left == right {
 			return folders[i].Identity < folders[j].Identity
 		}
@@ -531,28 +532,28 @@ func validateSnapshotRelations(bundle entities.PortableBundle) []string {
 	for kind, items := range bundle.Documents {
 		for _, item := range items {
 			identity := stringField(item, "identity")
-			if kind == "folders" {
+			if kind == entities.CollectionFolders {
 				parent := stringField(item, "parentIdentity")
 				entityType := stringField(item, "entityType")
-				if parent != "" && parent != entities.RootFolderIdentity(entityType) && !available["folders"][parent] {
+				if parent != "" && parent != entities.RootFolderIdentity(entityType) && !available[entities.CollectionFolders][parent] {
 					result = append(result, kind+":"+identity+": parentIdentity target is missing")
 				}
-			} else if folder := stringField(item, "folderIdentity"); folder != "" && folder != entities.RootFolderIdentity(kind) && !available["folders"][folder] {
+			} else if folder := stringField(item, "folderIdentity"); folder != "" && folder != entities.RootFolderIdentity(kind) && !available[entities.CollectionFolders][folder] {
 				result = append(result, kind+":"+identity+": folderIdentity target is missing")
 			}
-			if kind == "updates" && !available["stores"][stringField(item, "storeIdentity")] {
+			if kind == entities.CollectionUpdates && !available[entities.CollectionStores][stringField(item, "storeIdentity")] {
 				result = append(result, kind+":"+identity+": storeIdentity target is missing")
 			}
-			if kind == "projects" {
+			if kind == entities.CollectionProjects {
 				for _, environment := range relationIdentityList(item["allowedEnvironments"]) {
 					if !available["environments"][environment] {
 						result = append(result, kind+":"+identity+": allowed environment "+environment+" is missing")
 					}
 				}
 			}
-			if kind == "vocabs" {
+			if kind == entities.CollectionVocabs {
 				target := stringField(item, "authProfileIdentity")
-				if target != "" && !available["auth-profiles"][target] {
+				if target != "" && !available[entities.CollectionAuthProfiles][target] {
 					result = append(result, kind+":"+identity+": authProfileIdentity target is missing")
 				}
 			}

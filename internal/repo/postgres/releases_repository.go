@@ -14,6 +14,10 @@ import (
 func releaseMetadataSelect() string {
 	return `SELECT r.id::text,r.workspace_id::text,r.identity,r.display_name,r.description,r.source_commit_id::text,r.head_sequence,r.schema_version,r.checksum,` + actorScan("u") + `,r.created_at FROM releases r JOIN service_users u ON u.id=r.created_by`
 }
+
+func releaseArtifactSelect() string {
+	return `SELECT id::text,workspace_id::text,identity,checksum,data FROM releases`
+}
 func scanRelease(row scanner) (*entities.Release, error) {
 	v := &entities.Release{}
 	var actor []byte
@@ -56,7 +60,7 @@ func (r *EndgeRepository) GetLatestReleaseMetadata(ctx context.Context, workspac
 
 func (r *EndgeRepository) GetReleaseArtifact(ctx context.Context, workspaceID, releaseID string) (*entities.ReleaseArtifact, error) {
 	value := &entities.ReleaseArtifact{}
-	err := r.executor(ctx).QueryRow(ctx, `SELECT id::text,workspace_id::text,identity,checksum,data FROM releases WHERE workspace_id=$1 AND id=$2`, workspaceID, releaseID).Scan(
+	err := r.executor(ctx).QueryRow(ctx, releaseArtifactSelect()+` WHERE workspace_id=$1 AND id=$2`, workspaceID, releaseID).Scan(
 		&value.ReleaseID, &value.WorkspaceID, &value.Identity, &value.Checksum, &value.Data)
 	if err != nil {
 		return nil, repositoryError(err)
@@ -124,10 +128,10 @@ func (r *EndgeRepository) ExportWorkspace(ctx context.Context, workspaceID strin
 			var data map[string]any
 			_ = json.Unmarshal(doc.Data, &data)
 			configurationdomain.RemoveLegacySSEFromDocument(kind, data)
-			if kind == "folders" && doc.ManagedBy == "system" {
+			if kind == entities.CollectionFolders && doc.ManagedBy == entities.ManagedBySystem {
 				continue
 			}
-			item := map[string]any{"identity": doc.Identity, "displayName": doc.DisplayName, "description": doc.Description, "folderIdentity": doc.FolderIdentity, "managedBy": doc.ManagedBy, "managedById": doc.ManagedByID, "meta": json.RawMessage(doc.Meta), "active": doc.Active}
+			item := map[string]any{"identity": doc.Identity, "displayName": doc.DisplayName, "description": doc.Description, "folderIdentity": doc.FolderIdentity, "managedBy": doc.ManagedBy, "managedById": doc.ManagedByID, "meta": doc.Meta, "active": doc.Active}
 			for key, value := range data {
 				item[key] = value
 			}

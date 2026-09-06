@@ -306,7 +306,7 @@ func TestBulkDocumentMove(t *testing.T) {
 	folder.Body.Close()
 	for _, identity := range []string{"action-a", "action-b"} {
 		created := perform(t, app, http.MethodPost, "/api/v1/actions", map[string]any{
-			"identity": identity, "displayName": identity,
+			"identity": identity, "displayName": identity, "source": "defineAction({})", "sourceVersion": 1,
 		}, headers)
 		assertStatus(t, created, fiber.StatusCreated)
 		created.Body.Close()
@@ -374,7 +374,7 @@ func documentHTTPCases() []documentHTTPCase {
 		{collection: "updates", identity: "update-main", payload: with(base("update-main"), "storeIdentity", "store-main", "source", "update {}", "sourceVersion", 1)},
 		{collection: "mocks", identity: "mock-main", payload: with(base("mock-main"), "contentSource", "inline", "contentType", "application/json", "source", "{}")},
 		{collection: "components", identity: "component-main", payload: with(base("component-main"), "source", "<template />", "tag", "endge-main", "modelVersion", 1, "supportedTargets", []any{"vue"})},
-		{collection: "actions", identity: "action-main", payload: with(base("action-main"), "definition", map[string]any{}, "input", map[string]any{}, "output", map[string]any{}, "target", map[string]any{})},
+		{collection: "actions", identity: "action-main", payload: with(base("action-main"), "source", "defineAction({})", "sourceVersion", 1, "target", map[string]any{}, "defaultImplementation", map[string]any{}, "owner", map[string]any{})},
 		{collection: "filters", identity: "filter-main", payload: with(base("filter-main"), "fields", []any{}, "source", "filter {}", "sourceVersion", 1)},
 		{collection: "converters", identity: "converter-main", payload: base("converter-main")},
 		{collection: "computations", identity: "computation-main", payload: with(base("computation-main"), "source", "compute {}", "sourceVersion", 1, "contractVersion", 1)},

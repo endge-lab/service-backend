@@ -47,7 +47,7 @@ func (s *UseCase) Create(ctx context.Context, description *string) (result *enti
 		}
 		sum := sha256.Sum256(raw)
 		result, txErr = s.backups.CreateSnapshotBackup(txctx, entities.SnapshotBackup{
-			ID: uuid.NewString(), WorkspaceID: scope.Workspace.ID, Kind: "manual", Description: description,
+			ID: uuid.NewString(), WorkspaceID: scope.Workspace.ID, Kind: entities.SnapshotBackupKindManual, Description: description,
 			SchemaVersion: bundle.SchemaVersion, Checksum: hex.EncodeToString(sum[:]), Data: raw, CreatedBy: entities.Actor{ID: current.User.ID},
 		})
 		return txErr

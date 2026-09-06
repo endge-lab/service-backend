@@ -6,8 +6,12 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 )
 
+// TestReaderDeduplicatesConcurrentMisses запускает десять одновременных cache miss
+// одного key и проверяет, что keyed flight выполняет один repository read.
 func TestReaderDeduplicatesConcurrentMisses(t *testing.T) {
 	release := testRelease("workspace", "release", "checksum")
 	repository := &artifactRepositoryStub{artifact: testArtifact(release, `{}`), delay: 30 * time.Millisecond}
@@ -21,7 +25,7 @@ func TestReaderDeduplicatesConcurrentMisses(t *testing.T) {
 		go func() {
 			defer wait.Done()
 			<-start
-			_, err := reader.Read(context.Background(), "export", release.WorkspaceID, release)
+			_, err := reader.Read(context.Background(), ports.ReleaseArtifactOperationExport, release.WorkspaceID, release)
 			errs <- err
 		}()
 	}
@@ -38,6 +42,8 @@ func TestReaderDeduplicatesConcurrentMisses(t *testing.T) {
 	}
 }
 
+// TestReaderKeepsSharedLoadAfterLeaderRequestCanceled отменяет request, который начал flight.
+// Другой waiter должен дождаться общего результата, а repository read не должен отмениться.
 func TestReaderKeepsSharedLoadAfterLeaderRequestCanceled(t *testing.T) {
 	release := testRelease("workspace", "release", "checksum")
 	block := make(chan struct{})
@@ -51,14 +57,14 @@ func TestReaderKeepsSharedLoadAfterLeaderRequestCanceled(t *testing.T) {
 	leaderCtx, cancelLeader := context.WithCancel(context.Background())
 	leaderResult := make(chan error, 1)
 	go func() {
-		_, err := reader.Read(leaderCtx, "export", release.WorkspaceID, release)
+		_, err := reader.Read(leaderCtx, ports.ReleaseArtifactOperationExport, release.WorkspaceID, release)
 		leaderResult <- err
 	}()
 	<-repository.started
 
 	waiterResult := make(chan error, 1)
 	go func() {
-		_, err := reader.Read(context.Background(), "export", release.WorkspaceID, release)
+		_, err := reader.Read(context.Background(), ports.ReleaseArtifactOperationExport, release.WorkspaceID, release)
 		waiterResult <- err
 	}()
 
@@ -75,13 +81,15 @@ func TestReaderKeepsSharedLoadAfterLeaderRequestCanceled(t *testing.T) {
 	}
 }
 
+// TestReaderSharedLoadTimeoutCleansFlightAndAllowsRetry моделирует зависший repository read.
+// После timeout flight должен удалиться из inflight, чтобы следующий Read смог начать новую загрузку.
 func TestReaderSharedLoadTimeoutCleansFlightAndAllowsRetry(t *testing.T) {
 	release := testRelease("workspace", "release", "checksum")
 	repository := &artifactRepositoryStub{artifact: testArtifact(release, `{}`), block: make(chan struct{})}
 	reader := newReader(t, repository, enabledCache(1024, 1024))
 	reader.loadTimeout = 10 * time.Millisecond
 
-	_, err := reader.Read(context.Background(), "export", release.WorkspaceID, release)
+	_, err := reader.Read(context.Background(), ports.ReleaseArtifactOperationExport, release.WorkspaceID, release)
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("timeout error = %v, want deadline exceeded", err)
 	}
@@ -96,7 +104,7 @@ func TestReaderSharedLoadTimeoutCleansFlightAndAllowsRetry(t *testing.T) {
 	repository.block = nil
 	repository.mu.Unlock()
 	reader.loadTimeout = time.Second
-	if _, err = reader.Read(context.Background(), "export", release.WorkspaceID, release); err != nil {
+	if _, err = reader.Read(context.Background(), ports.ReleaseArtifactOperationExport, release.WorkspaceID, release); err != nil {
 		t.Fatalf("retry error = %v", err)
 	}
 	if repository.callCount() != 2 {

@@ -46,7 +46,14 @@ linters:
 
     goconst:
       min-len: 2
-      min-occurrences: 2
+      # Two repetitions are common for JSON field names in request validation.
+      # A repeated domain value is useful to surface from the third occurrence.
+      min-occurrences: 3
+      # These are serialization and validation field names, not domain constants.
+      # Keep goconst focused on repeated collection names, roles, states and policies.
+      ignore-string-values:
+        - '^(active|collection|configuration|data|dataMode|deletedAt|description|displayName|event|field|folderIdentity|identity|managedBy|managedById|meta|state|version)$'
+      ignore-map-keys: true
 
     gocyclo:
       min-complexity: 20
@@ -55,12 +62,16 @@ linters:
       rules:
         main:
           allow:
-              - $gostd
-              - gitlab.com/me-group5892332/
-              - github.com/
-              - go.uber.org/
-              - go.opentelemetry.io/
-              - google.golang.org/
+            - $gostd
+            # Explicitly list this standard-library package because depguard
+            # does not expand $gostd for it in the currently used linter build.
+            - go/format
+            - gitlab.com/me-group5892332/
+            - github.com/
+            - go.opentelemetry.io/
+            - go.uber.org/
+            - go.yaml.in/yaml/v3
+            - google.golang.org/
           deny:
             - pkg: github.com/transport/errors
               desc: use stdlib errors

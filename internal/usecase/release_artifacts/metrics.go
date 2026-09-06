@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 )
@@ -40,11 +41,11 @@ func newCacheMetrics(meter metric.Meter) (cacheMetrics, error) {
 	return cacheMetrics{requests: requests, evictions: evictions, items: items, bytes: bytes, loadMs: loadMs}, nil
 }
 
-func (m cacheMetrics) recordRequest(ctx context.Context, operation, result string) {
+func (m cacheMetrics) recordRequest(ctx context.Context, operation ports.ReleaseArtifactOperation, result string) {
 	m.requests.Add(ctx, 1, metric.WithAttributes(m.attributes(operation, attribute.String("result", result))...))
 }
 
-func (m cacheMetrics) recordLoad(ctx context.Context, operation string, duration time.Duration) {
+func (m cacheMetrics) recordLoad(ctx context.Context, operation ports.ReleaseArtifactOperation, duration time.Duration) {
 	m.loadMs.Record(ctx, float64(duration.Microseconds())/1000, metric.WithAttributes(m.attributes(operation)...))
 }
 
@@ -57,7 +58,7 @@ func (m cacheMetrics) recordEviction(ctx context.Context) {
 	m.evictions.Add(ctx, 1)
 }
 
-func (m cacheMetrics) attributes(operation string, extra ...attribute.KeyValue) []attribute.KeyValue {
-	attributes := []attribute.KeyValue{attribute.String("operation", operation)}
+func (m cacheMetrics) attributes(operation ports.ReleaseArtifactOperation, extra ...attribute.KeyValue) []attribute.KeyValue {
+	attributes := []attribute.KeyValue{attribute.String("operation", string(operation))}
 	return append(attributes, extra...)
 }

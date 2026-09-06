@@ -49,7 +49,7 @@ func TestHandlerCreateValidationAndTypedContract(t *testing.T) {
 	app := fiber.New()
 	RegisterRoutes(app, NewHandler(stub, appvalidator.NewValidator()))
 
-	invalid := httptest.NewRequest(fiber.MethodPost, "/queries/", strings.NewReader(`{"identity":"q","displayName":"Q","source":"query Q","sourceVersion":1}`))
+	invalid := httptest.NewRequestWithContext(t.Context(), fiber.MethodPost, "/queries/", strings.NewReader(`{"identity":"q","displayName":"Q","source":"query Q","sourceVersion":1}`))
 	invalid.Header.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
 	response, err := app.Test(invalid)
 	if err != nil {
@@ -71,7 +71,7 @@ func TestHandlerCreateValidationAndTypedContract(t *testing.T) {
 		t.Fatalf("validation response = %#v", validation)
 	}
 
-	valid := httptest.NewRequest(fiber.MethodPost, "/queries/", strings.NewReader(`{"identity":"q","displayName":"Q","source":"query Q","sourceVersion":2}`))
+	valid := httptest.NewRequestWithContext(t.Context(), fiber.MethodPost, "/queries/", strings.NewReader(`{"identity":"q","displayName":"Q","source":"query Q","sourceVersion":2}`))
 	valid.Header.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
 	response, err = app.Test(valid)
 	if err != nil {
@@ -90,7 +90,7 @@ func TestHandlerPatchRequiresAndPassesIfMatch(t *testing.T) {
 	RegisterRoutes(app, NewHandler(stub, appvalidator.NewValidator()))
 	body := `{"source":"updated","sourceVersion":2}`
 
-	missing := httptest.NewRequest(fiber.MethodPatch, "/queries/q", strings.NewReader(body))
+	missing := httptest.NewRequestWithContext(t.Context(), fiber.MethodPatch, "/queries/q", strings.NewReader(body))
 	missing.Header.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
 	response, err := app.Test(missing)
 	if err != nil {
@@ -100,7 +100,7 @@ func TestHandlerPatchRequiresAndPassesIfMatch(t *testing.T) {
 		t.Fatalf("missing status = %d, calls = %d", response.StatusCode, stub.patchCalls)
 	}
 
-	valid := httptest.NewRequest(fiber.MethodPatch, "/queries/q", strings.NewReader(body))
+	valid := httptest.NewRequestWithContext(t.Context(), fiber.MethodPatch, "/queries/q", strings.NewReader(body))
 	valid.Header.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
 	valid.Header.Set(fiber.HeaderIfMatch, `"1"`)
 	response, err = app.Test(valid)

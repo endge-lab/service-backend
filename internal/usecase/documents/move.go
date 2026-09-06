@@ -68,7 +68,7 @@ func (s *Lifecycle) MoveDocuments(ctx context.Context, input MoveDocumentsInput)
 		if err = validateCollection(item.Collection); err != nil {
 			return result, err
 		}
-		if item.Collection == "folders" {
+		if item.Collection == entities.CollectionFolders {
 			return result, domainerrors.InvalidInput("folder_move_unsupported", "Folders must be moved through the folder lifecycle")
 		}
 		if err = validateIdentity(item.Identity); err != nil {

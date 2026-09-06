@@ -9,7 +9,10 @@ import (
 	"time"
 
 	"github.com/endge-lab/service-backend/internal/auth"
+	"github.com/endge-lab/service-backend/internal/config"
+	platformencryption "github.com/endge-lab/service-backend/internal/platform/encryption"
 	"github.com/endge-lab/service-backend/test/support"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // TestAuthSessionReadDoesNotAcquireRefreshLock проверяет, что обычная проверка
@@ -17,7 +20,7 @@ import (
 func TestAuthSessionReadDoesNotAcquireRefreshLock(t *testing.T) {
 	database := postgresSuite.NewDatabase(t)
 	cfg := support.DevConfig()
-	manager, err := auth.NewSessionManager(cfg, database.Pool, nil, nil)
+	manager, err := newSessionManager(cfg, database.Pool)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +59,7 @@ func TestAuthSessionReadDoesNotAcquireRefreshLock(t *testing.T) {
 // очистки просроченных login transactions и browser sessions.
 func TestAuthSessionCleanupRemovesOnlyExpiredState(t *testing.T) {
 	database := postgresSuite.NewDatabase(t)
-	manager, err := auth.NewSessionManager(support.DevConfig(), database.Pool, nil, nil)
+	manager, err := newSessionManager(support.DevConfig(), database.Pool)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,4 +91,14 @@ func TestAuthSessionCleanupRemovesOnlyExpiredState(t *testing.T) {
 	if transactions != 1 || sessions != 1 {
 		t.Fatalf("cleanup оставил transactions=%d sessions=%d, ожидалось по одной активной записи", transactions, sessions)
 	}
+}
+
+func newSessionManager(cfg *config.Config, pool *pgxpool.Pool) (*auth.SessionManager, error) {
+	keyring, err := platformencryption.NewKeyring(platformencryption.Config{
+		Current: platformencryption.KeyConfig{ID: cfg.Encryption.KeyID, Key: cfg.Encryption.Key},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return auth.NewSessionManager(cfg, pool, nil, nil, keyring)
 }

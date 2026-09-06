@@ -11,17 +11,17 @@ import (
 
 // resolveFolder разрешает identity папки в её внутренний идентификатор.
 func (s *Lifecycle) resolveFolder(ctx context.Context, scope entities.WorkspaceAccess, kind string, input map[string]any) (*string, error) {
-	if kind == "configurations" {
+	if kind == entities.CollectionConfigurations {
 		return nil, nil
 	}
 	identity := stringField(input, "folderIdentity")
-	if kind == "folders" {
+	if kind == entities.CollectionFolders {
 		entityType := entities.FolderEntityType(stringField(input, "entityType"))
 		if entityType == "" {
 			return nil, domainerrors.InvalidInput("folder_entity_type_required", "entityType is required")
 		}
 		identity = stringField(input, "parentIdentity")
-		if identity == "" && !boolField(input, "isRoot") {
+		if identity == "" && !isRoot(input) {
 			identity = entities.RootFolderIdentity(entityType)
 		}
 		return s.documents.ResolveFolder(ctx, scope.Workspace.ID, identity, entityType)
@@ -34,15 +34,15 @@ func (s *Lifecycle) resolveFolder(ctx context.Context, scope entities.WorkspaceA
 
 // resolveDocumentFolder разрешает папку, указанную в документе.
 func (s *Lifecycle) resolveDocumentFolder(ctx context.Context, scope entities.WorkspaceAccess, document entities.Document) (*string, error) {
-	if document.Type == "configurations" {
+	if document.Type == entities.CollectionConfigurations {
 		return nil, nil
 	}
 	var data map[string]any
 	_ = json.Unmarshal(document.Data, &data)
-	if document.Type == "folders" {
+	if document.Type == entities.CollectionFolders {
 		entityType := entities.FolderEntityType(stringField(data, "entityType"))
 		parent := stringField(data, "parentIdentity")
-		if parent == "" && !boolField(data, "isRoot") {
+		if parent == "" && !isRoot(data) {
 			parent = entities.RootFolderIdentity(entityType)
 		}
 		return s.documents.ResolveFolder(ctx, scope.Workspace.ID, parent, entityType)
@@ -59,7 +59,7 @@ func (s *Lifecycle) resolveDocumentFolder(ctx context.Context, scope entities.Wo
 
 // normalizeFolderInput приводит тип папок к общей физической секции коллекции.
 func normalizeFolderInput(kind string, input map[string]any) {
-	if kind == "folders" {
+	if kind == entities.CollectionFolders {
 		if entityType := stringField(input, "entityType"); entityType != "" {
 			input["entityType"] = entities.FolderEntityType(entityType)
 		}
@@ -68,7 +68,7 @@ func normalizeFolderInput(kind string, input map[string]any) {
 
 // replaceStructuredRelations обновляет структурированные связи документа.
 func (s *Lifecycle) replaceStructuredRelations(ctx context.Context, document entities.Document) error {
-	if document.Type != "projects" {
+	if document.Type != entities.CollectionProjects {
 		return nil
 	}
 	var data map[string]any
@@ -115,5 +115,5 @@ func relationIdentities(value any) []string {
 func isSystemFolder(document entities.Document) bool {
 	var data map[string]any
 	_ = json.Unmarshal(document.Data, &data)
-	return boolField(data, "isRoot") || document.ManagedBy == "system"
+	return isRoot(data) || document.ManagedBy == entities.ManagedBySystem
 }

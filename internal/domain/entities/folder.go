@@ -1,5 +1,7 @@
 package entities
 
+const LegacyRootStreamsIdentity = "root-streams"
+
 // FolderEntityType возвращает физический тип папок для коллекции документов.
 func FolderEntityType(collection string) string {
 	if collection == "streams" {

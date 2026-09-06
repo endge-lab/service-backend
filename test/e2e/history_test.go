@@ -16,6 +16,7 @@ import (
 )
 
 // TestCommitReleaseBackupAndImportFlow проверяет переносимый snapshot и точки восстановления целиком через HTTP.
+// Для release export он также закрепляет ETag/304, cache headers, актуальность alias last и auth до conditional GET.
 func TestCommitReleaseBackupAndImportFlow(t *testing.T) {
 	database := postgresSuite.NewDatabase(t)
 	app := support.NewTestApp(t, database, support.DevConfig())
@@ -93,16 +94,60 @@ func TestCommitReleaseBackupAndImportFlow(t *testing.T) {
 
 	release := perform(t, app, http.MethodPost, "/api/v1/releases", map[string]any{"identity": "portable-release", "displayName": "Portable Release", "sourceCommitId": commitID}, headers)
 	assertStatus(t, release, fiber.StatusCreated)
+	firstRelease := decodeObject(t, release)
+	firstChecksum := stringField(t, firstRelease, "checksum")
 	releaseExport := perform(t, app, http.MethodGet, "/api/v1/releases/last/export", nil, headers)
 	assertStatus(t, releaseExport, fiber.StatusOK)
+	if got := releaseExport.Header.Get("ETag"); got != `"`+firstChecksum+`"` {
+		t.Fatalf("first release ETag=%q, want checksum ETag", got)
+	}
+	if got := releaseExport.Header.Get("Cache-Control"); got != "private, no-cache" {
+		t.Fatalf("Cache-Control=%q, want private, no-cache", got)
+	}
+	if got := releaseExport.Header.Get("Vary"); !strings.Contains(got, "X-Endge-Workspace") || !strings.Contains(got, "Authorization") || !strings.Contains(got, "Cookie") {
+		t.Fatalf("Vary=%q, want workspace and authentication headers", got)
+	}
 	releaseBundle := decodeObject(t, releaseExport)
 	assertPortableBundle(t, releaseBundle)
+
+	conditionalHeaders := cloneHeaders(headers)
+	conditionalHeaders["If-None-Match"] = `"` + firstChecksum + `"`
+	conditional := perform(t, app, http.MethodGet, "/api/v1/releases/portable-release/export", nil, conditionalHeaders)
+	assertStatus(t, conditional, fiber.StatusNotModified)
+	if body, err := io.ReadAll(conditional.Body); err != nil || len(body) != 0 {
+		conditional.Body.Close()
+		t.Fatalf("304 body=%q err=%v, want empty body", body, err)
+	}
+	conditional.Body.Close()
 
 	afterReleaseHeaders := cloneHeaders(headers)
 	afterReleaseHeaders["If-Match"] = `"3"`
 	afterRelease := perform(t, app, http.MethodPatch, "/api/v1/queries/portable-query", map[string]any{"source": "query { afterRelease }"}, afterReleaseHeaders)
 	assertStatus(t, afterRelease, fiber.StatusOK)
 	afterRelease.Body.Close()
+	secondCommit := perform(t, app, http.MethodPost, "/api/v1/commits", map[string]any{"message": "Portable update", "revisionPolicy": "preserve", "expectedHeadSequence": currentHeadSequence(t, app, headers)}, headers)
+	assertStatus(t, secondCommit, fiber.StatusCreated)
+	secondCommitID := stringField(t, decodeObject(t, secondCommit), "id")
+	secondReleaseResponse := perform(t, app, http.MethodPost, "/api/v1/releases", map[string]any{"identity": "portable-release-next", "displayName": "Portable Release Next", "sourceCommitId": secondCommitID}, headers)
+	assertStatus(t, secondReleaseResponse, fiber.StatusCreated)
+	secondRelease := decodeObject(t, secondReleaseResponse)
+	secondChecksum := stringField(t, secondRelease, "checksum")
+	if secondChecksum == firstChecksum {
+		t.Fatal("different release snapshots have the same checksum")
+	}
+	latestExport := perform(t, app, http.MethodGet, "/api/v1/releases/last/export", nil, headers)
+	assertStatus(t, latestExport, fiber.StatusOK)
+	if got := latestExport.Header.Get("ETag"); got != `"`+secondChecksum+`"` {
+		t.Fatalf("last ETag=%q, want second release checksum", got)
+	}
+	latestExport.Body.Close()
+
+	provider := support.NewIdentityProvider(t)
+	protectedApp := support.NewTestApp(t, database, support.OIDCConfig(provider))
+	unauthorizedHeaders := map[string]string{"X-Endge-Workspace": "default", "If-None-Match": `"` + secondChecksum + `"`}
+	unauthorized := perform(t, protectedApp, http.MethodGet, "/api/v1/releases/portable-release-next/export", nil, unauthorizedHeaders)
+	assertStatus(t, unauthorized, fiber.StatusUnauthorized)
+	unauthorized.Body.Close()
 
 	releaseRestorePlan := perform(t, app, http.MethodPost, "/api/v1/releases/portable-release/restore/plan", nil, headers)
 	assertStatus(t, releaseRestorePlan, fiber.StatusOK)

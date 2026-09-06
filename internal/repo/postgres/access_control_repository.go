@@ -125,7 +125,7 @@ func (r *EndgeRepository) ListAccessGrants(ctx context.Context, input ports.Acce
 
 func (r *EndgeRepository) UpsertAccessGrant(ctx context.Context, input ports.AccessGrantInput) (*entities.AccessGrant, bool, error) {
 	var existingID string
-	if input.ScopeType == "platform" {
+	if input.ScopeType == entities.AccessScopePlatform {
 		_ = r.executor(ctx).QueryRow(ctx, `SELECT id::text FROM access_grants WHERE scope_type='platform' AND user_id=$1`, input.UserID).Scan(&existingID)
 		created := existingID == ""
 		row := r.executor(ctx).QueryRow(ctx, `INSERT INTO access_grants(user_id,scope_type,role,created_by,updated_by)
@@ -159,7 +159,6 @@ func (r *EndgeRepository) UpsertAccessGrant(ctx context.Context, input ports.Acc
 		grant, err := r.GetAccessGrant(ctx, existingID)
 		return grant, created, err
 	}
-	return nil, false, fmt.Errorf("unsupported access scope %q", input.ScopeType)
 }
 
 func (r *EndgeRepository) DeleteAccessGrant(ctx context.Context, id string) error {

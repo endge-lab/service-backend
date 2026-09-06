@@ -31,10 +31,10 @@ func (s *Coordinator) RestoreRevision(ctx context.Context, kind, identity, id st
 	if existing.Revision != expected {
 		return nil, revisionConflict()
 	}
-	if kind == "folders" {
+	if kind == entities.CollectionFolders {
 		var folderData map[string]any
 		_ = json.Unmarshal(existing.Data, &folderData)
-		if boolValue(folderData["isRoot"]) || existing.ManagedBy == "system" {
+		if boolValue(folderData["isRoot"]) || existing.ManagedBy == entities.ManagedBySystem {
 			return nil, domainerrors.Conflict("system_folder_immutable", "Root and system folders cannot be restored from revisions")
 		}
 	}
@@ -52,7 +52,7 @@ func (s *Coordinator) RestoreRevision(ctx context.Context, kind, identity, id st
 	target.Revision = existing.Revision
 	target.UpdatedBy = entities.Actor{ID: current.User.ID}
 	folderID, err := s.resolveDocumentFolder(ctx, scope, target)
-	if err != nil && kind != "folders" && errors.Is(err, ports.ErrNotFound) {
+	if err != nil && kind != entities.CollectionFolders && errors.Is(err, ports.ErrNotFound) {
 		rootIdentity := entities.RootFolderIdentity(target.Type)
 		target.FolderIdentity = &rootIdentity
 		folderID, err = s.resolveDocumentFolder(ctx, scope, target)

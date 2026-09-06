@@ -2,6 +2,13 @@ package entities
 
 import "time"
 
+const (
+	AccessRoleAdmin       = "admin"
+	AccessScopePlatform   = "platform"
+	AccessScopeWorkspace  = "workspace"
+	AccessSelectionChosen = "selected"
+)
+
 type AccessGrantUser struct {
 	ID          string `json:"id"`
 	ProviderID  string `json:"providerId"`

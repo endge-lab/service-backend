@@ -73,17 +73,17 @@ func (c ConfiguratorAuthConfig) Validate(production bool) error {
 			return err
 		}
 	}
-	if c.Adapter == "dev" {
+	if c.Adapter == IdentityModeDev {
 		if production {
 			return fmt.Errorf("AUTH_LOGIN_ADAPTER=dev is forbidden in production")
 		}
 		return nil
 	}
-	if c.Adapter != "oidc" {
+	if c.Adapter != IdentityModeOIDC {
 		return fmt.Errorf("AUTH_LOGIN_ADAPTER must be oidc or dev")
 	}
 	if c.AuthorizationURL == "" || c.TokenURL == "" || c.ClientID == "" || c.RedirectURL == "" {
-		return fmt.Errorf("Configurator OIDC login configuration is incomplete")
+		return fmt.Errorf("configurator OIDC login configuration is incomplete")
 	}
 	for key, value := range map[string]string{
 		"AUTH_AUTHORIZATION_URL": c.AuthorizationURL,
@@ -104,10 +104,10 @@ func (c ConfiguratorAuthConfig) Validate(production bool) error {
 }
 
 func loginAdapterDefault(identityMode string) string {
-	if identityMode == "dev" {
-		return "dev"
+	if identityMode == IdentityModeDev {
+		return IdentityModeDev
 	}
-	return "oidc"
+	return IdentityModeOIDC
 }
 
 func validateAuthHTTPURL(key, value string, production, originOnly bool) error {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 )
 
 // PlanReleaseRestore строит предварительный план операции без изменения состояния.
@@ -17,7 +18,7 @@ func (s *Coordinator) PlanReleaseRestore(ctx context.Context, identity string) (
 	if !canAdmin(scope.Role) {
 		return nil, domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
 	}
-	bundle, err := s.releaseBundle(ctx, "restore_plan", scope.Workspace.ID, identity)
+	bundle, err := s.releaseBundle(ctx, ports.ReleaseArtifactOperationRestorePlan, scope.Workspace.ID, identity)
 	if err != nil {
 		return nil, err
 	}
@@ -30,14 +31,14 @@ func (s *Coordinator) RestoreRelease(ctx context.Context, identity string, expec
 	if err != nil {
 		return nil, err
 	}
-	bundle, err := s.releaseBundle(ctx, "restore", scope.Workspace.ID, identity)
+	bundle, err := s.releaseBundle(ctx, ports.ReleaseArtifactOperationRestore, scope.Workspace.ID, identity)
 	if err != nil {
 		return nil, err
 	}
 	return s.restoreBundle(ctx, *bundle, expected, "release_restore", "Restore release "+identity)
 }
 
-func (s *Coordinator) releaseBundle(ctx context.Context, operation, workspaceID, identity string) (*entities.PortableBundle, error) {
+func (s *Coordinator) releaseBundle(ctx context.Context, operation ports.ReleaseArtifactOperation, workspaceID, identity string) (*entities.PortableBundle, error) {
 	release, err := s.repository.GetReleaseMetadata(ctx, workspaceID, identity)
 	if err != nil {
 		return nil, mapNotFound(err)

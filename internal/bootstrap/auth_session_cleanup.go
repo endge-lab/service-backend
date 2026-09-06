@@ -19,7 +19,7 @@ func registerAuthSessionCleanup(lifecycle fx.Lifecycle, sessions *auth.SessionMa
 		OnStart: func(ctx context.Context) error {
 			interval := sessions.CleanupInterval()
 			if interval <= 0 {
-				return fmt.Errorf("Configurator auth cleanup interval must be positive")
+				return fmt.Errorf("configurator auth cleanup interval must be positive")
 			}
 			if err := sessions.Cleanup(ctx); err != nil {
 				return err

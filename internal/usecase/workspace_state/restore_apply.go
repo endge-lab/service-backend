@@ -2,7 +2,6 @@ package workspace_state
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
@@ -69,10 +68,6 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 		if expected != live.HeadSequence {
 			return domainerrors.Conflict("head_sequence_conflict", "Workspace changed after preview")
 		}
-		latest, e := s.repository.LatestCommit(txctx, live.ID)
-		if e != nil {
-			return e
-		}
 		scope.Workspace = *live
 
 		batch, e := s.repository.CreateMutationBatch(txctx, &scope.Workspace.ID, operation, current.User.ID)
@@ -103,7 +98,7 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 			if e != nil {
 				return e
 			}
-			currentState := map[string]any{"identity": live.Identity, "displayName": live.DisplayName, "description": live.Description, "dataMode": live.DataMode, "configuration": json.RawMessage(live.Configuration), "meta": json.RawMessage(live.Meta)}
+			currentState := map[string]any{"identity": live.Identity, "displayName": live.DisplayName, "description": live.Description, "dataMode": live.DataMode, "configuration": live.Configuration, "meta": live.Meta}
 			if checksum(mustJSON(currentState)) != checksum(mustJSON(workspacePatch)) {
 				updated, e := s.repository.UpdateWorkspace(txctx, live.Identity, workspacePatch, live.Revision, current.User.ID)
 				if e != nil {
@@ -148,7 +143,7 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 			for _, doc := range existing {
 				item, ok := targets[doc.Identity]
 				if !ok {
-					if kind == "folders" && doc.ManagedBy == "system" {
+					if kind == entities.CollectionFolders && doc.ManagedBy == entities.ManagedBySystem {
 						continue
 					}
 					if doc.DeletedAt == nil {
@@ -212,7 +207,7 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 				}
 			}
 		}
-		latest, e = s.repository.LatestCommit(txctx, scope.Workspace.ID)
+		latest, e := s.repository.LatestCommit(txctx, scope.Workspace.ID)
 		if e != nil {
 			return e
 		}
@@ -245,5 +240,5 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 
 // restoreOrder задаёт порядок восстановления коллекций.
 func restoreOrder() []string {
-	return []string{"folders", "environments", "navigations", "auth-profiles", "stores", "projects", "vocabs", "updates", "tenants", "types", "configurations", "queries", "data-views", "compositions", "streams", "mocks", "components", "actions", "filters", "converters", "computations", "i18n-bundles", "styles"}
+	return []string{entities.CollectionFolders, entities.CollectionEnvironments, entities.CollectionNavigations, entities.CollectionAuthProfiles, entities.CollectionStores, entities.CollectionProjects, entities.CollectionVocabs, entities.CollectionUpdates, entities.CollectionTenants, entities.CollectionTypes, entities.CollectionConfigurations, entities.CollectionQueries, entities.CollectionDataViews, entities.CollectionCompositions, entities.CollectionStreams, entities.CollectionMocks, entities.CollectionComponents, entities.CollectionActions, entities.CollectionFilters, entities.CollectionConverters, entities.CollectionComputations, entities.CollectionI18nBundles, entities.CollectionStyles}
 }

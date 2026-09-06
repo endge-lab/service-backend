@@ -67,7 +67,7 @@ func (u *UseCase) Adapters(ctx context.Context) ([]string, error) {
 	if _, err := shared.Actor(ctx); err != nil {
 		return nil, err
 	}
-	return []string{"anthropic", "ollama"}, nil
+	return []string{entities.AIAdapterAnthropic, entities.AIAdapterOllama}, nil
 }
 
 func (u *UseCase) ListConnections(ctx context.Context) ([]entities.AIProviderConnection, error) {
@@ -108,7 +108,7 @@ func (u *UseCase) CreateConnection(ctx context.Context, name, adapter, baseURL, 
 	if err != nil {
 		return nil, err
 	}
-	if adapter != "anthropic" && adapter != "ollama" {
+	if adapter != entities.AIAdapterAnthropic && adapter != entities.AIAdapterOllama {
 		return nil, domainerrors.InvalidInput("ai.adapter_invalid", "adapter must be anthropic or ollama")
 	}
 	var encrypted []byte
@@ -159,7 +159,7 @@ func (u *UseCase) CreateConnectionWithModel(ctx context.Context, input CreateCon
 	if err != nil {
 		return nil, err
 	}
-	if adapter != "anthropic" && adapter != "ollama" {
+	if adapter != entities.AIAdapterAnthropic && adapter != entities.AIAdapterOllama {
 		return nil, domainerrors.InvalidInput("ai.adapter_invalid", "adapter must be anthropic or ollama")
 	}
 	providerModelID, err := normalizeName(input.ProviderModelID, "provider model id")
@@ -545,7 +545,7 @@ func normalizeName(value, field string) (string, error) {
 
 func normalizeBaseURL(adapter, value string) (string, error) {
 	value = strings.TrimRight(strings.TrimSpace(value), "/")
-	if value == "" && adapter == "anthropic" {
+	if value == "" && adapter == entities.AIAdapterAnthropic {
 		return "", nil
 	}
 	parsed, err := url.Parse(value)

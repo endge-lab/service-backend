@@ -16,7 +16,7 @@ func (s *UseCase) List(ctx context.Context, kind string, limit, offset int) ([]e
 	if err != nil {
 		return nil, err
 	}
-	if kind != "" && !slices.Contains([]string{"manual", "pre_import"}, kind) {
+	if kind != "" && !slices.Contains([]string{entities.SnapshotBackupKindManual, "pre_import"}, kind) {
 		return nil, domainerrors.InvalidInput("backup_kind_invalid", "kind must be manual or pre_import")
 	}
 	return s.backups.ListSnapshotBackups(ctx, scope.Workspace.ID, kind, false, limit, offset)
@@ -28,7 +28,7 @@ func (s *UseCase) Archive(ctx context.Context, kind string) ([]entities.Snapshot
 	if err != nil {
 		return nil, err
 	}
-	if kind != "" && !slices.Contains([]string{"manual", "pre_import"}, kind) {
+	if kind != "" && !slices.Contains([]string{entities.SnapshotBackupKindManual, "pre_import"}, kind) {
 		return nil, domainerrors.InvalidInput("backup_kind_invalid", "kind must be manual or pre_import")
 	}
 	return s.backups.ListSnapshotBackups(ctx, scope.Workspace.ID, kind, true, 0, 0)
@@ -40,7 +40,7 @@ func (s *UseCase) Get(ctx context.Context, id string, includeData bool) (*entiti
 	if err != nil {
 		return nil, err
 	}
-	if id != "last" {
+	if id != entities.LatestIdentity {
 		if _, parseErr := uuid.Parse(id); parseErr != nil {
 			return nil, domainerrors.InvalidInput("backup_id_invalid", "id must be UUID or last")
 		}

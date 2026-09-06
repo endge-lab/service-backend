@@ -13,7 +13,6 @@ type ReleaseRepository interface {
 	ListReleases(context.Context, string) ([]entities.Release, error)
 	GetReleaseMetadata(context.Context, string, string) (*entities.Release, error)
 	GetLatestReleaseMetadata(context.Context, string) (*entities.Release, error)
-	GetReleaseArtifact(context.Context, string, string) (*entities.ReleaseArtifact, error)
 }
 
 // PortableRepository задаёт порт хранения переносимых пакетов для use case-слоя.

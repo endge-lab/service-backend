@@ -84,8 +84,7 @@ func (r *Keyring) Decrypt(value, additionalData []byte) (string, error) {
 		if keyIDLength == 0 || len(value) < headerLength {
 			return "", fmt.Errorf("encrypted value is invalid")
 		}
-		keyID := string(value[len(ciphertextMagic)+1 : headerLength])
-		aead, exists := r.keys[keyID]
+		aead, exists := r.keys[string(value[len(ciphertextMagic)+1:headerLength])]
 		if !exists || len(value) < headerLength+aead.NonceSize() {
 			return "", fmt.Errorf("encrypted value is invalid")
 		}

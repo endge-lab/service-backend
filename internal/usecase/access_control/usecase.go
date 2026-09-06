@@ -102,7 +102,7 @@ func (s *UseCase) ResolveCurrentActor(ctx context.Context, input ports.UpsertCur
 				return countErr
 			}
 			if legacyPlatformAdmin || (!adminsExist && humanCount == 1) {
-				if _, _, err = s.repository.UpsertAccessGrant(txctx, ports.AccessGrantInput{UserID: user.ID, ScopeType: "platform", Role: "admin", ActorID: user.ID}); err != nil {
+				if _, _, err = s.repository.UpsertAccessGrant(txctx, ports.AccessGrantInput{UserID: user.ID, ScopeType: entities.AccessScopePlatform, Role: entities.AccessRoleAdmin, ActorID: user.ID}); err != nil {
 					return err
 				}
 				platform = true
@@ -134,7 +134,7 @@ func (s *UseCase) SearchUsers(ctx context.Context, query, workspaceIdentity, cur
 
 func (s *UseCase) List(ctx context.Context, input ListInput) (Page[entities.AccessGrant], error) {
 	input.ScopeType = strings.TrimSpace(input.ScopeType)
-	if input.ScopeType != "platform" && input.ScopeType != "workspace" {
+	if input.ScopeType != entities.AccessScopePlatform && input.ScopeType != entities.AccessScopeWorkspace {
 		return Page[entities.AccessGrant]{}, domainerrors.InvalidInput("access_scope_invalid", "scopeType must be platform or workspace")
 	}
 	actor, err := shared.Actor(ctx)
@@ -143,7 +143,8 @@ func (s *UseCase) List(ctx context.Context, input ListInput) (Page[entities.Acce
 	}
 	var workspaceID *string
 	var userID *string
-	if input.ScopeType == "platform" {
+	switch {
+	case input.ScopeType == entities.AccessScopePlatform:
 		if !actor.PlatformAdmin {
 			return Page[entities.AccessGrant]{}, platformAdminRequired()
 		}
@@ -154,7 +155,7 @@ func (s *UseCase) List(ctx context.Context, input ListInput) (Page[entities.Acce
 			value := strings.TrimSpace(input.UserID)
 			userID = &value
 		}
-	} else if strings.TrimSpace(input.UserID) != "" {
+	case strings.TrimSpace(input.UserID) != "":
 		if !actor.PlatformAdmin {
 			return Page[entities.AccessGrant]{}, platformAdminRequired()
 		}
@@ -163,7 +164,7 @@ func (s *UseCase) List(ctx context.Context, input ListInput) (Page[entities.Acce
 		}
 		value := strings.TrimSpace(input.UserID)
 		userID = &value
-	} else {
+	default:
 		workspace, authErr := s.requireWorkspaceAdmin(ctx, input.WorkspaceIdentity)
 		if authErr != nil {
 			return Page[entities.AccessGrant]{}, authErr
@@ -191,14 +192,15 @@ func (s *UseCase) Put(ctx context.Context, input PutInput) (*entities.AccessGran
 	}
 	input.ScopeType, input.Role = strings.TrimSpace(input.ScopeType), strings.TrimSpace(input.Role)
 	grant := ports.AccessGrantInput{UserID: input.UserID, ScopeType: input.ScopeType, Role: input.Role, ActorID: actor.User.ID}
-	if input.ScopeType == "platform" {
+	switch input.ScopeType {
+	case entities.AccessScopePlatform:
 		if !actor.PlatformAdmin {
 			return nil, platformAdminRequired()
 		}
 		if input.Role != "admin" {
 			return nil, domainerrors.InvalidInput("platform_role_invalid", "platform scope only accepts admin")
 		}
-	} else if input.ScopeType == "workspace" {
+	case "workspace":
 		if !validWorkspaceRole(input.Role) {
 			return nil, domainerrors.InvalidInput("workspace_role_invalid", "role must be viewer, editor or admin")
 		}
@@ -207,7 +209,7 @@ func (s *UseCase) Put(ctx context.Context, input PutInput) (*entities.AccessGran
 			return nil, authErr
 		}
 		grant.WorkspaceID = &workspace.ID
-	} else {
+	default:
 		return nil, domainerrors.InvalidInput("access_scope_invalid", "scopeType must be platform or workspace")
 	}
 	var value *entities.AccessGrant
@@ -235,7 +237,7 @@ func (s *UseCase) Delete(ctx context.Context, id string) error {
 		if getErr != nil {
 			return mapGrantNotFound(getErr)
 		}
-		if grant.ScopeType == "platform" {
+		if grant.ScopeType == entities.AccessScopePlatform {
 			if !actor.PlatformAdmin {
 				return platformAdminRequired()
 			}
@@ -280,7 +282,7 @@ func (s *UseCase) Bulk(ctx context.Context, input BulkInput) (BulkResult, error)
 		return BulkResult{}, err
 	}
 	selected := map[string]bool{}
-	if input.SelectionType == "selected" {
+	if input.SelectionType == entities.AccessSelectionChosen {
 		for _, identity := range input.WorkspaceIdentities {
 			selected[strings.TrimSpace(identity)] = true
 		}
@@ -294,12 +296,12 @@ func (s *UseCase) Bulk(ctx context.Context, input BulkInput) (BulkResult, error)
 	seen := map[string]bool{}
 	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
 		for _, workspace := range workspaces {
-			if !workspace.Active || (input.SelectionType == "selected" && !selected[workspace.Identity]) {
+			if !workspace.Active || (input.SelectionType == entities.AccessSelectionChosen && !selected[workspace.Identity]) {
 				continue
 			}
 			seen[workspace.Identity] = true
 			workspaceID := workspace.ID
-			_, created, putErr := s.repository.UpsertAccessGrant(txctx, ports.AccessGrantInput{UserID: input.UserID, ScopeType: "workspace", WorkspaceID: &workspaceID, Role: input.Role, ActorID: actor.User.ID})
+			_, created, putErr := s.repository.UpsertAccessGrant(txctx, ports.AccessGrantInput{UserID: input.UserID, ScopeType: entities.AccessScopeWorkspace, WorkspaceID: &workspaceID, Role: input.Role, ActorID: actor.User.ID})
 			if putErr != nil {
 				return mapTargetNotFound(putErr)
 			}
@@ -310,7 +312,7 @@ func (s *UseCase) Bulk(ctx context.Context, input BulkInput) (BulkResult, error)
 				result.Updated++
 			}
 		}
-		if input.SelectionType == "selected" && len(seen) != len(selected) {
+		if input.SelectionType == entities.AccessSelectionChosen && len(seen) != len(selected) {
 			return domainerrors.NotFound("workspace_not_found", "One or more selected Workspaces were not found or are inactive")
 		}
 		return nil
@@ -350,14 +352,14 @@ func (s *UseCase) requireWorkspaceAdmin(ctx context.Context, identity string) (*
 	if err != nil {
 		return nil, err
 	}
-	if role != "admin" && role != "platform_admin" {
+	if role != entities.AccessRoleAdmin && role != "platform_admin" {
 		return nil, domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
 	}
 	return workspace, nil
 }
 
 func validWorkspaceRole(role string) bool {
-	return role == "viewer" || role == "editor" || role == "admin"
+	return role == "viewer" || role == "editor" || role == entities.AccessRoleAdmin
 }
 func platformAdminRequired() error {
 	return domainerrors.Forbidden("platform_admin_required", "Platform Admin role is required")

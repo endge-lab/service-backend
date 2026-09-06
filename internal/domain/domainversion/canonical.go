@@ -44,8 +44,8 @@ func CanonicalizeInPlace(bundle *entities.PortableBundle) CanonicalizationReport
 	if bundle.Documents == nil {
 		bundle.Documents = map[string][]map[string]any{}
 	}
-	if _, exists := bundle.Documents["configurations"]; !exists {
-		bundle.Documents["configurations"] = []map[string]any{}
+	if _, exists := bundle.Documents[entities.CollectionConfigurations]; !exists {
+		bundle.Documents[entities.CollectionConfigurations] = []map[string]any{}
 	}
 	if bundle.Kind == "" {
 		bundle.Kind = "workspace-snapshot"
@@ -62,10 +62,10 @@ func CanonicalizeInPlace(bundle *entities.PortableBundle) CanonicalizationReport
 	}
 
 	if legacy, exists := bundle.Documents["componentSFCs"]; exists {
-		bundle.Documents["components"] = append(bundle.Documents["components"], legacy...)
+		bundle.Documents[entities.CollectionComponents] = append(bundle.Documents[entities.CollectionComponents], legacy...)
 		delete(bundle.Documents, "componentSFCs")
 	}
-	for _, action := range bundle.Documents["actions"] {
+	for _, action := range bundle.Documents[entities.CollectionActions] {
 		if strings.TrimSpace(stringValue(action, "source")) != "" {
 			continue
 		}
@@ -76,22 +76,22 @@ func CanonicalizeInPlace(bundle *entities.PortableBundle) CanonicalizationReport
 		delete(action, "output")
 		report.MigratedLegacyActions++
 	}
-	for _, vocab := range bundle.Documents["vocabs"] {
+	for _, vocab := range bundle.Documents[entities.CollectionVocabs] {
 		if normalizeLegacyVocabSource(vocab) {
 			report.MigratedLegacyVocabs++
 		}
 	}
-	for _, folder := range bundle.Documents["folders"] {
+	for _, folder := range bundle.Documents[entities.CollectionFolders] {
 		if entityType := stringValue(folder, "entityType"); entityType != "" {
 			folder["entityType"] = entities.FolderEntityType(entityType)
 		}
-		if stringValue(folder, "parentIdentity") == "root-streams" {
-			folder["parentIdentity"] = entities.RootFolderIdentity("streams")
+		if stringValue(folder, "parentIdentity") == entities.LegacyRootStreamsIdentity {
+			folder["parentIdentity"] = entities.RootFolderIdentity(entities.CollectionStreams)
 		}
 	}
 
 	folderTypes := map[string]string{}
-	for _, folder := range bundle.Documents["folders"] {
+	for _, folder := range bundle.Documents[entities.CollectionFolders] {
 		folderTypes[stringValue(folder, "identity")] = stringValue(folder, "entityType")
 	}
 	for kind, items := range bundle.Documents {
@@ -102,9 +102,9 @@ func CanonicalizeInPlace(bundle *entities.PortableBundle) CanonicalizationReport
 			if kind == "queries" && integerValue(item, "sourceVersion") == 1 {
 				item["sourceVersion"] = float64(2)
 			}
-			if kind == "folders" {
+			if kind == entities.CollectionFolders {
 				switch stringValue(item, "identity") {
-				case "soft-deleted", "no-folder", "root-bindings", "root-streams":
+				case "soft-deleted", "no-folder", "root-bindings", entities.LegacyRootStreamsIdentity:
 					report.IgnoredLegacyFolders++
 					continue
 				}
@@ -179,7 +179,7 @@ func isSourceEnvironmentName(value string) bool {
 		return false
 	}
 	for index, char := range value {
-		if !(char == '_' || char >= 'A' && char <= 'Z' || char >= 'a' && char <= 'z' || index > 0 && char >= '0' && char <= '9') {
+		if char != '_' && (char < 'A' || char > 'Z') && (char < 'a' || char > 'z') && (index == 0 || char < '0' || char > '9') {
 			return false
 		}
 	}

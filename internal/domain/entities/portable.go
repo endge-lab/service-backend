@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+const (
+	SnapshotBackupKindManual = "manual"
+	LatestIdentity           = "last"
+)
+
 type PortableBundle struct {
 	Kind                  string                      `json:"kind"`
 	SchemaVersion         int                         `json:"schemaVersion"`

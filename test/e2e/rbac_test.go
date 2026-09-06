@@ -122,15 +122,16 @@ func TestSensitiveWorkspaceMutationsRequireAdmin(t *testing.T) {
 		{name: "editor", slug: "editor", headers: editorWorkspace, status: fiber.StatusForbidden},
 	}
 
-	authProfilePayload := func(identity, passwordRef string) map[string]any {
+	authProfilePayload := func(identity string) map[string]any {
 		return map[string]any{
-			"identity": identity, "displayName": identity, "adapterId": "oidc", "config": map[string]any{},
-			"credentialRefs": map[string]any{"password": passwordRef}, "persist": "memory",
+			"identity": identity, "displayName": identity, "adapterId": "oidc",
+			"config":      map[string]any{"issuer": "https://issuer.example", "clientId": "endge-test", "scopes": []any{"openid"}},
+			"credentials": map[string]string{}, "session": map[string]any{"storage": "memory", "persistRefreshToken": false},
 		}
 	}
 
 	t.Run("AuthProfile reads follow workspace read access", func(t *testing.T) {
-		created := perform(t, app, http.MethodPost, "/api/v1/auth-profiles", authProfilePayload("security-readable", "PASSWORD_READABLE"), adminWorkspace)
+		created := perform(t, app, http.MethodPost, "/api/v1/auth-profiles", authProfilePayload("security-readable"), adminWorkspace)
 		assertStatus(t, created, fiber.StatusCreated)
 		created.Body.Close()
 
@@ -157,13 +158,13 @@ func TestSensitiveWorkspaceMutationsRequireAdmin(t *testing.T) {
 	t.Run("AuthProfile mutations deny every role below admin", func(t *testing.T) {
 		for _, role := range denied {
 			t.Run("create "+role.name, func(t *testing.T) {
-				response := perform(t, app, http.MethodPost, "/api/v1/auth-profiles", authProfilePayload("denied-create-"+role.slug, "PASSWORD_DENIED"), role.headers)
+				response := perform(t, app, http.MethodPost, "/api/v1/auth-profiles", authProfilePayload("denied-create-"+role.slug), role.headers)
 				assertStatus(t, response, role.status)
 				response.Body.Close()
 			})
 		}
 
-		created := perform(t, app, http.MethodPost, "/api/v1/auth-profiles", authProfilePayload("security-protected", "PASSWORD_V1"), adminWorkspace)
+		created := perform(t, app, http.MethodPost, "/api/v1/auth-profiles", authProfilePayload("security-protected"), adminWorkspace)
 		assertStatus(t, created, fiber.StatusCreated)
 		etag := created.Header.Get("ETag")
 		created.Body.Close()
@@ -172,7 +173,7 @@ func TestSensitiveWorkspaceMutationsRequireAdmin(t *testing.T) {
 			t.Run("patch "+role.name, func(t *testing.T) {
 				headers := cloneHeaders(role.headers)
 				headers["If-Match"] = etag
-				response := perform(t, app, http.MethodPatch, "/api/v1/auth-profiles/security-protected", map[string]any{"credentialRefs": map[string]any{"password": "PASSWORD_V2"}}, headers)
+				response := perform(t, app, http.MethodPatch, "/api/v1/auth-profiles/security-protected", map[string]any{"displayName": "Security protected updated"}, headers)
 				assertStatus(t, response, role.status)
 				response.Body.Close()
 			})
@@ -202,14 +203,14 @@ func TestSensitiveWorkspaceMutationsRequireAdmin(t *testing.T) {
 	} {
 		t.Run("AuthProfile lifecycle "+privileged.name, func(t *testing.T) {
 			identity := "security-lifecycle-" + privileged.name
-			created := perform(t, app, http.MethodPost, "/api/v1/auth-profiles", authProfilePayload(identity, "PASSWORD_V1"), privileged.headers)
+			created := perform(t, app, http.MethodPost, "/api/v1/auth-profiles", authProfilePayload(identity), privileged.headers)
 			assertStatus(t, created, fiber.StatusCreated)
 			etag := created.Header.Get("ETag")
 			created.Body.Close()
 
 			patchHeaders := cloneHeaders(privileged.headers)
 			patchHeaders["If-Match"] = etag
-			patched := perform(t, app, http.MethodPatch, "/api/v1/auth-profiles/"+identity, map[string]any{"credentialRefs": map[string]any{"password": "PASSWORD_V2"}}, patchHeaders)
+			patched := perform(t, app, http.MethodPatch, "/api/v1/auth-profiles/"+identity, map[string]any{"displayName": identity + " updated"}, patchHeaders)
 			assertStatus(t, patched, fiber.StatusOK)
 			etag = patched.Header.Get("ETag")
 			patched.Body.Close()
@@ -229,11 +230,11 @@ func TestSensitiveWorkspaceMutationsRequireAdmin(t *testing.T) {
 		})
 
 		t.Run("raw password rejected for "+privileged.name, func(t *testing.T) {
-			payload := authProfilePayload("raw-password-"+privileged.name, "PASSWORD_REF")
-			payload["config"] = map[string]any{"password": "raw-password"}
+			payload := authProfilePayload("raw-password-" + privileged.name)
+			payload["config"] = map[string]any{"issuer": "https://issuer.example", "clientId": "endge-test", "scopes": []any{"openid"}, "password": "raw-password"}
 			response := perform(t, app, http.MethodPost, "/api/v1/auth-profiles", payload, privileged.headers)
 			assertStatus(t, response, fiber.StatusBadRequest)
-			if code := stringField(t, decodeObject(t, response), "code"); code != "secret_field_forbidden" {
+			if code := stringField(t, decodeObject(t, response), "code"); code != "auth_profile_field_unsupported" {
 				t.Fatalf("raw password error code=%q", code)
 			}
 		})

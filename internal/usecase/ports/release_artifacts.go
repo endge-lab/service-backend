@@ -13,8 +13,18 @@ type ReleaseArtifactRepository interface {
 	GetReleaseArtifact(context.Context, string, string) (*entities.ReleaseArtifact, error)
 }
 
+// ReleaseArtifactOperation ограничивает low-cardinality label метрик cache.
+// Operation не должна формироваться из release identity, UUID или user input.
+type ReleaseArtifactOperation string
+
+const (
+	ReleaseArtifactOperationExport      ReleaseArtifactOperation = "export"
+	ReleaseArtifactOperationRestorePlan ReleaseArtifactOperation = "restore_plan"
+	ReleaseArtifactOperationRestore     ReleaseArtifactOperation = "restore"
+)
+
 // ReleaseArtifactReader возвращает artifact через единый bounded in-memory cache.
 // Проверка доступа к workspace остаётся обязанностью вызывающего use case.
 type ReleaseArtifactReader interface {
-	Read(context.Context, string, string, entities.Release) (*entities.ReleaseArtifact, error)
+	Read(context.Context, ReleaseArtifactOperation, string, entities.Release) (*entities.ReleaseArtifact, error)
 }

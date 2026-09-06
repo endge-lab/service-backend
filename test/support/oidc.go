@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -18,8 +19,11 @@ import (
 
 // IdentityProvider — локальный OIDC/JWKS server без внешней сети и credentials.
 type IdentityProvider struct {
-	key    *rsa.PrivateKey
-	server *httptest.Server
+	key         *rsa.PrivateKey
+	server      *httptest.Server
+	mu          sync.Mutex
+	codes       map[string]string
+	logoutCalls int
 }
 
 // TokenInput задаёт identity и роль пользователя в E2E-сценарии.
@@ -38,7 +42,7 @@ func NewIdentityProvider(t testing.TB) *IdentityProvider {
 	if err != nil {
 		t.Fatalf("создать тестовый RSA key: %v", err)
 	}
-	provider := &IdentityProvider{key: key}
+	provider := &IdentityProvider{key: key, codes: make(map[string]string)}
 	provider.server = httptest.NewServer(http.HandlerFunc(provider.serveHTTP))
 	t.Cleanup(provider.server.Close)
 	return provider
@@ -49,6 +53,28 @@ func (p *IdentityProvider) URL() string { return p.server.URL }
 
 // Token подписывает OIDC bearer token для тестового пользователя.
 func (p *IdentityProvider) Token(t testing.TB, input TokenInput) string {
+	return p.token(t, input, "")
+}
+
+// AuthorizationCode creates a one-time OIDC code bound to the supplied nonce.
+// The test browser passes it to /auth/callback; /token consumes it exactly once.
+func (p *IdentityProvider) AuthorizationCode(t testing.TB, input TokenInput, nonce string) string {
+	t.Helper()
+	code := randomValue(t, 24)
+	p.mu.Lock()
+	p.codes[code] = p.token(t, input, nonce)
+	p.mu.Unlock()
+	return code
+}
+
+// LogoutCalls returns the number of provider logout requests received.
+func (p *IdentityProvider) LogoutCalls() int {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.logoutCalls
+}
+
+func (p *IdentityProvider) token(t testing.TB, input TokenInput, nonce string) string {
 	t.Helper()
 	if input.ExpiresAt.IsZero() {
 		input.ExpiresAt = time.Now().Add(time.Hour)
@@ -56,7 +82,7 @@ func (p *IdentityProvider) Token(t testing.TB, input TokenInput) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"iss": p.URL(), "aud": []string{"endge-configurator"}, "sub": input.Subject,
 		"exp": input.ExpiresAt.Unix(), "nbf": time.Now().Add(-time.Minute).Unix(),
-		"preferred_username": input.Username, "name": input.DisplayName, "groups": input.Groups,
+		"preferred_username": input.Username, "name": input.DisplayName, "groups": input.Groups, "nonce": nonce,
 	})
 	token.Header["kid"] = "endge-test-key"
 	raw, err := token.SignedString(p.key)
@@ -64,6 +90,15 @@ func (p *IdentityProvider) Token(t testing.TB, input TokenInput) string {
 		t.Fatalf("подписать тестовый JWT: %v", err)
 	}
 	return raw
+}
+
+func randomValue(t testing.TB, size int) string {
+	t.Helper()
+	buffer := make([]byte, size)
+	if _, err := rand.Read(buffer); err != nil {
+		t.Fatalf("создать тестовое OIDC значение: %v", err)
+	}
+	return base64.RawURLEncoding.EncodeToString(buffer)
 }
 
 func (p *IdentityProvider) serveHTTP(response http.ResponseWriter, request *http.Request) {
@@ -75,6 +110,33 @@ func (p *IdentityProvider) serveHTTP(response http.ResponseWriter, request *http
 			"n": base64.RawURLEncoding.EncodeToString(p.key.N.Bytes()),
 			"e": base64.RawURLEncoding.EncodeToString(big.NewInt(int64(p.key.E)).Bytes()),
 		}}})
+	case "/token":
+		if request.Method != http.MethodPost {
+			http.Error(response, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		code := request.FormValue("code")
+		p.mu.Lock()
+		token, exists := p.codes[code]
+		delete(p.codes, code)
+		p.mu.Unlock()
+		if !exists {
+			http.Error(response, "invalid authorization code", http.StatusUnauthorized)
+			return
+		}
+		response.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(response).Encode(map[string]any{
+			"access_token": token, "id_token": token, "refresh_token": "test-refresh-token", "expires_in": 3600,
+		})
+	case "/logout":
+		if request.Method != http.MethodPost {
+			http.Error(response, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		p.mu.Lock()
+		p.logoutCalls++
+		p.mu.Unlock()
+		response.WriteHeader(http.StatusNoContent)
 	default:
 		http.NotFound(response, request)
 	}

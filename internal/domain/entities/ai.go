@@ -3,6 +3,8 @@ package entities
 import "time"
 
 const (
+	AIAdapterAnthropic  = "anthropic"
+	AIAdapterOllama     = "ollama"
 	AIVisibilityPublic  = "public"
 	AIVisibilityPrivate = "private"
 )

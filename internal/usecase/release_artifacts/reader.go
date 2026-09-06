@@ -44,7 +44,7 @@ func NewReader(repository ports.ReleaseArtifactRepository, cacheConfig config.Re
 
 // Read получает artifact конкретного immutable release. Checksum входит в key:
 // если целостность release когда-либо будет нарушена, старые bytes не выдадутся.
-func (r *Reader) Read(ctx context.Context, operation, workspaceID string, release entities.Release) (*entities.ReleaseArtifact, error) {
+func (r *Reader) Read(ctx context.Context, operation ports.ReleaseArtifactOperation, workspaceID string, release entities.Release) (*entities.ReleaseArtifact, error) {
 	key := artifactKey{workspaceID: workspaceID, releaseID: release.ID, checksum: release.Checksum}
 	if !r.config.Enabled {
 		return r.loadWithoutCache(ctx, operation, workspaceID, release)
@@ -69,7 +69,7 @@ func (r *Reader) Read(ctx context.Context, operation, workspaceID string, releas
 	return r.waitForFlight(ctx, operation, flight)
 }
 
-func (r *Reader) startFlight(requestCtx context.Context, operation string, key artifactKey, workspaceID string, release entities.Release, flight *loadFlight) {
+func (r *Reader) startFlight(requestCtx context.Context, operation ports.ReleaseArtifactOperation, key artifactKey, workspaceID string, release entities.Release, flight *loadFlight) {
 	loadCtx, cancel := context.WithTimeout(context.WithoutCancel(requestCtx), r.loadTimeout)
 	go func() {
 		defer cancel()
@@ -77,7 +77,7 @@ func (r *Reader) startFlight(requestCtx context.Context, operation string, key a
 	}()
 }
 
-func (r *Reader) runFlight(ctx context.Context, operation string, key artifactKey, workspaceID string, release entities.Release, flight *loadFlight) {
+func (r *Reader) runFlight(ctx context.Context, operation ports.ReleaseArtifactOperation, key artifactKey, workspaceID string, release entities.Release, flight *loadFlight) {
 	startedAt := time.Now()
 	artifact, err := r.load(ctx, workspaceID, release)
 	r.metrics.recordLoad(ctx, operation, time.Since(startedAt))
@@ -97,7 +97,7 @@ func (r *Reader) runFlight(ctx context.Context, operation string, key artifactKe
 	r.mu.Unlock()
 }
 
-func (r *Reader) waitForFlight(ctx context.Context, operation string, flight *loadFlight) (*entities.ReleaseArtifact, error) {
+func (r *Reader) waitForFlight(ctx context.Context, operation ports.ReleaseArtifactOperation, flight *loadFlight) (*entities.ReleaseArtifact, error) {
 	select {
 	case <-flight.done:
 		if flight.err != nil {
@@ -116,7 +116,7 @@ func (r *Reader) waitForFlight(ctx context.Context, operation string, flight *lo
 	}
 }
 
-func (r *Reader) loadWithoutCache(ctx context.Context, operation, workspaceID string, release entities.Release) (*entities.ReleaseArtifact, error) {
+func (r *Reader) loadWithoutCache(ctx context.Context, operation ports.ReleaseArtifactOperation, workspaceID string, release entities.Release) (*entities.ReleaseArtifact, error) {
 	startedAt := time.Now()
 	artifact, err := r.load(ctx, workspaceID, release)
 	r.metrics.recordLoad(ctx, operation, time.Since(startedAt))
@@ -134,10 +134,22 @@ func (r *Reader) load(ctx context.Context, workspaceID string, release entities.
 	if err != nil {
 		return nil, err
 	}
-	if artifact.ReleaseID != release.ID || artifact.WorkspaceID != workspaceID || artifact.Checksum != release.Checksum {
-		return nil, domainerrors.Internal("release_artifact_inconsistent", "Release artifact metadata is inconsistent")
+	if err := validateLoadedArtifact(artifact, workspaceID, release); err != nil {
+		return nil, err
 	}
 	return artifact, nil
+}
+
+func validateLoadedArtifact(artifact *entities.ReleaseArtifact, workspaceID string, release entities.Release) error {
+	if artifact == nil ||
+		artifact.ReleaseID != release.ID ||
+		artifact.WorkspaceID != workspaceID ||
+		artifact.Identity != release.Identity ||
+		artifact.Checksum != release.Checksum ||
+		len(artifact.Data) == 0 {
+		return domainerrors.Internal("release_artifact_inconsistent", "Release artifact metadata is inconsistent")
+	}
+	return nil
 }
 
 func (r *Reader) canStore(size int) bool {

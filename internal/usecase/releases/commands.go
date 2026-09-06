@@ -23,7 +23,7 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (*entities.Rele
 	if identity == "" {
 		return nil, domainerrors.InvalidInput("identity_required", "identity is required")
 	}
-	if identity == "last" {
+	if identity == entities.LatestIdentity {
 		return nil, domainerrors.InvalidInput("release_identity_reserved", "identity last is reserved for read-only lookup")
 	}
 	if len(identity) > 160 {

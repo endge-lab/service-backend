@@ -35,7 +35,7 @@ type resolver struct {
 
 func NewResolver(cfg *config.Config) (Resolver, error) {
 	value := &resolver{config: cfg.Identity}
-	if cfg.Identity.Mode == "oidc" {
+	if cfg.Identity.Mode == config.IdentityModeOIDC {
 		keys, err := keyfunc.NewDefaultCtx(context.Background(), []string{cfg.Identity.JWKSURL})
 		if err != nil {
 			return nil, fmt.Errorf("initialize OIDC JWKS: %w", err)
@@ -46,8 +46,8 @@ func NewResolver(cfg *config.Config) (Resolver, error) {
 }
 
 func (r *resolver) Resolve(ctx context.Context, raw string) (Claims, error) {
-	if r.config.Mode == "dev" {
-		return Claims{ProviderID: "dev", Subject: r.config.DevSubject, Issuer: "urn:endge:dev", Username: r.config.DevUsername, DisplayName: r.config.DevDisplayName, PlatformAdmin: r.config.DevPlatformAdmin}, nil
+	if r.config.Mode == config.IdentityModeDev {
+		return Claims{ProviderID: config.IdentityModeDev, Subject: r.config.DevSubject, Issuer: "urn:endge:dev", Username: r.config.DevUsername, DisplayName: r.config.DevDisplayName, PlatformAdmin: r.config.DevPlatformAdmin}, nil
 	}
 	raw = strings.TrimSpace(raw)
 	if raw == "" {

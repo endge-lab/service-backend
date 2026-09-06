@@ -108,16 +108,16 @@ func (r *EndgeRepository) GetDocument(ctx context.Context, workspaceID, kind, id
 func documentSelect(table, kind string) string {
 	data := "d.data"
 	folderJoin := "LEFT JOIN folders f ON f.id=d.folder_id AND f.workspace_id=d.workspace_id"
-	if kind == "folders" {
+	if kind == entities.CollectionFolders {
 		data = `jsonb_build_object('entityType',d.entity_type,'parentIdentity',pf.identity,'isRoot',d.is_root)`
 		folderJoin = "LEFT JOIN folders f ON f.id=d.parent_id AND f.workspace_id=d.workspace_id LEFT JOIN folders pf ON pf.id=d.parent_id AND pf.workspace_id=d.workspace_id"
-	} else if kind == "updates" {
+	} else if kind == entities.CollectionUpdates {
 		data = `(d.data - 'storeIdentity') || jsonb_build_object('storeIdentity',store.identity)`
 		folderJoin += " JOIN stores store ON store.id=d.store_id AND store.workspace_id=d.workspace_id"
-	} else if kind == "vocabs" {
+	} else if kind == entities.CollectionVocabs {
 		data = `(d.data - 'authProfileIdentity') || jsonb_build_object('authProfileIdentity',auth_profile.identity)`
 		folderJoin += " LEFT JOIN auth_profiles auth_profile ON auth_profile.id=d.auth_profile_id AND auth_profile.workspace_id=d.workspace_id"
-	} else if kind == "projects" {
+	} else if kind == entities.CollectionProjects {
 		data = `(d.data - 'navigationIdentity') || jsonb_build_object('navigationIdentity',navigation.identity)`
 		folderJoin += " LEFT JOIN navigations navigation ON navigation.id=d.navigation_id AND navigation.workspace_id=d.workspace_id"
 	}
@@ -139,53 +139,54 @@ func (r *EndgeRepository) InsertDocument(ctx context.Context, v entities.Documen
 	if err != nil {
 		return nil, err
 	}
-	if v.Type == "folders" {
+	switch v.Type {
+	case entities.CollectionFolders:
 		var data map[string]any
 		_ = json.Unmarshal(v.Data, &data)
 		_, err = r.executor(ctx).Exec(ctx, `INSERT INTO folders(id,workspace_id,identity,display_name,description,entity_type,parent_id,is_root,managed_by,managed_by_id,meta,active,deleted_at,created_by,updated_by,revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$15)`, v.ID, v.WorkspaceID, v.Identity, v.DisplayName, v.Description, stringValue(data["entityType"]), folderID, boolValue(data["isRoot"]), v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.CreatedBy.ID, v.Revision)
-	} else if v.Type == "tenants" {
+	case entities.CollectionTenants:
 		var data map[string]any
 		_ = json.Unmarshal(v.Data, &data)
 		_, err = r.executor(ctx).Exec(ctx, `INSERT INTO tenants(id,workspace_id,identity,display_name,description,folder_id,data,code,managed_by,managed_by_id,meta,active,deleted_at,created_by,updated_by,revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$15)`, v.ID, v.WorkspaceID, v.Identity, v.DisplayName, v.Description, folderID, v.Data, stringValue(data["code"]), v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.CreatedBy.ID, v.Revision)
-	} else if v.Type == "projects" {
+	case entities.CollectionProjects:
 		data, navigationIdentity, relationErr := relationData(v.Data, "navigationIdentity")
 		if relationErr != nil {
 			return nil, relationErr
 		}
 		var navigationID *string
 		if navigationIdentity != "" {
-			resolved, resolveErr := r.resolveActiveDocumentID(ctx, v.WorkspaceID, "navigations", navigationIdentity)
+			resolved, resolveErr := r.resolveActiveDocumentID(ctx, v.WorkspaceID, entities.CollectionNavigations, navigationIdentity)
 			if resolveErr != nil {
 				return nil, resolveErr
 			}
 			navigationID = &resolved
 		}
 		_, err = r.executor(ctx).Exec(ctx, `INSERT INTO projects(id,workspace_id,identity,display_name,description,folder_id,data,navigation_id,managed_by,managed_by_id,meta,active,deleted_at,created_by,updated_by,revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$15)`, v.ID, v.WorkspaceID, v.Identity, v.DisplayName, v.Description, folderID, data, navigationID, v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.CreatedBy.ID, v.Revision)
-	} else if v.Type == "updates" {
+	case entities.CollectionUpdates:
 		data, storeIdentity, relationErr := relationData(v.Data, "storeIdentity")
 		if relationErr != nil {
 			return nil, relationErr
 		}
-		storeID, relationErr := r.resolveActiveDocumentID(ctx, v.WorkspaceID, "stores", storeIdentity)
+		storeID, relationErr := r.resolveActiveDocumentID(ctx, v.WorkspaceID, entities.CollectionStores, storeIdentity)
 		if relationErr != nil {
 			return nil, relationErr
 		}
 		_, err = r.executor(ctx).Exec(ctx, `INSERT INTO updates(id,workspace_id,identity,display_name,description,folder_id,data,store_id,managed_by,managed_by_id,meta,active,deleted_at,created_by,updated_by,revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$15)`, v.ID, v.WorkspaceID, v.Identity, v.DisplayName, v.Description, folderID, data, storeID, v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.CreatedBy.ID, v.Revision)
-	} else if v.Type == "vocabs" {
+	case entities.CollectionVocabs:
 		data, authProfileIdentity, relationErr := relationData(v.Data, "authProfileIdentity")
 		if relationErr != nil {
 			return nil, relationErr
 		}
 		var authProfileID *string
 		if authProfileIdentity != "" {
-			resolved, resolveErr := r.resolveActiveDocumentID(ctx, v.WorkspaceID, "auth-profiles", authProfileIdentity)
+			resolved, resolveErr := r.resolveActiveDocumentID(ctx, v.WorkspaceID, entities.CollectionAuthProfiles, authProfileIdentity)
 			if resolveErr != nil {
 				return nil, resolveErr
 			}
 			authProfileID = &resolved
 		}
 		_, err = r.executor(ctx).Exec(ctx, `INSERT INTO vocabs(id,workspace_id,identity,display_name,description,folder_id,data,auth_profile_id,managed_by,managed_by_id,meta,active,deleted_at,created_by,updated_by,revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$15)`, v.ID, v.WorkspaceID, v.Identity, v.DisplayName, v.Description, folderID, data, authProfileID, v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.CreatedBy.ID, v.Revision)
-	} else {
+	default:
 		_, err = r.executor(ctx).Exec(ctx, `INSERT INTO `+table+`(id,workspace_id,identity,display_name,description,folder_id,data,managed_by,managed_by_id,meta,active,deleted_at,created_by,updated_by,revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$13,$14)`, v.ID, v.WorkspaceID, v.Identity, v.DisplayName, v.Description, folderID, v.Data, v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.CreatedBy.ID, v.Revision)
 	}
 	if err != nil {
@@ -199,53 +200,54 @@ func (r *EndgeRepository) UpdateDocument(ctx context.Context, v entities.Documen
 		return nil, err
 	}
 	var tag pgconn.CommandTag
-	if v.Type == "folders" {
+	switch v.Type {
+	case entities.CollectionFolders:
 		var data map[string]any
 		_ = json.Unmarshal(v.Data, &data)
 		tag, err = r.executor(ctx).Exec(ctx, `UPDATE folders SET identity=$1,display_name=$2,description=$3,entity_type=$4,parent_id=$5,is_root=$6,managed_by=$7,managed_by_id=$8,meta=$9,active=$10,deleted_at=$11,updated_by=$12,updated_at=NOW(),revision=revision+1 WHERE id=$13 AND workspace_id=$14 AND revision=$15`, v.Identity, v.DisplayName, v.Description, stringValue(data["entityType"]), folderID, boolValue(data["isRoot"]), v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.UpdatedBy.ID, v.ID, v.WorkspaceID, expected)
-	} else if v.Type == "tenants" {
+	case entities.CollectionTenants:
 		var data map[string]any
 		_ = json.Unmarshal(v.Data, &data)
 		tag, err = r.executor(ctx).Exec(ctx, `UPDATE tenants SET identity=$1,display_name=$2,description=$3,folder_id=$4,data=$5,code=$6,managed_by=$7,managed_by_id=$8,meta=$9,active=$10,deleted_at=$11,updated_by=$12,updated_at=NOW(),revision=revision+1 WHERE id=$13 AND workspace_id=$14 AND revision=$15`, v.Identity, v.DisplayName, v.Description, folderID, v.Data, stringValue(data["code"]), v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.UpdatedBy.ID, v.ID, v.WorkspaceID, expected)
-	} else if v.Type == "projects" {
+	case entities.CollectionProjects:
 		data, navigationIdentity, relationErr := relationData(v.Data, "navigationIdentity")
 		if relationErr != nil {
 			return nil, relationErr
 		}
 		var navigationID *string
 		if navigationIdentity != "" {
-			resolved, resolveErr := r.resolveUpdatedDocumentRelation(ctx, v.WorkspaceID, "projects", "navigation_id", v.ID, "navigations", navigationIdentity)
+			resolved, resolveErr := r.resolveUpdatedDocumentRelation(ctx, v.WorkspaceID, entities.CollectionProjects, "navigation_id", v.ID, entities.CollectionNavigations, navigationIdentity)
 			if resolveErr != nil {
 				return nil, resolveErr
 			}
 			navigationID = &resolved
 		}
 		tag, err = r.executor(ctx).Exec(ctx, `UPDATE projects SET identity=$1,display_name=$2,description=$3,folder_id=$4,data=$5,navigation_id=$6,managed_by=$7,managed_by_id=$8,meta=$9,active=$10,deleted_at=$11,updated_by=$12,updated_at=NOW(),revision=revision+1 WHERE id=$13 AND workspace_id=$14 AND revision=$15`, v.Identity, v.DisplayName, v.Description, folderID, data, navigationID, v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.UpdatedBy.ID, v.ID, v.WorkspaceID, expected)
-	} else if v.Type == "updates" {
+	case entities.CollectionUpdates:
 		data, storeIdentity, relationErr := relationData(v.Data, "storeIdentity")
 		if relationErr != nil {
 			return nil, relationErr
 		}
-		storeID, relationErr := r.resolveUpdatedDocumentRelation(ctx, v.WorkspaceID, "updates", "store_id", v.ID, "stores", storeIdentity)
+		storeID, relationErr := r.resolveUpdatedDocumentRelation(ctx, v.WorkspaceID, entities.CollectionUpdates, "store_id", v.ID, entities.CollectionStores, storeIdentity)
 		if relationErr != nil {
 			return nil, relationErr
 		}
 		tag, err = r.executor(ctx).Exec(ctx, `UPDATE updates SET identity=$1,display_name=$2,description=$3,folder_id=$4,data=$5,store_id=$6,managed_by=$7,managed_by_id=$8,meta=$9,active=$10,deleted_at=$11,updated_by=$12,updated_at=NOW(),revision=revision+1 WHERE id=$13 AND workspace_id=$14 AND revision=$15`, v.Identity, v.DisplayName, v.Description, folderID, data, storeID, v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.UpdatedBy.ID, v.ID, v.WorkspaceID, expected)
-	} else if v.Type == "vocabs" {
+	case entities.CollectionVocabs:
 		data, authProfileIdentity, relationErr := relationData(v.Data, "authProfileIdentity")
 		if relationErr != nil {
 			return nil, relationErr
 		}
 		var authProfileID *string
 		if authProfileIdentity != "" {
-			resolved, resolveErr := r.resolveUpdatedDocumentRelation(ctx, v.WorkspaceID, "vocabs", "auth_profile_id", v.ID, "auth-profiles", authProfileIdentity)
+			resolved, resolveErr := r.resolveUpdatedDocumentRelation(ctx, v.WorkspaceID, entities.CollectionVocabs, "auth_profile_id", v.ID, entities.CollectionAuthProfiles, authProfileIdentity)
 			if resolveErr != nil {
 				return nil, resolveErr
 			}
 			authProfileID = &resolved
 		}
 		tag, err = r.executor(ctx).Exec(ctx, `UPDATE vocabs SET identity=$1,display_name=$2,description=$3,folder_id=$4,data=$5,auth_profile_id=$6,managed_by=$7,managed_by_id=$8,meta=$9,active=$10,deleted_at=$11,updated_by=$12,updated_at=NOW(),revision=revision+1 WHERE id=$13 AND workspace_id=$14 AND revision=$15`, v.Identity, v.DisplayName, v.Description, folderID, data, authProfileID, v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.UpdatedBy.ID, v.ID, v.WorkspaceID, expected)
-	} else {
+	default:
 		tag, err = r.executor(ctx).Exec(ctx, `UPDATE `+table+` SET identity=$1,display_name=$2,description=$3,folder_id=$4,data=$5,managed_by=$6,managed_by_id=$7,meta=$8,active=$9,deleted_at=$10,updated_by=$11,updated_at=NOW(),revision=revision+1 WHERE id=$12 AND workspace_id=$13 AND revision=$14`, v.Identity, v.DisplayName, v.Description, folderID, v.Data, v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.UpdatedBy.ID, v.ID, v.WorkspaceID, expected)
 	}
 	if err != nil {
@@ -263,7 +265,7 @@ func (r *EndgeRepository) MoveFolderContents(ctx context.Context, workspaceID, f
 	movedIdentities := []movedIdentity{}
 	for kind, table := range documentTables {
 		column := "folder_id"
-		if kind == "folders" {
+		if kind == entities.CollectionFolders {
 			column = "parent_id"
 		}
 		rows, err := r.executor(ctx).Query(ctx, `UPDATE `+table+` SET `+column+`=$1,updated_by=$2,updated_at=NOW(),revision=revision+1 WHERE workspace_id=$3 AND `+column+`=$4 AND deleted_at IS NULL RETURNING identity`, parentID, actor, workspaceID, folderID)
@@ -316,7 +318,7 @@ func (r *EndgeRepository) FolderWouldCycle(ctx context.Context, workspaceID, fol
 }
 
 func (r *EndgeRepository) ReplaceProjectEnvironments(ctx context.Context, document entities.Document, identities []string) error {
-	if document.Type != "projects" {
+	if document.Type != entities.CollectionProjects {
 		return fmt.Errorf("project environment relation requires a project document")
 	}
 	if _, err := r.executor(ctx).Exec(ctx, `DELETE FROM project_environments WHERE workspace_id=$1 AND project_id=$2`, document.WorkspaceID, document.ID); err != nil {

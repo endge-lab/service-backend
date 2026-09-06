@@ -9,6 +9,8 @@ import (
 	kitconfig "github.com/endge-lab/service-kit-go/config"
 )
 
+const testEncryptionKey = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+
 // DevConfig создаёт полностью явную конфигурацию без обращения к process env.
 func DevConfig() *config.Config {
 	base := &kitconfig.ServiceConfig{
@@ -21,9 +23,12 @@ func DevConfig() *config.Config {
 		Postgres:  kitconfig.ServicePostgresConfig{Schema: "public", SSLMode: "disable", MigrationsEnabled: false},
 	}
 	return &config.Config{
-		ServiceConfig:    base,
-		Identity:         config.IdentityConfig{Mode: "dev", DevSubject: "e2e-user", DevUsername: "e2e", DevDisplayName: "E2E User", DevPlatformAdmin: true},
-		ConfiguratorAuth: config.ConfiguratorAuthConfig{Adapter: "dev", ReturnURL: "http://configurator.test", SessionCookieName: "endge_test_session", SessionTTL: time.Hour, TransactionTTL: time.Minute, SessionCleanupInterval: time.Minute},
-		Snapshots:        config.SnapshotConfig{ImportBackupRetentionDays: 7},
+		ServiceConfig:          base,
+		WorkspaceSchemaVersion: 1,
+		Identity:               config.IdentityConfig{Mode: "dev", DevSubject: "e2e-user", DevUsername: "e2e", DevDisplayName: "E2E User", DevPlatformAdmin: true},
+		ConfiguratorAuth:       config.ConfiguratorAuthConfig{Adapter: "dev", ReturnURL: "http://configurator.test", SessionCookieName: "endge_test_session", SessionTTL: time.Hour, TransactionTTL: time.Minute, SessionCleanupInterval: time.Minute},
+		Encryption:             config.EncryptionConfig{KeyID: "test-v1", Key: testEncryptionKey},
+		AIWorkbench:            config.AIWorkbenchConfig{RequestTimeout: time.Second, HealthTimeout: time.Second, HealthCacheTTL: time.Millisecond},
+		Snapshots:              config.SnapshotConfig{ImportBackupRetentionDays: 7},
 	}
 }

@@ -47,7 +47,7 @@ func NewSessionManager(cfg *config.Config, pool *pgxpool.Pool, registry *LoginAd
 		loginURL: strings.TrimRight(cfg.App.PublicURL, "/") + "/auth/login",
 		basePath: cfg.HTTPBasePath, keyring: keyring,
 	}
-	if cfg.ConfiguratorAuth.Adapter == "dev" {
+	if cfg.ConfiguratorAuth.Adapter == config.IdentityModeDev {
 		return manager, nil
 	}
 	return manager, nil
@@ -67,7 +67,7 @@ func (m *SessionManager) LoginCallbackPath() string {
 }
 
 func (m *SessionManager) Begin(ctx context.Context, requestedReturnURL string) (LoginStart, error) {
-	if m.config.Adapter == "dev" {
+	if m.config.Adapter == config.IdentityModeDev {
 		return LoginStart{Location: m.safeReturnURL(requestedReturnURL)}, nil
 	}
 	adapter, err := m.registry.Current()
@@ -115,7 +115,7 @@ func (m *SessionManager) Begin(ctx context.Context, requestedReturnURL string) (
 }
 
 func (m *SessionManager) Complete(ctx context.Context, state, code, browserNonce string) (string, string, time.Time, error) {
-	if m.config.Adapter == "dev" {
+	if m.config.Adapter == config.IdentityModeDev {
 		return "", m.config.ReturnURL, time.Time{}, fmt.Errorf("OIDC callback is unavailable in dev login mode")
 	}
 	if strings.TrimSpace(state) == "" || strings.TrimSpace(code) == "" || strings.TrimSpace(browserNonce) == "" {
@@ -182,14 +182,14 @@ func (m *SessionManager) Complete(ctx context.Context, state, code, browserNonce
 		hashToken(cookieToken), claims.ProviderID, claims.Subject, claims.Issuer, claims.Username, claims.DisplayName,
 		groups, claims.PlatformAdmin, nullableBytes(refreshEncrypted), accessExpiresAt, sessionExpiresAt)
 	if err != nil {
-		return "", "", time.Time{}, fmt.Errorf("create Configurator session: %w", err)
+		return "", "", time.Time{}, fmt.Errorf("create configurator session: %w", err)
 	}
 	return cookieToken, returnURL, sessionExpiresAt, nil
 }
 
 func (m *SessionManager) Resolve(ctx context.Context, cookieToken string) (SessionIdentity, error) {
 	if strings.TrimSpace(cookieToken) == "" {
-		return SessionIdentity{}, fmt.Errorf("Configurator session cookie is required")
+		return SessionIdentity{}, fmt.Errorf("configurator session cookie is required")
 	}
 	record, err := scanSessionRecord(m.pool.QueryRow(ctx, sessionSelect(false), hashToken(cookieToken)))
 	if err != nil {
@@ -255,16 +255,16 @@ func scanSessionRecord(row sessionRow) (sessionRecord, error) {
 		&groupsJSON, &record.PlatformAdmin, &record.RefreshTokenEncrypted, &record.IdentityRefreshAt,
 		&record.ExpiresAt,
 	); err != nil {
-		return sessionRecord{}, fmt.Errorf("Configurator session is invalid")
+		return sessionRecord{}, fmt.Errorf("configurator session is invalid")
 	}
 	if err := json.Unmarshal(groupsJSON, &record.Groups); err != nil {
-		return sessionRecord{}, fmt.Errorf("decode Configurator session groups: %w", err)
+		return sessionRecord{}, fmt.Errorf("decode configurator session groups: %w", err)
 	}
 	return record, nil
 }
 
 func (m *SessionManager) Revoke(ctx context.Context, cookieToken string) error {
-	if strings.TrimSpace(cookieToken) == "" || m.config.Adapter == "dev" {
+	if strings.TrimSpace(cookieToken) == "" || m.config.Adapter == config.IdentityModeDev {
 		return nil
 	}
 	var refreshEncrypted []byte
@@ -289,7 +289,7 @@ func (m *SessionManager) Revoke(ctx context.Context, cookieToken string) error {
 func (m *SessionManager) refresh(ctx context.Context, tx pgx.Tx, cookieToken string, record sessionRecord) (SessionIdentity, error) {
 	refreshToken, err := m.decryptOptional(record.RefreshTokenEncrypted)
 	if err != nil || refreshToken == "" {
-		return SessionIdentity{}, fmt.Errorf("Configurator session has expired")
+		return SessionIdentity{}, fmt.Errorf("configurator session has expired")
 	}
 	adapter, err := m.registry.Current()
 	if err != nil {
@@ -297,7 +297,7 @@ func (m *SessionManager) refresh(ctx context.Context, tx pgx.Tx, cookieToken str
 	}
 	tokens, err := adapter.Refresh(ctx, refreshToken)
 	if err != nil {
-		return SessionIdentity{}, fmt.Errorf("refresh Configurator session: %w", err)
+		return SessionIdentity{}, fmt.Errorf("refresh configurator session: %w", err)
 	}
 	claimsToken := tokens.IdentityToken
 	if claimsToken == "" {

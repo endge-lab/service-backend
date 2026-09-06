@@ -35,17 +35,19 @@ func (s *releaseUseCaseStub) GetArtifact(context.Context, entities.Release) (*en
 	return &s.artifact, nil
 }
 
+// TestHandlerExportRejectsInvalidDownloadBeforeReadingRelease проверяет валидацию query parameter.
+// Некорректный download должен вернуть 400 до metadata lookup и чтения artifact.
 func TestHandlerExportRejectsInvalidDownloadBeforeReadingRelease(t *testing.T) {
 	stub := &releaseUseCaseStub{}
 	app := fiber.New()
 	app.Get("/releases/:identity/export", NewHandler(stub, nil).Export)
 
-	request := httptest.NewRequest(fiber.MethodGet, "/releases/production/export?download=not-a-bool", nil)
+	request := httptest.NewRequestWithContext(t.Context(), fiber.MethodGet, "/releases/production/export?download=not-a-bool", nil)
 	response, err := app.Test(request)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != fiber.StatusBadRequest {
 		t.Fatalf("status = %d, want %d", response.StatusCode, fiber.StatusBadRequest)
 	}
@@ -54,6 +56,8 @@ func TestHandlerExportRejectsInvalidDownloadBeforeReadingRelease(t *testing.T) {
 	}
 }
 
+// TestHandlerExportDecodesReleaseIdentity проверяет decoding URL path parameter.
+// Use case должен получить исходный identity с пробелом, а не percent-encoded строку.
 func TestHandlerExportDecodesReleaseIdentity(t *testing.T) {
 	stub := &releaseUseCaseStub{
 		metadata: entities.Release{ID: "release-id", Identity: "Keycloak Auth Test", Checksum: "checksum"},
@@ -62,12 +66,12 @@ func TestHandlerExportDecodesReleaseIdentity(t *testing.T) {
 	app := fiber.New()
 	app.Get("/releases/:identity/export", NewHandler(stub, nil).Export)
 
-	request := httptest.NewRequest(fiber.MethodGet, "/releases/Keycloak%20Auth%20Test/export", nil)
+	request := httptest.NewRequestWithContext(t.Context(), fiber.MethodGet, "/releases/Keycloak%20Auth%20Test/export", nil)
 	response, err := app.Test(request)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != fiber.StatusOK {
 		t.Fatalf("status = %d, want %d", response.StatusCode, fiber.StatusOK)
 	}
@@ -83,6 +87,9 @@ func (s *releaseUseCaseStub) Restore(context.Context, string, int64) (*entities.
 	return nil, nil
 }
 
+// TestHandlerExportConditionalGET проверяет HTTP cache contract export endpoint.
+// Совпадающий strong, weak, list или wildcard ETag возвращает 304 без чтения artifact;
+// устаревший ETag возвращает 200, body и обязательные cache headers.
 func TestHandlerExportConditionalGET(t *testing.T) {
 	t.Parallel()
 
@@ -110,7 +117,7 @@ func TestHandlerExportConditionalGET(t *testing.T) {
 			app := fiber.New()
 			handler := NewHandler(stub, nil)
 			app.Get("/releases/:identity/export", handler.Export)
-			request := httptest.NewRequest(fiber.MethodGet, "/releases/production/export", nil)
+			request := httptest.NewRequestWithContext(t.Context(), fiber.MethodGet, "/releases/production/export", nil)
 			if tt.ifNoneMatch != "" {
 				request.Header.Set(fiber.HeaderIfNoneMatch, tt.ifNoneMatch)
 			}
@@ -118,7 +125,9 @@ func TestHandlerExportConditionalGET(t *testing.T) {
 			if err != nil {
 				t.Fatalf("request: %v", err)
 			}
-			defer response.Body.Close()
+			defer func() {
+				_ = response.Body.Close()
+			}()
 			body, err := io.ReadAll(response.Body)
 			if err != nil {
 				t.Fatalf("read body: %v", err)

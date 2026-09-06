@@ -2,6 +2,11 @@ package entities
 
 import "time"
 
+const (
+	RevisionPolicyPreserve = "preserve"
+	RevisionPolicySquash   = "squash"
+)
+
 type Commit struct {
 	ID             string         `json:"id"`
 	WorkspaceID    string         `json:"workspaceId"`

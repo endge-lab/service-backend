@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 )
 
@@ -32,12 +33,12 @@ func (s *UseCase) GetArtifact(ctx context.Context, release entities.Release) (*e
 	if err != nil {
 		return nil, err
 	}
-	artifact, err := s.artifacts.Read(ctx, "export", scope.Workspace.ID, release)
+	artifact, err := s.artifacts.Read(ctx, ports.ReleaseArtifactOperationExport, scope.Workspace.ID, release)
 	return artifact, shared.MapNotFound(err)
 }
 
 func (s *UseCase) releaseMetadata(ctx context.Context, workspaceID, identity string) (*entities.Release, error) {
-	if identity == "last" {
+	if identity == entities.LatestIdentity {
 		return s.releases.GetLatestReleaseMetadata(ctx, workspaceID)
 	}
 	return s.releases.GetReleaseMetadata(ctx, workspaceID, identity)

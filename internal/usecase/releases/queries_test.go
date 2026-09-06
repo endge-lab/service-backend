@@ -5,21 +5,24 @@ import (
 	"testing"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 )
 
 type artifactReaderSpy struct {
-	operation   string
+	operation   ports.ReleaseArtifactOperation
 	workspaceID string
 	release     entities.Release
 }
 
-func (s *artifactReaderSpy) Read(_ context.Context, operation, workspaceID string, release entities.Release) (*entities.ReleaseArtifact, error) {
+func (s *artifactReaderSpy) Read(_ context.Context, operation ports.ReleaseArtifactOperation, workspaceID string, release entities.Release) (*entities.ReleaseArtifact, error) {
 	s.operation = operation
 	s.workspaceID = workspaceID
 	s.release = release
 	return &entities.ReleaseArtifact{ReleaseID: release.ID, WorkspaceID: workspaceID, Checksum: release.Checksum, Data: []byte(`{}`)}, nil
 }
 
+// TestGetArtifactDelegatesToReaderPort проверяет единственного владельца artifact cache.
+// Release use case передаёт Reader фиксированную operation export, workspace scope и metadata release.
 func TestGetArtifactDelegatesToReaderPort(t *testing.T) {
 	reader := &artifactReaderSpy{}
 	usecase := &UseCase{artifacts: reader}
@@ -30,7 +33,7 @@ func TestGetArtifactDelegatesToReaderPort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if reader.operation != "export" || reader.workspaceID != "workspace-id" || reader.release != release {
+	if reader.operation != ports.ReleaseArtifactOperationExport || reader.workspaceID != "workspace-id" || reader.release != release {
 		t.Fatalf("reader received operation=%q workspace=%q release=%#v", reader.operation, reader.workspaceID, reader.release)
 	}
 	if artifact.ReleaseID != release.ID {

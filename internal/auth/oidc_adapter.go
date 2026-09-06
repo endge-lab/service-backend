@@ -78,7 +78,7 @@ func (a *OIDCAdapter) Logout(ctx context.Context, refreshToken string) error {
 	if err != nil {
 		return fmt.Errorf("perform OIDC logout: %w", err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, 4096))
 		return fmt.Errorf("OIDC logout returned status %d", response.StatusCode)
@@ -101,7 +101,7 @@ func (a *OIDCAdapter) token(ctx context.Context, form url.Values) (TokenSet, err
 	if err != nil {
 		return TokenSet{}, fmt.Errorf("perform OIDC token request: %w", err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, 4096))
 		return TokenSet{}, fmt.Errorf("OIDC token endpoint returned status %d", response.StatusCode)

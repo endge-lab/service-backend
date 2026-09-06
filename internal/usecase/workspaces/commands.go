@@ -46,7 +46,7 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entiti
 	if displayName == "" {
 		return nil, domainerrors.InvalidInput("display_name_required", "displayName is required")
 	}
-	value := entities.Workspace{ID: uuid.NewString(), Identity: identity, DisplayName: displayName, Description: workspaceOptional(values, "description"), DataMode: workspaceDefault(workspaceText(values, "dataMode"), "development"), Configuration: workspaceJSON(values["configuration"], `{}`), Meta: workspaceJSON(values["meta"], `{}`), Active: workspaceBool(values, "active", true), Revision: 1, CreatedBy: entities.Actor{ID: current.User.ID}, UpdatedBy: entities.Actor{ID: current.User.ID}}
+	value := entities.Workspace{ID: uuid.NewString(), Identity: identity, DisplayName: displayName, Description: workspaceOptional(values, "description"), DataMode: workspaceDefault(workspaceText(values, "dataMode"), "development"), Configuration: workspaceJSON(values["configuration"]), Meta: workspaceJSON(values["meta"]), Active: workspaceBool(values, "active", true), Revision: 1, CreatedBy: entities.Actor{ID: current.User.ID}, UpdatedBy: entities.Actor{ID: current.User.ID}}
 	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
 		created, txErr := s.workspaces.CreateWorkspace(txctx, value, current.User.ID)
 		if txErr != nil {
@@ -69,7 +69,7 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entiti
 		}
 		createdRootTypes := map[string]bool{}
 		for _, kind := range documents.Collections {
-			if kind == "folders" || kind == "configurations" {
+			if kind == entities.CollectionFolders || kind == entities.CollectionConfigurations {
 				continue
 			}
 			entityType := entities.FolderEntityType(kind)
@@ -77,7 +77,7 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entiti
 				continue
 			}
 			createdRootTypes[entityType] = true
-			root := entities.Document{ID: uuid.NewString(), WorkspaceID: created.ID, Type: "folders", Identity: entities.RootFolderIdentity(kind), DisplayName: "Root " + entityType, ManagedBy: "system", Meta: json.RawMessage(`{}`), Data: workspaceJSON(map[string]any{"entityType": entityType, "isRoot": true}, `{}`), Active: true, Revision: 1, CreatedBy: entities.Actor{ID: current.User.ID}, UpdatedBy: entities.Actor{ID: current.User.ID}}
+			root := entities.Document{ID: uuid.NewString(), WorkspaceID: created.ID, Type: entities.CollectionFolders, Identity: entities.RootFolderIdentity(kind), DisplayName: "Root " + entityType, ManagedBy: entities.ManagedBySystem, Meta: json.RawMessage(`{}`), Data: workspaceJSON(map[string]any{"entityType": entityType, "isRoot": true}), Active: true, Revision: 1, CreatedBy: entities.Actor{ID: current.User.ID}, UpdatedBy: entities.Actor{ID: current.User.ID}}
 			createdRoot, insertErr := s.documents.InsertDocument(txctx, root, nil)
 			if insertErr != nil {
 				return insertErr
@@ -202,10 +202,10 @@ func applyWorkspacePatch(workspace entities.Workspace, patch map[string]any) ent
 		workspace.DataMode = value
 	}
 	if value, ok := patch["configuration"]; ok {
-		workspace.Configuration = workspaceJSON(value, `{}`)
+		workspace.Configuration = workspaceJSON(value)
 	}
 	if value, ok := patch["meta"]; ok {
-		workspace.Meta = workspaceJSON(value, `{}`)
+		workspace.Meta = workspaceJSON(value)
 	}
 	if value, ok := patch["active"].(bool); ok {
 		workspace.Active = value
@@ -306,9 +306,9 @@ func workspaceBool(values map[string]any, key string, fallback bool) bool {
 }
 
 // workspaceJSON извлекает JSON-поле рабочего пространства.
-func workspaceJSON(value any, fallback string) json.RawMessage {
+func workspaceJSON(value any) json.RawMessage {
 	if value == nil {
-		return json.RawMessage(fallback)
+		return json.RawMessage(`{}`)
 	}
 	raw, _ := json.Marshal(value)
 	return raw

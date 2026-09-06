@@ -34,11 +34,13 @@ func TestRoutesDoNotRequireWorkspaceHeader(t *testing.T) {
 		"/api/v1/service-users/search?q=iv",
 		"/api/v1/access-grants?scopeType=platform",
 	} {
-		response, err := app.Test(httptest.NewRequest("GET", path, nil))
+		response, err := app.Test(httptest.NewRequestWithContext(t.Context(), "GET", path, nil))
 		if err != nil {
 			t.Fatal(err)
 		}
-		response.Body.Close()
+		if closeErr := response.Body.Close(); closeErr != nil {
+			t.Errorf("close response body: %v", closeErr)
+		}
 		if response.StatusCode != fiber.StatusOK {
 			t.Fatalf("%s status = %d, want 200", path, response.StatusCode)
 		}

@@ -161,6 +161,8 @@ func TestConfiguratorAuthConfigValidatesAllowedReturnOrigins(t *testing.T) {
 	}
 }
 
+// TestReleaseArtifactCacheConfigRejectsInvalidEnabledLimits проверяет fail-fast валидацию:
+// включённый cache обязан иметь положительные общий и per-item лимиты, выключенный — может не иметь их.
 func TestReleaseArtifactCacheConfigRejectsInvalidEnabledLimits(t *testing.T) {
 	value := ReleaseArtifactCacheConfig{Enabled: true, MaxBytes: 0, MaxItemBytes: 1}
 	if err := value.Validate(); err == nil {

@@ -13,9 +13,9 @@ import (
 	"github.com/google/uuid"
 )
 
-var Collections = []string{"projects", "tenants", "environments", "folders", "types", "queries", "data-views", "compositions", "stores", "streams", "updates", "mocks", "components", "actions", "filters", "converters", "computations", "vocabs", "i18n-bundles", "auth-profiles", "navigations", "styles", "configurations"}
+var Collections = append([]string(nil), entities.DocumentCollections...)
 
-var sourceVersionCollections = []string{"types", "queries", "data-views", "compositions", "stores", "streams", "updates", "filters", "computations", "vocabs", "styles", "configurations"}
+var sourceVersionCollections = []string{entities.CollectionTypes, entities.CollectionQueries, entities.CollectionDataViews, entities.CollectionCompositions, entities.CollectionStores, entities.CollectionStreams, entities.CollectionUpdates, entities.CollectionFilters, entities.CollectionComputations, entities.CollectionVocabs, entities.CollectionStyles, entities.CollectionConfigurations}
 
 var readOnlyFields = []string{"id", "type", "revision", "author", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", "created_by", "updated_by"}
 
@@ -36,7 +36,7 @@ func validateDocument(kind string, input map[string]any) error {
 		return domainerrors.InvalidInput("display_name_required", "displayName is required")
 	}
 	managedBy := defaultString(stringField(input, "managedBy"), "user")
-	if !slices.Contains([]string{"user", "system", "integration"}, managedBy) {
+	if !slices.Contains([]string{"user", entities.ManagedBySystem, "integration"}, managedBy) {
 		return domainerrors.InvalidInput("managed_by_invalid", "managedBy is invalid")
 	}
 	if source, ok := input["source"]; ok {
@@ -48,20 +48,20 @@ func validateDocument(kind string, input map[string]any) error {
 			return domainerrors.InvalidInput("source_too_large", "source exceeds 8 MiB")
 		}
 		if slices.Contains(sourceVersionCollections, kind) {
-			version, valid := numberField(input, "sourceVersion")
+			version, valid := sourceVersion(input)
 			if !valid || version <= 0 {
 				return domainerrors.InvalidInput("source_version_invalid", "sourceVersion must be positive")
 			}
 		}
 	}
 	if kind == "queries" {
-		version, _ := numberField(input, "sourceVersion")
+		version, _ := sourceVersion(input)
 		if version != 2 {
 			return domainerrors.InvalidInput("query_source_version_invalid", "Query sourceVersion must be 2")
 		}
 	}
-	if kind == "configurations" {
-		version, hasVersion := numberField(input, "sourceVersion")
+	if kind == entities.CollectionConfigurations {
+		version, hasVersion := sourceVersion(input)
 		if _, hasSource := input["source"].(string); !hasSource || !hasVersion || version != 1 {
 			return domainerrors.InvalidInput("configuration_source_version_invalid", "Configuration source and sourceVersion 1 are required")
 		}
@@ -69,9 +69,9 @@ func validateDocument(kind string, input map[string]any) error {
 			return domainerrors.InvalidInput("configuration_folder_unsupported", "Configuration documents do not support folders")
 		}
 	}
-	if kind == "vocabs" {
+	if kind == entities.CollectionVocabs {
 		source, hasSource := input["source"].(string)
-		version, hasVersion := numberField(input, "sourceVersion")
+		version, hasVersion := sourceVersion(input)
 		if hasSource != hasVersion {
 			return domainerrors.InvalidInput("vocab_source_contract_invalid", "Vocab source and sourceVersion must be provided together")
 		}
@@ -82,13 +82,13 @@ func validateDocument(kind string, input map[string]any) error {
 			return domainerrors.InvalidInput("vocab_source_version_invalid", "Vocab sourceVersion must be 1")
 		}
 	}
-	if kind == "tenants" && stringField(input, "code") == "" {
+	if kind == entities.CollectionTenants && stringField(input, "code") == "" {
 		return domainerrors.InvalidInput("tenant_code_required", "code is required")
 	}
-	if kind == "updates" && stringField(input, "storeIdentity") == "" {
+	if kind == entities.CollectionUpdates && stringField(input, "storeIdentity") == "" {
 		return domainerrors.InvalidInput("update_store_required", "storeIdentity is required")
 	}
-	if kind == "projects" {
+	if kind == entities.CollectionProjects {
 		if _, exists := input["navigation"]; exists {
 			return domainerrors.InvalidInput("project_navigation_legacy", "Project navigation must use navigationIdentity")
 		}
@@ -96,20 +96,20 @@ func validateDocument(kind string, input map[string]any) error {
 			return domainerrors.InvalidInput("project_navigation_legacy", "Project navigation must use navigationIdentity")
 		}
 	}
-	if kind == "auth-profiles" {
+	if kind == entities.CollectionAuthProfiles {
 		if err := shared.ValidateAuthProfile(input); err != nil {
 			return err
 		}
 	}
-	if kind == "folders" {
+	if kind == entities.CollectionFolders {
 		entityType := stringField(input, "entityType")
-		if !slices.Contains(Collections, entityType) || entityType == "folders" || entityType == "configurations" {
+		if !slices.Contains(Collections, entityType) || entityType == entities.CollectionFolders || entityType == entities.CollectionConfigurations {
 			return domainerrors.InvalidInput("folder_entity_type_invalid", "entityType must be a folderable collection")
 		}
 		if _, exists := input["isSystem"]; exists {
 			return domainerrors.InvalidInput("folder_is_system_unsupported", "isSystem is replaced by managedBy")
 		}
-		if boolField(input, "isRoot") {
+		if isRoot(input) {
 			return domainerrors.InvalidInput("folder_root_field_read_only", "isRoot is server-managed")
 		}
 	}
@@ -238,7 +238,7 @@ func optionalString(input map[string]any, key string) *string {
 }
 
 // boolField извлекает логическое поле.
-func boolField(input map[string]any, key string) bool { value, _ := input[key].(bool); return value }
+func isRoot(input map[string]any) bool { value, _ := input["isRoot"].(bool); return value }
 
 // defaultBool возвращает логическое поле или значение по умолчанию.
 func defaultBool(input map[string]any, key string, fallback bool) bool {
@@ -276,8 +276,8 @@ func copyMap(input map[string]any) map[string]any {
 }
 
 // numberField извлекает целочисленное поле без потери точности.
-func numberField(input map[string]any, key string) (int, bool) {
-	switch value := input[key].(type) {
+func sourceVersion(input map[string]any) (int, bool) {
+	switch value := input["sourceVersion"].(type) {
 	case float64:
 		return int(value), value == float64(int(value))
 	case int:

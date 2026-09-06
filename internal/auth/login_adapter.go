@@ -36,7 +36,7 @@ func NewLoginAdapterRegistry(adapter *OIDCAdapter) *LoginAdapterRegistry {
 func (r *LoginAdapterRegistry) Current() (LoginAdapter, error) {
 	adapter, ok := r.adapters[r.configured]
 	if !ok {
-		return nil, fmt.Errorf("Configurator login adapter %q is not registered", r.configured)
+		return nil, fmt.Errorf("configurator login adapter %q is not registered", r.configured)
 	}
 	return adapter, nil
 }

@@ -50,7 +50,7 @@ func (r *EndgeRepository) ExportLiveWorkspace(ctx context.Context, workspaceID s
 			item["folderIdentity"] = document.FolderIdentity
 			item["managedBy"] = document.ManagedBy
 			item["managedById"] = document.ManagedByID
-			item["meta"] = json.RawMessage(document.Meta)
+			item["meta"] = document.Meta
 			item["active"] = document.Active
 			item["state"] = map[string]any{"id": document.ID, "revision": document.Revision, "deletedAt": document.DeletedAt, "createdBy": document.CreatedBy, "updatedBy": document.UpdatedBy, "createdAt": document.CreatedAt, "updatedAt": document.UpdatedAt}
 			items = append(items, item)
@@ -164,7 +164,7 @@ func (r *EndgeRepository) ListSnapshotBackups(ctx context.Context, workspaceID, 
 func (r *EndgeRepository) GetSnapshotBackup(ctx context.Context, workspaceID, id string, includeData bool) (*entities.SnapshotBackup, error) {
 	query := snapshotBackupSelect(includeData) + ` WHERE b.workspace_id=$1 AND (b.expires_at IS NULL OR b.expires_at>NOW())`
 	args := []any{workspaceID}
-	if id == "last" {
+	if id == entities.LatestIdentity {
 		query += ` ORDER BY b.created_at DESC,b.id DESC LIMIT 1`
 	} else {
 		query += ` AND b.id=$2`

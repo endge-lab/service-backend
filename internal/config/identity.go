@@ -8,6 +8,11 @@ import (
 	kitconfig "github.com/endge-lab/service-kit-go/config"
 )
 
+const (
+	IdentityModeOIDC = "oidc"
+	IdentityModeDev  = "dev"
+)
+
 // IdentityConfig belongs to this service because login policy is part of the
 // Configurator backend, not a reusable service-kit concern.
 type IdentityConfig struct {
@@ -61,7 +66,7 @@ func legacyJWKSURL(value kitconfig.ServiceAuthConfig) string {
 
 func (c IdentityConfig) Validate(production bool) error {
 	switch c.Mode {
-	case "oidc":
+	case IdentityModeOIDC:
 		if c.ProviderID == "" || c.Issuer == "" || c.JWKSURL == "" || len(c.AllowedAudiences) == 0 || len(c.AllowedAlgorithms) == 0 {
 			return fmt.Errorf("OIDC auth configuration is incomplete")
 		}
@@ -71,7 +76,7 @@ func (c IdentityConfig) Validate(production bool) error {
 				return fmt.Errorf("AUTH_ALLOWED_ALGORITHMS contains forbidden algorithm %q", algorithm)
 			}
 		}
-	case "dev":
+	case IdentityModeDev:
 		if production {
 			return fmt.Errorf("AUTH_MODE=dev is forbidden in production")
 		}
@@ -86,7 +91,7 @@ func (c IdentityConfig) Validate(production bool) error {
 
 func modeDefault(production bool) string {
 	if production {
-		return "oidc"
+		return IdentityModeOIDC
 	}
-	return "dev"
+	return IdentityModeDev
 }

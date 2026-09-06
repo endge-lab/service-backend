@@ -24,11 +24,11 @@ func TestListRouteDoesNotRequireWorkspaceHeader(t *testing.T) {
 	app := fiber.New()
 	RegisterRoutes(app.Group("/api/v1"), NewHandler(listUseCaseStub{}, nil))
 
-	response, err := app.Test(httptest.NewRequest("GET", "/api/v1/backend-connections", nil))
+	response, err := app.Test(httptest.NewRequestWithContext(t.Context(), "GET", "/api/v1/backend-connections", nil))
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != fiber.StatusOK {
 		t.Fatalf("status = %d, want 200", response.StatusCode)
 	}
