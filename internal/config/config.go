@@ -18,6 +18,7 @@ type Config struct {
 	Snapshots              SnapshotConfig
 	ReleaseArtifactCache   ReleaseArtifactCacheConfig
 	AIWorkbench            AIWorkbenchConfig
+	MockGenerator          MockGeneratorConfig
 }
 
 // Load загружает базовую конфигурацию service-kit и дополняет её настройками
@@ -58,6 +59,10 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
+	mockGenerator, err := loadMockGeneratorConfig(base)
+	if err != nil {
+		return nil, err
+	}
 	return &Config{
 		ServiceConfig:          base,
 		WorkspaceSchemaVersion: buildMetadata.WorkspaceSchemaVersion,
@@ -68,5 +73,6 @@ func Load() (*Config, error) {
 		Snapshots:              loadSnapshotConfig(),
 		ReleaseArtifactCache:   releaseArtifactCache,
 		AIWorkbench:            aiWorkbench,
+		MockGenerator:          mockGenerator,
 	}, nil
 }

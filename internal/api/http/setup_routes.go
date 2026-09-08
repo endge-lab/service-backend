@@ -28,6 +28,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/i18n_bundle"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/integration"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/mock"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/mock_data"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/navigation"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/project"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/query"
@@ -57,6 +58,7 @@ type Handlers struct {
 	AccessControl     *access_control.Handler
 	AICatalog         *ai_catalog.Handler
 	AIAssistant       *ai_assistant.Handler
+	MockData          *mock_data.Handler
 	ConfiguratorAuth  *configuratorauth.Handler
 	Workspace         *workspace.Handler
 	BackendConnection *backend_connection.Handler
@@ -149,5 +151,6 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, connectedServices *service_
 	backup.RegisterRoutes(scoped, handlers.Backup)
 	release.RegisterRoutes(scoped, handlers.Release)
 	ai_assistant.RegisterRoutes(scoped, handlers.AIAssistant)
+	mock_data.RegisterRoutes(scoped, handlers.MockData)
 	app.Use(func(c *fiber.Ctx) error { return respond.WriteErrorResponse(c, respond.ErrRouteNotFound) })
 }

@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"context"
 	"github.com/endge-lab/service-backend/internal/config"
 	"github.com/endge-lab/service-backend/internal/usecase/access_control"
 	"github.com/endge-lab/service-backend/internal/usecase/actions"
@@ -23,6 +24,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/history"
 	"github.com/endge-lab/service-backend/internal/usecase/i18n_bundles"
 	"github.com/endge-lab/service-backend/internal/usecase/integrations"
+	"github.com/endge-lab/service-backend/internal/usecase/mock_data"
 	"github.com/endge-lab/service-backend/internal/usecase/mocks"
 	"github.com/endge-lab/service-backend/internal/usecase/navigations"
 	"github.com/endge-lab/service-backend/internal/usecase/portable"
@@ -55,6 +57,7 @@ func UseCaseModules() fx.Option {
 		access_control.NewUseCase,
 		ai_catalog.NewUseCase,
 		ai_assistant.NewUseCase,
+		newMockDataUseCase,
 		service_info.NewUseCase,
 		workspaces.NewUseCase,
 		backend_connections.NewUseCase,
@@ -98,4 +101,11 @@ func releaseArtifactCacheConfig(cfg *config.Config) config.ReleaseArtifactCacheC
 
 func newWorkspaceStateCoordinator(repository workspace_state.Repository, tx ports.TxManager, artifacts ports.ReleaseArtifactReader, cfg *config.Config) *workspace_state.Coordinator {
 	return workspace_state.NewCoordinator(repository, tx, artifacts, cfg.WorkspaceSchemaVersion)
+}
+
+func newMockDataUseCase(lc fx.Lifecycle, g ports.MockGeneratorGateway, cfg *config.Config) *mock_data.UseCase {
+	c := cfg.MockGenerator
+	u := mock_data.NewUseCase(g, mock_data.Config{Sessions: c.Sessions, PerOwner: c.PerOwner, RequestBytes: c.RequestBytes, BufferBytes: c.BufferBytes, ReadyTimeout: c.ReadyTimeout, IdleTimeout: c.IdleTimeout, WriteTimeout: c.WriteTimeout})
+	lc.Append(fx.Hook{OnStart: func(context.Context) error { u.Start(); return nil }, OnStop: func(context.Context) error { u.Close(); return nil }})
+	return u
 }

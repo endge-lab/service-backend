@@ -25,6 +25,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/i18n_bundle"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/integration"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/mock"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/mock_data"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/navigation"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/project"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/query"
@@ -57,6 +58,7 @@ func HandlerModules() fx.Option {
 			access_control.BindUseCase,
 			ai_catalog.BindUseCase,
 			ai_assistant.BindUseCase,
+			mock_data.BindUseCase,
 			workspace.BindUseCase,
 			backend_connection.BindUseCase,
 			backup.BindUseCase,
@@ -94,6 +96,7 @@ func HandlerModules() fx.Option {
 			access_control.NewHandler,
 			ai_catalog.NewHandler,
 			ai_assistant.NewHandler,
+			mock_data.NewHandler,
 			backend_connection.NewHandler,
 			backup.NewHandler,
 			httpsession.NewHandler,

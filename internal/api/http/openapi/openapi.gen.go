@@ -8416,6 +8416,504 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/mock-data/capabilities:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace\n" +
+		"        проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны\n" +
+		"        только создателю.\n" +
+		"      tags:\n" +
+		"        - Mock Generator\n" +
+		"      summary: Получить возможности Mock Generator\n" +
+		"      operationId: getMockCapabilities\n" +
+		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                type: object\n" +
+		"                additionalProperties: true\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/mock-data/generate:\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace\n" +
+		"        проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны\n" +
+		"        только создателю.\n" +
+		"      tags:\n" +
+		"        - Mock Generator\n" +
+		"      summary: Сгенерировать JSON по JSON Schema Draft 2020-12\n" +
+		"      operationId: generateMockData\n" +
+		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/mock_data.GenerationRequest\"\n" +
+		"        description: Schema and generation options\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/mock_data.GenerationResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"413\":\n" +
+		"          description: Request Entity Too Large\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"429\":\n" +
+		"          description: Too Many Requests\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"502\":\n" +
+		"          description: Bad Gateway\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"503\":\n" +
+		"          description: Service Unavailable\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"504\":\n" +
+		"          description: Gateway Timeout\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/mock-data/streams:\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace\n" +
+		"        проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны\n" +
+		"        только создателю.\n" +
+		"      tags:\n" +
+		"        - Mock Generator\n" +
+		"      summary: Создать сессию генерации\n" +
+		"      operationId: createMockStream\n" +
+		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/mock_data.StreamRequest\"\n" +
+		"        description: Schema, generation options and stream parameters\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Created\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/entities.MockStream\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"413\":\n" +
+		"          description: Request Entity Too Large\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"429\":\n" +
+		"          description: Too Many Requests\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"502\":\n" +
+		"          description: Bad Gateway\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"503\":\n" +
+		"          description: Service Unavailable\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"504\":\n" +
+		"          description: Gateway Timeout\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/mock-data/streams/{id}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace\n" +
+		"        проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны\n" +
+		"        только создателю.\n" +
+		"      tags:\n" +
+		"        - Mock Generator\n" +
+		"      summary: Получить состояние сессии\n" +
+		"      operationId: getMockStream\n" +
+		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Stream ID\n" +
+		"          name: id\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/entities.MockStream\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"503\":\n" +
+		"          description: Service Unavailable\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace\n" +
+		"        проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны\n" +
+		"        только создателю.\n" +
+		"      tags:\n" +
+		"        - Mock Generator\n" +
+		"      summary: Остановить сессию\n" +
+		"      operationId: stopMockStream\n" +
+		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Stream ID\n" +
+		"          name: id\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"204\":\n" +
+		"          description: No Content\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace\n" +
+		"        проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны\n" +
+		"        только создателю.\n" +
+		"      tags:\n" +
+		"        - Mock Generator\n" +
+		"      summary: Изменить параметры или приостановить поток\n" +
+		"      operationId: updateMockStream\n" +
+		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Stream ID\n" +
+		"          name: id\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/mock_data.StreamPatch\"\n" +
+		"        description: Mutable parameters\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/entities.MockStream\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Conflict\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"503\":\n" +
+		"          description: Service Unavailable\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/mock-data/streams/{id}/events\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: \"Единственная подписка. Message envelope:\n" +
+		"        started/data/completed/failed. Нет replay. KeepAlive обязателен даже при\n" +
+		"        поступлении данных.\"\n" +
+		"      tags:\n" +
+		"        - Mock Generator\n" +
+		"      summary: Подключиться к SSE генерации\n" +
+		"      operationId: subscribeMockStream\n" +
+		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Stream ID\n" +
+		"          name: id\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: SSE message events\n" +
+		"          content:\n" +
+		"            text/event-stream:\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            text/event-stream:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            text/event-stream:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            text/event-stream:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Conflict\n" +
+		"          content:\n" +
+		"            text/event-stream:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"503\":\n" +
+		"          description: Service Unavailable\n" +
+		"          content:\n" +
+		"            text/event-stream:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"504\":\n" +
+		"          description: Gateway Timeout\n" +
+		"          content:\n" +
+		"            text/event-stream:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/mock-data/streams/{id}/keepalive\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace\n" +
+		"        проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны\n" +
+		"        только создателю.\n" +
+		"      tags:\n" +
+		"        - Mock Generator\n" +
+		"      summary: Продлить сессию на 180 секунд\n" +
+		"      operationId: keepAliveMockStream\n" +
+		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Stream ID\n" +
+		"          name: id\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/entities.MockStream\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Conflict\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"503\":\n" +
+		"          description: Service Unavailable\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /api/v1/mocks:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -17161,6 +17659,38 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        workspace:\n" +
 		"          type: string\n" +
+		"    entities.MockParameters:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        emitImmediately:\n" +
+		"          type: boolean\n" +
+		"        intervalMs:\n" +
+		"          type: integer\n" +
+		"        itemsPerMessage:\n" +
+		"          type: integer\n" +
+		"    entities.MockStream:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        eventsUrl:\n" +
+		"          type: string\n" +
+		"        expiresAt:\n" +
+		"          type: string\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"        idleTimeoutMs:\n" +
+		"          type: integer\n" +
+		"        parameters:\n" +
+		"          $ref: \"#/components/schemas/entities.MockParameters\"\n" +
+		"        parametersVersion:\n" +
+		"          type: integer\n" +
+		"        profile:\n" +
+		"          type: string\n" +
+		"        seed:\n" +
+		"          type: string\n" +
+		"        sequence:\n" +
+		"          type: integer\n" +
+		"        status:\n" +
+		"          type: string\n" +
 		"    entities.PortableBundle:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -18176,6 +18706,134 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    mock_data.GenerationMetadata:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        count:\n" +
+		"          type: integer\n" +
+		"        profile:\n" +
+		"          type: string\n" +
+		"        seed:\n" +
+		"          type: string\n" +
+		"    mock_data.GenerationOptions:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        count:\n" +
+		"          type: integer\n" +
+		"          maximum: 1000\n" +
+		"          minimum: 1\n" +
+		"        defaultArrayLength:\n" +
+		"          type: integer\n" +
+		"        optionalPropertyProbability:\n" +
+		"          type: number\n" +
+		"        profile:\n" +
+		"          type: string\n" +
+		"        relations:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/mock_data.Relation\"\n" +
+		"        seed:\n" +
+		"          type: string\n" +
+		"    mock_data.GenerationRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        generation:\n" +
+		"          $ref: \"#/components/schemas/mock_data.GenerationOptions\"\n" +
+		"        schema:\n" +
+		"          type: object\n" +
+		"    mock_data.GenerationResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            type: object\n" +
+		"        meta:\n" +
+		"          $ref: \"#/components/schemas/mock_data.GenerationMetadata\"\n" +
+		"    mock_data.Relation:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"        mappings:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/mock_data.RelationMapping\"\n" +
+		"        selection:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - single\n" +
+		"            - random\n" +
+		"            - round-robin\n" +
+		"        source:\n" +
+		"          $ref: \"#/components/schemas/mock_data.RelationSource\"\n" +
+		"        target:\n" +
+		"          $ref: \"#/components/schemas/mock_data.RelationTarget\"\n" +
+		"    mock_data.RelationMapping:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        from:\n" +
+		"          type: string\n" +
+		"        to:\n" +
+		"          type: string\n" +
+		"    mock_data.RelationSource:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        path:\n" +
+		"          type: string\n" +
+		"        uniqueBy:\n" +
+		"          type: string\n" +
+		"    mock_data.RelationTarget:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        path:\n" +
+		"          type: string\n" +
+		"    mock_data.StreamGenerationOptions:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        defaultArrayLength:\n" +
+		"          type: integer\n" +
+		"        optionalPropertyProbability:\n" +
+		"          type: number\n" +
+		"        profile:\n" +
+		"          type: string\n" +
+		"        relations:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/mock_data.Relation\"\n" +
+		"        seed:\n" +
+		"          type: string\n" +
+		"    mock_data.StreamParameters:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        emitImmediately:\n" +
+		"          type: boolean\n" +
+		"        intervalMs:\n" +
+		"          type: integer\n" +
+		"          maximum: 60000\n" +
+		"          minimum: 100\n" +
+		"        itemsPerMessage:\n" +
+		"          type: integer\n" +
+		"          maximum: 100\n" +
+		"          minimum: 1\n" +
+		"    mock_data.StreamPatch:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        intervalMs:\n" +
+		"          type: integer\n" +
+		"        itemsPerMessage:\n" +
+		"          type: integer\n" +
+		"        paused:\n" +
+		"          type: boolean\n" +
+		"    mock_data.StreamRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        generation:\n" +
+		"          $ref: \"#/components/schemas/mock_data.StreamGenerationOptions\"\n" +
+		"        schema:\n" +
+		"          type: object\n" +
+		"        stream:\n" +
+		"          $ref: \"#/components/schemas/mock_data.StreamParameters\"\n" +
 		"    navigation.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +

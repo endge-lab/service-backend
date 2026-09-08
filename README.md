@@ -73,7 +73,7 @@ AUTH_DEV_PLATFORM_ADMIN=true
 Единственный источник build metadata сервиса — корневой файл `VERSION`:
 
 ```text
-APP_VERSION=0.9.0
+APP_VERSION=0.11.0
 WORKSPACE_SCHEMA_VERSION=1
 ```
 
@@ -86,7 +86,7 @@ workspace export/import contract. Локальная, Docker- и удалённ�
 подключённых backend-сервисов через их штатный transport и возвращает массив
 `services`. Недоступный сервис остаётся в массиве со статусом `unavailable`, но
 без внутренних адресов и infrastructure error; это не меняет liveness backend.
-Результат кешируется на `AI_WORKBENCH_HEALTH_CACHE_TTL`.
+Workbench использует `AI_WORKBENCH_HEALTH_CACHE_TTL`, Mock — `MOCK_GENERATOR_HEALTH_CACHE_TTL` (5 s) и отдельный health timeout (2 s).
 
 ## Production OIDC
 
@@ -277,3 +277,15 @@ make test-integration
 make test-e2e
 make test-critical
 ```
+
+## Mock Generator
+
+Опциональный gateway `/api/v1/mock-data` использует пользовательский OIDC и текущий `X-Endge-Workspace`. Workspace Viewer может генерировать JSON и создать SSE-сессию; управление доступно только её actor в исходном workspace. Backend хранит публичный ID, upstream ID, владельца, lease и cancel; схемой, PRNG и scheduler владеет Mock.
+
+Настройки: `MOCK_GENERATOR_GRPC_TARGET` (в Compose `service-mock-generator:50052`), `MOCK_GENERATOR_AUDIENCE=endge-mock-generator`, `MOCK_GENERATOR_REQUEST_TIMEOUT=10s`, `MOCK_GENERATOR_HEALTH_TIMEOUT=2s`, `MOCK_GENERATOR_HEALTH_CACHE_TTL=5s`. Production требует `MOCK_GENERATOR_TLS_ENABLED=true` и включённый service identity client. Mock имеет отдельный token-provider instance от Workbench. TLS CA/certificate/key задаются `MOCK_GENERATOR_TLS_CA_FILE`, `MOCK_GENERATOR_TLS_CERT_FILE`, `MOCK_GENERATOR_TLS_KEY_FILE`.
+
+Лимиты gateway: `MOCK_GATEWAY_SESSIONS=32`, `MOCK_GATEWAY_SESSIONS_PER_OWNER=5`, `MOCK_GATEWAY_REQUEST_BYTES=2097152`, `MOCK_GATEWAY_BUFFER_BYTES=67108864`, `MOCK_GATEWAY_READY_TIMEOUT=30s`, `MOCK_GATEWAY_IDLE_TIMEOUT=180s`, `MOCK_GATEWAY_WRITE_TIMEOUT=10s`. Capabilities показывают меньшие ограничения backend/upstream. Освобождение публичной сессии отменяет подписку; квота удерживается до завершения ограниченного по времени Stop RPC.
+
+Пустой target сохраняет работоспособность backend: capabilities возвращают `available: false`, generate/create — контролируемый 503. `/version.services` всегда содержит `service_mock_generator`, в том числе unavailable. Отсутствие Mock не влияет на Workbench и `/health`.
+
+[Контракт, примеры и lifecycle](../egorkozelskij-service-mock-generator/docs/todo-2.md). [Воспроизводимые проверки](../egorkozelskij-service-mock-generator/docs/tests/README.md).

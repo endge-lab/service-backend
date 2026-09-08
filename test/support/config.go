@@ -28,6 +28,7 @@ func DevConfig() *config.Config {
 		Identity:               config.IdentityConfig{Mode: "dev", DevSubject: "e2e-user", DevUsername: "e2e", DevDisplayName: "E2E User", DevPlatformAdmin: true},
 		ConfiguratorAuth:       config.ConfiguratorAuthConfig{Adapter: "dev", ReturnURL: "http://configurator.test", SessionCookieName: "endge_test_session", SessionTTL: time.Hour, TransactionTTL: time.Minute, SessionCleanupInterval: time.Minute},
 		Encryption:             config.EncryptionConfig{KeyID: "test-v1", Key: testEncryptionKey},
+		MockGenerator:          config.MockGeneratorConfig{RequestTimeout: time.Second, HealthTimeout: time.Second, HealthCacheTTL: time.Millisecond, Sessions: 32, PerOwner: 5, RequestBytes: 2 << 20, BufferBytes: 64 << 20, ReadyTimeout: 30 * time.Second, IdleTimeout: 180 * time.Second, WriteTimeout: 10 * time.Second},
 		AIWorkbench:            config.AIWorkbenchConfig{RequestTimeout: time.Second, HealthTimeout: time.Second, HealthCacheTTL: time.Millisecond},
 		Snapshots:              config.SnapshotConfig{ImportBackupRetentionDays: 7},
 	}

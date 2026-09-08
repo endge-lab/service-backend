@@ -17,6 +17,7 @@ func CommonModules() fx.Option {
 	return fx.Options(
 		fx.Provide(
 			config.Load,
+			fx.Annotate(newMockGeneratorGateway, fx.As(new(ports.MockGeneratorGateway))),
 			newEncryptionKeyring,
 			fx.Annotate(
 				newAIWorkbenchGateway,

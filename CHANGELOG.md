@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.11.0 — 2026-09-08
+
+- Добавлен опциональный Mock Generator gateway: OIDC gRPC, JSON/HTTP/SSE, изоляция actor/workspace, lease и ограниченный cleanup.
+- `/version` сообщает доступность и версию Mock отдельно от Workbench; workspace schema остаётся 1.
+- Добавлены contract, race, JWT/workspace E2E и изолированный adversarial harness.
+
+
 ## 0.9.0 — 2026-08-28
 
 ### Добавлено
