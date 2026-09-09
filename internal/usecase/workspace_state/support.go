@@ -283,6 +283,9 @@ func validateDocument(kind string, input map[string]any) error {
 			return domainerrors.InvalidInput("source_contract_invalid", "source and positive sourceVersion are required")
 		}
 	}
+	if kind == entities.CollectionCompositions && strings.EqualFold(strings.TrimSpace(stringField(input, "kind")), "project") {
+		return domainerrors.InvalidInput("composition_project_owner_unsupported", "Project owns its own Source; Composition kind project is not supported")
+	}
 	if kind == "queries" {
 		version, _ := numberField(input, "sourceVersion")
 		if version != 2 {
@@ -292,6 +295,13 @@ func validateDocument(kind string, input map[string]any) error {
 	if kind == entities.CollectionActions && strings.TrimSpace(stringField(input, "source")) == "" {
 		return domainerrors.InvalidInput("action_source_invalid", "Action source must not be empty")
 	}
+	if kind == entities.CollectionProjects {
+		version, hasVersion := numberField(input, "sourceVersion")
+		if _, hasSource := input["source"].(string); !hasSource || !hasVersion || version != 1 {
+			return domainerrors.InvalidInput("project_source_contract_invalid", "Project source and sourceVersion 1 are required")
+		}
+	}
+
 	if kind == entities.CollectionSimulations {
 		version, hasVersion := numberField(input, "sourceVersion")
 		if _, hasSource := input["source"].(string); !hasSource || !hasVersion || version != 1 {
@@ -373,9 +383,9 @@ func validateProjectContract(kind string, input map[string]any) error {
 	if kind != entities.CollectionProjects {
 		return nil
 	}
-	for _, field := range []string{"navigation", "navigationId", "sortOrder", "sort_order"} {
+	for _, field := range []string{"navigation", "navigationId", "navigationIdentity", "sortOrder", "sort_order"} {
 		if _, exists := input[field]; exists {
-			return domainerrors.InvalidInput("project_legacy_field", "Project must use order and navigationIdentity")
+			return domainerrors.InvalidInput("project_legacy_field", "Project must use order and cannot reference navigation")
 		}
 	}
 	return nil

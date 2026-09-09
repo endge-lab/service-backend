@@ -29,6 +29,14 @@ func (s *Lifecycle) Create(ctx context.Context, definition Definition, repositor
 		return nil, err
 	}
 	configurationdomain.RemoveLegacySSEFromDocument(definition.Collection, values)
+	if definition.Collection == entities.CollectionProjects {
+		if _, exists := values["source"]; !exists {
+			values["source"] = "defineComposition({\n  activateOn: startup(),\n  data: {},\n  resources: {},\n  runtimes: {},\n  hooks: [],\n  outputs: {},\n})\n"
+		}
+		if _, exists := values["sourceVersion"]; !exists {
+			values["sourceVersion"] = 1
+		}
+	}
 	normalizeFolderInput(definition.Collection, values)
 	if err = validateDocument(definition.Collection, values); err != nil {
 		return nil, err

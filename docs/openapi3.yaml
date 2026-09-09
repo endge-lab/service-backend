@@ -19499,14 +19499,15 @@ components:
         meta:
           type: object
           additionalProperties: {}
-        navigationIdentity:
-          type: string
-          maxLength: 160
         order:
           type: integer
         slug:
           type: string
           maxLength: 160
+        source:
+          type: string
+        sourceVersion:
+          type: integer
     project.ListResponse:
       type: object
       properties:
@@ -19563,14 +19564,15 @@ components:
         meta:
           type: object
           additionalProperties: {}
-        navigationIdentity:
-          type: string
-          maxLength: 160
         order:
           type: integer
         slug:
           type: string
           maxLength: 160
+        source:
+          type: string
+        sourceVersion:
+          type: integer
     project.Response:
       type: object
       properties:
@@ -19625,8 +19627,6 @@ components:
           example: endge-core
         meta:
           type: object
-        navigationIdentity:
-          type: string
         order:
           type: integer
         revision:
@@ -19634,6 +19634,10 @@ components:
           example: 3
         slug:
           type: string
+        source:
+          type: string
+        sourceVersion:
+          type: integer
         updatedAt:
           type: string
           format: date-time

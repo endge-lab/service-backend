@@ -19504,14 +19504,15 @@ var openAPI3YAML = []byte(
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
-		"        navigationIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
 		"        order:\n" +
 		"          type: integer\n" +
 		"        slug:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
 		"    project.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -19568,14 +19569,15 @@ var openAPI3YAML = []byte(
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
-		"        navigationIdentity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
 		"        order:\n" +
 		"          type: integer\n" +
 		"        slug:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
 		"    project.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -19630,8 +19632,6 @@ var openAPI3YAML = []byte(
 		"          example: endge-core\n" +
 		"        meta:\n" +
 		"          type: object\n" +
-		"        navigationIdentity:\n" +
-		"          type: string\n" +
 		"        order:\n" +
 		"          type: integer\n" +
 		"        revision:\n" +
@@ -19639,6 +19639,10 @@ var openAPI3YAML = []byte(
 		"          example: 3\n" +
 		"        slug:\n" +
 		"          type: string\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
 		"        updatedAt:\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +

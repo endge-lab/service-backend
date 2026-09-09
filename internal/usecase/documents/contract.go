@@ -15,7 +15,7 @@ import (
 
 var Collections = append([]string(nil), entities.DocumentCollections...)
 
-var sourceVersionCollections = []string{entities.CollectionTypes, entities.CollectionQueries, entities.CollectionDataViews, entities.CollectionCompositions, entities.CollectionStores, entities.CollectionStreams, entities.CollectionSimulations, entities.CollectionUpdates, entities.CollectionFilters, entities.CollectionComputations, entities.CollectionVocabs, entities.CollectionStyles, entities.CollectionConfigurations}
+var sourceVersionCollections = []string{entities.CollectionProjects, entities.CollectionTypes, entities.CollectionQueries, entities.CollectionDataViews, entities.CollectionCompositions, entities.CollectionStores, entities.CollectionStreams, entities.CollectionSimulations, entities.CollectionUpdates, entities.CollectionFilters, entities.CollectionComputations, entities.CollectionVocabs, entities.CollectionStyles, entities.CollectionConfigurations}
 
 var readOnlyFields = []string{"id", "type", "revision", "author", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", "created_by", "updated_by"}
 
@@ -53,6 +53,9 @@ func validateDocument(kind string, input map[string]any) error {
 				return domainerrors.InvalidInput("source_version_invalid", "sourceVersion must be positive")
 			}
 		}
+	}
+	if kind == entities.CollectionCompositions && strings.EqualFold(strings.TrimSpace(stringField(input, "kind")), "project") {
+		return domainerrors.InvalidInput("composition_project_owner_unsupported", "Project owns its own Source; Composition kind project is not supported")
 	}
 	if kind == "queries" {
 		version, _ := sourceVersion(input)
@@ -95,11 +98,14 @@ func validateDocument(kind string, input map[string]any) error {
 		return domainerrors.InvalidInput("update_store_required", "storeIdentity is required")
 	}
 	if kind == entities.CollectionProjects {
-		if _, exists := input["navigation"]; exists {
-			return domainerrors.InvalidInput("project_navigation_legacy", "Project navigation must use navigationIdentity")
+		version, hasVersion := sourceVersion(input)
+		if _, hasSource := input["source"].(string); !hasSource || !hasVersion || version != 1 {
+			return domainerrors.InvalidInput("project_source_contract_invalid", "Project source and sourceVersion 1 are required")
 		}
-		if _, exists := input["navigationId"]; exists {
-			return domainerrors.InvalidInput("project_navigation_legacy", "Project navigation must use navigationIdentity")
+		for _, field := range []string{"navigation", "navigationId", "navigationIdentity"} {
+			if _, exists := input[field]; exists {
+				return domainerrors.InvalidInput("project_navigation_unsupported", "Project navigation is not supported; use a navigation document directly")
+			}
 		}
 	}
 	if kind == entities.CollectionAuthProfiles {

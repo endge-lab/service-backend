@@ -153,15 +153,18 @@ func TestVocabAcceptsLegacyOrSourceVersionOne(t *testing.T) {
 	}
 }
 
-// TestProjectAcceptsCanonicalNavigationRelation проверяет identity-based Project-навигацию.
-func TestProjectAcceptsCanonicalNavigationRelation(t *testing.T) {
-	input := map[string]any{"identity": "p", "displayName": "Project", "navigationIdentity": "main"}
+// TestProjectRejectsNavigationRelation проверяет независимость проекта от Navigation.
+func TestProjectRejectsNavigationRelation(t *testing.T) {
+	input := map[string]any{"identity": "p", "displayName": "Project", "source": "defineComposition({ runtimes: {} })", "sourceVersion": float64(1)}
 	if err := validateDocument("projects", input); err != nil {
-		t.Fatalf("canonical Project navigation relation rejected: %v", err)
+		t.Fatalf("Project without navigation rejected: %v", err)
 	}
-	input["navigationId"] = 42
-	if err := validateDocument("projects", input); err == nil {
-		t.Fatal("legacy Project navigationId was accepted")
+	for _, field := range []string{"navigation", "navigationId", "navigationIdentity"} {
+		invalid := copyMap(input)
+		invalid[field] = "main"
+		if err := validateDocument("projects", invalid); err == nil {
+			t.Fatalf("removed Project field %s was accepted", field)
+		}
 	}
 }
 
@@ -183,5 +186,25 @@ func TestChecksumContentIgnoresJSONFormatting(t *testing.T) {
 	second.Data = json.RawMessage(`{"nested": {"y": 2, "x": 1}}`)
 	if checksumContent(first) != checksumContent(second) {
 		t.Fatal("семантически одинаковый JSON имеет разные checksum")
+	}
+}
+
+// TestProjectSourceContract защищает сохранение Source вместе с документом проекта.
+func TestProjectSourceContract(t *testing.T) {
+	valid := map[string]any{"identity": "airport", "displayName": "Airport", "source": "defineComposition({ runtimes: {} })", "sourceVersion": float64(1)}
+	if err := validateDocument(entities.CollectionProjects, valid); err != nil {
+		t.Fatal(err)
+	}
+	for _, field := range []string{"source", "sourceVersion"} {
+		input := copyMap(valid)
+		delete(input, field)
+		if err := validateDocument(entities.CollectionProjects, input); err == nil {
+			t.Fatalf("missing %s accepted", field)
+		}
+	}
+	invalid := copyMap(valid)
+	invalid["sourceVersion"] = float64(2)
+	if err := validateDocument(entities.CollectionProjects, invalid); err == nil {
+		t.Fatal("unsupported sourceVersion accepted")
 	}
 }
