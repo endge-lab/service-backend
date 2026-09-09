@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/endge-lab/service-backend/internal/config"
+	"github.com/endge-lab/service-backend/internal/domain/access"
+	"github.com/endge-lab/service-backend/internal/domain/entities"
 	platformencryption "github.com/endge-lab/service-backend/internal/platform/encryption"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -33,6 +35,7 @@ type LoginStart struct {
 
 type SessionManager struct {
 	config   config.ConfiguratorAuthConfig
+	access   *access.Policy
 	pool     *pgxpool.Pool
 	registry *LoginAdapterRegistry
 	resolver Resolver
@@ -43,7 +46,7 @@ type SessionManager struct {
 
 func NewSessionManager(cfg *config.Config, pool *pgxpool.Pool, registry *LoginAdapterRegistry, resolver Resolver, keyring *platformencryption.Keyring) (*SessionManager, error) {
 	manager := &SessionManager{
-		config: cfg.ConfiguratorAuth, pool: pool, registry: registry, resolver: resolver,
+		config: cfg.ConfiguratorAuth, access: cfg.Access, pool: pool, registry: registry, resolver: resolver,
 		loginURL: strings.TrimRight(cfg.App.PublicURL, "/") + "/auth/login",
 		basePath: cfg.HTTPBasePath, keyring: keyring,
 	}
@@ -159,11 +162,19 @@ func (m *SessionManager) Complete(ctx context.Context, state, code, browserNonce
 	if subtle.ConstantTimeCompare([]byte(claims.Nonce), []byte(expectedOIDCNonce)) != 1 {
 		return "", "", time.Time{}, fmt.Errorf("OIDC identity nonce is invalid")
 	}
+	claims, err = m.withExternalAccess(ctx, claims, tokens.AccessToken)
+	if err != nil {
+		return "", "", time.Time{}, err
+	}
 	cookieToken, err := secureRandom(32)
 	if err != nil {
 		return "", "", time.Time{}, err
 	}
 	refreshEncrypted, err := m.encryptOptional(tokens.RefreshToken)
+	if err != nil {
+		return "", "", time.Time{}, err
+	}
+	externalAccess, err := json.Marshal(claims.ExternalAccess)
 	if err != nil {
 		return "", "", time.Time{}, err
 	}
@@ -177,10 +188,10 @@ func (m *SessionManager) Complete(ctx context.Context, state, code, browserNonce
 	_, err = m.pool.Exec(ctx, `
 		INSERT INTO configurator_auth_sessions(
 			token_hash,provider_id,subject,issuer,username,display_name,groups_json,platform_admin,
-			refresh_token_encrypted,identity_refresh_at,expires_at)
-		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+			refresh_token_encrypted,identity_refresh_at,expires_at,external_access)
+		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
 		hashToken(cookieToken), claims.ProviderID, claims.Subject, claims.Issuer, claims.Username, claims.DisplayName,
-		groups, claims.PlatformAdmin, nullableBytes(refreshEncrypted), accessExpiresAt, sessionExpiresAt)
+		groups, claims.PlatformAdmin, nullableBytes(refreshEncrypted), accessExpiresAt, sessionExpiresAt, externalAccess)
 	if err != nil {
 		return "", "", time.Time{}, fmt.Errorf("create configurator session: %w", err)
 	}
@@ -195,7 +206,7 @@ func (m *SessionManager) Resolve(ctx context.Context, cookieToken string) (Sessi
 	if err != nil {
 		return SessionIdentity{}, err
 	}
-	if !record.identityRefreshDue(time.Now()) {
+	if !m.identityRefreshDue(record, time.Now()) {
 		return record.identity(), nil
 	}
 	return m.resolveWithRefresh(ctx, cookieToken)
@@ -213,7 +224,7 @@ func (m *SessionManager) resolveWithRefresh(ctx context.Context, cookieToken str
 	}
 	// После получения блокировки состояние перечитывается: другой запрос мог
 	// успеть обновить identity claims, пока этот запрос ожидал FOR UPDATE.
-	if record.identityRefreshDue(time.Now()) {
+	if m.identityRefreshDue(record, time.Now()) {
 		identity, refreshErr := m.refresh(ctx, tx, cookieToken, record)
 		if refreshErr != nil {
 			_, _ = tx.Exec(ctx, `UPDATE configurator_auth_sessions SET revoked_at=NOW(),updated_at=NOW() WHERE token_hash=$1`, hashToken(cookieToken))
@@ -234,7 +245,7 @@ func (m *SessionManager) resolveWithRefresh(ctx context.Context, cookieToken str
 func sessionSelect(forUpdate bool) string {
 	query := `
 		SELECT id::text,provider_id,subject,issuer,username,display_name,groups_json,platform_admin,
-			refresh_token_encrypted,identity_refresh_at,expires_at
+			refresh_token_encrypted,identity_refresh_at,expires_at,external_access
 		FROM configurator_auth_sessions
 		WHERE token_hash=$1 AND revoked_at IS NULL AND expires_at>NOW()`
 	if forUpdate {
@@ -249,16 +260,21 @@ type sessionRow interface {
 
 func scanSessionRecord(row sessionRow) (sessionRecord, error) {
 	var record sessionRecord
-	var groupsJSON []byte
+	var groupsJSON, externalJSON []byte
 	if err := row.Scan(
 		&record.ID, &record.ProviderID, &record.Subject, &record.Issuer, &record.Username, &record.DisplayName,
 		&groupsJSON, &record.PlatformAdmin, &record.RefreshTokenEncrypted, &record.IdentityRefreshAt,
-		&record.ExpiresAt,
+		&record.ExpiresAt, &externalJSON,
 	); err != nil {
 		return sessionRecord{}, fmt.Errorf("configurator session is invalid")
 	}
 	if err := json.Unmarshal(groupsJSON, &record.Groups); err != nil {
 		return sessionRecord{}, fmt.Errorf("decode configurator session groups: %w", err)
+	}
+	if len(externalJSON) != 0 {
+		if err := json.Unmarshal(externalJSON, &record.ExternalAccess); err != nil {
+			return sessionRecord{}, fmt.Errorf("decode session access: %w", err)
+		}
 	}
 	return record, nil
 }
@@ -310,6 +326,10 @@ func (m *SessionManager) refresh(ctx context.Context, tx pgx.Tx, cookieToken str
 	if claims.ProviderID != record.ProviderID || claims.Subject != record.Subject || claims.Issuer != record.Issuer {
 		return SessionIdentity{}, fmt.Errorf("refreshed Configurator identity does not match the session")
 	}
+	claims, err = m.withExternalAccess(ctx, claims, tokens.AccessToken)
+	if err != nil {
+		return SessionIdentity{}, err
+	}
 	if tokens.RefreshToken == "" {
 		tokens.RefreshToken = refreshToken
 	}
@@ -317,13 +337,17 @@ func (m *SessionManager) refresh(ctx context.Context, tx pgx.Tx, cookieToken str
 	if err != nil {
 		return SessionIdentity{}, err
 	}
+	externalAccess, err := json.Marshal(claims.ExternalAccess)
+	if err != nil {
+		return SessionIdentity{}, err
+	}
 	groups, _ := json.Marshal(claims.Groups)
 	identityRefreshAt := tokenExpiry(time.Now(), tokens.ExpiresIn, claims.ExpiresAt)
 	_, err = tx.Exec(ctx, `
 		UPDATE configurator_auth_sessions SET username=$1,display_name=$2,groups_json=$3,platform_admin=$4,
-			refresh_token_encrypted=$5,identity_refresh_at=$6,updated_at=NOW()
+			refresh_token_encrypted=$5,identity_refresh_at=$6,updated_at=NOW(),external_access=$8
 		WHERE token_hash=$7 AND revoked_at IS NULL`, claims.Username, claims.DisplayName, groups, claims.PlatformAdmin,
-		nullableBytes(refreshEncrypted), identityRefreshAt, hashToken(cookieToken))
+		nullableBytes(refreshEncrypted), identityRefreshAt, hashToken(cookieToken), externalAccess)
 	if err != nil {
 		return SessionIdentity{}, fmt.Errorf("update refreshed Configurator session: %w", err)
 	}
@@ -416,15 +440,41 @@ type sessionRecord struct {
 	RefreshTokenEncrypted []byte
 	IdentityRefreshAt     time.Time
 	ExpiresAt             time.Time
+	ExternalAccess        *entities.ExternalAccessSnapshot
 }
 
 func (r sessionRecord) identity() SessionIdentity {
 	return SessionIdentity{Claims: Claims{ProviderID: r.ProviderID, Subject: r.Subject, Issuer: r.Issuer, Username: r.Username,
-		DisplayName: r.DisplayName, Groups: r.Groups, PlatformAdmin: r.PlatformAdmin, ExpiresAt: r.IdentityRefreshAt}, SessionID: r.ID}
+		DisplayName: r.DisplayName, Groups: r.Groups, PlatformAdmin: r.PlatformAdmin, ExpiresAt: r.IdentityRefreshAt, ExternalAccess: r.ExternalAccess}, SessionID: r.ID}
 }
 
-func (r sessionRecord) identityRefreshDue(now time.Time) bool {
+func (m *SessionManager) identityRefreshDue(r sessionRecord, now time.Time) bool {
+	if m.access.External() && (r.ExternalAccess == nil || r.ExternalAccess.ConfigVersion != m.access.Version() || !r.ExternalAccess.ExpiresAt.After(now.Add(30*time.Second))) {
+		return true
+	}
 	return !r.IdentityRefreshAt.After(now.Add(30 * time.Second))
+}
+
+func (m *SessionManager) withExternalAccess(ctx context.Context, identity Claims, accessToken string) (Claims, error) {
+	if !m.access.External() {
+		return identity, nil
+	}
+	accessClaims, err := m.resolver.Resolve(ctx, accessToken)
+	if err != nil {
+		return Claims{}, fmt.Errorf("validate external access token: %w", err)
+	}
+	if accessClaims.ProviderID != identity.ProviderID || accessClaims.Issuer != identity.Issuer || accessClaims.Subject != identity.Subject {
+		return Claims{}, fmt.Errorf("access token identity does not match login identity")
+	}
+	identity.ExternalAccess, err = MapExternalAccess(m.access, accessClaims)
+	if err != nil {
+		return Claims{}, err
+	}
+	identity.PlatformAdmin = false
+	if accessClaims.ExpiresAt.Before(identity.ExpiresAt) {
+		identity.ExpiresAt = accessClaims.ExpiresAt
+	}
+	return identity, nil
 }
 
 func secureRandom(size int) (string, error) {

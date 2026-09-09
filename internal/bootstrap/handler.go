@@ -56,6 +56,7 @@ func HandlerModules() fx.Option {
 			auth.NewSessionManager,
 			fx.Annotate(httpmiddleware.NewAuthMiddleware, fx.As(new(httpmiddleware.AuthMiddleware))),
 			httpmiddleware.NewCurrentUserMiddleware,
+			configuratorauth.BindUseCase,
 			configuratorauth.NewHandler,
 			bridge.BindUseCase,
 			bridge.NewHandler,

@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 
+	"github.com/endge-lab/service-backend/internal/domain/access"
+
 	"github.com/endge-lab/service-backend/internal/buildinfo"
 	kitconfig "github.com/endge-lab/service-kit-go/config"
 )
@@ -13,6 +15,7 @@ type Config struct {
 	WorkspaceSchemaVersion int
 	HTTPBasePath           string
 	Identity               IdentityConfig
+	Access                 *access.Policy
 	ConfiguratorAuth       ConfiguratorAuthConfig
 	Encryption             EncryptionConfig
 	Snapshots              SnapshotConfig
@@ -51,6 +54,10 @@ func Load() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	accessPolicy, err := loadAccessConfig(identity, configuratorAuth)
+	if err != nil {
+		return nil, err
+	}
 	releaseArtifactCache, err := loadReleaseArtifactCacheConfig()
 	if err != nil {
 		return nil, err
@@ -74,6 +81,7 @@ func Load() (*Config, error) {
 		WorkspaceSchemaVersion: buildMetadata.WorkspaceSchemaVersion,
 		HTTPBasePath:           httpBasePath,
 		Identity:               identity,
+		Access:                 accessPolicy,
 		ConfiguratorAuth:       configuratorAuth,
 		Encryption:             encryption,
 		Snapshots:              loadSnapshotConfig(),

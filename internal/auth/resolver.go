@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"slices"
 	"strings"
@@ -9,19 +10,24 @@ import (
 
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/endge-lab/service-backend/internal/config"
+	"github.com/endge-lab/service-backend/internal/domain/entities"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type Claims struct {
-	ProviderID    string
-	Subject       string
-	Issuer        string
-	Username      string
-	DisplayName   string
-	Nonce         string
-	Groups        []string
-	PlatformAdmin bool
-	ExpiresAt     time.Time
+	ProviderID     string
+	Subject        string
+	Issuer         string
+	Username       string
+	DisplayName    string
+	Nonce          string
+	Groups         []string
+	PlatformAdmin  bool
+	ExpiresAt      time.Time
+	IssuedAt       time.Time
+	TokenHash      string
+	Attributes     map[string]any
+	ExternalAccess *entities.ExternalAccessSnapshot
 }
 
 type Resolver interface {
@@ -56,7 +62,7 @@ func (r *resolver) Resolve(ctx context.Context, raw string) (Claims, error) {
 
 	claims := jwt.MapClaims{}
 	token, err := jwt.ParseWithClaims(raw, claims, r.keyfunc.KeyfuncCtx(ctx),
-		jwt.WithValidMethods(r.config.AllowedAlgorithms), jwt.WithIssuer(r.config.Issuer), jwt.WithLeeway(30*time.Second))
+		jwt.WithJSONNumber(), jwt.WithValidMethods(r.config.AllowedAlgorithms), jwt.WithIssuer(r.config.Issuer), jwt.WithLeeway(30*time.Second))
 	if err != nil || !token.Valid {
 		return Claims{}, fmt.Errorf("invalid bearer token")
 	}
@@ -81,9 +87,14 @@ func (r *resolver) Resolve(ctx context.Context, raw string) (Claims, error) {
 		return Claims{}, fmt.Errorf("token expiration is required")
 	}
 
+	var issuedAt time.Time
+	if issued, issuedErr := claims.GetIssuedAt(); issuedErr == nil && issued != nil {
+		issuedAt = issued.Time
+	}
 	groups := claimStrings(claims[r.config.GroupsClaim])
 	return Claims{
 		ProviderID: r.config.ProviderID, Subject: subject, Issuer: issuer,
+		IssuedAt: issuedAt, TokenHash: hex.EncodeToString(hashToken(raw)), Attributes: map[string]any(claims),
 		Username: claimString(claims[r.config.UsernameClaim]), DisplayName: claimString(claims[r.config.DisplayNameClaim]),
 		Nonce: claimString(claims["nonce"]), Groups: groups, ExpiresAt: expires.Time,
 		PlatformAdmin: slices.Contains(r.config.PlatformAdminSubjects, subject) || intersects(groups, r.config.PlatformAdminGroups),

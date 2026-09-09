@@ -7,6 +7,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/endge-lab/service-backend/internal/domain/access"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
@@ -15,6 +16,7 @@ import (
 )
 
 type UseCase struct {
+	policy     *access.Policy
 	repository ports.AccessControlRepository
 	users      ports.UserRepository
 	workspaces ports.WorkspaceRepository
@@ -55,12 +57,15 @@ type BulkResult struct {
 	Updated  int `json:"updated"`
 }
 
-func NewUseCase(repository ports.AccessControlRepository, users ports.UserRepository, workspaces ports.WorkspaceRepository, tx ports.TxManager) *UseCase {
-	return &UseCase{repository: repository, users: users, workspaces: workspaces, tx: tx}
+func NewUseCase(repository ports.AccessControlRepository, users ports.UserRepository, workspaces ports.WorkspaceRepository, tx ports.TxManager, policy *access.Policy) *UseCase {
+	return &UseCase{repository: repository, users: users, workspaces: workspaces, tx: tx, policy: policy}
 }
 
 // ResolveCurrentActor синхронизирует identity и вычисляет platform role из локальной БД.
-func (s *UseCase) ResolveCurrentActor(ctx context.Context, input ports.UpsertCurrentUserInput, legacyPlatformAdmin bool) (*entities.User, bool, error) {
+func (s *UseCase) ResolveCurrentActor(ctx context.Context, input ports.UpsertCurrentUserInput, legacyPlatformAdmin bool, snapshot *entities.ExternalAccessSnapshot) (*entities.User, bool, error) {
+	if s.policy.External() {
+		return s.resolveExternalActor(ctx, input, snapshot)
+	}
 	hasAdmins, err := s.repository.HasPlatformAdmins(ctx)
 	if err != nil {
 		return nil, false, err
@@ -101,7 +106,11 @@ func (s *UseCase) ResolveCurrentActor(ctx context.Context, input ports.UpsertCur
 			if countErr != nil {
 				return countErr
 			}
-			if legacyPlatformAdmin || (!adminsExist && humanCount == 1) {
+			hadExternal, historyErr := s.repository.HasExternalAccessHistory(txctx)
+			if historyErr != nil {
+				return historyErr
+			}
+			if legacyPlatformAdmin || (!adminsExist && humanCount == 1 && !hadExternal) {
 				if _, _, err = s.repository.UpsertAccessGrant(txctx, ports.AccessGrantInput{UserID: user.ID, ScopeType: entities.AccessScopePlatform, Role: entities.AccessRoleAdmin, ActorID: user.ID}); err != nil {
 					return err
 				}
@@ -183,6 +192,9 @@ func (s *UseCase) List(ctx context.Context, input ListInput) (Page[entities.Acce
 }
 
 func (s *UseCase) Put(ctx context.Context, input PutInput) (*entities.AccessGrant, error) {
+	if err := s.policy.RequireLocal(); err != nil {
+		return nil, err
+	}
 	actor, err := shared.Actor(ctx)
 	if err != nil {
 		return nil, err
@@ -225,6 +237,9 @@ func (s *UseCase) Put(ctx context.Context, input PutInput) (*entities.AccessGran
 }
 
 func (s *UseCase) Delete(ctx context.Context, id string) error {
+	if err := s.policy.RequireLocal(); err != nil {
+		return err
+	}
 	if _, parseErr := uuid.Parse(strings.TrimSpace(id)); parseErr != nil {
 		return domainerrors.InvalidInput("access_grant_id_invalid", "id must be UUID")
 	}
@@ -264,6 +279,9 @@ func (s *UseCase) Delete(ctx context.Context, id string) error {
 }
 
 func (s *UseCase) Bulk(ctx context.Context, input BulkInput) (BulkResult, error) {
+	if err := s.policy.RequireLocal(); err != nil {
+		return BulkResult{}, err
+	}
 	actor, err := shared.Actor(ctx)
 	if err != nil {
 		return BulkResult{}, err

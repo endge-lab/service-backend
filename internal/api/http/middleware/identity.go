@@ -18,20 +18,21 @@ const (
 )
 
 type RequestIdentity struct {
-	ProviderID    string
-	Subject       string
-	Issuer        string
-	AuthUserID    string
-	Username      string
-	DisplayName   string
-	Role          string
-	SessionID     string
-	App           string
-	Platform      string
-	Scope         []string
-	Groups        []string
-	PlatformAdmin bool
-	ExpiresAt     string
+	ProviderID     string
+	Subject        string
+	Issuer         string
+	AuthUserID     string
+	Username       string
+	DisplayName    string
+	Role           string
+	SessionID      string
+	App            string
+	Platform       string
+	Scope          []string
+	Groups         []string
+	PlatformAdmin  bool
+	ExpiresAt      string
+	ExternalAccess *entities.ExternalAccessSnapshot
 }
 
 func IdentityFromContext(ctx context.Context) (RequestIdentity, bool) {

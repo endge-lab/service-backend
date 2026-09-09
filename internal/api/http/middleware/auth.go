@@ -38,7 +38,7 @@ func (m *authMiddleware) AuthMiddleware() fiber.Handler {
 		}
 		identity := RequestIdentity{ProviderID: claims.ProviderID, Subject: claims.Subject, Issuer: claims.Issuer, AuthUserID: claims.Subject,
 			Username: claims.Username, DisplayName: claims.DisplayName, Groups: claims.Groups, PlatformAdmin: claims.PlatformAdmin,
-			SessionID: sessionID, ExpiresAt: claims.ExpiresAt.Format("2006-01-02T15:04:05Z07:00")}
+			ExternalAccess: claims.ExternalAccess, SessionID: sessionID, ExpiresAt: claims.ExpiresAt.Format("2006-01-02T15:04:05Z07:00")}
 		ctx := context.WithValue(c.UserContext(), identityKey, identity)
 		if sessionID != "" {
 			ctx = context.WithValue(ctx, sessionIDKey, sessionID)
@@ -55,6 +55,9 @@ func (m *authMiddleware) authenticate(c *fiber.Ctx) (auth.Claims, string, bool, 
 			return auth.Claims{}, "", false, fmt.Errorf("unsupported Authorization scheme")
 		}
 		claims, err := m.resolver.Resolve(c.UserContext(), strings.TrimSpace(header[7:]))
+		if err == nil {
+			claims.ExternalAccess, err = auth.MapExternalAccess(m.config.Access, claims)
+		}
 		return claims, "", false, err
 	}
 	if cookieToken := strings.TrimSpace(c.Cookies(m.sessions.CookieName())); cookieToken != "" {

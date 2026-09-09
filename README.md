@@ -159,6 +159,37 @@ transactions и sessions удаляются фоновым процессом с
 внутренним security-state сервиса и не входят в workspace snapshot, export,
 backup или release.
 
+## Управление правами
+
+Backend поддерживает один источник назначений на экземпляр: локальную БД или
+внешние OIDC claims. По умолчанию сохраняется локальное управление. Для внешнего
+режима используйте [endge-access.example.yaml](./endge-access.example.yaml):
+
+```bash
+ACCESS_CONFIG_FILE=/etc/endge/endge-access.yaml ./service-backend
+```
+
+Файл читается один раз при старте. Без env override backend ищет
+`endge-access.yaml` рядом с исполняемым файлом. `.example.yaml` автоматически не
+подхватывается. Явный отсутствующий путь, пустой/невалидный файл и сочетание
+внешних прав с dev identity завершают запуск ошибкой. При `go run` задавайте
+абсолютный путь через `ACCESS_CONFIG_FILE`.
+
+Во внешнем режиме правила переводят проверенный access token в Platform Admin
+и Admin/Editor/Viewer существующих workspace. Назначения пользователя атомарно
+заменяются при входе и новом токене; пустой набор снимает прежний доступ.
+Ручные изменения grants и memberships, включая bulk, возвращают
+`403 access_managed_externally` даже для Platform Admin. Bootstrap первого
+пользователя и legacy `AUTH_PLATFORM_ADMIN_*` не обходят маппинг.
+
+`GET /api/session/me` возвращает `accessManagement.mode`, `sourceName` и
+`lastSynchronizedAt` вместе с существующими эффективными ролями текущего
+пользователя. Новый frontend-диалог в эту backend-реализацию не входит.
+
+Настройка, границы токенов, смена режима и обработка ошибок описаны в
+[документе внешних прав](./docs/external-access.md). Перед включением подготовьте
+workspace, указанные в правилах, и настройте соответствующие claims провайдера.
+
 ## Workspace и конкурентная запись
 
 Workspace выбирается заголовком:
@@ -167,9 +198,11 @@ Workspace выбирается заголовком:
 X-Endge-Workspace: default
 ```
 
-Активный пользователь имеет implicit `editor` в `default`. Для остальных
-workspace нужен membership `viewer`, `editor` или `admin`. Явный membership в
-`default` переопределяет implicit роль.
+Доступ определяется `access_grants`: Platform Admin имеет доступ ко всем
+workspace, остальные пользователи — по назначенным ролям `viewer`, `editor` или
+`admin`. Автоматического Editor-доступа к `default` нет. В локальном режиме
+первый активный пользователь новой установки получает Platform Admin; во
+внешнем режиме все роли приходят только из маппинга.
 
 PATCH, DELETE и restore требуют ETag предыдущего ответа:
 

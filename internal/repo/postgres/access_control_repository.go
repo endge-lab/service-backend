@@ -124,6 +124,9 @@ func (r *EndgeRepository) ListAccessGrants(ctx context.Context, input ports.Acce
 }
 
 func (r *EndgeRepository) UpsertAccessGrant(ctx context.Context, input ports.AccessGrantInput) (*entities.AccessGrant, bool, error) {
+	if err := r.invalidateExternalAccess(ctx, input.UserID); err != nil {
+		return nil, false, err
+	}
 	var existingID string
 	if input.ScopeType == entities.AccessScopePlatform {
 		_ = r.executor(ctx).QueryRow(ctx, `SELECT id::text FROM access_grants WHERE scope_type='platform' AND user_id=$1`, input.UserID).Scan(&existingID)
@@ -164,6 +167,9 @@ func (r *EndgeRepository) UpsertAccessGrant(ctx context.Context, input ports.Acc
 func (r *EndgeRepository) DeleteAccessGrant(ctx context.Context, id string) error {
 	grant, err := r.GetAccessGrant(ctx, id)
 	if err != nil {
+		return err
+	}
+	if err := r.invalidateExternalAccess(ctx, grant.User.ID); err != nil {
 		return err
 	}
 	if grant.ScopeType == "workspace" && grant.WorkspaceID != nil {

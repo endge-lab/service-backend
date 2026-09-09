@@ -20073,9 +20073,26 @@ components:
     revision.RestoreResponse:
       type: object
       additionalProperties: {}
+    session.AccessManagementResponse:
+      type: object
+      properties:
+        lastSynchronizedAt:
+          type: string
+          format: date-time
+        mode:
+          type: string
+          enum:
+            - local
+            - external
+          example: external
+        sourceName:
+          type: string
+          example: Корпоративный Keycloak
     session.Response:
       type: object
       properties:
+        accessManagement:
+          $ref: "#/components/schemas/session.AccessManagementResponse"
         platformAdmin:
           type: boolean
           example: true

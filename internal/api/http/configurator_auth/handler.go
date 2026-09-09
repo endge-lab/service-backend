@@ -1,9 +1,11 @@
 package configurator_auth
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/endge-lab/service-backend/internal/auth"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 )
@@ -11,12 +13,13 @@ import (
 const loginTransactionCookie = "endge_configurator_login"
 
 type Handler struct {
+	access   UseCase
 	sessions *auth.SessionManager
 	logger   *zap.Logger
 }
 
-func NewHandler(sessions *auth.SessionManager, logger *zap.Logger) *Handler {
-	return &Handler{sessions: sessions, logger: logger}
+func NewHandler(sessions *auth.SessionManager, logger *zap.Logger, access UseCase) *Handler {
+	return &Handler{sessions: sessions, logger: logger, access: access}
 }
 
 // Login начинает настроенный внешний процесс авторизации.
@@ -64,6 +67,25 @@ func (h *Handler) Callback(c *fiber.Ctx) error {
 	if err != nil {
 		h.logger.Warn("failed to complete Configurator login", zap.Error(err))
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"code": "auth_login_failed", "message": "login could not be completed"})
+	}
+	identity, err := h.sessions.Resolve(c.UserContext(), cookieToken)
+	if err == nil && identity.ExternalAccess != nil {
+		var active bool
+		user, _, resolveErr := h.access.ResolveCurrentActor(c.UserContext(), ports.UpsertCurrentUserInput{
+			ProviderID: identity.ProviderID, Issuer: identity.Issuer, Subject: identity.Subject,
+			Username: identity.Username, DisplayName: identity.DisplayName}, false, identity.ExternalAccess)
+		err = resolveErr
+		if user != nil {
+			active = user.Active
+		}
+		if err == nil && !active {
+			err = fmt.Errorf("user is inactive")
+		}
+	}
+	if err != nil {
+		_ = h.sessions.Revoke(c.UserContext(), cookieToken)
+		h.logger.Warn("failed to synchronize Configurator login access", zap.Error(err))
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"code": "auth_access_failed", "message": "login access could not be prepared"})
 	}
 	h.setSessionCookie(c, cookieToken, expiresAt)
 	return c.Redirect(returnURL, fiber.StatusSeeOther)

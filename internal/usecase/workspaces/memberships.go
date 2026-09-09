@@ -23,6 +23,9 @@ func (s *UseCase) ListMemberships(ctx context.Context, identity string) ([]entit
 
 // PutMembership создаёт или обновляет роль участника рабочего пространства.
 func (s *UseCase) PutMembership(ctx context.Context, identity, userID, role string) (*entities.Membership, error) {
+	if err := s.accessPolicy.RequireLocal(); err != nil {
+		return nil, err
+	}
 	current, err := shared.Actor(ctx)
 	if err != nil {
 		return nil, err
@@ -48,6 +51,9 @@ func (s *UseCase) PutMembership(ctx context.Context, identity, userID, role stri
 
 // DeleteMembership удаляет участника из рабочего пространства.
 func (s *UseCase) DeleteMembership(ctx context.Context, identity, userID string) error {
+	if err := s.accessPolicy.RequireLocal(); err != nil {
+		return err
+	}
 	scope, err := s.Authorize(ctx, identity)
 	if err != nil {
 		return err

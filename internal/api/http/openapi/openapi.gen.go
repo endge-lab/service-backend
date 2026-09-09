@@ -20078,9 +20078,26 @@ var openAPI3YAML = []byte(
 		"    revision.RestoreResponse:\n" +
 		"      type: object\n" +
 		"      additionalProperties: {}\n" +
+		"    session.AccessManagementResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        lastSynchronizedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"        mode:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - local\n" +
+		"            - external\n" +
+		"          example: external\n" +
+		"        sourceName:\n" +
+		"          type: string\n" +
+		"          example: Корпоративный Keycloak\n" +
 		"    session.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
+		"        accessManagement:\n" +
+		"          $ref: \"#/components/schemas/session.AccessManagementResponse\"\n" +
 		"        platformAdmin:\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +

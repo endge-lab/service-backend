@@ -19,11 +19,18 @@ import (
 
 // IdentityProvider — локальный OIDC/JWKS server без внешней сети и credentials.
 type IdentityProvider struct {
-	key         *rsa.PrivateKey
-	server      *httptest.Server
-	mu          sync.Mutex
-	codes       map[string]string
-	logoutCalls int
+	key           *rsa.PrivateKey
+	server        *httptest.Server
+	mu            sync.Mutex
+	codes         map[string]identityTokens
+	refreshTokens identityTokens
+	refreshCalls  int
+	logoutCalls   int
+}
+
+type identityTokens struct {
+	Access   string
+	Identity string
 }
 
 // TokenInput задаёт identity и роль пользователя в E2E-сценарии.
@@ -33,6 +40,8 @@ type TokenInput struct {
 	DisplayName string
 	Groups      []string
 	ExpiresAt   time.Time
+	IssuedAt    time.Time
+	Claims      map[string]any
 }
 
 // NewIdentityProvider создаёт RSA key и публикует только public JWKS.
@@ -42,7 +51,7 @@ func NewIdentityProvider(t testing.TB) *IdentityProvider {
 	if err != nil {
 		t.Fatalf("создать тестовый RSA key: %v", err)
 	}
-	provider := &IdentityProvider{key: key, codes: make(map[string]string)}
+	provider := &IdentityProvider{key: key, codes: make(map[string]identityTokens)}
 	provider.server = httptest.NewServer(http.HandlerFunc(provider.serveHTTP))
 	t.Cleanup(provider.server.Close)
 	return provider
@@ -62,9 +71,35 @@ func (p *IdentityProvider) AuthorizationCode(t testing.TB, input TokenInput, non
 	t.Helper()
 	code := randomValue(t, 24)
 	p.mu.Lock()
-	p.codes[code] = p.token(t, input, nonce)
+	token := p.token(t, input, nonce)
+	p.codes[code] = identityTokens{Access: token, Identity: token}
 	p.mu.Unlock()
 	return code
+}
+
+// AuthorizationCodeWithTokens tests identity/access token separation in the callback.
+func (p *IdentityProvider) AuthorizationCodeWithTokens(t testing.TB, identity, access TokenInput, nonce string) string {
+	t.Helper()
+	code := randomValue(t, 24)
+	identityToken, accessToken := p.token(t, identity, nonce), p.token(t, access, "")
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.codes[code] = identityTokens{Access: accessToken, Identity: identityToken}
+	return code
+}
+
+// SetRefreshTokens supplies the next refresh response; an empty value rejects refresh.
+func (p *IdentityProvider) SetRefreshTokens(t testing.TB, identity, access TokenInput) {
+	t.Helper()
+	identityToken, accessToken := p.token(t, identity, ""), p.token(t, access, "")
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.refreshTokens = identityTokens{Access: accessToken, Identity: identityToken}
+}
+func (p *IdentityProvider) RefreshCalls() int {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.refreshCalls
 }
 
 // LogoutCalls returns the number of provider logout requests received.
@@ -79,11 +114,18 @@ func (p *IdentityProvider) token(t testing.TB, input TokenInput, nonce string) s
 	if input.ExpiresAt.IsZero() {
 		input.ExpiresAt = time.Now().Add(time.Hour)
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
+	if input.IssuedAt.IsZero() {
+		input.IssuedAt = time.Now()
+	}
+	claims := jwt.MapClaims{
 		"iss": p.URL(), "aud": []string{"endge-configurator"}, "sub": input.Subject,
-		"exp": input.ExpiresAt.Unix(), "nbf": time.Now().Add(-time.Minute).Unix(),
+		"iat": input.IssuedAt.Unix(), "exp": input.ExpiresAt.Unix(), "nbf": time.Now().Add(-time.Minute).Unix(),
 		"preferred_username": input.Username, "name": input.DisplayName, "groups": input.Groups, "nonce": nonce,
-	})
+	}
+	for key, value := range input.Claims {
+		claims[key] = value
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	token.Header["kid"] = "endge-test-key"
 	raw, err := token.SignedString(p.key)
 	if err != nil {
@@ -119,6 +161,11 @@ func (p *IdentityProvider) serveHTTP(response http.ResponseWriter, request *http
 		p.mu.Lock()
 		token, exists := p.codes[code]
 		delete(p.codes, code)
+		if request.FormValue("grant_type") == "refresh_token" {
+			p.refreshCalls++
+			token = p.refreshTokens
+			exists = token.Access != "" && request.FormValue("refresh_token") == "test-refresh-token"
+		}
 		p.mu.Unlock()
 		if !exists {
 			http.Error(response, "invalid authorization code", http.StatusUnauthorized)
@@ -126,7 +173,7 @@ func (p *IdentityProvider) serveHTTP(response http.ResponseWriter, request *http
 		}
 		response.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(response).Encode(map[string]any{
-			"access_token": token, "id_token": token, "refresh_token": "test-refresh-token", "expires_in": 3600,
+			"access_token": token.Access, "id_token": token.Identity, "refresh_token": "test-refresh-token", "expires_in": 3600,
 		})
 	case "/logout":
 		if request.Method != http.MethodPost {

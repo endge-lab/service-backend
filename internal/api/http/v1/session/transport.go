@@ -41,10 +41,17 @@ type WorkspaceResponse struct {
 	Role          string          `json:"role" example:"editor" enums:"viewer,editor,admin"`
 }
 
+type AccessManagementResponse struct {
+	Mode               string     `json:"mode" enums:"local,external" example:"external"`
+	SourceName         string     `json:"sourceName,omitempty" example:"Корпоративный Keycloak"`
+	LastSynchronizedAt *time.Time `json:"lastSynchronizedAt,omitempty" format:"date-time"`
+}
+
 type Response struct {
-	User          *UserResponse       `json:"user"`
-	PlatformAdmin bool                `json:"platformAdmin" example:"true"`
-	Workspaces    []WorkspaceResponse `json:"workspaces"`
+	AccessManagement AccessManagementResponse `json:"accessManagement"`
+	User             *UserResponse            `json:"user"`
+	PlatformAdmin    bool                     `json:"platformAdmin" example:"true"`
+	Workspaces       []WorkspaceResponse      `json:"workspaces"`
 }
 
 // NewResponse безопасно преобразует application-результат в HTTP-ответ.
@@ -62,5 +69,5 @@ func NewResponse(value resourceusecase.Result) (Response, error) {
 		workspace.Role = access.Role
 		workspaces = append(workspaces, workspace)
 	}
-	return Response{User: &user, PlatformAdmin: value.PlatformAdmin, Workspaces: workspaces}, nil
+	return Response{AccessManagement: AccessManagementResponse{Mode: value.AccessManagement.Mode, SourceName: value.AccessManagement.SourceName, LastSynchronizedAt: value.AccessManagement.LastSynchronizedAt}, User: &user, PlatformAdmin: value.PlatformAdmin, Workspaces: workspaces}, nil
 }

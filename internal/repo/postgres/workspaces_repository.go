@@ -130,6 +130,9 @@ func (r *EndgeRepository) ListMemberships(ctx context.Context, workspaceID strin
 	return result, rows.Err()
 }
 func (r *EndgeRepository) PutMembership(ctx context.Context, workspaceID, userID, role, actor string) (*entities.Membership, error) {
+	if err := r.invalidateExternalAccess(ctx, userID); err != nil {
+		return nil, err
+	}
 	tag, err := r.executor(ctx).Exec(ctx, `INSERT INTO access_grants(user_id,scope_type,workspace_id,role,created_by,updated_by)
 		SELECT u.id,'workspace',$1,$3,$4,$4 FROM service_users u JOIN workspaces w ON w.id=$1
 		WHERE u.id=$2 AND u.active=TRUE AND u.is_system=FALSE ON CONFLICT(workspace_id,user_id) WHERE scope_type='workspace'
@@ -149,6 +152,9 @@ func (r *EndgeRepository) PutMembership(ctx context.Context, workspaceID, userID
 	return &v, repositoryError(err)
 }
 func (r *EndgeRepository) DeleteMembership(ctx context.Context, workspaceID, userID string) error {
+	if err := r.invalidateExternalAccess(ctx, userID); err != nil {
+		return err
+	}
 	if _, err := r.executor(ctx).Exec(ctx, `DELETE FROM workspace_memberships WHERE workspace_id=$1 AND user_id=$2`, workspaceID, userID); err != nil {
 		return err
 	}

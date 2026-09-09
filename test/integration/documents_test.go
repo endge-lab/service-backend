@@ -333,7 +333,7 @@ func newRepositoryFixture(t *testing.T) *repositoryFixture {
 	}
 	coordinator := workspace_state.NewCoordinator(store, tx, artifacts, 1)
 	lifecycle := documents.NewLifecycle(store, tx, recorder)
-	workspaceUseCase := workspaces.NewUseCase(store, store, store, tx, recorder)
+	workspaceUseCase := workspaces.NewUseCase(store, store, store, tx, recorder, nil)
 	actor := entities.CurrentActor{User: &entities.User{ID: userID, ProviderID: "integration", Subject: "subject-" + userID, Issuer: "urn:endge:test", Username: "tester", DisplayName: "Integration Tester", Active: true}, PlatformAdmin: true}
 	ctx := entities.WithCurrentActor(context.Background(), actor)
 	scope, err := workspaceUseCase.Authorize(ctx, "default")

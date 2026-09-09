@@ -1,0 +1,51 @@
+# Пример внешнего управления правами конфигуратора.
+# Файл .example.yaml не загружается автоматически.
+# Скопируйте его как endge-access.yaml рядом с бинарником либо задайте:
+# ACCESS_CONFIG_FILE=/absolute/path/endge-access.example.yaml
+# Нужны AUTH_MODE=oidc, AUTH_LOGIN_ADAPTER=oidc и AUTH_PROVIDER_ID=primary.
+# Сначала подготовьте workspace operations в локальном режиме.
+# Для каждой роли настройте соответствующий claim в access token провайдера.
+# Токен должен содержать iat и exp; значения пользователей и секреты здесь не нужны.
+# Правила читаются при старте, изменения требуют перезапуска всех экземпляров backend.
+# Без совпавших правил прежние назначения пользователя удаляются.
+
+version: 1 # Версия схемы файла.
+adapter: oidc # Адаптер внешних прав backend, не adapterId профиля Core.
+provider: primary # Должен совпадать с AUTH_PROVIDER_ID backend.
+displayName: Корпоративный Keycloak # Название источника в диалоге прав.
+claimsSource: access_token # Claims берутся только из проверенного access token.
+rules: # Проверяются все правила; порядок не задаёт приоритет.
+  - id: platform-admin # Уникальное имя правила для диагностики.
+    when:
+      path: /resource_access/endge-configurator/roles # Массив ролей клиента.
+      contains: platform-admin # Точное наличие строки в массиве.
+    grant:
+      scope: platform # Доступ ко всей платформе и всем workspace.
+      role: admin # Platform Admin; поле workspace здесь запрещено.
+
+  - id: operations-admin # Admin только одного рабочего пространства.
+    when:
+      path: /resource_access/endge-configurator/roles
+      contains: operations-admin # Роль, настроенная у внешнего провайдера.
+    grant:
+      scope: workspace # Не даёт административных прав на всю платформу.
+      workspace: operations # Identity существующего workspace, не его название.
+      role: admin # Администрирование выбранного workspace.
+
+  - id: operations-editor # Editor: чтение и изменение конфигураций.
+    when:
+      path: /abac/configurator/workspaces/operations/edit # Пример custom claim.
+      equals: true # Boolean true; строка "true" не подходит.
+    grant:
+      scope: workspace
+      workspace: operations # Замените на identity вашего workspace.
+      role: editor # При совпадении Admin и Editor итогом будет Admin.
+
+  - id: operations-viewer # Viewer: только чтение конфигураций.
+    when:
+      path: /resource_access/endge-configurator/roles
+      contains: operations-viewer
+    grant:
+      scope: workspace
+      workspace: operations
+      role: viewer # Не ограничивает Editor, Admin или Platform Admin.

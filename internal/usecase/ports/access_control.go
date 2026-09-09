@@ -30,6 +30,9 @@ type ServiceUserSearchInput struct {
 }
 
 type AccessControlRepository interface {
+	GetExternalAccessState(context.Context, string) (*entities.ExternalAccessState, error)
+	HasExternalAccessHistory(context.Context) (bool, error)
+	ReplaceExternalAccess(context.Context, string, []AccessGrantInput, entities.ExternalAccessState) error
 	LockBootstrap(context.Context) error
 	HasPlatformAdmins(context.Context) (bool, error)
 	IsPlatformAdmin(context.Context, string) (bool, error)

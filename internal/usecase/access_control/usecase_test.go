@@ -19,6 +19,10 @@ type accessRepositoryStub struct {
 	upsertInputs []ports.AccessGrantInput
 }
 
+func (r *accessRepositoryStub) HasExternalAccessHistory(context.Context) (bool, error) {
+	return false, nil
+}
+
 func (r *accessRepositoryStub) LockBootstrap(context.Context) error { return nil }
 func (r *accessRepositoryStub) HasPlatformAdmins(context.Context) (bool, error) {
 	return r.hasAdmins, nil
@@ -98,9 +102,9 @@ func (txManagerStub) WithinReadTransaction(ctx context.Context, fn func(context.
 func TestFirstHumanUserBecomesPlatformAdmin(t *testing.T) {
 	user := &entities.User{ID: "00000000-0000-0000-0000-000000000010", Active: true}
 	repository := &accessRepositoryStub{platform: map[string]bool{}, humanUsers: 1, grants: map[string]entities.AccessGrant{}}
-	usecase := NewUseCase(repository, userRepositoryStub{user: user}, workspaceRepositoryStub{}, txManagerStub{})
+	usecase := NewUseCase(repository, userRepositoryStub{user: user}, workspaceRepositoryStub{}, txManagerStub{}, nil)
 
-	resolved, platform, err := usecase.ResolveCurrentActor(context.Background(), ports.UpsertCurrentUserInput{ProviderID: "dev", Issuer: "urn:endge:dev", Subject: "developer"}, false)
+	resolved, platform, err := usecase.ResolveCurrentActor(context.Background(), ports.UpsertCurrentUserInput{ProviderID: "dev", Issuer: "urn:endge:dev", Subject: "developer"}, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,9 +119,9 @@ func TestFirstHumanUserBecomesPlatformAdmin(t *testing.T) {
 func TestLegacyPlatformAdminIsPersisted(t *testing.T) {
 	user := &entities.User{ID: "00000000-0000-0000-0000-000000000011", Active: true}
 	repository := &accessRepositoryStub{hasAdmins: true, platform: map[string]bool{}, humanUsers: 4, grants: map[string]entities.AccessGrant{}}
-	usecase := NewUseCase(repository, userRepositoryStub{user: user}, workspaceRepositoryStub{}, txManagerStub{})
+	usecase := NewUseCase(repository, userRepositoryStub{user: user}, workspaceRepositoryStub{}, txManagerStub{}, nil)
 
-	_, platform, err := usecase.ResolveCurrentActor(context.Background(), ports.UpsertCurrentUserInput{}, true)
+	_, platform, err := usecase.ResolveCurrentActor(context.Background(), ports.UpsertCurrentUserInput{}, true, nil)
 	if err != nil || !platform {
 		t.Fatalf("expected legacy admin persistence, platform=%v err=%v", platform, err)
 	}
@@ -134,7 +138,7 @@ func TestLastPlatformAdminCannotBeDeleted(t *testing.T) {
 			grantID: {ID: grantID, ScopeType: "platform", Role: "admin", User: entities.AccessGrantUser{ID: userID, Active: true}},
 		},
 	}
-	usecase := NewUseCase(repository, userRepositoryStub{}, workspaceRepositoryStub{}, txManagerStub{})
+	usecase := NewUseCase(repository, userRepositoryStub{}, workspaceRepositoryStub{}, txManagerStub{}, nil)
 	ctx := entities.WithCurrentActor(context.Background(), entities.CurrentActor{User: &entities.User{ID: userID}, PlatformAdmin: true})
 
 	err := usecase.Delete(ctx, grantID)
@@ -145,7 +149,7 @@ func TestLastPlatformAdminCannotBeDeleted(t *testing.T) {
 
 func TestWorkspaceAdminCannotGrantPlatformRole(t *testing.T) {
 	repository := &accessRepositoryStub{platform: map[string]bool{}, grants: map[string]entities.AccessGrant{}}
-	usecase := NewUseCase(repository, userRepositoryStub{}, workspaceRepositoryStub{}, txManagerStub{})
+	usecase := NewUseCase(repository, userRepositoryStub{}, workspaceRepositoryStub{}, txManagerStub{}, nil)
 	ctx := entities.WithCurrentActor(context.Background(), entities.CurrentActor{User: &entities.User{ID: "00000000-0000-0000-0000-000000000013"}})
 
 	_, err := usecase.Put(ctx, PutInput{UserID: "00000000-0000-0000-0000-000000000014", ScopeType: "platform", Role: "admin"})
@@ -167,7 +171,7 @@ func TestOnlyWorkspaceAdminCanManageWorkspaceGrant(t *testing.T) {
 				workspaces: map[string]entities.Workspace{"production": {ID: workspaceID, Identity: "production", Active: true}},
 				roles:      map[string]string{workspaceID: role},
 			}
-			usecase := NewUseCase(repository, userRepositoryStub{}, workspaces, txManagerStub{})
+			usecase := NewUseCase(repository, userRepositoryStub{}, workspaces, txManagerStub{}, nil)
 			ctx := entities.WithCurrentActor(context.Background(), entities.CurrentActor{User: &entities.User{ID: actorID}})
 
 			_, err := usecase.Put(ctx, PutInput{UserID: targetID, ScopeType: "workspace", WorkspaceIdentity: "production", Role: "viewer"})
