@@ -13,6 +13,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/auth_profile"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/backend_connection"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/backup"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/bridge"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/commit"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/component"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/composition"
@@ -55,6 +56,7 @@ import (
 type Handlers struct {
 	fx.In
 
+	Bridge            *bridge.Handler
 	CurrentUser       *httpmiddleware.CurrentUserMiddleware
 	AccessControl     *access_control.Handler
 	AICatalog         *ai_catalog.Handler
@@ -114,9 +116,11 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, connectedServices *service_
 	}, connectedServices)
 	configuratorauth.RegisterPublicRoutes(router, handlers.ConfiguratorAuth)
 	router.Get("/auth/session", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve(), handlers.Session.Current)
+	router.Get("/api/v1/bridge/client", handlers.Bridge.Client)
 	api := router.Group("/api", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve())
 	httpsession.RegisterRoutes(api, handlers.Session)
 	v1 := api.Group("/v1")
+	v1.Get("/bridge/configurator", handlers.Bridge.Configurator)
 	workspace.RegisterRoutes(v1, handlers.Workspace)
 	access_control.RegisterRoutes(v1, handlers.AccessControl)
 	ai_catalog.RegisterRoutes(v1, handlers.AICatalog)

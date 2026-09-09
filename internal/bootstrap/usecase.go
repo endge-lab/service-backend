@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"context"
 	"github.com/endge-lab/service-backend/internal/config"
+	platformbridge "github.com/endge-lab/service-backend/internal/platform/bridge"
 	"github.com/endge-lab/service-backend/internal/usecase/access_control"
 	"github.com/endge-lab/service-backend/internal/usecase/actions"
 	"github.com/endge-lab/service-backend/internal/usecase/ai_assistant"
@@ -52,6 +53,8 @@ import (
 func UseCaseModules() fx.Option {
 	return fx.Options(fx.Provide(
 		releaseArtifactCacheConfig,
+		platformbridge.NewConnections,
+		newBridgeUseCase,
 		newWorkspaceStateCoordinator,
 		history.NewRecorder,
 		documents.NewLifecycle,

@@ -19,6 +19,7 @@ type Config struct {
 	ReleaseArtifactCache   ReleaseArtifactCacheConfig
 	AIWorkbench            AIWorkbenchConfig
 	MockGenerator          MockGeneratorConfig
+	Bridge                 BridgeConfig
 }
 
 // Load загружает базовую конфигурацию service-kit и дополняет её настройками
@@ -63,7 +64,12 @@ func Load() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	bridge, err := loadBridgeConfig(base.App.IsProduction())
+	if err != nil {
+		return nil, err
+	}
 	return &Config{
+		Bridge:                 bridge,
 		ServiceConfig:          base,
 		WorkspaceSchemaVersion: buildMetadata.WorkspaceSchemaVersion,
 		HTTPBasePath:           httpBasePath,

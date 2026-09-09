@@ -10,6 +10,7 @@ func InvokeModules() fx.Option {
 	return fx.Options(
 		fx.Invoke(
 			registerAuthSessionCleanup,
+			registerBridgeLifecycle,
 			httpapi.SetupRoutes,
 		),
 	)

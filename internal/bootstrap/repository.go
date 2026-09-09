@@ -17,6 +17,7 @@ func newEndgeRepository(pool *pgxpool.Pool, cfg *config.Config) *postgres.EndgeR
 type endgeRepositoryPorts struct {
 	fx.Out
 
+	BridgeAccess       ports.BridgeAccessRepository
 	WorkspaceState     workspace_state.Repository
 	Workspaces         ports.WorkspaceRepository
 	Integrations       ports.IntegrationRepository
@@ -34,6 +35,7 @@ type endgeRepositoryPorts struct {
 
 func exposeEndgeRepository(store *postgres.EndgeRepository) endgeRepositoryPorts {
 	return endgeRepositoryPorts{
+		BridgeAccess:       store,
 		WorkspaceState:     store,
 		Workspaces:         store,
 		Integrations:       store,

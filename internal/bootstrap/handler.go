@@ -10,6 +10,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/auth_profile"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/backend_connection"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/backup"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/bridge"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/commit"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/component"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/composition"
@@ -56,6 +57,8 @@ func HandlerModules() fx.Option {
 			fx.Annotate(httpmiddleware.NewAuthMiddleware, fx.As(new(httpmiddleware.AuthMiddleware))),
 			httpmiddleware.NewCurrentUserMiddleware,
 			configuratorauth.NewHandler,
+			bridge.BindUseCase,
+			bridge.NewHandler,
 			access_control.BindUseCase,
 			ai_catalog.BindUseCase,
 			ai_assistant.BindUseCase,
