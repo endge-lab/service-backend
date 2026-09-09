@@ -21,6 +21,7 @@ const (
 	CollectionQueries        = "queries"
 	CollectionStores         = "stores"
 	CollectionStreams        = "streams"
+	CollectionSimulations    = "simulations"
 	CollectionStyles         = "styles"
 	CollectionTenants        = "tenants"
 	CollectionTypes          = "types"
@@ -41,6 +42,7 @@ var DocumentCollections = []string{
 	CollectionCompositions,
 	CollectionStores,
 	CollectionStreams,
+	CollectionSimulations,
 	CollectionUpdates,
 	CollectionMocks,
 	CollectionComponents,

@@ -11265,6 +11265,480 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/simulations:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает список симуляций текущего рабочего пространства с\n" +
+		"        фильтрацией и пагинацией.\n" +
+		"      tags:\n" +
+		"        - Симуляции\n" +
+		"      summary: Получить список симуляций\n" +
+		"      operationId: listSimulations\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить мягко удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"        - description: Identity папки\n" +
+		"          name: folderIdentity\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Фильтр по активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"            default: 100\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Список симуляций\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/simulation.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Создаёт симуляцию в текущем рабочем пространстве.\n" +
+		"      tags:\n" +
+		"        - Симуляции\n" +
+		"      summary: Создать симуляцию\n" +
+		"      operationId: createSimulation\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/simulation.CreateRequest\"\n" +
+		"        description: Данные нового документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Документ создан\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/simulation.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/simulations/{identity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает симуляцию по identity.\n" +
+		"      tags:\n" +
+		"        - Симуляции\n" +
+		"      summary: Получить симуляцию\n" +
+		"      operationId: getSimulation\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - description: Разрешить получение мягко удалённого документа\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Найденный документ\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Текущая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/simulation.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
+		"        в If-Match.\n" +
+		"      tags:\n" +
+		"        - Симуляции\n" +
+		"      summary: Удалить симуляцию\n" +
+		"      operationId: deleteSimulation\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ мягко удалён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/simulation.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет симуляцию; актуальная revision передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Симуляции\n" +
+		"      summary: Изменить симуляцию\n" +
+		"      operationId: patchSimulation\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/simulation.PatchRequest\"\n" +
+		"        description: Изменяемые поля документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ изменён\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/simulation.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/simulations/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
+		"        передаётся в If-Match.\n" +
+		"      tags:\n" +
+		"        - Симуляции\n" +
+		"      summary: Восстановить симуляцию\n" +
+		"      operationId: restoreSimulation\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Документ восстановлен\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision документа\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/simulation.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный запрос\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Документ не найден\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт identity или revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /api/v1/stores:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -19722,6 +20196,169 @@ var openAPI3YAML = []byte(
 		"        message:\n" +
 		"          type: string\n" +
 		"          example: Запрос не прошёл валидацию\n" +
+		"    simulation.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"        - source\n" +
+		"        - sourceVersion\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: \"defineSimulation({ target: composition(''), overrides: { runtimes: {}\n" +
+		"            } })\"\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    simulation.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/simulation.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 100\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    simulation.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          maxLength: 8388608\n" +
+		"          example: \"defineSimulation({ target: composition(''), overrides: { runtimes: {}\n" +
+		"            } })\"\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"    simulation.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        source:\n" +
+		"          type: string\n" +
+		"          example: \"defineSimulation({ target: composition(''), overrides: { runtimes: {}\n" +
+		"            } })\"\n" +
+		"        sourceVersion:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"    store.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +

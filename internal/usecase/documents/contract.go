@@ -15,7 +15,7 @@ import (
 
 var Collections = append([]string(nil), entities.DocumentCollections...)
 
-var sourceVersionCollections = []string{entities.CollectionTypes, entities.CollectionQueries, entities.CollectionDataViews, entities.CollectionCompositions, entities.CollectionStores, entities.CollectionStreams, entities.CollectionUpdates, entities.CollectionFilters, entities.CollectionComputations, entities.CollectionVocabs, entities.CollectionStyles, entities.CollectionConfigurations}
+var sourceVersionCollections = []string{entities.CollectionTypes, entities.CollectionQueries, entities.CollectionDataViews, entities.CollectionCompositions, entities.CollectionStores, entities.CollectionStreams, entities.CollectionSimulations, entities.CollectionUpdates, entities.CollectionFilters, entities.CollectionComputations, entities.CollectionVocabs, entities.CollectionStyles, entities.CollectionConfigurations}
 
 var readOnlyFields = []string{"id", "type", "revision", "author", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", "created_by", "updated_by"}
 
@@ -58,6 +58,12 @@ func validateDocument(kind string, input map[string]any) error {
 		version, _ := sourceVersion(input)
 		if version != 2 {
 			return domainerrors.InvalidInput("query_source_version_invalid", "Query sourceVersion must be 2")
+		}
+	}
+	if kind == entities.CollectionSimulations {
+		version, hasVersion := sourceVersion(input)
+		if _, hasSource := input["source"].(string); !hasSource || !hasVersion || version != 1 {
+			return domainerrors.InvalidInput("simulation_source_version_invalid", "Simulation source and sourceVersion 1 are required")
 		}
 	}
 	if kind == entities.CollectionConfigurations {

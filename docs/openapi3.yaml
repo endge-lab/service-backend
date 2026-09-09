@@ -11260,6 +11260,480 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/simulations:
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает список симуляций текущего рабочего пространства с
+        фильтрацией и пагинацией.
+      tags:
+        - Симуляции
+      summary: Получить список симуляций
+      operationId: listSimulations
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Включить мягко удалённые документы
+          name: includeDeleted
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - description: Identity папки
+          name: folderIdentity
+          in: query
+          schema:
+            type: string
+            maxLength: 160
+        - description: Фильтр по активности
+          name: active
+          in: query
+          schema:
+            type: boolean
+        - description: Размер страницы
+          name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+        - description: Смещение
+          name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Список симуляций
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/simulation.ListResponse"
+        "400":
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Требуется аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+    post:
+      security:
+        - BearerAuth: []
+      description: Создаёт симуляцию в текущем рабочем пространстве.
+      tags:
+        - Симуляции
+      summary: Создать симуляцию
+      operationId: createSimulation
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/simulation.CreateRequest"
+        description: Данные нового документа
+        required: true
+      responses:
+        "201":
+          description: Документ создан
+          headers:
+            ETag:
+              description: Текущая revision документа
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/simulation.Response"
+        "400":
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Требуется аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Конфликт identity или revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/simulations/{identity}":
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает симуляцию по identity.
+      tags:
+        - Симуляции
+      summary: Получить симуляцию
+      operationId: getSimulation
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity документа
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 160
+        - description: Разрешить получение мягко удалённого документа
+          name: includeDeleted
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Найденный документ
+          headers:
+            ETag:
+              description: Текущая revision документа
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/simulation.Response"
+        "401":
+          description: Требуется аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Документ не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+    delete:
+      security:
+        - BearerAuth: []
+      description: Выполняет мягкое удаление документа; актуальная revision передаётся
+        в If-Match.
+      tags:
+        - Симуляции
+      summary: Удалить симуляцию
+      operationId: deleteSimulation
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity документа
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 160
+        - example: '"3"'
+          description: Текущая revision документа
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Документ мягко удалён
+          headers:
+            ETag:
+              description: Новая revision документа
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/simulation.Response"
+        "400":
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Требуется аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Документ не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Конфликт identity или revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "428":
+          description: Требуется заголовок If-Match
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+    patch:
+      security:
+        - BearerAuth: []
+      description: Частично изменяет симуляцию; актуальная revision передаётся в If-Match.
+      tags:
+        - Симуляции
+      summary: Изменить симуляцию
+      operationId: patchSimulation
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity документа
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 160
+        - example: '"3"'
+          description: Текущая revision документа
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/simulation.PatchRequest"
+        description: Изменяемые поля документа
+        required: true
+      responses:
+        "200":
+          description: Документ изменён
+          headers:
+            ETag:
+              description: Новая revision документа
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/simulation.Response"
+        "400":
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Требуется аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Документ не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Конфликт identity или revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "428":
+          description: Требуется заголовок If-Match
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/simulations/{identity}/restore":
+    post:
+      security:
+        - BearerAuth: []
+      description: Восстанавливает мягко удалённый документ; актуальная revision
+        передаётся в If-Match.
+      tags:
+        - Симуляции
+      summary: Восстановить симуляцию
+      operationId: restoreSimulation
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity документа
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 160
+        - example: '"3"'
+          description: Текущая revision документа
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Документ восстановлен
+          headers:
+            ETag:
+              description: Новая revision документа
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/simulation.Response"
+        "400":
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Требуется аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Документ не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Конфликт identity или revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "428":
+          description: Требуется заголовок If-Match
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
   /api/v1/stores:
     get:
       security:
@@ -19717,6 +20191,169 @@ components:
         message:
           type: string
           example: Запрос не прошёл валидацию
+    simulation.CreateRequest:
+      type: object
+      required:
+        - displayName
+        - identity
+        - source
+        - sourceVersion
+      properties:
+        active:
+          type: boolean
+          example: true
+        description:
+          type: string
+          example: Описание объекта
+        displayName:
+          type: string
+          maxLength: 255
+          example: Основной объект
+        folderIdentity:
+          type: string
+          example: root-projects
+        identity:
+          type: string
+          maxLength: 160
+          example: main
+        managedBy:
+          type: string
+          enum:
+            - user
+            - system
+            - integration
+          example: user
+        managedById:
+          type: string
+          example: endge-core
+        meta:
+          type: object
+          additionalProperties: {}
+        source:
+          type: string
+          maxLength: 8388608
+          example: "defineSimulation({ target: composition(''), overrides: { runtimes: {}
+            } })"
+        sourceVersion:
+          type: integer
+          example: 1
+    simulation.ListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/simulation.Response"
+        limit:
+          type: integer
+          example: 100
+        offset:
+          type: integer
+          example: 0
+        total:
+          type: integer
+          example: 1
+    simulation.PatchRequest:
+      type: object
+      properties:
+        active:
+          type: boolean
+          example: true
+        description:
+          type: string
+          example: Описание объекта
+        displayName:
+          type: string
+          maxLength: 255
+          example: Основной объект
+        folderIdentity:
+          type: string
+          example: root-projects
+        identity:
+          type: string
+          maxLength: 160
+          example: main
+        managedBy:
+          type: string
+          enum:
+            - user
+            - system
+            - integration
+          example: user
+        managedById:
+          type: string
+          example: endge-core
+        meta:
+          type: object
+          additionalProperties: {}
+        source:
+          type: string
+          maxLength: 8388608
+          example: "defineSimulation({ target: composition(''), overrides: { runtimes: {}
+            } })"
+        sourceVersion:
+          type: integer
+          example: 1
+    simulation.Response:
+      type: object
+      properties:
+        active:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-08-04T10:00:00Z
+        createdBy:
+          $ref: "#/components/schemas/entities.Actor"
+        deletedAt:
+          type: string
+          format: date-time
+          example: 2026-08-04T11:00:00Z
+        description:
+          type: string
+          example: Описание объекта
+        displayName:
+          type: string
+          example: Основной объект
+        folderIdentity:
+          type: string
+          example: root-projects
+        id:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        identity:
+          type: string
+          example: main
+        managedBy:
+          type: string
+          enum:
+            - user
+            - system
+            - integration
+          example: user
+        managedById:
+          type: string
+          example: endge-core
+        meta:
+          type: object
+        revision:
+          type: integer
+          example: 3
+        source:
+          type: string
+          example: "defineSimulation({ target: composition(''), overrides: { runtimes: {}
+            } })"
+        sourceVersion:
+          type: integer
+          example: 1
+        updatedAt:
+          type: string
+          format: date-time
+          example: 2026-08-04T10:05:00Z
+        updatedBy:
+          $ref: "#/components/schemas/entities.Actor"
     store.CreateRequest:
       type: object
       required:

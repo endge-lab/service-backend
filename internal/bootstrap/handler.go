@@ -32,6 +32,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/release"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/revision"
 	httpsession "github.com/endge-lab/service-backend/internal/api/http/v1/session"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/simulation"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/store"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/stream"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/style"
@@ -74,6 +75,7 @@ func HandlerModules() fx.Option {
 			composition.BindUseCase,
 			store.BindUseCase,
 			stream.BindUseCase,
+			simulation.BindUseCase,
 			update.BindUseCase,
 			mock.BindUseCase,
 			component.BindUseCase,
@@ -111,6 +113,7 @@ func HandlerModules() fx.Option {
 			composition.NewHandler,
 			store.NewHandler,
 			stream.NewHandler,
+			simulation.NewHandler,
 			update.NewHandler,
 			mock.NewHandler,
 			component.NewHandler,

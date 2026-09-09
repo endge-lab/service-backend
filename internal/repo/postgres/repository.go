@@ -25,6 +25,7 @@ var documentTables = map[string]string{
 	entities.CollectionCompositions:   "compositions",
 	entities.CollectionStores:         "stores",
 	entities.CollectionStreams:        "streams",
+	entities.CollectionSimulations:    "simulations",
 	entities.CollectionUpdates:        "updates",
 	entities.CollectionMocks:          "mocks",
 	entities.CollectionComponents:     "components",

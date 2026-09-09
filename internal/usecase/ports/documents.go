@@ -66,6 +66,9 @@ type StoreRepository interface{ DocumentResourceRepository }
 // StreamRepository задаёт порт хранения потоков для use case-слоя.
 type StreamRepository interface{ DocumentResourceRepository }
 
+// SimulationRepository задаёт порт хранения симуляций.
+type SimulationRepository interface{ DocumentResourceRepository }
+
 // UpdateRepository задаёт порт хранения обновлений состояния для use case-слоя.
 type UpdateRepository interface{ DocumentResourceRepository }
 

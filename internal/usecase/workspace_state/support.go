@@ -117,26 +117,39 @@ func (s *Coordinator) resolveDocumentFolder(ctx context.Context, scope entities.
 	if doc.Type == entities.CollectionConfigurations {
 		return nil, nil
 	}
-	var data map[string]any
-	_ = json.Unmarshal(doc.Data, &data)
-	if doc.Type == entities.CollectionFolders {
-		entityType := entities.FolderEntityType(stringField(data, "entityType"))
-		parent := stringField(data, "parentIdentity")
-		if parent == "" && !boolValue(data["isRoot"]) {
-			parent = entities.RootFolderIdentity(entityType)
-		}
-		parent = resolvableFolderIdentity(parent, entityType)
-		return s.repository.ResolveFolder(ctx, scope.Workspace.ID, parent, entityType)
-	}
 	identity := ""
-	if doc.FolderIdentity != nil {
-		identity = *doc.FolderIdentity
-	}
-	if identity == "" {
-		identity = entities.RootFolderIdentity(doc.Type)
-	}
 	entityType := entities.FolderEntityType(doc.Type)
+	if doc.Type == entities.CollectionFolders {
+		var data map[string]any
+		_ = json.Unmarshal(doc.Data, &data)
+		entityType = entities.FolderEntityType(stringField(data, "entityType"))
+		identity = stringField(data, "parentIdentity")
+		if identity == "" && !boolValue(data["isRoot"]) {
+			identity = entities.RootFolderIdentity(entityType)
+		}
+	} else {
+		if doc.FolderIdentity != nil {
+			identity = *doc.FolderIdentity
+		}
+		if identity == "" {
+			identity = entities.RootFolderIdentity(doc.Type)
+		}
+	}
 	identity = resolvableFolderIdentity(identity, entityType)
+	if doc.DeletedAt != nil && identity != "" {
+		// Exact restore may already have soft-deleted the parent folder.
+		// Preserve the existing folder relation of the deleted document.
+		folder, err := s.repository.GetDocument(ctx, scope.Workspace.ID, entities.CollectionFolders, identity, true)
+		if err != nil {
+			return nil, err
+		}
+		var data map[string]any
+		_ = json.Unmarshal(folder.Data, &data)
+		if entities.FolderEntityType(stringField(data, "entityType")) != entityType {
+			return nil, domainerrors.InvalidInput("folder_entity_type_invalid", "Folder entity type does not match document")
+		}
+		return &folder.ID, nil
+	}
 	return s.repository.ResolveFolder(ctx, scope.Workspace.ID, identity, entityType)
 }
 
@@ -260,7 +273,7 @@ func validateDocument(kind string, input map[string]any) error {
 			return domainerrors.InvalidInput("source_too_large", "source exceeds 8 MiB")
 		}
 	}
-	versionedSourceKinds := []string{entities.CollectionTypes, entities.CollectionQueries, entities.CollectionDataViews, entities.CollectionStores, entities.CollectionStreams, entities.CollectionUpdates, entities.CollectionActions, entities.CollectionFilters, entities.CollectionComputations, entities.CollectionCompositions, entities.CollectionStyles, entities.CollectionConfigurations}
+	versionedSourceKinds := []string{entities.CollectionTypes, entities.CollectionQueries, entities.CollectionDataViews, entities.CollectionStores, entities.CollectionStreams, entities.CollectionSimulations, entities.CollectionUpdates, entities.CollectionActions, entities.CollectionFilters, entities.CollectionComputations, entities.CollectionCompositions, entities.CollectionStyles, entities.CollectionConfigurations}
 	if slices.Contains(versionedSourceKinds, kind) {
 		_, hasSource := input["source"]
 		version, hasVersion := numberField(input, "sourceVersion")
@@ -278,6 +291,12 @@ func validateDocument(kind string, input map[string]any) error {
 	}
 	if kind == entities.CollectionActions && strings.TrimSpace(stringField(input, "source")) == "" {
 		return domainerrors.InvalidInput("action_source_invalid", "Action source must not be empty")
+	}
+	if kind == entities.CollectionSimulations {
+		version, hasVersion := numberField(input, "sourceVersion")
+		if _, hasSource := input["source"].(string); !hasSource || !hasVersion || version != 1 {
+			return domainerrors.InvalidInput("simulation_source_version_invalid", "Simulation source and sourceVersion 1 are required")
+		}
 	}
 	if kind == entities.CollectionConfigurations {
 		version, hasVersion := numberField(input, "sourceVersion")

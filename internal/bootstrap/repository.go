@@ -67,6 +67,7 @@ func RepositoryModules() fx.Option {
 		postgres.NewCompositionRepository,
 		postgres.NewStoreRepository,
 		postgres.NewStreamRepository,
+		postgres.NewSimulationRepository,
 		postgres.NewUpdateRepository,
 		postgres.NewMockRepository,
 		postgres.NewComponentRepository,

@@ -36,6 +36,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/revisions"
 	"github.com/endge-lab/service-backend/internal/usecase/service_info"
 	"github.com/endge-lab/service-backend/internal/usecase/session"
+	"github.com/endge-lab/service-backend/internal/usecase/simulations"
 	"github.com/endge-lab/service-backend/internal/usecase/stores"
 	"github.com/endge-lab/service-backend/internal/usecase/streams"
 	"github.com/endge-lab/service-backend/internal/usecase/styles"
@@ -73,6 +74,7 @@ func UseCaseModules() fx.Option {
 		compositions.NewUseCase,
 		stores.NewUseCase,
 		streams.NewUseCase,
+		simulations.NewUseCase,
 		updates.NewUseCase,
 		mocks.NewUseCase,
 		components.NewUseCase,

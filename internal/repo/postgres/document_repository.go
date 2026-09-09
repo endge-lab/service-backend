@@ -65,6 +65,7 @@ var (
 	_ ports.QueryRepository         = (*documentRepository)(nil)
 	_ ports.StoreRepository         = (*documentRepository)(nil)
 	_ ports.StreamRepository        = (*documentRepository)(nil)
+	_ ports.SimulationRepository    = (*documentRepository)(nil)
 	_ ports.StyleRepository         = (*documentRepository)(nil)
 	_ ports.TenantRepository        = (*documentRepository)(nil)
 	_ ports.TypeRepository          = (*documentRepository)(nil)

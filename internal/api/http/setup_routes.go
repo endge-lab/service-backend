@@ -35,6 +35,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/release"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/revision"
 	httpsession "github.com/endge-lab/service-backend/internal/api/http/v1/session"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/simulation"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/store"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/stream"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/style"
@@ -74,6 +75,7 @@ type Handlers struct {
 	Composition       *composition.Handler
 	Store             *store.Handler
 	Stream            *stream.Handler
+	Simulation        *simulation.Handler
 	Update            *update.Handler
 	Mock              *mock.Handler
 	Component         *component.Handler
@@ -131,6 +133,7 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, connectedServices *service_
 	composition.RegisterRoutes(scoped, handlers.Composition)
 	store.RegisterRoutes(scoped, handlers.Store)
 	stream.RegisterRoutes(scoped, handlers.Stream)
+	simulation.RegisterRoutes(scoped, handlers.Simulation)
 	update.RegisterRoutes(scoped, handlers.Update)
 	mock.RegisterRoutes(scoped, handlers.Mock)
 	component.RegisterRoutes(scoped, handlers.Component)
