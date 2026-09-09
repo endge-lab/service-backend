@@ -33,6 +33,30 @@ env override только действительно отсутствующий 
 локальный режим; сломанная символическая ссылка не считается отсутствием.
 YAML aliases, merge keys и `null` не поддерживаются.
 
+## Конфигурация для отдельной среды
+
+Имя файла можно выбрать самостоятельно. Например, создайте рядом с
+`endge-access.example.yaml` файл `endge-access.development.yaml`, настройте
+provider и правила своей среды и укажите в `.env.development` абсолютный путь:
+
+```dotenv
+ACCESS_CONFIG_FILE=/absolute/path/service-backend/endge-access.development.yaml
+```
+
+Сам `.env.development` уже исключён из Git. Локальный YAML исключается отдельно:
+
+```text
+/endge-access.development.yaml
+```
+
+Постфикс `development` не запускает автоматический поиск: файл выбирает
+`ACCESS_CONFIG_FILE`. Для production можно аналогично указать другой файл.
+Загружается один полный YAML, без объединения с `endge-access.yaml`; изменения
+применяются после перезапуска. Значение `provider` должно совпадать с
+`AUTH_PROVIDER_ID` выбранной среды. Отсутствующий или некорректный явно указанный
+файл завершает запуск ошибкой. Не включайте заготовку с `rules: []`, если
+не требуется удалить все назначения при синхронизации пользователя.
+
 ## Правила
 
 Поддерживаются `version: 1`, `adapter: oidc`, `claimsSource: access_token` и один

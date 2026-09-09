@@ -6,6 +6,7 @@ main
 .env
 .env.*
 !.env.*.example
+/endge-access.development.yaml
 /configs/development.yaml
 /configs/production.yaml
 /configs/local.yaml
