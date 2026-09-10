@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -154,5 +155,70 @@ func TestClientReceivesNoRosterAndDebugDefaultDenied(t *testing.T) {
 	u := NewUseCase(delivery, &accessStub{}, &workspaceStub{role: "editor"}, &grantsStub{}, false)
 	if err := u.Join(context.Background(), "client", "client", entities.BridgePrincipal{}, entities.BridgeHello{Protocol: 1, WorkspaceIdentity: "workspace", Debug: true}); err == nil {
 		t.Fatal("debug disabled accepted client")
+	}
+}
+
+func TestContextSyncRoutesOpaquePayloadsOnlyWithinApprovedSession(t *testing.T) {
+	u, _, _, delivery := fixture(t)
+	id := approve(t, u)
+	payload := json.RawMessage(`{"type":"context:set-locale","payload":{"locale":"en"}}`)
+	for _, kind := range []string{"startContextSync", "executeCommand"} {
+		if err := u.Handle(context.Background(), "config", entities.BridgeMessage{Type: kind, ID: kind, SessionID: id, Data: payload}); err != nil {
+			t.Fatal(err)
+		}
+		message := delivery.messages["client"][len(delivery.messages["client"])-1]
+		if message.Type != kind || message.ID == kind || message.SessionID != id {
+			t.Fatalf("invalid correlated request: %+v", message)
+		}
+		if kind == "executeCommand" && string(message.Data) != string(payload) {
+			t.Fatal("command payload changed in transport")
+		}
+	}
+	event := json.RawMessage(`{"sequence":1,"event":{"name":"custom:event","payload":{"opaque":true}}}`)
+	message := entities.BridgeMessage{Type: "clientEvent", SessionID: id, Data: event, TargetID: "other", Error: "untrusted"}
+	for _, sender := range []string{"config", "other"} {
+		if err := u.Handle(context.Background(), sender, message); err == nil {
+			t.Fatalf("event accepted from %s", sender)
+		}
+	}
+	if err := u.Handle(context.Background(), "client", message); err != nil {
+		t.Fatal(err)
+	}
+	forwarded := delivery.messages["config"][len(delivery.messages["config"])-1]
+	if forwarded.Type != "clientEvent" || string(forwarded.Data) != string(event) || forwarded.TargetID != "" || forwarded.Error != "" {
+		t.Fatalf("invalid forwarded event: %+v", forwarded)
+	}
+	u.Leave("config")
+	if err := u.Handle(context.Background(), "client", message); err == nil {
+		t.Fatal("event accepted after session ended")
+	}
+}
+
+func TestContextSyncChecksPayloadBoundsAndRevocation(t *testing.T) {
+	for _, kind := range []string{"clientEvent", "executeCommand"} {
+		t.Run(kind, func(t *testing.T) {
+			u, _, workspaces, delivery := fixture(t)
+			id := approve(t, u)
+			sender, receiver, limit := "client", "config", maxEventBytes
+			if kind == "executeCommand" {
+				sender, receiver, limit = "config", "client", maxCommandBytes
+			}
+			for _, payload := range []json.RawMessage{nil, json.RawMessage(`{`), json.RawMessage(`"` + strings.Repeat("x", limit) + `"`)} {
+				before := len(delivery.messages[receiver])
+				if err := u.Handle(context.Background(), sender, entities.BridgeMessage{Type: kind, ID: "request", SessionID: id, Data: payload}); err == nil {
+					t.Fatal("invalid payload accepted")
+				}
+				if len(delivery.messages[receiver]) != before {
+					t.Fatal("invalid payload forwarded")
+				}
+			}
+			workspaces.role = "viewer"
+			if err := u.Handle(context.Background(), sender, entities.BridgeMessage{Type: kind, ID: "revoked", SessionID: id, Data: json.RawMessage(`{}`)}); err == nil {
+				t.Fatal("revoked controller retained access")
+			}
+			if len(u.sessions) != 0 || len(u.commands) != 0 {
+				t.Fatal("revocation retained resources")
+			}
+		})
 	}
 }
