@@ -20,6 +20,7 @@ import (
 const requestTTL = 45 * time.Second
 const sessionTTL = 30 * time.Minute
 const maxEventBytes = 1024 * 1024
+const maxInspectionBytes = 15 * 1024 * 1024
 const maxCommandBytes = 64 * 1024
 
 var hashPattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
@@ -148,7 +149,7 @@ func (u *UseCase) Handle(ctx context.Context, id string, message entities.Bridge
 		return fmt.Errorf("Authorization expired")
 	}
 	// A late client response must not bypass revocation of the controlling identity.
-	if message.Type == "acceptSession" || message.Type == "commandResult" || message.Type == "clientEvent" {
+	if message.Type == "acceptSession" || message.Type == "commandResult" || message.Type == "clientEvent" || message.Type == "inspectionSnapshot" {
 		u.mu.Lock()
 		s := u.sessions[message.SessionID]
 		controller := ""
@@ -181,9 +182,9 @@ func (u *UseCase) Handle(ctx context.Context, id string, message entities.Bridge
 		u.end(message.SessionID, "Session ended")
 		u.result(id, message.ID, nil, "")
 		return nil
-	case "getSnapshot", "startContextSync", "executeCommand", "runSimulation":
+	case "getSnapshot", "startContextSync", "executeCommand", "runSimulation", "refreshInspection", "setInspectionOptions":
 		return u.requestCommand(p, message)
-	case "clientEvent":
+	case "clientEvent", "inspectionSnapshot":
 		return u.forwardClientEvent(p, message)
 	case "commandResult":
 		s := u.sessions[message.SessionID]
@@ -246,7 +247,7 @@ func (u *UseCase) requestCommand(p *participant, m entities.BridgeMessage) error
 	if m.Type == "runSimulation" && (strings.TrimSpace(m.Identity) == "" || !hashPattern.MatchString(m.ExpectedHash)) {
 		return fmt.Errorf("Simulation identity and SHA-256 are required")
 	}
-	if m.Type == "executeCommand" && (len(m.Data) == 0 || len(m.Data) > maxCommandBytes || !json.Valid(m.Data)) {
+	if (m.Type == "executeCommand" || m.Type == "setInspectionOptions") && (len(m.Data) == 0 || len(m.Data) > maxCommandBytes || !json.Valid(m.Data)) {
 		return fmt.Errorf("Invalid command payload")
 	}
 	count := 0
@@ -261,7 +262,7 @@ func (u *UseCase) requestCommand(p *participant, m entities.BridgeMessage) error
 	commandID := uuid.NewString()
 	u.commands[commandID] = command{SessionID: s.SessionID, RequestID: m.ID, Deadline: time.Now().Add(requestTTL)}
 	m.ID = commandID
-	if m.Type != "executeCommand" {
+	if m.Type != "executeCommand" && m.Type != "setInspectionOptions" {
 		m.Data = nil
 	}
 	m.Error = ""
@@ -277,10 +278,14 @@ func (u *UseCase) forwardClientEvent(p *participant, m entities.BridgeMessage) e
 	if p.Role != "client" || !p.Debug || s == nil || !s.Active || s.ClientID != p.ID {
 		return fmt.Errorf("Event session is not available")
 	}
-	if len(m.Data) == 0 || len(m.Data) > maxEventBytes || !json.Valid(m.Data) {
+	limit := maxEventBytes
+	if m.Type == "inspectionSnapshot" {
+		limit = maxInspectionBytes
+	}
+	if len(m.Data) == 0 || len(m.Data) > limit || !json.Valid(m.Data) {
 		return fmt.Errorf("Invalid event payload")
 	}
-	if !u.delivery.Send(s.ConfiguratorID, entities.BridgeMessage{Type: "clientEvent", SessionID: s.SessionID, Data: m.Data}) {
+	if !u.delivery.Send(s.ConfiguratorID, entities.BridgeMessage{Type: m.Type, SessionID: s.SessionID, Data: m.Data}) {
 		u.end(s.SessionID, "Configurator is unavailable")
 	}
 	return nil

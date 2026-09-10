@@ -162,7 +162,7 @@ func TestContextSyncRoutesOpaquePayloadsOnlyWithinApprovedSession(t *testing.T) 
 	u, _, _, delivery := fixture(t)
 	id := approve(t, u)
 	payload := json.RawMessage(`{"type":"context:set-locale","payload":{"locale":"en"}}`)
-	for _, kind := range []string{"startContextSync", "executeCommand"} {
+	for _, kind := range []string{"startContextSync", "executeCommand", "refreshInspection", "setInspectionOptions"} {
 		if err := u.Handle(context.Background(), "config", entities.BridgeMessage{Type: kind, ID: kind, SessionID: id, Data: payload}); err != nil {
 			t.Fatal(err)
 		}
@@ -170,7 +170,7 @@ func TestContextSyncRoutesOpaquePayloadsOnlyWithinApprovedSession(t *testing.T) 
 		if message.Type != kind || message.ID == kind || message.SessionID != id {
 			t.Fatalf("invalid correlated request: %+v", message)
 		}
-		if kind == "executeCommand" && string(message.Data) != string(payload) {
+		if (kind == "executeCommand" || kind == "setInspectionOptions") && string(message.Data) != string(payload) {
 			t.Fatal("command payload changed in transport")
 		}
 	}
@@ -195,13 +195,16 @@ func TestContextSyncRoutesOpaquePayloadsOnlyWithinApprovedSession(t *testing.T) 
 }
 
 func TestContextSyncChecksPayloadBoundsAndRevocation(t *testing.T) {
-	for _, kind := range []string{"clientEvent", "executeCommand"} {
+	for _, kind := range []string{"clientEvent", "executeCommand", "inspectionSnapshot", "setInspectionOptions"} {
 		t.Run(kind, func(t *testing.T) {
 			u, _, workspaces, delivery := fixture(t)
 			id := approve(t, u)
 			sender, receiver, limit := "client", "config", maxEventBytes
-			if kind == "executeCommand" {
+			if kind == "executeCommand" || kind == "setInspectionOptions" {
 				sender, receiver, limit = "config", "client", maxCommandBytes
+			}
+			if kind == "inspectionSnapshot" {
+				limit = maxInspectionBytes
 			}
 			for _, payload := range []json.RawMessage{nil, json.RawMessage(`{`), json.RawMessage(`"` + strings.Repeat("x", limit) + `"`)} {
 				before := len(delivery.messages[receiver])
@@ -220,5 +223,34 @@ func TestContextSyncChecksPayloadBoundsAndRevocation(t *testing.T) {
 				t.Fatal("revocation retained resources")
 			}
 		})
+	}
+}
+
+// Large snapshots retain the same consent, sender and session boundary as small events.
+func TestInspectionSnapshotRouting(t *testing.T) {
+	u, _, _, delivery := fixture(t)
+	id := approve(t, u)
+	payload := json.RawMessage(`{"sequence":1,"update":{"kind":"data","data":"` + strings.Repeat("x", maxEventBytes+1) + `","generatedAt":1}}`)
+	m := entities.BridgeMessage{Type: "inspectionSnapshot", SessionID: id, Data: payload, TargetID: "other", Error: "untrusted"}
+	for _, sender := range []string{"config", "other"} {
+		if err := u.Handle(context.Background(), sender, m); err == nil {
+			t.Fatalf("snapshot accepted from %s", sender)
+		}
+	}
+	if err := u.Handle(context.Background(), "client", m); err != nil {
+		t.Fatal(err)
+	}
+	forwarded := delivery.messages["config"][len(delivery.messages["config"])-1]
+	if forwarded.Type != m.Type || string(forwarded.Data) != string(payload) || forwarded.TargetID != "" || forwarded.Error != "" {
+		t.Fatal("snapshot routing changed payload or leaked untrusted envelope fields")
+	}
+	m.Type = "clientEvent"
+	if err := u.Handle(context.Background(), "client", m); err == nil {
+		t.Fatal("snapshot allowance widened ordinary event limit")
+	}
+	u.Leave("config")
+	m.Type = "inspectionSnapshot"
+	if err := u.Handle(context.Background(), "client", m); err == nil {
+		t.Fatal("snapshot accepted after disconnect")
 	}
 }

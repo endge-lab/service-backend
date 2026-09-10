@@ -34,7 +34,7 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entiti
 	if err = shared.ValidateSecrets(values); err != nil {
 		return nil, err
 	}
-	values["configuration"] = configurationdomain.EnsureSFCEditingDefaults(values["configuration"])
+	values["configuration"] = configurationdomain.EnsureWorkspaceDefaults(values["configuration"])
 	configurationdomain.RemoveLegacySSE(values["configuration"])
 	if err = configurationdomain.ValidateValuesShape(values["configuration"]); err != nil {
 		return nil, domainerrors.InvalidInput("workspace_configuration_values_invalid", err.Error())
