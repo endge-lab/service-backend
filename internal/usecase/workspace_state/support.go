@@ -82,6 +82,36 @@ func (s *Coordinator) recordWorkspaceRevision(ctx context.Context, workspace ent
 	return s.repository.InsertRevision(ctx, value)
 }
 
+// applyStartupComposition применяет переносимую ссылку после восстановления документов,
+// когда целевая Composition уже гарантированно существует в текущей транзакции.
+func (s *Coordinator) applyStartupComposition(ctx context.Context, workspace entities.Workspace, bundle entities.PortableBundle, actorID, operation string) (*entities.Workspace, *entities.Revision, error) {
+	value, exists := bundle.Workspace["startupCompositionIdentity"]
+	if !exists {
+		return &workspace, nil, nil
+	}
+	var target *string
+	if value != nil {
+		identity := strings.TrimSpace(stringField(bundle.Workspace, "startupCompositionIdentity"))
+		target = &identity
+	}
+	if optionalStringEqual(workspace.StartupCompositionIdentity, target) {
+		return &workspace, nil, nil
+	}
+	updated, err := s.repository.UpdateWorkspace(ctx, workspace.Identity, map[string]any{"startupCompositionIdentity": value}, workspace.Revision, actorID)
+	if err != nil {
+		return nil, nil, err
+	}
+	revision, err := s.recordWorkspaceRevision(ctx, *updated, operation)
+	return updated, revision, err
+}
+
+func optionalStringEqual(left, right *string) bool {
+	if left == nil || right == nil {
+		return left == nil && right == nil
+	}
+	return *left == *right
+}
+
 // mutationBatch создаёт или переиспользует пакет связанных изменений.
 func (s *Coordinator) mutationBatch(ctx context.Context, workspaceID *string, operation, actorID string) (string, error) {
 	if batch, ok := ctx.Value(mutationBatchContextKey{}).(string); ok && batch != "" {
@@ -171,52 +201,6 @@ func resolvableFolderIdentity(identity, entityType string) string {
 		return entities.RootFolderIdentity(entities.CollectionStreams)
 	}
 	return identity
-}
-
-// replaceStructuredRelations обновляет структурированные связи документа.
-func (s *Coordinator) replaceStructuredRelations(ctx context.Context, document entities.Document) error {
-	if document.Type != entities.CollectionProjects {
-		return nil
-	}
-	var data map[string]any
-	if err := json.Unmarshal(document.Data, &data); err != nil {
-		return domainerrors.InvalidInput("document_data_invalid", "Document data is invalid")
-	}
-	environments := relationIdentityList(data["allowedEnvironments"])
-	if len(environments) == 0 {
-		environments = relationIdentityList(data["allowedEnvironmentIdentities"])
-	}
-	if err := s.repository.ReplaceProjectEnvironments(ctx, document, environments); err != nil {
-		if strings.Contains(err.Error(), "relation target") {
-			return domainerrors.InvalidInput("relation_target_not_found", err.Error())
-		}
-		return err
-	}
-	return nil
-}
-
-// relationIdentityList извлекает список identity связанных документов.
-func relationIdentityList(value any) []string {
-	items, ok := value.([]any)
-	if !ok {
-		return nil
-	}
-	seen := map[string]bool{}
-	result := []string{}
-	for _, item := range items {
-		identity := ""
-		switch typed := item.(type) {
-		case string:
-			identity = strings.TrimSpace(typed)
-		case map[string]any:
-			identity = stringField(typed, "identity")
-		}
-		if identity != "" && !seen[identity] {
-			seen[identity] = true
-			result = append(result, identity)
-		}
-	}
-	return result
 }
 
 // documentFromInput создаёт доменный документ из входных данных.
@@ -371,8 +355,11 @@ func validateDocument(kind string, input map[string]any) error {
 			return domainerrors.InvalidInput("source_contract_invalid", "source and positive sourceVersion are required")
 		}
 	}
-	if kind == entities.CollectionCompositions && strings.EqualFold(strings.TrimSpace(stringField(input, "kind")), "project") {
-		return domainerrors.InvalidInput("composition_project_owner_unsupported", "Project owns its own Source; Composition kind project is not supported")
+	if kind == entities.CollectionCompositions {
+		compositionKind := strings.ToLower(strings.TrimSpace(stringField(input, "kind")))
+		if compositionKind != "" && !slices.Contains([]string{"library", "query", "workspace"}, compositionKind) {
+			return domainerrors.InvalidInput("composition_kind_invalid", "Composition kind must be library, query, or workspace")
+		}
 	}
 	if kind == "queries" {
 		version, _ := numberField(input, "sourceVersion")
@@ -382,12 +369,6 @@ func validateDocument(kind string, input map[string]any) error {
 	}
 	if kind == entities.CollectionActions && strings.TrimSpace(stringField(input, "source")) == "" {
 		return domainerrors.InvalidInput("action_source_invalid", "Action source must not be empty")
-	}
-	if kind == entities.CollectionProjects {
-		version, hasVersion := numberField(input, "sourceVersion")
-		if _, hasSource := input["source"].(string); !hasSource || !hasVersion || version != 1 {
-			return domainerrors.InvalidInput("project_source_contract_invalid", "Project source and sourceVersion 1 are required")
-		}
 	}
 
 	if kind == entities.CollectionSimulations {
@@ -404,9 +385,6 @@ func validateDocument(kind string, input map[string]any) error {
 		if stringField(input, "folderIdentity") != "" {
 			return domainerrors.InvalidInput("configuration_folder_unsupported", "Configuration documents do not support folders")
 		}
-	}
-	if kind == entities.CollectionTenants && stringField(input, "code") == "" {
-		return domainerrors.InvalidInput("tenant_code_required", "code is required")
 	}
 	if kind == entities.CollectionUpdates && stringField(input, "storeIdentity") == "" {
 		return domainerrors.InvalidInput("update_store_required", "storeIdentity is required")
@@ -447,9 +425,6 @@ func validateDocument(kind string, input map[string]any) error {
 		if mode := stringField(input, "authMode"); mode != "" && !slices.Contains([]string{"inherit", "profile", "none"}, mode) {
 			return domainerrors.InvalidInput("vocab_auth_mode_invalid", "authMode is invalid")
 		}
-	}
-	if err := validateProjectContract(kind, input); err != nil {
-		return err
 	}
 	if kind == entities.CollectionFolders {
 		scope := defaultString(stringField(input, "scope"), entities.FolderScopeCollection)
@@ -506,19 +481,6 @@ func validatePortableDocument(kind string, input map[string]any) error {
 	validated := copyMap(input)
 	delete(validated, "isRoot")
 	return validateDocument(kind, validated)
-}
-
-// validateProjectContract проверяет контракт проекта и запрещённые устаревшие поля.
-func validateProjectContract(kind string, input map[string]any) error {
-	if kind != entities.CollectionProjects {
-		return nil
-	}
-	for _, field := range []string{"navigation", "navigationId", "navigationIdentity", "sortOrder", "sort_order"} {
-		if _, exists := input[field]; exists {
-			return domainerrors.InvalidInput("project_legacy_field", "Project must use order and cannot reference navigation")
-		}
-	}
-	return nil
 }
 
 // validateIdentity проверяет обязательность и допустимую длину identity.

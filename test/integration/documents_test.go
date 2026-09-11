@@ -63,7 +63,7 @@ func (r *countingArtifactRepository) callCount() int {
 	return r.calls
 }
 
-// TestEveryDocumentRepositoryLifecycle проверяет общий CRUD и историю всех 22 таблиц документов.
+// TestEveryDocumentRepositoryLifecycle проверяет общий CRUD и историю всех generic-коллекций документов.
 func TestEveryDocumentRepositoryLifecycle(t *testing.T) {
 	fixture := newRepositoryFixture(t)
 	cases := documentCases()
@@ -120,6 +120,54 @@ func TestEveryDocumentRepositoryLifecycle(t *testing.T) {
 				t.Fatalf("history %s: revisions=%d err=%v", testCase.collection, len(historyItems), err)
 			}
 		})
+	}
+}
+
+// TestWorkspaceStartupCompositionLifecycle проверяет атомарный bootstrap Workspace
+// и снятие startup-ссылки при soft-delete выбранной Composition.
+func TestWorkspaceStartupCompositionLifecycle(t *testing.T) {
+	fixture := newRepositoryFixture(t)
+	created, err := fixture.workspaces.Create(fixture.ctx, workspaces.CreateInput{
+		Identity:    "startup-lifecycle",
+		DisplayName: "Startup lifecycle",
+	})
+	if err != nil {
+		t.Fatalf("создать workspace: %v", err)
+	}
+	if created.StartupCompositionIdentity == nil || *created.StartupCompositionIdentity != "workspace-startup" {
+		t.Fatalf("startupCompositionIdentity = %#v, want workspace-startup", created.StartupCompositionIdentity)
+	}
+
+	scope, err := fixture.workspaces.Authorize(fixture.ctx, created.Identity)
+	if err != nil {
+		t.Fatalf("авторизовать созданный workspace: %v", err)
+	}
+	ctx := entities.WithWorkspaceAccess(fixture.ctx, scope)
+	composition, err := fixture.resources[entities.CollectionCompositions].Get(ctx, created.ID, "workspace-startup", false)
+	if err != nil {
+		t.Fatalf("прочитать startup Composition: %v", err)
+	}
+	var data map[string]any
+	if err = json.Unmarshal(composition.Data, &data); err != nil || data["sourceVersion"] != float64(1) {
+		t.Fatalf("startup Composition data = %s, err = %v", composition.Data, err)
+	}
+
+	deleted, err := fixture.lifecycle.Delete(
+		ctx,
+		documents.Definition{Collection: entities.CollectionCompositions},
+		fixture.resources[entities.CollectionCompositions],
+		composition.Identity,
+		composition.Revision,
+	)
+	if err != nil || deleted.DeletedAt == nil {
+		t.Fatalf("удалить startup Composition: value=%#v err=%v", deleted, err)
+	}
+	updated, err := fixture.store.GetWorkspace(ctx, created.Identity)
+	if err != nil {
+		t.Fatalf("прочитать workspace после удаления: %v", err)
+	}
+	if updated.StartupCompositionIdentity != nil || updated.Revision != created.Revision+1 {
+		t.Fatalf("workspace после удаления = %#v", updated)
 	}
 }
 
@@ -332,7 +380,7 @@ func newRepositoryFixture(t *testing.T) *repositoryFixture {
 		t.Fatalf("создать reader artifact: %v", err)
 	}
 	coordinator := workspace_state.NewCoordinator(store, tx, artifacts, 1)
-	lifecycle := documents.NewLifecycle(store, tx, recorder)
+	lifecycle := documents.NewLifecycle(store, store, tx, recorder)
 	workspaceUseCase := workspaces.NewUseCase(store, store, store, tx, recorder, nil)
 	actor := entities.CurrentActor{User: &entities.User{ID: userID, ProviderID: "integration", Subject: "subject-" + userID, Issuer: "urn:endge:test", Username: "tester", DisplayName: "Integration Tester", Active: true}, PlatformAdmin: true}
 	ctx := entities.WithCurrentActor(context.Background(), actor)
@@ -355,16 +403,13 @@ type documentCase struct {
 
 func documentCases() []documentCase {
 	return []documentCase{
-		{collection: "environments", payload: baseDocument("environment-main")},
 		{collection: "stores", payload: with(baseDocument("store-main"), "source", "store {}", "sourceVersion", 1)},
 		{collection: "auth-profiles", payload: with(baseDocument("auth-main"), "adapterId", "oidc", "config", map[string]any{"issuer": "https://issuer.example", "clientId": "endge-test", "scopes": []any{"openid"}}, "credentials", map[string]any{}, "session", map[string]any{"storage": "memory", "persistRefreshToken": false})},
-		{collection: "projects", payload: with(baseDocument("project-main"), "allowedEnvironments", []any{"environment-main"})},
-		{collection: "tenants", payload: with(baseDocument("tenant-main"), "code", "TENANT")},
 		{collection: "folders", payload: with(baseDocument("folder-main"), "entityType", "queries")},
 		{collection: "types", payload: with(baseDocument("type-main"), "source", "type {}", "sourceVersion", 1)},
 		{collection: "queries", payload: with(baseDocument("query-main"), "source", "query {}", "sourceVersion", 2)},
 		{collection: "data-views", payload: with(baseDocument("data-view-main"), "source", "view {}", "sourceVersion", 1)},
-		{collection: "compositions", payload: with(baseDocument("composition-main"), "kind", "screen", "kindIdentity", "main", "source", "composition {}", "sourceVersion", 1)},
+		{collection: "compositions", payload: with(baseDocument("composition-main"), "kind", "library", "source", "composition {}", "sourceVersion", 1)},
 		{collection: "streams", payload: with(baseDocument("stream-main"), "source", "stream {}", "sourceVersion", 1)},
 		{collection: "updates", payload: with(baseDocument("update-main"), "storeIdentity", "store-main", "source", "update {}", "sourceVersion", 1)},
 		{collection: "mocks", payload: with(baseDocument("mock-main"), "contentSource", "inline", "contentType", "application/json", "source", "{}")},
@@ -383,9 +428,8 @@ func documentCases() []documentCase {
 
 func documentRepositories(store *postgres.EndgeRepository) map[string]ports.DocumentResourceRepository {
 	return map[string]ports.DocumentResourceRepository{
-		"projects": postgres.NewProjectRepository(store), "tenants": postgres.NewTenantRepository(store),
-		"environments": postgres.NewEnvironmentRepository(store), "folders": postgres.NewFolderRepository(store),
-		"types": postgres.NewTypeRepository(store), "queries": postgres.NewQueryRepository(store),
+		"folders": postgres.NewFolderRepository(store), "types": postgres.NewTypeRepository(store),
+		"queries":    postgres.NewQueryRepository(store),
 		"data-views": postgres.NewDataViewRepository(store), "compositions": postgres.NewCompositionRepository(store),
 		"stores": postgres.NewStoreRepository(store), "streams": postgres.NewStreamRepository(store),
 		"updates": postgres.NewUpdateRepository(store), "mocks": postgres.NewMockRepository(store),

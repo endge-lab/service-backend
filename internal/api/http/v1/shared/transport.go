@@ -76,7 +76,7 @@ type CreateDocumentRequest struct {
 	Identity                string         `json:"identity" validate:"required,max=160" example:"main"`
 	DisplayName             string         `json:"displayName" validate:"required,max=255" example:"Основной объект"`
 	Description             *string        `json:"description,omitempty" example:"Описание объекта"`
-	FolderIdentity          *string        `json:"folderIdentity,omitempty" example:"root-projects"`
+	FolderIdentity          *string        `json:"folderIdentity,omitempty" example:"root-compositions"`
 	WorkspaceFolderIdentity *string        `json:"workspaceFolderIdentity,omitempty" example:"root-workspace-files"`
 	ManagedBy               string         `json:"managedBy,omitempty" validate:"omitempty,oneof=user system integration" example:"user" enums:"user,system,integration"`
 	ManagedByID             *string        `json:"managedById,omitempty" example:"endge-core"`
@@ -88,7 +88,7 @@ type PatchDocumentRequest struct {
 	Identity                *string        `json:"identity,omitempty" validate:"omitempty,max=160" example:"main"`
 	DisplayName             *string        `json:"displayName,omitempty" validate:"omitempty,max=255" example:"Основной объект"`
 	Description             *string        `json:"description,omitempty" example:"Описание объекта"`
-	FolderIdentity          *string        `json:"folderIdentity,omitempty" example:"root-projects"`
+	FolderIdentity          *string        `json:"folderIdentity,omitempty" example:"root-compositions"`
 	WorkspaceFolderIdentity *string        `json:"workspaceFolderIdentity,omitempty" example:"root-workspace-files"`
 	ManagedBy               *string        `json:"managedBy,omitempty" validate:"omitempty,oneof=user system integration" example:"user" enums:"user,system,integration"`
 	ManagedByID             *string        `json:"managedById,omitempty" example:"endge-core"`
@@ -101,7 +101,7 @@ type DocumentMetadata struct {
 	Identity                string          `json:"identity" example:"main"`
 	DisplayName             string          `json:"displayName" example:"Основной объект"`
 	Description             *string         `json:"description,omitempty" example:"Описание объекта"`
-	FolderIdentity          *string         `json:"folderIdentity,omitempty" example:"root-projects"`
+	FolderIdentity          *string         `json:"folderIdentity,omitempty" example:"root-compositions"`
 	WorkspaceFolderIdentity *string         `json:"workspaceFolderIdentity,omitempty" example:"root-workspace-files"`
 	ManagedBy               string          `json:"managedBy" example:"user" enums:"user,system,integration"`
 	ManagedByID             *string         `json:"managedById,omitempty" example:"endge-core"`

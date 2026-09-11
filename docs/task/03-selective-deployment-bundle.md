@@ -9,18 +9,21 @@
 
 ## Бизнес-контекст
 
-Один workspace содержит много документов разных типов: проекты, тенанты, среды, Composition, Query, Store, Component, Type, Style и другие сущности. Не все документы нужны каждому проекту или каждой среде.
+Один Workspace содержит динамические фасеты и много документов разных типов:
+Composition, Query, Store, Component, Type, Style и другие сущности. Для одного
+запуска нужен конкретный набор выбранных документов фасетов и только достижимая
+часть runtime-графа.
 
 Нужно уметь подготовить переносимый пакет только для выбранного контекста, например:
 
-- project `aodb`;
-- tenant `ramax`;
-- environment `production`;
-- все Composition, принадлежащие этим roots;
+- facet selections `{ "application": "aodb", "customer": "ramax", "stage": "production" }`;
+- startup Composition или явно выбранные корневые Composition;
 - все документы, от которых они транзитивно зависят;
 - требования к установленным integrations.
 
-Пакет должен быть полным для запуска выбранного контекста, но не должен захватывать несвязанные проекты и документы.
+Пакет должен быть полным для запуска выбранного контекста, но не должен
+захватывать несвязанные документы. Имена, количество и порядок фасетов берутся
+из release snapshot; backend не кодирует специальные фасеты.
 
 Эта задача не выполняет сетевую синхронизацию и не изменяет target workspace. Она создаёт детерминированный immutable artifact, который следующая задача сможет безопасно сравнить и применить.
 
@@ -55,11 +58,11 @@ backend validation + storage + closure + bundle
 ## Термины для разработчика backend
 
 - **Document** — workspace-scoped сущность с парой `(type, identity)` и revision.
-- **Root** — явно выбранная точка начала: project и опционально tenant/environment.
+- **Root** — выбранный документ фасета либо корневая Composition.
 - **Dependency edge** — типизированная ссылка одного документа на другой.
 - **Dependency manifest** — полный версионированный граф документов на конкретном workspace commit.
 - **Closure** — roots плюс все транзитивно достижимые обязательные зависимости.
-- **Ownership edge** — структурная связь владельца с Composition через `kind`/`kindIdentity`.
+- **Facet selection** — map `facetIdentity -> documentIdentity`, проверенная по определениям фасетов release.
 - **Required integration** — identity/version integration, необходимой bundle; credential и target configuration в пакет не входят.
 - **Deployment bundle** — immutable JSON с выбранным контекстом, closure, provenance и checksum.
 
@@ -74,7 +77,7 @@ backend validation + storage + closure + bundle
 - `internal/usecase/workspace_state/support.go` — structured relations и portable normalization;
 - `internal/domain/entities/commit.go` — commit и commit changes;
 - `internal/domain/entities/release.go` — immutable release;
-- `internal/api/http/v1/composition/transport.go` — `kind`, `kindIdentity`, source;
+- `internal/api/http/v1/composition/transport.go` — Composition source и kind;
 - `migrations/000030_workspace_commits.sql`;
 - `migrations/000031_document_revisions.sql`;
 - `migrations/000034_releases.sql`.
@@ -87,7 +90,10 @@ backend validation + storage + closure + bundle
 - включает workspace profile;
 - предназначен для полного ревизионного import с обратимым soft-delete отсутствующих документов.
 
-Существующая `validateSnapshotRelations` проверяет только ограниченные backend-visible связи: folders, update-store, project-environment, vocab-auth-profile. Этого недостаточно для semantic closure.
+Существующая `validateSnapshotRelations` проверяет только ограниченные
+backend-visible связи: facets/facet-documents, folders, workspace startup
+Composition, update-store и vocab-auth-profile. Этого недостаточно для semantic
+closure.
 
 ## Цель
 
@@ -124,7 +130,8 @@ Selective bundle нельзя считать корректным, если:
 - manifest не соответствует документам commit;
 - обязательная dependency отсутствует;
 - root отсутствует;
-- selected environment не разрешён проектом;
+- selection содержит неизвестный фасет или недоступный документ фасета;
+- selection пропускает активный фасет, для которого release содержит документы;
 - обнаружен secret-bearing payload;
 - compiler пометил artifact как некомпилируемый или manifest incomplete.
 
@@ -184,7 +191,7 @@ Backward compatibility:
 
 - `schemaVersion` обязателен и равен `1`;
 - `complete=true` означает, что compiler обработал весь workspace state, а не только открытый документ;
-- точнее, `complete=true` покрывает все документы collections, semantic dependencies которых принадлежат compiler. Projects/tenants/environments/folders и другие чисто структурные документы backend добавляет отдельными typed edges;
+- точнее, `complete=true` покрывает все коллекции, semantic dependencies которых принадлежат compiler. Facets, facet-documents, folders и другие чисто структурные документы backend добавляет отдельными typed edges;
 - `headSequence` равен ожидаемому head commit;
 - node key — `(documentType, identity)`;
 - `revision` — backend revision документа, увиденная compiler producer;
@@ -262,35 +269,35 @@ API принимает selection:
 
 ```json
 {
-  "projectIdentity": "aodb",
-  "tenantIdentity": "ramax",
-  "environmentIdentity": "production"
+  "facetSelections": {
+    "application": "aodb",
+    "customer": "ramax",
+    "stage": "production"
+  },
+  "compositionIdentities": ["aodb-main"]
 }
 ```
 
 Для v1:
 
-- `projectIdentity` обязателен;
-- `tenantIdentity` опционален;
-- `environmentIdentity` опционален;
-- все identities проверяются как обычные document identities;
-- проект, tenant и environment должны существовать в snapshot release;
-- если project содержит `allowedEnvironments`, выбранный environment должен входить в список;
-- отсутствие tenant/environment не означает включить все tenants/environments.
+- `facetSelections` содержит не более одного document identity для каждого фасета;
+- каждый key должен указывать на активный фасет release, а значение — на активный документ именно этого фасета;
+- для каждого активного фасета с документами selection обязан содержать значение;
+- порядок применения не передаётся клиентом: backend использует `RFacet.position` из release;
+- `compositionIdentities` содержит одну или несколько активных Composition;
+- если список Composition не передан, root берётся из `workspace.startupCompositionIdentity` release;
+- пустой или неизвестный root делает plan невалидным.
 
 Initial roots:
 
-1. selected project document;
-2. selected tenant document, если указан;
-3. selected environment document, если указан;
-4. Composition, у которых:
-   - `kind=project` и `kindIdentity=projectIdentity`;
-   - `kind=tenant` и `kindIdentity=tenantIdentity`, если tenant выбран;
-   - `kind=environment` и `kindIdentity=environmentIdentity`, если environment выбран.
+1. все документы из `facetSelections` вместе с определениями их фасетов;
+2. явно выбранные Composition либо startup Composition Workspace;
+3. Workspace configuration, необходимая для разрешения effective configuration.
 
-Library/global Composition не добавляются автоматически. Они попадут только как dependencies reachable из roots.
+Остальные Composition не добавляются автоматически. Они попадут только как
+dependencies, достижимые из корневых Composition.
 
-Если несколько Composition принадлежат одному root, все они являются roots. Backend не должен угадывать «главную страницу».
+Backend не выводит root из `kind` и не угадывает «главную страницу» по имени.
 
 ## Этап 3. Единый dependency graph
 
@@ -305,8 +312,8 @@ Backend строит graph из двух источников, не создав
 Добавить edges из typed stored fields:
 
 - document - folder и folder - parent folder;
-- project - allowed environments;
-- Composition owner - Composition через `kind`/`kindIdentity`;
+- facet-document - facet;
+- workspace - startup Composition;
 - update - store через `storeIdentity`;
 - vocab - auth-profile через `authProfileIdentity`;
 - document - integration requirement, если manifest/контракт указывает integration identity/version;
@@ -335,7 +342,9 @@ Optional dependency:
 - отображается в plan как optional external/omitted dependency;
 - required missing dependency делает plan invalid.
 
-Closure не включает reverse dependants. Если выбранный Query используется несвязанным проектом, тот проект не должен попасть в source bundle. Target impact analysis выполняется в задаче синхронизации.
+Closure не включает reverse dependants. Если выбранный Query используется другой
+недостижимой Composition, эта Composition не должна попасть в source bundle.
+Target impact analysis выполняется в задаче синхронизации.
 
 ## Этап 5. Deployment bundle contract
 
@@ -357,14 +366,16 @@ Closure не включает reverse dependants. Если выбранный Qu
     "dependencyManifestChecksum": "..."
   },
   "selection": {
-    "projectIdentity": "aodb",
-    "tenantIdentity": "ramax",
-    "environmentIdentity": "production"
+    "facetSelections": {
+      "application": "aodb",
+      "customer": "ramax",
+      "stage": "production"
+    },
+    "compositionIdentities": ["aodb-main"]
   },
   "documents": {
-    "projects": [],
-    "tenants": [],
-    "environments": [],
+    "facets": [],
+    "facet-documents": [],
     "compositions": [],
     "queries": []
   },
@@ -418,9 +429,12 @@ Body содержит selection.
   "valid": true,
   "releaseIdentity": "release-2026-08-05",
   "selection": {
-    "projectIdentity": "aodb",
-    "tenantIdentity": "ramax",
-    "environmentIdentity": "production"
+    "facetSelections": {
+      "application": "aodb",
+      "customer": "ramax",
+      "stage": "production"
+    },
+    "compositionIdentities": ["aodb-main"]
   },
   "roots": 4,
   "documents": 38,
@@ -462,7 +476,7 @@ Response:
 - `dependency_manifest_incomplete`;
 - `dependency_manifest_mismatch`;
 - `deployment_root_not_found`;
-- `deployment_environment_not_allowed`;
+- `deployment_facet_selection_invalid`;
 - `deployment_dependency_missing`;
 - `deployment_document_not_compilable`;
 - `deployment_secret_detected`;
@@ -530,17 +544,18 @@ Response:
 
 ### Roots и closure
 
-1. Project root включает все owned project Composition.
-2. Tenant/environment roots включаются только если выбраны.
-3. Library Composition попадает только через dependency.
-4. Транзитивная цепочка Composition-Query-DataView включается полностью.
-5. Cycle не вызывает бесконечный обход.
-6. Missing required dependency делает plan invalid.
-7. Non-compilable included node делает plan invalid.
-8. Ancestor folders добавляются, несвязанные folders не добавляются.
-9. Несвязанный второй project не попадает в bundle.
-10. Integration configuration/credentials отсутствуют в bundle.
-11. Selected environment проверяется по project allowed environments.
+1. Каждый выбранный документ фасета и определение фасета входят в roots.
+2. Порядок фасетов берётся из release, а не из request.
+3. При отсутствии explicit Composition используется startup Composition Workspace.
+4. Невыбранная Composition попадает только через dependency.
+5. Транзитивная цепочка Composition-Query-DataView включается полностью.
+6. Cycle не вызывает бесконечный обход.
+7. Missing required dependency делает plan invalid.
+8. Non-compilable included node делает plan invalid.
+9. Ancestor folders добавляются, несвязанные folders не добавляются.
+10. Несвязанная вторая Composition не попадает в bundle.
+11. Integration configuration/credentials отсутствуют в bundle.
+12. Unknown facet, документ другого фасета и пропущенный обязательный selection отклоняются.
 
 ### Детерминизм и безопасность
 

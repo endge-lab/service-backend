@@ -23,17 +23,14 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/data_view"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/document_move"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/domain"
-	"github.com/endge-lab/service-backend/internal/api/http/v1/environment"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/facet"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/filter"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/folder"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/i18n_bundle"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/integration"
-	"github.com/endge-lab/service-backend/internal/api/http/v1/legacy"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/mock"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/mock_data"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/navigation"
-	"github.com/endge-lab/service-backend/internal/api/http/v1/project"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/query"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/release"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/revision"
@@ -42,7 +39,6 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/store"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/stream"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/style"
-	"github.com/endge-lab/service-backend/internal/api/http/v1/tenant"
 	domain_type "github.com/endge-lab/service-backend/internal/api/http/v1/type"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/update"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/vocab"
@@ -69,10 +65,6 @@ type Handlers struct {
 	BackendConnection *backend_connection.Handler
 	Session           *httpsession.Handler
 	Integration       *integration.Handler
-	Legacy            *legacy.Handler
-	Project           *project.Handler
-	Tenant            *tenant.Handler
-	Environment       *environment.Handler
 	Facet             *facet.Handler
 	Folder            *folder.Handler
 	Type              *domain_type.Handler
@@ -131,9 +123,6 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, connectedServices *service_
 	backend_connection.RegisterRoutes(v1, handlers.BackendConnection)
 	integration.RegisterRoutes(v1, handlers.Integration)
 	scoped := v1.Group("", handlers.Workspace.RequireWorkspace())
-	project.RegisterRoutes(scoped, handlers.Project)
-	tenant.RegisterRoutes(scoped, handlers.Tenant)
-	environment.RegisterRoutes(scoped, handlers.Environment)
 	facet.RegisterRoutes(scoped, handlers.Facet)
 	folder.RegisterRoutes(scoped, handlers.Folder)
 	domain_type.RegisterRoutes(scoped, handlers.Type)
@@ -160,7 +149,6 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, connectedServices *service_
 	commit.RegisterRoutes(scoped, handlers.Commit)
 	domain.RegisterRoutes(scoped, handlers.Domain)
 	document_move.RegisterRoutes(scoped, handlers.DocumentMove)
-	legacy.RegisterRoutes(scoped, handlers.Legacy)
 	backup.RegisterRoutes(scoped, handlers.Backup)
 	release.RegisterRoutes(scoped, handlers.Release)
 	ai_assistant.RegisterRoutes(scoped, handlers.AIAssistant)

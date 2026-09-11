@@ -6117,480 +6117,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
-  /api/v1/environments:
-    get:
-      security:
-        - BearerAuth: []
-      description: Возвращает список окружений текущего рабочего пространства с
-        фильтрацией и пагинацией.
-      tags:
-        - Окружения
-      summary: Получить список окружений
-      operationId: listEnvironments
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-        - description: Включить мягко удалённые документы
-          name: includeDeleted
-          in: query
-          schema:
-            type: boolean
-            default: false
-        - description: Identity папки
-          name: folderIdentity
-          in: query
-          schema:
-            type: string
-            maxLength: 160
-        - description: Фильтр по активности
-          name: active
-          in: query
-          schema:
-            type: boolean
-        - description: Размер страницы
-          name: limit
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 500
-            default: 100
-        - description: Смещение
-          name: offset
-          in: query
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-      responses:
-        "200":
-          description: Список окружений
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/environment.ListResponse"
-        "400":
-          description: Некорректный запрос
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-    post:
-      security:
-        - BearerAuth: []
-      description: Создаёт окружение в текущем рабочем пространстве.
-      tags:
-        - Окружения
-      summary: Создать окружение
-      operationId: createEnvironment
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/environment.CreateRequest"
-        description: Данные нового документа
-        required: true
-      responses:
-        "201":
-          description: Документ создан
-          headers:
-            ETag:
-              description: Текущая revision документа
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/environment.Response"
-        "400":
-          description: Некорректный запрос
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "409":
-          description: Конфликт identity или revision
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-  "/api/v1/environments/{identity}":
-    get:
-      security:
-        - BearerAuth: []
-      description: Возвращает окружение по identity.
-      tags:
-        - Окружения
-      summary: Получить окружение
-      operationId: getEnvironment
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-        - description: Identity документа
-          name: identity
-          in: path
-          required: true
-          schema:
-            type: string
-            maxLength: 160
-        - description: Разрешить получение мягко удалённого документа
-          name: includeDeleted
-          in: query
-          schema:
-            type: boolean
-            default: false
-      responses:
-        "200":
-          description: Найденный документ
-          headers:
-            ETag:
-              description: Текущая revision документа
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/environment.Response"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "404":
-          description: Документ не найден
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-    delete:
-      security:
-        - BearerAuth: []
-      description: Выполняет мягкое удаление документа; актуальная revision передаётся
-        в If-Match.
-      tags:
-        - Окружения
-      summary: Удалить окружение
-      operationId: deleteEnvironment
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-        - description: Identity документа
-          name: identity
-          in: path
-          required: true
-          schema:
-            type: string
-            maxLength: 160
-        - example: '"3"'
-          description: Текущая revision документа
-          name: If-Match
-          in: header
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Документ мягко удалён
-          headers:
-            ETag:
-              description: Новая revision документа
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/environment.Response"
-        "400":
-          description: Некорректный запрос
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "404":
-          description: Документ не найден
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "409":
-          description: Конфликт identity или revision
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "428":
-          description: Требуется заголовок If-Match
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-    patch:
-      security:
-        - BearerAuth: []
-      description: Частично изменяет окружение; актуальная revision передаётся в If-Match.
-      tags:
-        - Окружения
-      summary: Изменить окружение
-      operationId: patchEnvironment
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-        - description: Identity документа
-          name: identity
-          in: path
-          required: true
-          schema:
-            type: string
-            maxLength: 160
-        - example: '"3"'
-          description: Текущая revision документа
-          name: If-Match
-          in: header
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/environment.PatchRequest"
-        description: Изменяемые поля документа
-        required: true
-      responses:
-        "200":
-          description: Документ изменён
-          headers:
-            ETag:
-              description: Новая revision документа
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/environment.Response"
-        "400":
-          description: Некорректный запрос
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "404":
-          description: Документ не найден
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "409":
-          description: Конфликт identity или revision
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "428":
-          description: Требуется заголовок If-Match
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-  "/api/v1/environments/{identity}/restore":
-    post:
-      security:
-        - BearerAuth: []
-      description: Восстанавливает мягко удалённый документ; актуальная revision
-        передаётся в If-Match.
-      tags:
-        - Окружения
-      summary: Восстановить окружение
-      operationId: restoreEnvironment
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-        - description: Identity документа
-          name: identity
-          in: path
-          required: true
-          schema:
-            type: string
-            maxLength: 160
-        - example: '"3"'
-          description: Текущая revision документа
-          name: If-Match
-          in: header
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Документ восстановлен
-          headers:
-            ETag:
-              description: Новая revision документа
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/environment.Response"
-        "400":
-          description: Некорректный запрос
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "404":
-          description: Документ не найден
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "409":
-          description: Конфликт identity или revision
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "428":
-          description: Требуется заголовок If-Match
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
   /api/v1/facets:
     get:
       security:
@@ -9084,69 +8610,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
-  /api/v1/legacy/workspace-folders/rebuild-from-frontend:
-    post:
-      security:
-        - BearerAuth: []
-      description: Удаляет текущие пользовательские Workspace-папки, копирует
-        Frontend-корни с подпапками и перепривязывает документы. Не изменяет
-        документы и их folderId.
-      tags:
-        - Legacy
-      summary: Пересоздать Workspace-папки из Frontend
-      operationId: legacyRebuildWorkspaceFoldersFromFrontend
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/legacy.RebuildWorkspaceFoldersRequest"
-        description: Явное подтверждение целевого Workspace
-        required: true
-      responses:
-        "200":
-          description: Результат пересоздания
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/legacy.RebuildWorkspaceFoldersResponse"
-        "400":
-          description: Некорректное подтверждение
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Требуется роль Workspace Admin
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "409":
-          description: Конфликт состояния
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
   /api/v1/mock-data/capabilities:
     get:
       security:
@@ -10551,480 +10014,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/navigation.Response"
-        "400":
-          description: Некорректный запрос
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "404":
-          description: Документ не найден
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "409":
-          description: Конфликт identity или revision
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "428":
-          description: Требуется заголовок If-Match
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-  /api/v1/projects:
-    get:
-      security:
-        - BearerAuth: []
-      description: Возвращает список проектов текущего рабочего пространства с
-        фильтрацией и пагинацией.
-      tags:
-        - Проекты
-      summary: Получить список проектов
-      operationId: listProjects
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-        - description: Включить мягко удалённые документы
-          name: includeDeleted
-          in: query
-          schema:
-            type: boolean
-            default: false
-        - description: Identity папки
-          name: folderIdentity
-          in: query
-          schema:
-            type: string
-            maxLength: 160
-        - description: Фильтр по активности
-          name: active
-          in: query
-          schema:
-            type: boolean
-        - description: Размер страницы
-          name: limit
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 500
-            default: 100
-        - description: Смещение
-          name: offset
-          in: query
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-      responses:
-        "200":
-          description: Список проектов
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/project.ListResponse"
-        "400":
-          description: Некорректный запрос
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-    post:
-      security:
-        - BearerAuth: []
-      description: Создаёт проект в текущем рабочем пространстве.
-      tags:
-        - Проекты
-      summary: Создать проект
-      operationId: createProject
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/project.CreateRequest"
-        description: Данные нового документа
-        required: true
-      responses:
-        "201":
-          description: Документ создан
-          headers:
-            ETag:
-              description: Текущая revision документа
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/project.Response"
-        "400":
-          description: Некорректный запрос
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "409":
-          description: Конфликт identity или revision
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-  "/api/v1/projects/{identity}":
-    get:
-      security:
-        - BearerAuth: []
-      description: Возвращает проект по identity.
-      tags:
-        - Проекты
-      summary: Получить проект
-      operationId: getProject
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-        - description: Identity документа
-          name: identity
-          in: path
-          required: true
-          schema:
-            type: string
-            maxLength: 160
-        - description: Разрешить получение мягко удалённого документа
-          name: includeDeleted
-          in: query
-          schema:
-            type: boolean
-            default: false
-      responses:
-        "200":
-          description: Найденный документ
-          headers:
-            ETag:
-              description: Текущая revision документа
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/project.Response"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "404":
-          description: Документ не найден
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-    delete:
-      security:
-        - BearerAuth: []
-      description: Выполняет мягкое удаление документа; актуальная revision передаётся
-        в If-Match.
-      tags:
-        - Проекты
-      summary: Удалить проект
-      operationId: deleteProject
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-        - description: Identity документа
-          name: identity
-          in: path
-          required: true
-          schema:
-            type: string
-            maxLength: 160
-        - example: '"3"'
-          description: Текущая revision документа
-          name: If-Match
-          in: header
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Документ мягко удалён
-          headers:
-            ETag:
-              description: Новая revision документа
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/project.Response"
-        "400":
-          description: Некорректный запрос
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "404":
-          description: Документ не найден
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "409":
-          description: Конфликт identity или revision
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "428":
-          description: Требуется заголовок If-Match
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-    patch:
-      security:
-        - BearerAuth: []
-      description: Частично изменяет проект; актуальная revision передаётся в If-Match.
-      tags:
-        - Проекты
-      summary: Изменить проект
-      operationId: patchProject
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-        - description: Identity документа
-          name: identity
-          in: path
-          required: true
-          schema:
-            type: string
-            maxLength: 160
-        - example: '"3"'
-          description: Текущая revision документа
-          name: If-Match
-          in: header
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/project.PatchRequest"
-        description: Изменяемые поля документа
-        required: true
-      responses:
-        "200":
-          description: Документ изменён
-          headers:
-            ETag:
-              description: Новая revision документа
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/project.Response"
-        "400":
-          description: Некорректный запрос
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "404":
-          description: Документ не найден
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "409":
-          description: Конфликт identity или revision
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "428":
-          description: Требуется заголовок If-Match
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-  "/api/v1/projects/{identity}/restore":
-    post:
-      security:
-        - BearerAuth: []
-      description: Восстанавливает мягко удалённый документ; актуальная revision
-        передаётся в If-Match.
-      tags:
-        - Проекты
-      summary: Восстановить проект
-      operationId: restoreProject
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-        - description: Identity документа
-          name: identity
-          in: path
-          required: true
-          schema:
-            type: string
-            maxLength: 160
-        - example: '"3"'
-          description: Текущая revision документа
-          name: If-Match
-          in: header
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Документ восстановлен
-          headers:
-            ETag:
-              description: Новая revision документа
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/project.Response"
         "400":
           description: Некорректный запрос
           content:
@@ -13892,480 +12881,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
-  /api/v1/tenants:
-    get:
-      security:
-        - BearerAuth: []
-      description: Возвращает список тенантов текущего рабочего пространства с
-        фильтрацией и пагинацией.
-      tags:
-        - Тенанты
-      summary: Получить список тенантов
-      operationId: listTenants
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-        - description: Включить мягко удалённые документы
-          name: includeDeleted
-          in: query
-          schema:
-            type: boolean
-            default: false
-        - description: Identity папки
-          name: folderIdentity
-          in: query
-          schema:
-            type: string
-            maxLength: 160
-        - description: Фильтр по активности
-          name: active
-          in: query
-          schema:
-            type: boolean
-        - description: Размер страницы
-          name: limit
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 500
-            default: 100
-        - description: Смещение
-          name: offset
-          in: query
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-      responses:
-        "200":
-          description: Список тенантов
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/tenant.ListResponse"
-        "400":
-          description: Некорректный запрос
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-    post:
-      security:
-        - BearerAuth: []
-      description: Создаёт тенант в текущем рабочем пространстве.
-      tags:
-        - Тенанты
-      summary: Создать тенант
-      operationId: createTenant
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/tenant.CreateRequest"
-        description: Данные нового документа
-        required: true
-      responses:
-        "201":
-          description: Документ создан
-          headers:
-            ETag:
-              description: Текущая revision документа
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/tenant.Response"
-        "400":
-          description: Некорректный запрос
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "409":
-          description: Конфликт identity или revision
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-  "/api/v1/tenants/{identity}":
-    get:
-      security:
-        - BearerAuth: []
-      description: Возвращает тенант по identity.
-      tags:
-        - Тенанты
-      summary: Получить тенант
-      operationId: getTenant
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-        - description: Identity документа
-          name: identity
-          in: path
-          required: true
-          schema:
-            type: string
-            maxLength: 160
-        - description: Разрешить получение мягко удалённого документа
-          name: includeDeleted
-          in: query
-          schema:
-            type: boolean
-            default: false
-      responses:
-        "200":
-          description: Найденный документ
-          headers:
-            ETag:
-              description: Текущая revision документа
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/tenant.Response"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "404":
-          description: Документ не найден
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-    delete:
-      security:
-        - BearerAuth: []
-      description: Выполняет мягкое удаление документа; актуальная revision передаётся
-        в If-Match.
-      tags:
-        - Тенанты
-      summary: Удалить тенант
-      operationId: deleteTenant
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-        - description: Identity документа
-          name: identity
-          in: path
-          required: true
-          schema:
-            type: string
-            maxLength: 160
-        - example: '"3"'
-          description: Текущая revision документа
-          name: If-Match
-          in: header
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Документ мягко удалён
-          headers:
-            ETag:
-              description: Новая revision документа
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/tenant.Response"
-        "400":
-          description: Некорректный запрос
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "404":
-          description: Документ не найден
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "409":
-          description: Конфликт identity или revision
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "428":
-          description: Требуется заголовок If-Match
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-    patch:
-      security:
-        - BearerAuth: []
-      description: Частично изменяет тенант; актуальная revision передаётся в If-Match.
-      tags:
-        - Тенанты
-      summary: Изменить тенант
-      operationId: patchTenant
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-        - description: Identity документа
-          name: identity
-          in: path
-          required: true
-          schema:
-            type: string
-            maxLength: 160
-        - example: '"3"'
-          description: Текущая revision документа
-          name: If-Match
-          in: header
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/tenant.PatchRequest"
-        description: Изменяемые поля документа
-        required: true
-      responses:
-        "200":
-          description: Документ изменён
-          headers:
-            ETag:
-              description: Новая revision документа
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/tenant.Response"
-        "400":
-          description: Некорректный запрос
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "404":
-          description: Документ не найден
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "409":
-          description: Конфликт identity или revision
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "428":
-          description: Требуется заголовок If-Match
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-  "/api/v1/tenants/{identity}/restore":
-    post:
-      security:
-        - BearerAuth: []
-      description: Восстанавливает мягко удалённый документ; актуальная revision
-        передаётся в If-Match.
-      tags:
-        - Тенанты
-      summary: Восстановить тенант
-      operationId: restoreTenant
-      parameters:
-        - example: default
-          description: Identity рабочего пространства
-          name: X-Endge-Workspace
-          in: header
-          required: true
-          schema:
-            type: string
-        - description: Identity документа
-          name: identity
-          in: path
-          required: true
-          schema:
-            type: string
-            maxLength: 160
-        - example: '"3"'
-          description: Текущая revision документа
-          name: If-Match
-          in: header
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Документ восстановлен
-          headers:
-            ETag:
-              description: Новая revision документа
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/tenant.Response"
-        "400":
-          description: Некорректный запрос
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "401":
-          description: Требуется аутентификация
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "403":
-          description: Недостаточно прав
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "404":
-          description: Документ не найден
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "409":
-          description: Конфликт identity или revision
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "428":
-          description: Требуется заголовок If-Match
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "500":
-          description: Внутренняя ошибка сервера
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
   /api/v1/types:
     get:
       security:
@@ -16431,7 +14946,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -16494,7 +15009,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -16550,7 +15065,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -16934,7 +15449,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -16999,7 +15514,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -17056,7 +15571,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -17395,7 +15910,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -17464,7 +15979,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -17523,7 +16038,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -17591,7 +16106,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -17656,7 +16171,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -17714,7 +16229,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -17782,7 +16297,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -17844,7 +16359,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -17899,7 +16414,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -17957,7 +16472,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -18016,7 +16531,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -18068,7 +16583,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -18124,7 +16639,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -18176,7 +16691,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -18221,7 +16736,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -18273,7 +16788,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -18332,7 +16847,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -18384,7 +16899,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -18612,7 +17127,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -18674,7 +17189,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -18729,7 +17244,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -19015,162 +17530,6 @@ components:
           type: integer
         integrations:
           type: integer
-    environment.CreateRequest:
-      type: object
-      required:
-        - displayName
-        - identity
-      properties:
-        active:
-          type: boolean
-          example: true
-        configuration:
-          type: object
-          additionalProperties: {}
-        description:
-          type: string
-          example: Описание объекта
-        displayName:
-          type: string
-          maxLength: 255
-          example: Основной объект
-        folderIdentity:
-          type: string
-          example: root-projects
-        identity:
-          type: string
-          maxLength: 160
-          example: main
-        managedBy:
-          type: string
-          enum:
-            - user
-            - system
-            - integration
-          example: user
-        managedById:
-          type: string
-          example: endge-core
-        meta:
-          type: object
-          additionalProperties: {}
-        workspaceFolderIdentity:
-          type: string
-          example: root-workspace-files
-    environment.ListResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/environment.Response"
-        limit:
-          type: integer
-          example: 100
-        offset:
-          type: integer
-          example: 0
-        total:
-          type: integer
-          example: 1
-    environment.PatchRequest:
-      type: object
-      properties:
-        active:
-          type: boolean
-          example: true
-        configuration:
-          type: object
-          additionalProperties: {}
-        description:
-          type: string
-          example: Описание объекта
-        displayName:
-          type: string
-          maxLength: 255
-          example: Основной объект
-        folderIdentity:
-          type: string
-          example: root-projects
-        identity:
-          type: string
-          maxLength: 160
-          example: main
-        managedBy:
-          type: string
-          enum:
-            - user
-            - system
-            - integration
-          example: user
-        managedById:
-          type: string
-          example: endge-core
-        meta:
-          type: object
-          additionalProperties: {}
-        workspaceFolderIdentity:
-          type: string
-          example: root-workspace-files
-    environment.Response:
-      type: object
-      properties:
-        active:
-          type: boolean
-          example: true
-        configuration:
-          type: object
-          additionalProperties: {}
-        createdAt:
-          type: string
-          format: date-time
-          example: 2026-08-04T10:00:00Z
-        createdBy:
-          $ref: "#/components/schemas/entities.Actor"
-        deletedAt:
-          type: string
-          format: date-time
-          example: 2026-08-04T11:00:00Z
-        description:
-          type: string
-          example: Описание объекта
-        displayName:
-          type: string
-          example: Основной объект
-        folderIdentity:
-          type: string
-          example: root-projects
-        id:
-          type: string
-          format: uuid
-          example: 550e8400-e29b-41d4-a716-446655440000
-        identity:
-          type: string
-          example: main
-        managedBy:
-          type: string
-          enum:
-            - user
-            - system
-            - integration
-          example: user
-        managedById:
-          type: string
-          example: endge-core
-        meta:
-          type: object
-        revision:
-          type: integer
-          example: 3
-        updatedAt:
-          type: string
-          format: date-time
-          example: 2026-08-04T10:05:00Z
-        updatedBy:
-          $ref: "#/components/schemas/entities.Actor"
-        workspaceFolderIdentity:
-          type: string
-          example: root-workspace-files
     facet.CreateRequest:
       type: object
       required:
@@ -19280,7 +17639,7 @@ components:
           type: string
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -19419,7 +17778,7 @@ components:
             type: object
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -19482,7 +17841,7 @@ components:
             type: object
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -19538,7 +17897,7 @@ components:
             type: object
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -19597,10 +17956,10 @@ components:
           example: Основной объект
         entityType:
           type: string
-          example: projects
+          example: compositions
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         icon:
           type: string
           maxLength: 80
@@ -19624,7 +17983,7 @@ components:
           additionalProperties: {}
         parentIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         scope:
           type: string
           enum:
@@ -19667,10 +18026,10 @@ components:
           example: Основной объект
         entityType:
           type: string
-          example: projects
+          example: compositions
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         icon:
           type: string
           maxLength: 80
@@ -19693,7 +18052,7 @@ components:
           additionalProperties: {}
         parentIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         scope:
           type: string
           enum:
@@ -19728,10 +18087,10 @@ components:
           example: Основной объект
         entityType:
           type: string
-          example: projects
+          example: compositions
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         icon:
           type: string
         id:
@@ -19755,7 +18114,7 @@ components:
           type: object
         parentIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         revision:
           type: integer
           example: 3
@@ -19843,7 +18202,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -19898,7 +18257,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -19946,7 +18305,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -20116,27 +18475,6 @@ components:
         version:
           type: string
           example: 1.0.0
-    legacy.RebuildWorkspaceFoldersRequest:
-      type: object
-      required:
-        - confirmation
-      properties:
-        confirmation:
-          type: string
-          maxLength: 160
-          example: default
-    legacy.RebuildWorkspaceFoldersResponse:
-      type: object
-      properties:
-        documentsRelinked:
-          type: integer
-          example: 42
-        foldersCreated:
-          type: integer
-          example: 24
-        foldersDeleted:
-          type: integer
-          example: 3
     mock.CreateRequest:
       type: object
       required:
@@ -20164,7 +18502,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -20229,7 +18567,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -20287,7 +18625,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -20468,7 +18806,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -20524,7 +18862,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -20573,7 +18911,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -20609,206 +18947,6 @@ components:
         workspaceFolderIdentity:
           type: string
           example: root-workspace-files
-    project.CreateRequest:
-      type: object
-      required:
-        - displayName
-        - identity
-      properties:
-        active:
-          type: boolean
-          example: true
-        allowedEnvironments:
-          type: array
-          items:
-            type: string
-          example:
-            - development
-            - production
-        configuration:
-          type: object
-          additionalProperties: {}
-        description:
-          type: string
-          example: Описание объекта
-        displayName:
-          type: string
-          maxLength: 255
-          example: Основной объект
-        folderIdentity:
-          type: string
-          example: root-projects
-        identity:
-          type: string
-          maxLength: 160
-          example: main
-        managedBy:
-          type: string
-          enum:
-            - user
-            - system
-            - integration
-          example: user
-        managedById:
-          type: string
-          example: endge-core
-        meta:
-          type: object
-          additionalProperties: {}
-        order:
-          type: integer
-        slug:
-          type: string
-          maxLength: 160
-        source:
-          type: string
-        sourceVersion:
-          type: integer
-        workspaceFolderIdentity:
-          type: string
-          example: root-workspace-files
-    project.ListResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/project.Response"
-        limit:
-          type: integer
-          example: 100
-        offset:
-          type: integer
-          example: 0
-        total:
-          type: integer
-          example: 1
-    project.PatchRequest:
-      type: object
-      properties:
-        active:
-          type: boolean
-          example: true
-        allowedEnvironments:
-          type: array
-          items:
-            type: string
-        configuration:
-          type: object
-          additionalProperties: {}
-        description:
-          type: string
-          example: Описание объекта
-        displayName:
-          type: string
-          maxLength: 255
-          example: Основной объект
-        folderIdentity:
-          type: string
-          example: root-projects
-        identity:
-          type: string
-          maxLength: 160
-          example: main
-        managedBy:
-          type: string
-          enum:
-            - user
-            - system
-            - integration
-          example: user
-        managedById:
-          type: string
-          example: endge-core
-        meta:
-          type: object
-          additionalProperties: {}
-        order:
-          type: integer
-        slug:
-          type: string
-          maxLength: 160
-        source:
-          type: string
-        sourceVersion:
-          type: integer
-        workspaceFolderIdentity:
-          type: string
-          example: root-workspace-files
-    project.Response:
-      type: object
-      properties:
-        active:
-          type: boolean
-          example: true
-        allowedEnvironments:
-          type: array
-          items:
-            type: string
-          example:
-            - development
-            - production
-        configuration:
-          type: object
-          additionalProperties: {}
-        createdAt:
-          type: string
-          format: date-time
-          example: 2026-08-04T10:00:00Z
-        createdBy:
-          $ref: "#/components/schemas/entities.Actor"
-        deletedAt:
-          type: string
-          format: date-time
-          example: 2026-08-04T11:00:00Z
-        description:
-          type: string
-          example: Описание объекта
-        displayName:
-          type: string
-          example: Основной объект
-        folderIdentity:
-          type: string
-          example: root-projects
-        id:
-          type: string
-          format: uuid
-          example: 550e8400-e29b-41d4-a716-446655440000
-        identity:
-          type: string
-          example: main
-        managedBy:
-          type: string
-          enum:
-            - user
-            - system
-            - integration
-          example: user
-        managedById:
-          type: string
-          example: endge-core
-        meta:
-          type: object
-        order:
-          type: integer
-        revision:
-          type: integer
-          example: 3
-        slug:
-          type: string
-        source:
-          type: string
-        sourceVersion:
-          type: integer
-        updatedAt:
-          type: string
-          format: date-time
-          example: 2026-08-04T10:05:00Z
-        updatedBy:
-          $ref: "#/components/schemas/entities.Actor"
-        workspaceFolderIdentity:
-          type: string
-          example: root-workspace-files
     query.CreateRequest:
       type: object
       required:
@@ -20829,7 +18967,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -20888,7 +19026,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -20940,7 +19078,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -21412,7 +19550,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -21472,7 +19610,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -21525,7 +19663,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -21584,7 +19722,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -21643,7 +19781,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -21695,7 +19833,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -21753,7 +19891,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -21812,7 +19950,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -21864,7 +20002,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -21922,7 +20060,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -21981,7 +20119,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -22033,7 +20171,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -22071,174 +20209,6 @@ components:
         workspaceFolderIdentity:
           type: string
           example: root-workspace-files
-    tenant.CreateRequest:
-      type: object
-      required:
-        - code
-        - displayName
-        - identity
-      properties:
-        active:
-          type: boolean
-          example: true
-        code:
-          type: string
-          maxLength: 160
-          example: tenant-main
-        configuration:
-          type: object
-          additionalProperties: {}
-        description:
-          type: string
-          example: Описание объекта
-        displayName:
-          type: string
-          maxLength: 255
-          example: Основной объект
-        folderIdentity:
-          type: string
-          example: root-projects
-        identity:
-          type: string
-          maxLength: 160
-          example: main
-        managedBy:
-          type: string
-          enum:
-            - user
-            - system
-            - integration
-          example: user
-        managedById:
-          type: string
-          example: endge-core
-        meta:
-          type: object
-          additionalProperties: {}
-        workspaceFolderIdentity:
-          type: string
-          example: root-workspace-files
-    tenant.ListResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/tenant.Response"
-        limit:
-          type: integer
-          example: 100
-        offset:
-          type: integer
-          example: 0
-        total:
-          type: integer
-          example: 1
-    tenant.PatchRequest:
-      type: object
-      properties:
-        active:
-          type: boolean
-          example: true
-        code:
-          type: string
-          maxLength: 160
-          example: tenant-main
-        configuration:
-          type: object
-          additionalProperties: {}
-        description:
-          type: string
-          example: Описание объекта
-        displayName:
-          type: string
-          maxLength: 255
-          example: Основной объект
-        folderIdentity:
-          type: string
-          example: root-projects
-        identity:
-          type: string
-          maxLength: 160
-          example: main
-        managedBy:
-          type: string
-          enum:
-            - user
-            - system
-            - integration
-          example: user
-        managedById:
-          type: string
-          example: endge-core
-        meta:
-          type: object
-          additionalProperties: {}
-        workspaceFolderIdentity:
-          type: string
-          example: root-workspace-files
-    tenant.Response:
-      type: object
-      properties:
-        active:
-          type: boolean
-          example: true
-        code:
-          type: string
-          example: tenant-main
-        configuration:
-          type: object
-          additionalProperties: {}
-        createdAt:
-          type: string
-          format: date-time
-          example: 2026-08-04T10:00:00Z
-        createdBy:
-          $ref: "#/components/schemas/entities.Actor"
-        deletedAt:
-          type: string
-          format: date-time
-          example: 2026-08-04T11:00:00Z
-        description:
-          type: string
-          example: Описание объекта
-        displayName:
-          type: string
-          example: Основной объект
-        folderIdentity:
-          type: string
-          example: root-projects
-        id:
-          type: string
-          format: uuid
-          example: 550e8400-e29b-41d4-a716-446655440000
-        identity:
-          type: string
-          example: main
-        managedBy:
-          type: string
-          enum:
-            - user
-            - system
-            - integration
-          example: user
-        managedById:
-          type: string
-          example: endge-core
-        meta:
-          type: object
-        revision:
-          type: integer
-          example: 3
-        updatedAt:
-          type: string
-          format: date-time
-          example: 2026-08-04T10:05:00Z
-        updatedBy:
-          $ref: "#/components/schemas/entities.Actor"
-        workspaceFolderIdentity:
-          type: string
-          example: root-workspace-files
     update.CreateRequest:
       type: object
       required:
@@ -22260,7 +20230,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -22323,7 +20293,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -22379,7 +20349,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -22454,7 +20424,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -22535,7 +20505,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         identity:
           type: string
           maxLength: 160
@@ -22605,7 +20575,7 @@ components:
           example: Основной объект
         folderIdentity:
           type: string
-          example: root-projects
+          example: root-compositions
         id:
           type: string
           format: uuid
@@ -22808,6 +20778,11 @@ components:
         meta:
           type: object
           additionalProperties: {}
+        startupCompositionIdentity:
+          type: string
+          maxLength: 160
+          example: workspace-startup
+          nullable: true
     workspace.Response:
       type: object
       properties:
@@ -22855,6 +20830,10 @@ components:
         revision:
           type: integer
           example: 3
+        startupCompositionIdentity:
+          type: string
+          example: workspace-startup
+          nullable: true
         updatedAt:
           type: string
           format: date-time

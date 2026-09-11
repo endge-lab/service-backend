@@ -28,15 +28,16 @@ type CreateRequest struct {
 }
 
 type PatchRequest struct {
-	Identity              *string                 `json:"identity,omitempty" validate:"omitempty,max=160" example:"main"`
-	DisplayName           *string                 `json:"displayName,omitempty" validate:"omitempty,max=255" example:"Основной объект"`
-	Description           *string                 `json:"description,omitempty" example:"Описание объекта"`
-	DataMode              *string                 `json:"dataMode,omitempty" validate:"omitempty,oneof=development production" example:"development" enums:"development,production"`
-	DocumentStructure     *string                 `json:"documentStructure,omitempty" validate:"omitempty,oneof=frontend custom" example:"frontend" enums:"frontend,custom"`
-	Configuration         *map[string]any         `json:"configuration,omitempty"`
-	Meta                  *map[string]any         `json:"meta,omitempty"`
-	Active                *bool                   `json:"active,omitempty" example:"true"`
-	InstalledIntegrations *[]InstalledIntegration `json:"installedIntegrations,omitempty" validate:"omitempty,dive"`
+	Identity                   *string                 `json:"identity,omitempty" validate:"omitempty,max=160" example:"main"`
+	DisplayName                *string                 `json:"displayName,omitempty" validate:"omitempty,max=255" example:"Основной объект"`
+	Description                *string                 `json:"description,omitempty" example:"Описание объекта"`
+	DataMode                   *string                 `json:"dataMode,omitempty" validate:"omitempty,oneof=development production" example:"development" enums:"development,production"`
+	DocumentStructure          *string                 `json:"documentStructure,omitempty" validate:"omitempty,oneof=frontend custom" example:"frontend" enums:"frontend,custom"`
+	StartupCompositionIdentity *string                 `json:"startupCompositionIdentity,omitempty" validate:"omitempty,max=160" example:"workspace-startup" extensions:"x-nullable"`
+	Configuration              *map[string]any         `json:"configuration,omitempty"`
+	Meta                       *map[string]any         `json:"meta,omitempty"`
+	Active                     *bool                   `json:"active,omitempty" example:"true"`
+	InstalledIntegrations      *[]InstalledIntegration `json:"installedIntegrations,omitempty" validate:"omitempty,dive"`
 }
 
 type MembershipRequest struct {
@@ -44,21 +45,22 @@ type MembershipRequest struct {
 }
 
 type Response struct {
-	ID                string          `json:"id" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
-	Identity          string          `json:"identity" example:"main"`
-	DisplayName       string          `json:"displayName" example:"Основной объект"`
-	Description       *string         `json:"description,omitempty" example:"Описание объекта"`
-	DataMode          string          `json:"dataMode" example:"development" enums:"development,production"`
-	DocumentStructure string          `json:"documentStructure" example:"frontend" enums:"frontend,custom"`
-	Configuration     json.RawMessage `json:"configuration" swaggertype:"object"`
-	Meta              json.RawMessage `json:"meta" swaggertype:"object"`
-	Active            bool            `json:"active" example:"true"`
-	HeadSequence      int64           `json:"headSequence" example:"42"`
-	Revision          int             `json:"revision" example:"3"`
-	CreatedBy         entities.Actor  `json:"createdBy"`
-	UpdatedBy         entities.Actor  `json:"updatedBy"`
-	CreatedAt         time.Time       `json:"createdAt" example:"2026-08-04T10:00:00Z" format:"date-time"`
-	UpdatedAt         time.Time       `json:"updatedAt" example:"2026-08-04T10:05:00Z" format:"date-time"`
+	ID                         string          `json:"id" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
+	Identity                   string          `json:"identity" example:"main"`
+	DisplayName                string          `json:"displayName" example:"Основной объект"`
+	Description                *string         `json:"description,omitempty" example:"Описание объекта"`
+	DataMode                   string          `json:"dataMode" example:"development" enums:"development,production"`
+	DocumentStructure          string          `json:"documentStructure" example:"frontend" enums:"frontend,custom"`
+	StartupCompositionIdentity *string         `json:"startupCompositionIdentity" example:"workspace-startup" extensions:"x-nullable"`
+	Configuration              json.RawMessage `json:"configuration" swaggertype:"object"`
+	Meta                       json.RawMessage `json:"meta" swaggertype:"object"`
+	Active                     bool            `json:"active" example:"true"`
+	HeadSequence               int64           `json:"headSequence" example:"42"`
+	Revision                   int             `json:"revision" example:"3"`
+	CreatedBy                  entities.Actor  `json:"createdBy"`
+	UpdatedBy                  entities.Actor  `json:"updatedBy"`
+	CreatedAt                  time.Time       `json:"createdAt" example:"2026-08-04T10:00:00Z" format:"date-time"`
+	UpdatedAt                  time.Time       `json:"updatedAt" example:"2026-08-04T10:05:00Z" format:"date-time"`
 }
 
 type MembershipResponse struct {

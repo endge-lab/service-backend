@@ -33,8 +33,8 @@ func TestObserverCreatesChildSpanAndRecordsOperation(t *testing.T) {
 
 	ctx, parent := provider.Tracer("test").Start(context.Background(), "http.request")
 	recorder := &recorderStub{}
-	observer := NewCore(provider.Tracer("test"), zap.NewNop()).For(LayerUseCase, "projects_usecase").WithRecorder(recorder)
-	_, operation := observer.Start(ctx, "project.create", nil, nil)
+	observer := NewCore(provider.Tracer("test"), zap.NewNop()).For(LayerUseCase, "queries_usecase").WithRecorder(recorder)
+	_, operation := observer.Start(ctx, "query.create", nil, nil)
 	operation.End(nil)
 	parent.End()
 
@@ -42,10 +42,10 @@ func TestObserverCreatesChildSpanAndRecordsOperation(t *testing.T) {
 	if len(ended) != 2 {
 		t.Fatalf("ended spans = %d, want 2", len(ended))
 	}
-	if ended[0].Name() != "usecase.project.create.execute" || ended[0].Parent().SpanID() != parent.SpanContext().SpanID() {
+	if ended[0].Name() != "usecase.query.create.execute" || ended[0].Parent().SpanID() != parent.SpanContext().SpanID() {
 		t.Fatalf("unexpected child span: %#v", ended[0])
 	}
-	if recorder.operation != "project.create" || recorder.err != nil {
+	if recorder.operation != "query.create" || recorder.err != nil {
 		t.Fatalf("unexpected recorder state: %#v", recorder)
 	}
 }
@@ -56,16 +56,16 @@ func TestObserverWithRecorderDoesNotMutateSourceObserver(t *testing.T) {
 
 	first := &recorderStub{}
 	second := &recorderStub{}
-	base := NewCore(nil, zap.NewNop()).For(LayerUseCase, "projects_usecase")
+	base := NewCore(nil, zap.NewNop()).For(LayerUseCase, "queries_usecase")
 	firstObserver := base.WithRecorder(first)
 	secondObserver := base.WithRecorder(second)
 
-	_, firstOperation := firstObserver.Start(context.Background(), "project.create", nil, nil)
+	_, firstOperation := firstObserver.Start(context.Background(), "query.create", nil, nil)
 	firstOperation.End(nil)
-	_, secondOperation := secondObserver.Start(context.Background(), "project.list", nil, nil)
+	_, secondOperation := secondObserver.Start(context.Background(), "query.list", nil, nil)
 	secondOperation.End(nil)
 
-	if first.operation != "project.create" || second.operation != "project.list" {
+	if first.operation != "query.create" || second.operation != "query.list" {
 		t.Fatalf("recorders received unexpected operations: first=%q second=%q", first.operation, second.operation)
 	}
 }
@@ -78,13 +78,13 @@ func TestOperationRecordStepWritesTraceEventAndInfoLog(t *testing.T) {
 
 	logCore, logs := observer.New(zap.InfoLevel)
 	core := NewCore(provider.Tracer("test"), zap.New(logCore))
-	_, operation := core.For(LayerUseCase, "projects_usecase").Start(context.Background(), "project.create", nil, nil)
+	_, operation := core.For(LayerUseCase, "queries_usecase").Start(context.Background(), "query.create", nil, nil)
 
 	operation.RecordStep(
-		"project.create.persisted",
-		"project persisted",
-		[]attribute.KeyValue{attribute.String("project.identity", "demo")},
-		zap.String("project_identity", "demo"),
+		"query.create.persisted",
+		"query persisted",
+		[]attribute.KeyValue{attribute.String("query.identity", "demo")},
+		zap.String("query_identity", "demo"),
 	)
 	operation.End(nil)
 
@@ -93,16 +93,16 @@ func TestOperationRecordStepWritesTraceEventAndInfoLog(t *testing.T) {
 		t.Fatalf("ended spans = %d, want 1", len(ended))
 	}
 	events := ended[0].Events()
-	if len(events) != 2 || events[0].Name != "project.create.persisted" || events[1].Name != "project.create.completed" {
+	if len(events) != 2 || events[0].Name != "query.create.persisted" || events[1].Name != "query.create.completed" {
 		t.Fatalf("trace events = %#v, want persisted and completed events", events)
 	}
 
-	entries := logs.FilterMessage("project persisted").All()
+	entries := logs.FilterMessage("query persisted").All()
 	if len(entries) != 1 {
 		t.Fatalf("info log entries = %d, want 1", len(entries))
 	}
-	if entries[0].ContextMap()["project_identity"] != "demo" {
-		t.Fatalf("log fields = %#v, want project_identity=demo", entries[0].ContextMap())
+	if entries[0].ContextMap()["query_identity"] != "demo" {
+		t.Fatalf("log fields = %#v, want query_identity=demo", entries[0].ContextMap())
 	}
 	if completed := logs.FilterMessage("use case operation completed").All(); len(completed) != 0 {
 		t.Fatalf("generic completion log entries = %#v, want none", completed)
@@ -116,7 +116,7 @@ func TestOperationEndRecordsFailedCompletionWithoutSuccessLog(t *testing.T) {
 	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	logCore, logs := observer.New(zap.InfoLevel)
-	_, operation := NewCore(provider.Tracer("test"), zap.New(logCore)).For(LayerUseCase, "projects_usecase").Start(context.Background(), "project.create", nil, nil)
+	_, operation := NewCore(provider.Tracer("test"), zap.New(logCore)).For(LayerUseCase, "queries_usecase").Start(context.Background(), "query.create", nil, nil)
 	err := errors.New("repository unavailable")
 	operation.End(&err)
 
@@ -125,7 +125,7 @@ func TestOperationEndRecordsFailedCompletionWithoutSuccessLog(t *testing.T) {
 		t.Fatalf("ended spans = %d, want 1", len(ended))
 	}
 	events := ended[0].Events()
-	if len(events) == 0 || events[0].Name != "project.create.completed" {
+	if len(events) == 0 || events[0].Name != "query.create.completed" {
 		t.Fatalf("trace events = %#v, want failed completion event", events)
 	}
 	if events[0].Attributes[0].Key != "operation.status" || events[0].Attributes[0].Value.AsString() != "error" {

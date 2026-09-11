@@ -360,16 +360,13 @@ func documentHTTPCases() []documentHTTPCase {
 		return value
 	}
 	return []documentHTTPCase{
-		{collection: "environments", identity: "environment-main", payload: base("environment-main")},
 		{collection: "stores", identity: "store-main", payload: with(base("store-main"), "source", "store {}", "sourceVersion", 1)},
 		{collection: "auth-profiles", identity: "auth-main", payload: with(base("auth-main"), "adapterId", "oidc", "config", map[string]any{"issuer": "https://issuer.example", "clientId": "endge-test", "scopes": []any{"openid"}}, "credentials", map[string]any{}, "session", map[string]any{"storage": "memory", "persistRefreshToken": false})},
-		{collection: "projects", identity: "project-main", payload: with(base("project-main"), "allowedEnvironments", []any{"environment-main"})},
-		{collection: "tenants", identity: "tenant-main", payload: with(base("tenant-main"), "code", "TENANT")},
 		{collection: "folders", identity: "folder-main", payload: with(base("folder-main"), "entityType", "queries")},
 		{collection: "types", identity: "type-main", payload: with(base("type-main"), "source", "type {}", "sourceVersion", 1)},
 		{collection: "queries", identity: "query-main", payload: with(base("query-main"), "source", "query {}", "sourceVersion", 2)},
 		{collection: "data-views", identity: "data-view-main", payload: with(base("data-view-main"), "source", "view {}", "sourceVersion", 1)},
-		{collection: "compositions", identity: "composition-main", payload: with(base("composition-main"), "kind", "screen", "source", "composition {}", "sourceVersion", 1)},
+		{collection: "compositions", identity: "composition-main", payload: with(base("composition-main"), "kind", "library", "source", "composition {}", "sourceVersion", 1)},
 		{collection: "streams", identity: "stream-main", payload: with(base("stream-main"), "source", "stream {}", "sourceVersion", 1)},
 		{collection: "updates", identity: "update-main", payload: with(base("update-main"), "storeIdentity", "store-main", "source", "update {}", "sourceVersion", 1)},
 		{collection: "mocks", identity: "mock-main", payload: with(base("mock-main"), "contentSource", "inline", "contentType", "application/json", "source", "{}")},

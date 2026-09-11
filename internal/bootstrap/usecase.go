@@ -20,20 +20,17 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/converters"
 	"github.com/endge-lab/service-backend/internal/usecase/data_views"
 	"github.com/endge-lab/service-backend/internal/usecase/documents"
-	"github.com/endge-lab/service-backend/internal/usecase/environments"
 	"github.com/endge-lab/service-backend/internal/usecase/facets"
 	"github.com/endge-lab/service-backend/internal/usecase/filters"
 	"github.com/endge-lab/service-backend/internal/usecase/folders"
 	"github.com/endge-lab/service-backend/internal/usecase/history"
 	"github.com/endge-lab/service-backend/internal/usecase/i18n_bundles"
 	"github.com/endge-lab/service-backend/internal/usecase/integrations"
-	"github.com/endge-lab/service-backend/internal/usecase/legacy"
 	"github.com/endge-lab/service-backend/internal/usecase/mock_data"
 	"github.com/endge-lab/service-backend/internal/usecase/mocks"
 	"github.com/endge-lab/service-backend/internal/usecase/navigations"
 	"github.com/endge-lab/service-backend/internal/usecase/portable"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
-	"github.com/endge-lab/service-backend/internal/usecase/projects"
 	"github.com/endge-lab/service-backend/internal/usecase/queries"
 	"github.com/endge-lab/service-backend/internal/usecase/release_artifacts"
 	"github.com/endge-lab/service-backend/internal/usecase/releases"
@@ -44,7 +41,6 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/stores"
 	"github.com/endge-lab/service-backend/internal/usecase/streams"
 	"github.com/endge-lab/service-backend/internal/usecase/styles"
-	"github.com/endge-lab/service-backend/internal/usecase/tenants"
 	"github.com/endge-lab/service-backend/internal/usecase/types"
 	"github.com/endge-lab/service-backend/internal/usecase/updates"
 	"github.com/endge-lab/service-backend/internal/usecase/vocabs"
@@ -70,11 +66,7 @@ func UseCaseModules() fx.Option {
 		workspaces.NewUseCase,
 		backend_connections.NewUseCase,
 		integrations.NewUseCase,
-		legacy.NewUseCase,
 		session.NewUseCase,
-		projects.NewUseCase,
-		tenants.NewUseCase,
-		environments.NewUseCase,
 		facets.NewUseCase,
 		folders.NewUseCase,
 		types.NewUseCase,

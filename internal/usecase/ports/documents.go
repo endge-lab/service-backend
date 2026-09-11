@@ -25,7 +25,6 @@ type DocumentRepository interface {
 	MoveFolderContents(context.Context, string, string, *string, string) ([]entities.Document, error)
 	ResolveFolder(context.Context, string, string, string) (*string, error)
 	FolderWouldCycle(context.Context, string, string, string) (bool, error)
-	ReplaceProjectEnvironments(context.Context, entities.Document, []string) error
 }
 
 // DocumentResourceRepository задаёт операции над документами одного типа.
@@ -36,15 +35,6 @@ type DocumentResourceRepository interface {
 	Insert(context.Context, entities.Document, *string) (*entities.Document, error)
 	Update(context.Context, entities.Document, int, *string) (*entities.Document, error)
 }
-
-// ProjectRepository задаёт порт хранения проектов для use case-слоя.
-type ProjectRepository interface{ DocumentResourceRepository }
-
-// TenantRepository задаёт порт хранения тенантов для use case-слоя.
-type TenantRepository interface{ DocumentResourceRepository }
-
-// EnvironmentRepository задаёт порт хранения окружений для use case-слоя.
-type EnvironmentRepository interface{ DocumentResourceRepository }
 
 // FolderRepository задаёт порт хранения папок для use case-слоя.
 type FolderRepository interface{ DocumentResourceRepository }

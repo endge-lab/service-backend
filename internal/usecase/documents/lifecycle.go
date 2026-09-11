@@ -13,12 +13,13 @@ type Definition struct {
 
 // Lifecycle координирует единый жизненный цикл документов, ревизий и связей.
 type Lifecycle struct {
-	documents ports.DocumentRepository
-	tx        ports.TxManager
-	history   *history.Recorder
+	documents  ports.DocumentRepository
+	workspaces ports.WorkspaceRepository
+	tx         ports.TxManager
+	history    *history.Recorder
 }
 
 // NewLifecycle создаёт сервис жизненного цикла документов.
-func NewLifecycle(documents ports.DocumentRepository, tx ports.TxManager, recorder *history.Recorder) *Lifecycle {
-	return &Lifecycle{documents: documents, tx: tx, history: recorder}
+func NewLifecycle(documents ports.DocumentRepository, workspaces ports.WorkspaceRepository, tx ports.TxManager, recorder *history.Recorder) *Lifecycle {
+	return &Lifecycle{documents: documents, workspaces: workspaces, tx: tx, history: recorder}
 }

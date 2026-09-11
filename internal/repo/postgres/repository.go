@@ -15,9 +15,6 @@ import (
 )
 
 var documentTables = map[string]string{
-	entities.CollectionProjects:       "projects",
-	entities.CollectionTenants:        "tenants",
-	entities.CollectionEnvironments:   "environments",
 	entities.CollectionFolders:        "folders",
 	entities.CollectionTypes:          "types",
 	entities.CollectionQueries:        "queries",

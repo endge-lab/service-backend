@@ -29,14 +29,6 @@ func (s *Lifecycle) Create(ctx context.Context, definition Definition, repositor
 		return nil, err
 	}
 	configurationdomain.RemoveLegacySSEFromDocument(definition.Collection, values)
-	if definition.Collection == entities.CollectionProjects {
-		if _, exists := values["source"]; !exists {
-			values["source"] = "defineComposition({\n  activateOn: startup(),\n  data: {},\n  resources: {},\n  runtimes: {},\n  hooks: [],\n  outputs: {},\n})\n"
-		}
-		if _, exists := values["sourceVersion"]; !exists {
-			values["sourceVersion"] = 1
-		}
-	}
 	normalizeFolderInput(definition.Collection, values)
 	ensureWorkspaceFolderInput(definition.Collection, values)
 	if err = validateDocument(definition.Collection, values); err != nil {
@@ -53,9 +45,6 @@ func (s *Lifecycle) Create(ctx context.Context, definition Definition, repositor
 	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
 		created, txErr := repository.Insert(txctx, document, folderID)
 		if txErr != nil {
-			return txErr
-		}
-		if txErr = s.replaceStructuredRelations(txctx, *created); txErr != nil {
 			return txErr
 		}
 		if _, txErr = s.history.RecordDocument(txctx, *created, "create", nil); txErr != nil {
@@ -131,9 +120,6 @@ func (s *Lifecycle) Patch(ctx context.Context, definition Definition, repository
 		if txErr != nil {
 			return txErr
 		}
-		if txErr = s.replaceStructuredRelations(txctx, *updated); txErr != nil {
-			return txErr
-		}
 		_, txErr = s.history.RecordDocument(txctx, *updated, "update", nil)
 		result = updated
 		return txErr
@@ -190,6 +176,17 @@ func (s *Lifecycle) Delete(ctx context.Context, definition Definition, repositor
 		if txErr != nil {
 			return txErr
 		}
+		if definition.Collection == entities.CollectionCompositions {
+			workspace, cleared, clearErr := s.workspaces.ClearStartupComposition(txctx, scope.Workspace.ID, existing.ID, current.User.ID)
+			if clearErr != nil {
+				return clearErr
+			}
+			if cleared {
+				if clearErr = s.history.RecordWorkspace(txctx, *workspace, "update"); clearErr != nil {
+					return clearErr
+				}
+			}
+		}
 		_, txErr = s.history.RecordDocument(txctx, *updated, "delete", nil)
 		result = updated
 		return txErr
@@ -232,9 +229,6 @@ func (s *Lifecycle) Restore(ctx context.Context, definition Definition, reposito
 	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
 		updated, txErr := repository.Update(txctx, next, expected, folderID)
 		if txErr != nil {
-			return txErr
-		}
-		if txErr = s.replaceStructuredRelations(txctx, *updated); txErr != nil {
 			return txErr
 		}
 		_, txErr = s.history.RecordDocument(txctx, *updated, "restore", nil)

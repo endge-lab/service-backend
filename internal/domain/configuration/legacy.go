@@ -3,9 +3,7 @@ package configuration
 import "encoding/json"
 
 var configurationDocumentTypes = map[string]struct{}{
-	"environments": {},
-	"projects":     {},
-	"tenants":      {},
+	"facet-documents": {},
 }
 
 // RemoveLegacySSE удаляет глобальную SSE-настройку из полной workspace-конфигурации.

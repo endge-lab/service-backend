@@ -82,6 +82,13 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 		plan.Valid = false
 		plan.ValidationErrors = append(plan.ValidationErrors, "workspace.documentStructure must be frontend or custom")
 	}
+	if startup, exists := bundle.Workspace["startupCompositionIdentity"]; !exists {
+		plan.Valid = false
+		plan.ValidationErrors = append(plan.ValidationErrors, "workspace.startupCompositionIdentity is required")
+	} else if startup != nil && stringField(bundle.Workspace, "startupCompositionIdentity") == "" {
+		plan.Valid = false
+		plan.ValidationErrors = append(plan.ValidationErrors, "workspace.startupCompositionIdentity must be a non-empty string or null")
+	}
 	if secretErr := validateSecrets(bundle.Workspace["configuration"]); secretErr != nil {
 		plan.Valid = false
 		plan.ValidationErrors = append(plan.ValidationErrors, "workspace.configuration: "+secretErr.Error())
@@ -367,9 +374,6 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 				if txErr != nil {
 					return fmt.Errorf("apply imported %s:%s: %w", kind, identity, txErr)
 				}
-				if txErr = s.replaceStructuredRelations(txctx, *stored); txErr != nil {
-					return fmt.Errorf("relate imported %s:%s: %w", kind, identity, txErr)
-				}
 				revision, revisionErr := s.recordRevision(txctx, *stored, operation, nil)
 				if revisionErr != nil {
 					return fmt.Errorf("record imported %s:%s revision: %w", kind, identity, revisionErr)
@@ -454,6 +458,17 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 				return revisionErr
 			}
 			revisions = append(revisions, *revision)
+		}
+		latestWorkspace, txErr := s.repository.GetWorkspace(txctx, live.Identity)
+		if txErr != nil {
+			return txErr
+		}
+		_, startupRevision, txErr := s.applyStartupComposition(txctx, *latestWorkspace, bundle, current.User.ID, "update")
+		if txErr != nil {
+			return txErr
+		}
+		if startupRevision != nil {
+			revisions = append(revisions, *startupRevision)
 		}
 		head := latest.HeadSequence
 		for _, revision := range revisions {
@@ -633,6 +648,9 @@ func validateSnapshotRelations(bundle entities.PortableBundle) []string {
 		}
 	}
 	result := []string{}
+	if startup := stringField(bundle.Workspace, "startupCompositionIdentity"); startup != "" && !available[entities.CollectionCompositions][startup] {
+		result = append(result, "workspace: startupCompositionIdentity target is missing")
+	}
 	for kind, items := range bundle.Documents {
 		for _, item := range items {
 			identity := stringField(item, "identity")
@@ -665,13 +683,6 @@ func validateSnapshotRelations(bundle entities.PortableBundle) []string {
 			}
 			if kind == entities.CollectionUpdates && !available[entities.CollectionStores][stringField(item, "storeIdentity")] {
 				result = append(result, kind+":"+identity+": storeIdentity target is missing")
-			}
-			if kind == entities.CollectionProjects {
-				for _, environment := range relationIdentityList(item["allowedEnvironments"]) {
-					if !available["environments"][environment] {
-						result = append(result, kind+":"+identity+": allowed environment "+environment+" is missing")
-					}
-				}
 			}
 			if kind == entities.CollectionVocabs {
 				target := stringField(item, "authProfileIdentity")

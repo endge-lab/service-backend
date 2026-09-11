@@ -20,17 +20,14 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/data_view"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/document_move"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/domain"
-	"github.com/endge-lab/service-backend/internal/api/http/v1/environment"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/facet"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/filter"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/folder"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/i18n_bundle"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/integration"
-	"github.com/endge-lab/service-backend/internal/api/http/v1/legacy"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/mock"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/mock_data"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/navigation"
-	"github.com/endge-lab/service-backend/internal/api/http/v1/project"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/query"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/release"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/revision"
@@ -39,7 +36,6 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/store"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/stream"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/style"
-	"github.com/endge-lab/service-backend/internal/api/http/v1/tenant"
 	domain_type "github.com/endge-lab/service-backend/internal/api/http/v1/type"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/update"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/vocab"
@@ -71,10 +67,6 @@ func HandlerModules() fx.Option {
 			backup.BindUseCase,
 			httpsession.BindUseCase,
 			integration.BindUseCase,
-			legacy.BindUseCase,
-			project.BindUseCase,
-			tenant.BindUseCase,
-			environment.BindUseCase,
 			facet.BindUseCase,
 			folder.BindUseCase,
 			domain_type.BindUseCase,
@@ -111,10 +103,6 @@ func HandlerModules() fx.Option {
 			backup.NewHandler,
 			httpsession.NewHandler,
 			integration.NewHandler,
-			legacy.NewHandler,
-			project.NewHandler,
-			tenant.NewHandler,
-			environment.NewHandler,
 			facet.NewHandler,
 			folder.NewHandler,
 			domain_type.NewHandler,

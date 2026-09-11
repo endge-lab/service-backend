@@ -8,8 +8,8 @@ import (
 type CreateRequest struct {
 	shared.CreateDocumentRequest
 	Scope          string  `json:"scope,omitempty" validate:"omitempty,oneof=collection workspace" example:"collection" enums:"collection,workspace"`
-	EntityType     *string `json:"entityType,omitempty" example:"projects"`
-	ParentIdentity *string `json:"parentIdentity,omitempty" example:"root-projects"`
+	EntityType     *string `json:"entityType,omitempty" example:"compositions"`
+	ParentIdentity *string `json:"parentIdentity,omitempty" example:"root-compositions"`
 	Icon           *string `json:"icon,omitempty" validate:"omitempty,max=80" example:"FolderKanban"`
 	Color          *string `json:"color,omitempty" validate:"omitempty,len=7" example:"#64748b"`
 }
@@ -17,8 +17,8 @@ type CreateRequest struct {
 type PatchRequest struct {
 	shared.PatchDocumentRequest
 	Scope          *string `json:"scope,omitempty" validate:"omitempty,oneof=collection workspace" enums:"collection,workspace"`
-	EntityType     *string `json:"entityType,omitempty" example:"projects"`
-	ParentIdentity *string `json:"parentIdentity,omitempty" example:"root-projects"`
+	EntityType     *string `json:"entityType,omitempty" example:"compositions"`
+	ParentIdentity *string `json:"parentIdentity,omitempty" example:"root-compositions"`
 	Icon           *string `json:"icon,omitempty" validate:"omitempty,max=80"`
 	Color          *string `json:"color,omitempty" validate:"omitempty,len=7"`
 }
@@ -26,8 +26,8 @@ type PatchRequest struct {
 type Response struct {
 	shared.DocumentMetadata
 	Scope          string  `json:"scope" enums:"collection,workspace"`
-	EntityType     *string `json:"entityType,omitempty" example:"projects"`
-	ParentIdentity *string `json:"parentIdentity,omitempty" example:"root-projects"`
+	EntityType     *string `json:"entityType,omitempty" example:"compositions"`
+	ParentIdentity *string `json:"parentIdentity,omitempty" example:"root-compositions"`
 	Icon           *string `json:"icon,omitempty"`
 	Color          *string `json:"color,omitempty"`
 }

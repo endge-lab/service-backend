@@ -23,7 +23,7 @@ func (r *EndgeRepository) ExportLiveWorkspace(ctx context.Context, workspaceID s
 		Kind: "workspace-snapshot", SchemaVersion: r.workspaceSchemaVersion,
 		Workspace: map[string]any{
 			"identity": workspace.Identity, "displayName": workspace.DisplayName, "description": workspace.Description,
-			"dataMode": workspace.DataMode, "documentStructure": workspace.DocumentStructure, "configuration": workspaceConfiguration, "meta": workspace.Meta,
+			"dataMode": workspace.DataMode, "documentStructure": workspace.DocumentStructure, "startupCompositionIdentity": workspace.StartupCompositionIdentity, "configuration": workspaceConfiguration, "meta": workspace.Meta,
 			"active": workspace.Active,
 			"state":  map[string]any{"id": workspace.ID, "generation": workspace.Generation, "headSequence": workspace.HeadSequence, "revision": workspace.Revision, "createdBy": workspace.CreatedBy, "updatedBy": workspace.UpdatedBy, "createdAt": workspace.CreatedAt, "updatedAt": workspace.UpdatedAt},
 		},

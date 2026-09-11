@@ -49,17 +49,6 @@ func (s *Coordinator) RestoreRevision(ctx context.Context, kind, identity, id st
 	target.ID = existing.ID
 	target.WorkspaceID = existing.WorkspaceID
 	target.Data = configurationdomain.RemoveLegacySSEFromDocumentData(kind, target.Data)
-	if kind == entities.CollectionProjects {
-		var data map[string]any
-		if err = json.Unmarshal(target.Data, &data); err != nil {
-			return nil, domainerrors.Internal("revision_snapshot_invalid", "Project revision data is invalid")
-		}
-		// История остаётся неизменной, но удалённая связь не возвращается в live document.
-		delete(data, "navigation")
-		delete(data, "navigationId")
-		delete(data, "navigationIdentity")
-		target.Data = mustJSON(data)
-	}
 	target.Revision = existing.Revision
 	target.UpdatedBy = entities.Actor{ID: current.User.ID}
 	folderID, err := s.resolveDocumentFolder(ctx, scope, target)
@@ -74,9 +63,6 @@ func (s *Coordinator) RestoreRevision(ctx context.Context, kind, identity, id st
 	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
 		updated, e := s.repository.UpdateDocument(txctx, target, expected, folderID)
 		if e != nil {
-			return e
-		}
-		if e = s.replaceStructuredRelations(txctx, *updated); e != nil {
 			return e
 		}
 		_, e = s.recordRevision(txctx, *updated, "restore", &revision.ID)

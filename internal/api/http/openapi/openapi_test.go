@@ -83,7 +83,6 @@ func TestDocumentContractContainsOnlyMVPCollections(t *testing.T) {
 		path        string
 		packageName string
 	}{
-		{"projects", "project"}, {"tenants", "tenant"}, {"environments", "environment"},
 		{"folders", "folder"}, {"types", "domain_type"}, {"queries", "query"},
 		{"data-views", "data_view"}, {"compositions", "composition"}, {"stores", "store"},
 		{"streams", "stream"}, {"updates", "update"}, {"mocks", "mock"},

@@ -179,10 +179,6 @@ func (r *EndgeRepository) InsertDocument(ctx context.Context, v entities.Documen
 		var data map[string]any
 		_ = json.Unmarshal(v.Data, &data)
 		_, err = r.executor(ctx).Exec(ctx, `INSERT INTO folders(id,workspace_id,identity,display_name,description,entity_type,scope,parent_id,is_root,icon,color,managed_by,managed_by_id,meta,active,deleted_at,created_by,updated_by,revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$17,$18)`, v.ID, v.WorkspaceID, v.Identity, v.DisplayName, v.Description, nullableStringValue(data["entityType"]), defaultStringValue(data["scope"], entities.FolderScopeCollection), folderID, boolValue(data["isRoot"]), nullableStringValue(data["icon"]), nullableStringValue(data["color"]), v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.CreatedBy.ID, v.Revision)
-	case entities.CollectionTenants:
-		var data map[string]any
-		_ = json.Unmarshal(v.Data, &data)
-		_, err = r.executor(ctx).Exec(ctx, `INSERT INTO tenants(id,workspace_id,identity,display_name,description,folder_id,workspace_folder_id,data,code,managed_by,managed_by_id,meta,active,deleted_at,created_by,updated_by,revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$15,$16)`, v.ID, v.WorkspaceID, v.Identity, v.DisplayName, v.Description, folderID, workspaceFolderID, v.Data, stringValue(data["code"]), v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.CreatedBy.ID, v.Revision)
 	case entities.CollectionUpdates:
 		data, storeIdentity, relationErr := relationData(v.Data, "storeIdentity")
 		if relationErr != nil {
@@ -236,10 +232,6 @@ func (r *EndgeRepository) UpdateDocument(ctx context.Context, v entities.Documen
 		var data map[string]any
 		_ = json.Unmarshal(v.Data, &data)
 		tag, err = r.executor(ctx).Exec(ctx, `UPDATE folders SET identity=$1,display_name=$2,description=$3,entity_type=$4,scope=$5,parent_id=$6,is_root=$7,icon=$8,color=$9,managed_by=$10,managed_by_id=$11,meta=$12,active=$13,deleted_at=$14,updated_by=$15,updated_at=NOW(),revision=revision+1 WHERE id=$16 AND workspace_id=$17 AND revision=$18`, v.Identity, v.DisplayName, v.Description, nullableStringValue(data["entityType"]), defaultStringValue(data["scope"], entities.FolderScopeCollection), folderID, boolValue(data["isRoot"]), nullableStringValue(data["icon"]), nullableStringValue(data["color"]), v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.UpdatedBy.ID, v.ID, v.WorkspaceID, expected)
-	case entities.CollectionTenants:
-		var data map[string]any
-		_ = json.Unmarshal(v.Data, &data)
-		tag, err = r.executor(ctx).Exec(ctx, `UPDATE tenants SET identity=$1,display_name=$2,description=$3,folder_id=$4,workspace_folder_id=$5,data=$6,code=$7,managed_by=$8,managed_by_id=$9,meta=$10,active=$11,deleted_at=$12,updated_by=$13,updated_at=NOW(),revision=revision+1 WHERE id=$14 AND workspace_id=$15 AND revision=$16`, v.Identity, v.DisplayName, v.Description, folderID, workspaceFolderID, v.Data, stringValue(data["code"]), v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.UpdatedBy.ID, v.ID, v.WorkspaceID, expected)
 	case entities.CollectionUpdates:
 		data, storeIdentity, relationErr := relationData(v.Data, "storeIdentity")
 		if relationErr != nil {
@@ -407,27 +399,6 @@ func (r *EndgeRepository) FolderWouldCycle(ctx context.Context, workspaceID, fol
 		SELECT f.id,f.parent_id FROM folders f JOIN ancestors a ON f.id=a.parent_id WHERE f.workspace_id=$1
 	) SELECT EXISTS(SELECT 1 FROM ancestors WHERE id=$3)`, workspaceID, parentID, folderID).Scan(&cycle)
 	return cycle, err
-}
-
-func (r *EndgeRepository) ReplaceProjectEnvironments(ctx context.Context, document entities.Document, identities []string) error {
-	if document.Type != entities.CollectionProjects {
-		return fmt.Errorf("project environment relation requires a project document")
-	}
-	if _, err := r.executor(ctx).Exec(ctx, `DELETE FROM project_environments WHERE workspace_id=$1 AND project_id=$2`, document.WorkspaceID, document.ID); err != nil {
-		return err
-	}
-	for index, identity := range identities {
-		tag, err := r.executor(ctx).Exec(ctx, `INSERT INTO project_environments(workspace_id,project_id,environment_id,sort_order)
-			SELECT $1,$2,target.id,$4 FROM environments target
-			WHERE target.workspace_id=$1 AND target.identity=$3 AND target.deleted_at IS NULL`, document.WorkspaceID, document.ID, identity, index)
-		if err != nil {
-			return err
-		}
-		if tag.RowsAffected() != 1 {
-			return fmt.Errorf("relation target environments:%s not found", identity)
-		}
-	}
-	return nil
 }
 
 func (r *EndgeRepository) resolveActiveDocumentID(ctx context.Context, workspaceID, kind, identity string) (string, error) {

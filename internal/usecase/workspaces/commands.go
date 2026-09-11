@@ -5,15 +5,27 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/documents"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 	"github.com/google/uuid"
 )
+
+const workspaceStartupCompositionSource = `defineComposition({
+  activateOn: startup(),
+  data: {},
+  resources: {},
+  runtimes: {},
+  hooks: [],
+  outputs: {},
+})
+`
 
 // Create создаёт рабочее пространство и его начальное состояние.
 func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entities.Workspace, err error) {
@@ -56,7 +68,6 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entiti
 		if txErr != nil {
 			return txErr
 		}
-		result = created
 		bindings, txErr := workspaceIntegrations(values)
 		if txErr != nil {
 			return txErr
@@ -68,10 +79,8 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entiti
 		if txErr != nil {
 			return txErr
 		}
-		if txErr = s.history.RecordWorkspace(txctx, *created, "create"); txErr != nil {
-			return txErr
-		}
 		createdRootTypes := map[string]bool{}
+		rootIDs := map[string]string{}
 		for _, kind := range documents.Collections {
 			if kind == entities.CollectionFolders || kind == entities.CollectionConfigurations {
 				continue
@@ -86,6 +95,7 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entiti
 			if insertErr != nil {
 				return insertErr
 			}
+			rootIDs[kind] = createdRoot.ID
 			if _, insertErr = s.history.RecordDocument(txctx, *createdRoot, "create", nil); insertErr != nil {
 				return insertErr
 			}
@@ -101,6 +111,35 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entiti
 			return txErr
 		}
 		if _, txErr = s.history.RecordDocument(txctx, *createdWorkspaceRoot, "create", nil); txErr != nil {
+			return txErr
+		}
+		rootCompositionID, exists := rootIDs[entities.CollectionCompositions]
+		if !exists {
+			return domainerrors.Internal("workspace_bootstrap_invalid", "Composition root folder was not created")
+		}
+		workspaceRootIdentity := entities.WorkspaceRootFolderIdentity
+		compositionRootIdentity := entities.RootFolderIdentity(entities.CollectionCompositions)
+		startup := entities.Document{
+			ID: uuid.NewString(), WorkspaceID: created.ID, Type: entities.CollectionCompositions,
+			Identity: "workspace-startup", DisplayName: "Стартовая композиция",
+			FolderIdentity:          &compositionRootIdentity,
+			WorkspaceFolderIdentity: &workspaceRootIdentity,
+			ManagedBy:               "user", Meta: json.RawMessage(`{}`),
+			Data:   workspaceJSON(map[string]any{"source": workspaceStartupCompositionSource, "sourceVersion": 1}),
+			Active: true, Revision: 1, CreatedBy: entities.Actor{ID: current.User.ID}, UpdatedBy: entities.Actor{ID: current.User.ID},
+		}
+		createdStartup, txErr := s.documents.InsertDocument(txctx, startup, &rootCompositionID)
+		if txErr != nil {
+			return txErr
+		}
+		if _, txErr = s.history.RecordDocument(txctx, *createdStartup, "create", nil); txErr != nil {
+			return txErr
+		}
+		created, txErr = s.workspaces.FinalizeWorkspaceBootstrap(txctx, created.ID, createdStartup.ID)
+		if txErr != nil {
+			return txErr
+		}
+		if txErr = s.history.RecordWorkspace(txctx, *created, "create"); txErr != nil {
 			return txErr
 		}
 		pending, txErr := s.commits.PendingRevisions(txctx, created.ID, 0)
@@ -121,7 +160,11 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entiti
 		for _, revision := range pending {
 			ids = append(ids, revision.ID)
 		}
-		return s.commits.AttachRevisionsToCommit(txctx, commit.ID, ids)
+		if txErr = s.commits.AttachRevisionsToCommit(txctx, commit.ID, ids); txErr != nil {
+			return txErr
+		}
+		result, txErr = s.workspaces.GetWorkspace(txctx, created.Identity)
+		return txErr
 	})
 	return result, shared.MapConflict(err)
 }
@@ -157,6 +200,21 @@ func (s *UseCase) Patch(ctx context.Context, identity string, input PatchInput, 
 		if !valid || !entities.IsWorkspaceDocumentStructure(strings.TrimSpace(documentStructure)) {
 			return nil, domainerrors.InvalidInput("workspace_document_structure_invalid", "documentStructure must be frontend or custom")
 		}
+	}
+	if value, exists := patch["startupCompositionIdentity"]; exists && value != nil {
+		startupIdentity, valid := value.(string)
+		startupIdentity = strings.TrimSpace(startupIdentity)
+		if !valid || startupIdentity == "" {
+			return nil, domainerrors.InvalidInput("startup_composition_identity_invalid", "startupCompositionIdentity must be a non-empty identity or null")
+		}
+		composition, resolveErr := s.documents.GetDocument(ctx, scope.Workspace.ID, entities.CollectionCompositions, startupIdentity, false)
+		if errors.Is(resolveErr, ports.ErrNotFound) || (resolveErr == nil && !composition.Active) {
+			return nil, domainerrors.InvalidInput("startup_composition_not_found", "startupCompositionIdentity must reference an active Composition in this Workspace")
+		}
+		if resolveErr != nil {
+			return nil, resolveErr
+		}
+		patch["startupCompositionIdentity"] = startupIdentity
 	}
 	if configuration, exists := patch["configuration"]; exists {
 		patch["configuration"] = configurationdomain.EnsureSFCEditingDefaults(configuration)
@@ -230,6 +288,13 @@ func applyWorkspacePatch(workspace entities.Workspace, patch map[string]any) ent
 	}
 	if value, ok := patch["documentStructure"].(string); ok {
 		workspace.DocumentStructure = strings.TrimSpace(value)
+	}
+	if value, exists := patch["startupCompositionIdentity"]; exists {
+		workspace.StartupCompositionIdentity = nil
+		if identity, ok := value.(string); ok {
+			identity = strings.TrimSpace(identity)
+			workspace.StartupCompositionIdentity = &identity
+		}
 	}
 	if value, ok := patch["configuration"]; ok {
 		workspace.Configuration = workspaceJSON(value)
@@ -353,5 +418,5 @@ func genericDigest(value any) string {
 
 // workspaceDigest вычисляет контрольную сумму рабочего пространства.
 func workspaceDigest(value entities.Workspace) string {
-	return genericDigest(map[string]any{"identity": value.Identity, "displayName": value.DisplayName, "description": value.Description, "dataMode": value.DataMode, "documentStructure": value.DocumentStructure, "configuration": value.Configuration, "meta": value.Meta, "active": value.Active})
+	return genericDigest(map[string]any{"identity": value.Identity, "displayName": value.DisplayName, "description": value.Description, "dataMode": value.DataMode, "documentStructure": value.DocumentStructure, "startupCompositionIdentity": value.StartupCompositionIdentity, "configuration": value.Configuration, "meta": value.Meta, "active": value.Active})
 }

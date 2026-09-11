@@ -37,15 +37,19 @@ use case не используется.
 Согласованные коллекции:
 
 ```text
-projects, tenants, environments, folders,
-types, queries, data-views, compositions,
-stores, streams, updates, mocks, components,
-actions, filters, converters, computations,
-vocabs, i18n-bundles, auth-profiles, navigations, styles
+facets, facet-documents, folders, types, queries, data-views,
+compositions, stores, streams, simulations, updates, mocks,
+components, actions, filters, converters, computations, vocabs,
+i18n-bundles, auth-profiles, navigations, styles, configurations
 ```
 
-`pages`, `page-templates`, `policies`, `versions`, legacy
-components, hard-delete, release tags и channels намеренно отсутствуют в MVP.
+`facets` и вложенные `facet-documents` имеют отдельный lifecycle: identity документа
+уникален внутри фасета, порядок фасетов хранится в `position`, а удаление фасета
+каскадно переводит его документы в soft-deleted state. Остальные коллекции используют
+общий document lifecycle.
+
+`pages`, `page-templates`, `policies`, `versions`, hard-delete, release tags и
+channels намеренно отсутствуют в MVP.
 
 ## Локальный запуск
 
@@ -73,8 +77,8 @@ AUTH_DEV_PLATFORM_ADMIN=true
 Единственный источник build metadata сервиса — корневой файл `VERSION`:
 
 ```text
-APP_VERSION=0.11.0
-WORKSPACE_SCHEMA_VERSION=1
+APP_VERSION=0.15.0
+WORKSPACE_SCHEMA_VERSION=9
 ```
 
 Перед каждым изменением backend повышается `APP_VERSION` по SemVer.

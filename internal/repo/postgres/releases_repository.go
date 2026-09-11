@@ -91,7 +91,7 @@ func (r *EndgeRepository) ExportWorkspace(ctx context.Context, workspaceID strin
 	var workspaceConfiguration map[string]any
 	_ = json.Unmarshal(workspace.Configuration, &workspaceConfiguration)
 	configurationdomain.RemoveLegacySSE(workspaceConfiguration)
-	bundle := entities.PortableBundle{Kind: "workspace-snapshot", SchemaVersion: r.workspaceSchemaVersion, Workspace: map[string]any{"identity": workspace.Identity, "displayName": workspace.DisplayName, "description": workspace.Description, "dataMode": workspace.DataMode, "documentStructure": workspace.DocumentStructure, "configuration": workspaceConfiguration, "meta": workspace.Meta, "active": workspace.Active}, Documents: map[string][]map[string]any{}, InstalledIntegrations: []map[string]any{}}
+	bundle := entities.PortableBundle{Kind: "workspace-snapshot", SchemaVersion: r.workspaceSchemaVersion, Workspace: map[string]any{"identity": workspace.Identity, "displayName": workspace.DisplayName, "description": workspace.Description, "dataMode": workspace.DataMode, "documentStructure": workspace.DocumentStructure, "startupCompositionIdentity": workspace.StartupCompositionIdentity, "configuration": workspaceConfiguration, "meta": workspace.Meta, "active": workspace.Active}, Documents: map[string][]map[string]any{}, InstalledIntegrations: []map[string]any{}}
 	documents := map[string][]entities.Document{}
 	if head == nil {
 		for _, kind := range append(append([]string(nil), entities.DocumentCollections...), entities.FacetCollections...) {
@@ -225,6 +225,6 @@ func facetDocumentPosition(document entities.Document) int {
 	return intValue(data["position"])
 }
 func (r *EndgeRepository) getWorkspaceByID(ctx context.Context, id string) (*entities.Workspace, error) {
-	row := r.executor(ctx).QueryRow(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.document_structure,w.configuration,w.meta,w.active,w.generation::text,w.head_sequence,w.revision,`+actorScan("cu")+`,`+actorScan("uu")+`,w.created_at,w.updated_at FROM workspaces w JOIN service_users cu ON cu.id=w.created_by JOIN service_users uu ON uu.id=w.updated_by WHERE w.id=$1`, id)
+	row := r.executor(ctx).QueryRow(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.document_structure,sc.identity,w.configuration,w.meta,w.active,w.generation::text,w.head_sequence,w.revision,`+actorScan("cu")+`,`+actorScan("uu")+`,w.created_at,w.updated_at FROM workspaces w LEFT JOIN compositions sc ON sc.workspace_id=w.id AND sc.id=w.startup_composition_id JOIN service_users cu ON cu.id=w.created_by JOIN service_users uu ON uu.id=w.updated_by WHERE w.id=$1`, id)
 	return scanWorkspace(row)
 }

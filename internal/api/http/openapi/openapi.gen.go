@@ -6122,480 +6122,6 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"  /api/v1/environments:\n" +
-		"    get:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Возвращает список окружений текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
-		"      tags:\n" +
-		"        - Окружения\n" +
-		"      summary: Получить список окружений\n" +
-		"      operationId: listEnvironments\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Включить мягко удалённые документы\n" +
-		"          name: includeDeleted\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: boolean\n" +
-		"            default: false\n" +
-		"        - description: Identity папки\n" +
-		"          name: folderIdentity\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            maxLength: 160\n" +
-		"        - description: Фильтр по активности\n" +
-		"          name: active\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: boolean\n" +
-		"        - description: Размер страницы\n" +
-		"          name: limit\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: integer\n" +
-		"            minimum: 1\n" +
-		"            maximum: 500\n" +
-		"            default: 100\n" +
-		"        - description: Смещение\n" +
-		"          name: offset\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: integer\n" +
-		"            minimum: 0\n" +
-		"            default: 0\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: Список окружений\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/environment.ListResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Некорректный запрос\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Создаёт окружение в текущем рабочем пространстве.\n" +
-		"      tags:\n" +
-		"        - Окружения\n" +
-		"      summary: Создать окружение\n" +
-		"      operationId: createEnvironment\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      requestBody:\n" +
-		"        content:\n" +
-		"          application/json:\n" +
-		"            schema:\n" +
-		"              $ref: \"#/components/schemas/environment.CreateRequest\"\n" +
-		"        description: Данные нового документа\n" +
-		"        required: true\n" +
-		"      responses:\n" +
-		"        \"201\":\n" +
-		"          description: Документ создан\n" +
-		"          headers:\n" +
-		"            ETag:\n" +
-		"              description: Текущая revision документа\n" +
-		"              schema:\n" +
-		"                type: string\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/environment.Response\"\n" +
-		"        \"400\":\n" +
-		"          description: Некорректный запрос\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Конфликт identity или revision\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"  \"/api/v1/environments/{identity}\":\n" +
-		"    get:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Возвращает окружение по identity.\n" +
-		"      tags:\n" +
-		"        - Окружения\n" +
-		"      summary: Получить окружение\n" +
-		"      operationId: getEnvironment\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Identity документа\n" +
-		"          name: identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            maxLength: 160\n" +
-		"        - description: Разрешить получение мягко удалённого документа\n" +
-		"          name: includeDeleted\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: boolean\n" +
-		"            default: false\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: Найденный документ\n" +
-		"          headers:\n" +
-		"            ETag:\n" +
-		"              description: Текущая revision документа\n" +
-		"              schema:\n" +
-		"                type: string\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/environment.Response\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Документ не найден\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"    delete:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
-		"      tags:\n" +
-		"        - Окружения\n" +
-		"      summary: Удалить окружение\n" +
-		"      operationId: deleteEnvironment\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Identity документа\n" +
-		"          name: identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            maxLength: 160\n" +
-		"        - example: '\"3\"'\n" +
-		"          description: Текущая revision документа\n" +
-		"          name: If-Match\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: Документ мягко удалён\n" +
-		"          headers:\n" +
-		"            ETag:\n" +
-		"              description: Новая revision документа\n" +
-		"              schema:\n" +
-		"                type: string\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/environment.Response\"\n" +
-		"        \"400\":\n" +
-		"          description: Некорректный запрос\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Документ не найден\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Конфликт identity или revision\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"428\":\n" +
-		"          description: Требуется заголовок If-Match\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"    patch:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Частично изменяет окружение; актуальная revision передаётся в If-Match.\n" +
-		"      tags:\n" +
-		"        - Окружения\n" +
-		"      summary: Изменить окружение\n" +
-		"      operationId: patchEnvironment\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Identity документа\n" +
-		"          name: identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            maxLength: 160\n" +
-		"        - example: '\"3\"'\n" +
-		"          description: Текущая revision документа\n" +
-		"          name: If-Match\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      requestBody:\n" +
-		"        content:\n" +
-		"          application/json:\n" +
-		"            schema:\n" +
-		"              $ref: \"#/components/schemas/environment.PatchRequest\"\n" +
-		"        description: Изменяемые поля документа\n" +
-		"        required: true\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: Документ изменён\n" +
-		"          headers:\n" +
-		"            ETag:\n" +
-		"              description: Новая revision документа\n" +
-		"              schema:\n" +
-		"                type: string\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/environment.Response\"\n" +
-		"        \"400\":\n" +
-		"          description: Некорректный запрос\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Документ не найден\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Конфликт identity или revision\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"428\":\n" +
-		"          description: Требуется заголовок If-Match\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"  \"/api/v1/environments/{identity}/restore\":\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
-		"      tags:\n" +
-		"        - Окружения\n" +
-		"      summary: Восстановить окружение\n" +
-		"      operationId: restoreEnvironment\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Identity документа\n" +
-		"          name: identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            maxLength: 160\n" +
-		"        - example: '\"3\"'\n" +
-		"          description: Текущая revision документа\n" +
-		"          name: If-Match\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: Документ восстановлен\n" +
-		"          headers:\n" +
-		"            ETag:\n" +
-		"              description: Новая revision документа\n" +
-		"              schema:\n" +
-		"                type: string\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/environment.Response\"\n" +
-		"        \"400\":\n" +
-		"          description: Некорректный запрос\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Документ не найден\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Конфликт identity или revision\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"428\":\n" +
-		"          description: Требуется заголовок If-Match\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /api/v1/facets:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -9089,69 +8615,6 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"  /api/v1/legacy/workspace-folders/rebuild-from-frontend:\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Удаляет текущие пользовательские Workspace-папки, копирует\n" +
-		"        Frontend-корни с подпапками и перепривязывает документы. Не изменяет\n" +
-		"        документы и их folderId.\n" +
-		"      tags:\n" +
-		"        - Legacy\n" +
-		"      summary: Пересоздать Workspace-папки из Frontend\n" +
-		"      operationId: legacyRebuildWorkspaceFoldersFromFrontend\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      requestBody:\n" +
-		"        content:\n" +
-		"          application/json:\n" +
-		"            schema:\n" +
-		"              $ref: \"#/components/schemas/legacy.RebuildWorkspaceFoldersRequest\"\n" +
-		"        description: Явное подтверждение целевого Workspace\n" +
-		"        required: true\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: Результат пересоздания\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/legacy.RebuildWorkspaceFoldersResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Некорректное подтверждение\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Требуется роль Workspace Admin\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Конфликт состояния\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /api/v1/mock-data/capabilities:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -10556,480 +10019,6 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/navigation.Response\"\n" +
-		"        \"400\":\n" +
-		"          description: Некорректный запрос\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Документ не найден\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Конфликт identity или revision\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"428\":\n" +
-		"          description: Требуется заголовок If-Match\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"  /api/v1/projects:\n" +
-		"    get:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Возвращает список проектов текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
-		"      tags:\n" +
-		"        - Проекты\n" +
-		"      summary: Получить список проектов\n" +
-		"      operationId: listProjects\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Включить мягко удалённые документы\n" +
-		"          name: includeDeleted\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: boolean\n" +
-		"            default: false\n" +
-		"        - description: Identity папки\n" +
-		"          name: folderIdentity\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            maxLength: 160\n" +
-		"        - description: Фильтр по активности\n" +
-		"          name: active\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: boolean\n" +
-		"        - description: Размер страницы\n" +
-		"          name: limit\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: integer\n" +
-		"            minimum: 1\n" +
-		"            maximum: 500\n" +
-		"            default: 100\n" +
-		"        - description: Смещение\n" +
-		"          name: offset\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: integer\n" +
-		"            minimum: 0\n" +
-		"            default: 0\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: Список проектов\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/project.ListResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Некорректный запрос\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Создаёт проект в текущем рабочем пространстве.\n" +
-		"      tags:\n" +
-		"        - Проекты\n" +
-		"      summary: Создать проект\n" +
-		"      operationId: createProject\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      requestBody:\n" +
-		"        content:\n" +
-		"          application/json:\n" +
-		"            schema:\n" +
-		"              $ref: \"#/components/schemas/project.CreateRequest\"\n" +
-		"        description: Данные нового документа\n" +
-		"        required: true\n" +
-		"      responses:\n" +
-		"        \"201\":\n" +
-		"          description: Документ создан\n" +
-		"          headers:\n" +
-		"            ETag:\n" +
-		"              description: Текущая revision документа\n" +
-		"              schema:\n" +
-		"                type: string\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/project.Response\"\n" +
-		"        \"400\":\n" +
-		"          description: Некорректный запрос\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Конфликт identity или revision\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{identity}\":\n" +
-		"    get:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Возвращает проект по identity.\n" +
-		"      tags:\n" +
-		"        - Проекты\n" +
-		"      summary: Получить проект\n" +
-		"      operationId: getProject\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Identity документа\n" +
-		"          name: identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            maxLength: 160\n" +
-		"        - description: Разрешить получение мягко удалённого документа\n" +
-		"          name: includeDeleted\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: boolean\n" +
-		"            default: false\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: Найденный документ\n" +
-		"          headers:\n" +
-		"            ETag:\n" +
-		"              description: Текущая revision документа\n" +
-		"              schema:\n" +
-		"                type: string\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/project.Response\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Документ не найден\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"    delete:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
-		"      tags:\n" +
-		"        - Проекты\n" +
-		"      summary: Удалить проект\n" +
-		"      operationId: deleteProject\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Identity документа\n" +
-		"          name: identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            maxLength: 160\n" +
-		"        - example: '\"3\"'\n" +
-		"          description: Текущая revision документа\n" +
-		"          name: If-Match\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: Документ мягко удалён\n" +
-		"          headers:\n" +
-		"            ETag:\n" +
-		"              description: Новая revision документа\n" +
-		"              schema:\n" +
-		"                type: string\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/project.Response\"\n" +
-		"        \"400\":\n" +
-		"          description: Некорректный запрос\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Документ не найден\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Конфликт identity или revision\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"428\":\n" +
-		"          description: Требуется заголовок If-Match\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"    patch:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Частично изменяет проект; актуальная revision передаётся в If-Match.\n" +
-		"      tags:\n" +
-		"        - Проекты\n" +
-		"      summary: Изменить проект\n" +
-		"      operationId: patchProject\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Identity документа\n" +
-		"          name: identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            maxLength: 160\n" +
-		"        - example: '\"3\"'\n" +
-		"          description: Текущая revision документа\n" +
-		"          name: If-Match\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      requestBody:\n" +
-		"        content:\n" +
-		"          application/json:\n" +
-		"            schema:\n" +
-		"              $ref: \"#/components/schemas/project.PatchRequest\"\n" +
-		"        description: Изменяемые поля документа\n" +
-		"        required: true\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: Документ изменён\n" +
-		"          headers:\n" +
-		"            ETag:\n" +
-		"              description: Новая revision документа\n" +
-		"              schema:\n" +
-		"                type: string\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/project.Response\"\n" +
-		"        \"400\":\n" +
-		"          description: Некорректный запрос\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Документ не найден\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Конфликт identity или revision\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"428\":\n" +
-		"          description: Требуется заголовок If-Match\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"  \"/api/v1/projects/{identity}/restore\":\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
-		"      tags:\n" +
-		"        - Проекты\n" +
-		"      summary: Восстановить проект\n" +
-		"      operationId: restoreProject\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Identity документа\n" +
-		"          name: identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            maxLength: 160\n" +
-		"        - example: '\"3\"'\n" +
-		"          description: Текущая revision документа\n" +
-		"          name: If-Match\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: Документ восстановлен\n" +
-		"          headers:\n" +
-		"            ETag:\n" +
-		"              description: Новая revision документа\n" +
-		"              schema:\n" +
-		"                type: string\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/project.Response\"\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -13897,480 +12886,6 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"  /api/v1/tenants:\n" +
-		"    get:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Возвращает список тенантов текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
-		"      tags:\n" +
-		"        - Тенанты\n" +
-		"      summary: Получить список тенантов\n" +
-		"      operationId: listTenants\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Включить мягко удалённые документы\n" +
-		"          name: includeDeleted\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: boolean\n" +
-		"            default: false\n" +
-		"        - description: Identity папки\n" +
-		"          name: folderIdentity\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            maxLength: 160\n" +
-		"        - description: Фильтр по активности\n" +
-		"          name: active\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: boolean\n" +
-		"        - description: Размер страницы\n" +
-		"          name: limit\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: integer\n" +
-		"            minimum: 1\n" +
-		"            maximum: 500\n" +
-		"            default: 100\n" +
-		"        - description: Смещение\n" +
-		"          name: offset\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: integer\n" +
-		"            minimum: 0\n" +
-		"            default: 0\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: Список тенантов\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/tenant.ListResponse\"\n" +
-		"        \"400\":\n" +
-		"          description: Некорректный запрос\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Создаёт тенант в текущем рабочем пространстве.\n" +
-		"      tags:\n" +
-		"        - Тенанты\n" +
-		"      summary: Создать тенант\n" +
-		"      operationId: createTenant\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      requestBody:\n" +
-		"        content:\n" +
-		"          application/json:\n" +
-		"            schema:\n" +
-		"              $ref: \"#/components/schemas/tenant.CreateRequest\"\n" +
-		"        description: Данные нового документа\n" +
-		"        required: true\n" +
-		"      responses:\n" +
-		"        \"201\":\n" +
-		"          description: Документ создан\n" +
-		"          headers:\n" +
-		"            ETag:\n" +
-		"              description: Текущая revision документа\n" +
-		"              schema:\n" +
-		"                type: string\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/tenant.Response\"\n" +
-		"        \"400\":\n" +
-		"          description: Некорректный запрос\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Конфликт identity или revision\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"  \"/api/v1/tenants/{identity}\":\n" +
-		"    get:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Возвращает тенант по identity.\n" +
-		"      tags:\n" +
-		"        - Тенанты\n" +
-		"      summary: Получить тенант\n" +
-		"      operationId: getTenant\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Identity документа\n" +
-		"          name: identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            maxLength: 160\n" +
-		"        - description: Разрешить получение мягко удалённого документа\n" +
-		"          name: includeDeleted\n" +
-		"          in: query\n" +
-		"          schema:\n" +
-		"            type: boolean\n" +
-		"            default: false\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: Найденный документ\n" +
-		"          headers:\n" +
-		"            ETag:\n" +
-		"              description: Текущая revision документа\n" +
-		"              schema:\n" +
-		"                type: string\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/tenant.Response\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Документ не найден\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"    delete:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
-		"      tags:\n" +
-		"        - Тенанты\n" +
-		"      summary: Удалить тенант\n" +
-		"      operationId: deleteTenant\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Identity документа\n" +
-		"          name: identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            maxLength: 160\n" +
-		"        - example: '\"3\"'\n" +
-		"          description: Текущая revision документа\n" +
-		"          name: If-Match\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: Документ мягко удалён\n" +
-		"          headers:\n" +
-		"            ETag:\n" +
-		"              description: Новая revision документа\n" +
-		"              schema:\n" +
-		"                type: string\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/tenant.Response\"\n" +
-		"        \"400\":\n" +
-		"          description: Некорректный запрос\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Документ не найден\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Конфликт identity или revision\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"428\":\n" +
-		"          description: Требуется заголовок If-Match\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"    patch:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Частично изменяет тенант; актуальная revision передаётся в If-Match.\n" +
-		"      tags:\n" +
-		"        - Тенанты\n" +
-		"      summary: Изменить тенант\n" +
-		"      operationId: patchTenant\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Identity документа\n" +
-		"          name: identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            maxLength: 160\n" +
-		"        - example: '\"3\"'\n" +
-		"          description: Текущая revision документа\n" +
-		"          name: If-Match\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      requestBody:\n" +
-		"        content:\n" +
-		"          application/json:\n" +
-		"            schema:\n" +
-		"              $ref: \"#/components/schemas/tenant.PatchRequest\"\n" +
-		"        description: Изменяемые поля документа\n" +
-		"        required: true\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: Документ изменён\n" +
-		"          headers:\n" +
-		"            ETag:\n" +
-		"              description: Новая revision документа\n" +
-		"              schema:\n" +
-		"                type: string\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/tenant.Response\"\n" +
-		"        \"400\":\n" +
-		"          description: Некорректный запрос\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Документ не найден\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Конфликт identity или revision\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"428\":\n" +
-		"          description: Требуется заголовок If-Match\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"  \"/api/v1/tenants/{identity}/restore\":\n" +
-		"    post:\n" +
-		"      security:\n" +
-		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
-		"      tags:\n" +
-		"        - Тенанты\n" +
-		"      summary: Восстановить тенант\n" +
-		"      operationId: restoreTenant\n" +
-		"      parameters:\n" +
-		"        - example: default\n" +
-		"          description: Identity рабочего пространства\n" +
-		"          name: X-Endge-Workspace\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"        - description: Identity документа\n" +
-		"          name: identity\n" +
-		"          in: path\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"            maxLength: 160\n" +
-		"        - example: '\"3\"'\n" +
-		"          description: Текущая revision документа\n" +
-		"          name: If-Match\n" +
-		"          in: header\n" +
-		"          required: true\n" +
-		"          schema:\n" +
-		"            type: string\n" +
-		"      responses:\n" +
-		"        \"200\":\n" +
-		"          description: Документ восстановлен\n" +
-		"          headers:\n" +
-		"            ETag:\n" +
-		"              description: Новая revision документа\n" +
-		"              schema:\n" +
-		"                type: string\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/tenant.Response\"\n" +
-		"        \"400\":\n" +
-		"          description: Некорректный запрос\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"401\":\n" +
-		"          description: Требуется аутентификация\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"403\":\n" +
-		"          description: Недостаточно прав\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"404\":\n" +
-		"          description: Документ не найден\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Конфликт identity или revision\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"428\":\n" +
-		"          description: Требуется заголовок If-Match\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"500\":\n" +
-		"          description: Внутренняя ошибка сервера\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /api/v1/types:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -16436,7 +14951,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -16499,7 +15014,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -16555,7 +15070,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -16939,7 +15454,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -17004,7 +15519,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -17061,7 +15576,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -17400,7 +15915,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -17469,7 +15984,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -17528,7 +16043,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -17596,7 +16111,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -17661,7 +16176,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -17719,7 +16234,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -17787,7 +16302,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -17849,7 +16364,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -17904,7 +16419,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -17962,7 +16477,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -18021,7 +16536,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -18073,7 +16588,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -18129,7 +16644,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -18181,7 +16696,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -18226,7 +16741,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -18278,7 +16793,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -18337,7 +16852,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -18389,7 +16904,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -18617,7 +17132,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -18679,7 +17194,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -18734,7 +17249,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -19020,162 +17535,6 @@ var openAPI3YAML = []byte(
 		"          type: integer\n" +
 		"        integrations:\n" +
 		"          type: integer\n" +
-		"    environment.CreateRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - displayName\n" +
-		"        - identity\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        configuration:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Описание объекта\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          example: Основной объект\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-projects\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          example: main\n" +
-		"        managedBy:\n" +
-		"          type: string\n" +
-		"          enum:\n" +
-		"            - user\n" +
-		"            - system\n" +
-		"            - integration\n" +
-		"          example: user\n" +
-		"        managedById:\n" +
-		"          type: string\n" +
-		"          example: endge-core\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        workspaceFolderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-workspace-files\n" +
-		"    environment.ListResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        items:\n" +
-		"          type: array\n" +
-		"          items:\n" +
-		"            $ref: \"#/components/schemas/environment.Response\"\n" +
-		"        limit:\n" +
-		"          type: integer\n" +
-		"          example: 100\n" +
-		"        offset:\n" +
-		"          type: integer\n" +
-		"          example: 0\n" +
-		"        total:\n" +
-		"          type: integer\n" +
-		"          example: 1\n" +
-		"    environment.PatchRequest:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        configuration:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Описание объекта\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          example: Основной объект\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-projects\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          example: main\n" +
-		"        managedBy:\n" +
-		"          type: string\n" +
-		"          enum:\n" +
-		"            - user\n" +
-		"            - system\n" +
-		"            - integration\n" +
-		"          example: user\n" +
-		"        managedById:\n" +
-		"          type: string\n" +
-		"          example: endge-core\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        workspaceFolderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-workspace-files\n" +
-		"    environment.Response:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        configuration:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        createdAt:\n" +
-		"          type: string\n" +
-		"          format: date-time\n" +
-		"          example: 2026-08-04T10:00:00Z\n" +
-		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
-		"        deletedAt:\n" +
-		"          type: string\n" +
-		"          format: date-time\n" +
-		"          example: 2026-08-04T11:00:00Z\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Описание объекта\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          example: Основной объект\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-projects\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"          format: uuid\n" +
-		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          example: main\n" +
-		"        managedBy:\n" +
-		"          type: string\n" +
-		"          enum:\n" +
-		"            - user\n" +
-		"            - system\n" +
-		"            - integration\n" +
-		"          example: user\n" +
-		"        managedById:\n" +
-		"          type: string\n" +
-		"          example: endge-core\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"        revision:\n" +
-		"          type: integer\n" +
-		"          example: 3\n" +
-		"        updatedAt:\n" +
-		"          type: string\n" +
-		"          format: date-time\n" +
-		"          example: 2026-08-04T10:05:00Z\n" +
-		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
-		"        workspaceFolderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-workspace-files\n" +
 		"    facet.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -19285,7 +17644,7 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -19424,7 +17783,7 @@ var openAPI3YAML = []byte(
 		"            type: object\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -19487,7 +17846,7 @@ var openAPI3YAML = []byte(
 		"            type: object\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -19543,7 +17902,7 @@ var openAPI3YAML = []byte(
 		"            type: object\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -19602,10 +17961,10 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        entityType:\n" +
 		"          type: string\n" +
-		"          example: projects\n" +
+		"          example: compositions\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        icon:\n" +
 		"          type: string\n" +
 		"          maxLength: 80\n" +
@@ -19629,7 +17988,7 @@ var openAPI3YAML = []byte(
 		"          additionalProperties: {}\n" +
 		"        parentIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        scope:\n" +
 		"          type: string\n" +
 		"          enum:\n" +
@@ -19672,10 +18031,10 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        entityType:\n" +
 		"          type: string\n" +
-		"          example: projects\n" +
+		"          example: compositions\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        icon:\n" +
 		"          type: string\n" +
 		"          maxLength: 80\n" +
@@ -19698,7 +18057,7 @@ var openAPI3YAML = []byte(
 		"          additionalProperties: {}\n" +
 		"        parentIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        scope:\n" +
 		"          type: string\n" +
 		"          enum:\n" +
@@ -19733,10 +18092,10 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        entityType:\n" +
 		"          type: string\n" +
-		"          example: projects\n" +
+		"          example: compositions\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        icon:\n" +
 		"          type: string\n" +
 		"        id:\n" +
@@ -19760,7 +18119,7 @@ var openAPI3YAML = []byte(
 		"          type: object\n" +
 		"        parentIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        revision:\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
@@ -19848,7 +18207,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -19903,7 +18262,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -19951,7 +18310,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -20121,27 +18480,6 @@ var openAPI3YAML = []byte(
 		"        version:\n" +
 		"          type: string\n" +
 		"          example: 1.0.0\n" +
-		"    legacy.RebuildWorkspaceFoldersRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - confirmation\n" +
-		"      properties:\n" +
-		"        confirmation:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          example: default\n" +
-		"    legacy.RebuildWorkspaceFoldersResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        documentsRelinked:\n" +
-		"          type: integer\n" +
-		"          example: 42\n" +
-		"        foldersCreated:\n" +
-		"          type: integer\n" +
-		"          example: 24\n" +
-		"        foldersDeleted:\n" +
-		"          type: integer\n" +
-		"          example: 3\n" +
 		"    mock.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -20169,7 +18507,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -20234,7 +18572,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -20292,7 +18630,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -20473,7 +18811,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -20529,7 +18867,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -20578,7 +18916,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -20614,206 +18952,6 @@ var openAPI3YAML = []byte(
 		"        workspaceFolderIdentity:\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
-		"    project.CreateRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - displayName\n" +
-		"        - identity\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        allowedEnvironments:\n" +
-		"          type: array\n" +
-		"          items:\n" +
-		"            type: string\n" +
-		"          example:\n" +
-		"            - development\n" +
-		"            - production\n" +
-		"        configuration:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Описание объекта\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          example: Основной объект\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-projects\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          example: main\n" +
-		"        managedBy:\n" +
-		"          type: string\n" +
-		"          enum:\n" +
-		"            - user\n" +
-		"            - system\n" +
-		"            - integration\n" +
-		"          example: user\n" +
-		"        managedById:\n" +
-		"          type: string\n" +
-		"          example: endge-core\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        order:\n" +
-		"          type: integer\n" +
-		"        slug:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"        source:\n" +
-		"          type: string\n" +
-		"        sourceVersion:\n" +
-		"          type: integer\n" +
-		"        workspaceFolderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-workspace-files\n" +
-		"    project.ListResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        items:\n" +
-		"          type: array\n" +
-		"          items:\n" +
-		"            $ref: \"#/components/schemas/project.Response\"\n" +
-		"        limit:\n" +
-		"          type: integer\n" +
-		"          example: 100\n" +
-		"        offset:\n" +
-		"          type: integer\n" +
-		"          example: 0\n" +
-		"        total:\n" +
-		"          type: integer\n" +
-		"          example: 1\n" +
-		"    project.PatchRequest:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        allowedEnvironments:\n" +
-		"          type: array\n" +
-		"          items:\n" +
-		"            type: string\n" +
-		"        configuration:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Описание объекта\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          example: Основной объект\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-projects\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          example: main\n" +
-		"        managedBy:\n" +
-		"          type: string\n" +
-		"          enum:\n" +
-		"            - user\n" +
-		"            - system\n" +
-		"            - integration\n" +
-		"          example: user\n" +
-		"        managedById:\n" +
-		"          type: string\n" +
-		"          example: endge-core\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        order:\n" +
-		"          type: integer\n" +
-		"        slug:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"        source:\n" +
-		"          type: string\n" +
-		"        sourceVersion:\n" +
-		"          type: integer\n" +
-		"        workspaceFolderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-workspace-files\n" +
-		"    project.Response:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        allowedEnvironments:\n" +
-		"          type: array\n" +
-		"          items:\n" +
-		"            type: string\n" +
-		"          example:\n" +
-		"            - development\n" +
-		"            - production\n" +
-		"        configuration:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        createdAt:\n" +
-		"          type: string\n" +
-		"          format: date-time\n" +
-		"          example: 2026-08-04T10:00:00Z\n" +
-		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
-		"        deletedAt:\n" +
-		"          type: string\n" +
-		"          format: date-time\n" +
-		"          example: 2026-08-04T11:00:00Z\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Описание объекта\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          example: Основной объект\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-projects\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"          format: uuid\n" +
-		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          example: main\n" +
-		"        managedBy:\n" +
-		"          type: string\n" +
-		"          enum:\n" +
-		"            - user\n" +
-		"            - system\n" +
-		"            - integration\n" +
-		"          example: user\n" +
-		"        managedById:\n" +
-		"          type: string\n" +
-		"          example: endge-core\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"        order:\n" +
-		"          type: integer\n" +
-		"        revision:\n" +
-		"          type: integer\n" +
-		"          example: 3\n" +
-		"        slug:\n" +
-		"          type: string\n" +
-		"        source:\n" +
-		"          type: string\n" +
-		"        sourceVersion:\n" +
-		"          type: integer\n" +
-		"        updatedAt:\n" +
-		"          type: string\n" +
-		"          format: date-time\n" +
-		"          example: 2026-08-04T10:05:00Z\n" +
-		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
-		"        workspaceFolderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-workspace-files\n" +
 		"    query.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -20834,7 +18972,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -20893,7 +19031,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -20945,7 +19083,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -21417,7 +19555,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -21477,7 +19615,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -21530,7 +19668,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -21589,7 +19727,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -21648,7 +19786,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -21700,7 +19838,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -21758,7 +19896,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -21817,7 +19955,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -21869,7 +20007,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -21927,7 +20065,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -21986,7 +20124,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -22038,7 +20176,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -22076,174 +20214,6 @@ var openAPI3YAML = []byte(
 		"        workspaceFolderIdentity:\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
-		"    tenant.CreateRequest:\n" +
-		"      type: object\n" +
-		"      required:\n" +
-		"        - code\n" +
-		"        - displayName\n" +
-		"        - identity\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        code:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          example: tenant-main\n" +
-		"        configuration:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Описание объекта\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          example: Основной объект\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-projects\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          example: main\n" +
-		"        managedBy:\n" +
-		"          type: string\n" +
-		"          enum:\n" +
-		"            - user\n" +
-		"            - system\n" +
-		"            - integration\n" +
-		"          example: user\n" +
-		"        managedById:\n" +
-		"          type: string\n" +
-		"          example: endge-core\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        workspaceFolderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-workspace-files\n" +
-		"    tenant.ListResponse:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        items:\n" +
-		"          type: array\n" +
-		"          items:\n" +
-		"            $ref: \"#/components/schemas/tenant.Response\"\n" +
-		"        limit:\n" +
-		"          type: integer\n" +
-		"          example: 100\n" +
-		"        offset:\n" +
-		"          type: integer\n" +
-		"          example: 0\n" +
-		"        total:\n" +
-		"          type: integer\n" +
-		"          example: 1\n" +
-		"    tenant.PatchRequest:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        code:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          example: tenant-main\n" +
-		"        configuration:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Описание объекта\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          maxLength: 255\n" +
-		"          example: Основной объект\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-projects\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          maxLength: 160\n" +
-		"          example: main\n" +
-		"        managedBy:\n" +
-		"          type: string\n" +
-		"          enum:\n" +
-		"            - user\n" +
-		"            - system\n" +
-		"            - integration\n" +
-		"          example: user\n" +
-		"        managedById:\n" +
-		"          type: string\n" +
-		"          example: endge-core\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        workspaceFolderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-workspace-files\n" +
-		"    tenant.Response:\n" +
-		"      type: object\n" +
-		"      properties:\n" +
-		"        active:\n" +
-		"          type: boolean\n" +
-		"          example: true\n" +
-		"        code:\n" +
-		"          type: string\n" +
-		"          example: tenant-main\n" +
-		"        configuration:\n" +
-		"          type: object\n" +
-		"          additionalProperties: {}\n" +
-		"        createdAt:\n" +
-		"          type: string\n" +
-		"          format: date-time\n" +
-		"          example: 2026-08-04T10:00:00Z\n" +
-		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
-		"        deletedAt:\n" +
-		"          type: string\n" +
-		"          format: date-time\n" +
-		"          example: 2026-08-04T11:00:00Z\n" +
-		"        description:\n" +
-		"          type: string\n" +
-		"          example: Описание объекта\n" +
-		"        displayName:\n" +
-		"          type: string\n" +
-		"          example: Основной объект\n" +
-		"        folderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-projects\n" +
-		"        id:\n" +
-		"          type: string\n" +
-		"          format: uuid\n" +
-		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
-		"        identity:\n" +
-		"          type: string\n" +
-		"          example: main\n" +
-		"        managedBy:\n" +
-		"          type: string\n" +
-		"          enum:\n" +
-		"            - user\n" +
-		"            - system\n" +
-		"            - integration\n" +
-		"          example: user\n" +
-		"        managedById:\n" +
-		"          type: string\n" +
-		"          example: endge-core\n" +
-		"        meta:\n" +
-		"          type: object\n" +
-		"        revision:\n" +
-		"          type: integer\n" +
-		"          example: 3\n" +
-		"        updatedAt:\n" +
-		"          type: string\n" +
-		"          format: date-time\n" +
-		"          example: 2026-08-04T10:05:00Z\n" +
-		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
-		"        workspaceFolderIdentity:\n" +
-		"          type: string\n" +
-		"          example: root-workspace-files\n" +
 		"    update.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -22265,7 +20235,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -22328,7 +20298,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -22384,7 +20354,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -22459,7 +20429,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -22540,7 +20510,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -22610,7 +20580,7 @@ var openAPI3YAML = []byte(
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
 		"          type: string\n" +
-		"          example: root-projects\n" +
+		"          example: root-compositions\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -22813,6 +20783,11 @@ var openAPI3YAML = []byte(
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
+		"        startupCompositionIdentity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: workspace-startup\n" +
+		"          nullable: true\n" +
 		"    workspace.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -22860,6 +20835,10 @@ var openAPI3YAML = []byte(
 		"        revision:\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
+		"        startupCompositionIdentity:\n" +
+		"          type: string\n" +
+		"          example: workspace-startup\n" +
+		"          nullable: true\n" +
 		"        updatedAt:\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +

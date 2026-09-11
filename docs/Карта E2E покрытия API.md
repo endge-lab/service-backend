@@ -2,10 +2,9 @@
 
 ## Назначение
 
-Документ фиксирует исходное покрытие HTTP API перед рефакторингом
-PostgreSQL document adapters. Его задача — сделать регрессию проверяемой:
-одинаковый набор тестов должен быть зелёным до и после изменения внутренней
-реализации репозиториев.
+Документ связывает текущие группы HTTP API с E2E-наборами. Количество операций
+не дублируется вручную: source of truth — `docs/openapi3.yaml`, а фактический
+результат определяется запуском tagged-набора.
 
 ## Что считается E2E в этом проекте
 
@@ -17,17 +16,9 @@ middleware, аутентификацию, handler, use case и PostgreSQL.
 внешней сети, браузера или Scalar. В частности, внешние зависимости AI
 Workbench и настоящий OIDC-провайдер должны эмулироваться тестовым double.
 
-## Состояние карты
-
-Источник операций: `docs/openapi3.yaml`.
-
-- Всего OpenAPI операций: **210**.
-- Покрыто E2E: **210** (**100%**).
-- Не покрыто E2E: **0**.
-
 ## Покрытые операции
 
-### Документные коллекции: 138 операций
+### Обычные документные коллекции
 
 `TestAllDocumentHTTPContracts` в `test/e2e/http_test.go` проверяет для каждой
 коллекции одинаковый контракт:
@@ -39,15 +30,23 @@ Workbench и настоящий OIDC-провайдер должны эмули�
 - `DELETE /api/v1/{collection}/{identity}`;
 - `POST /api/v1/{collection}/{identity}/restore`.
 
-Покрыты все 23 коллекции:
+Покрыты все 20 коллекций общего lifecycle:
 
 `actions`, `auth-profiles`, `components`, `compositions`, `computations`,
-`configurations`, `converters`, `data-views`, `environments`, `filters`,
-`folders`, `i18n-bundles`, `mocks`, `navigations`, `projects`, `queries`,
-`stores`, `streams`, `styles`, `tenants`, `types`, `updates`, `vocabs`.
+`configurations`, `converters`, `data-views`, `filters`, `folders`,
+`i18n-bundles`, `mocks`, `navigations`, `queries`, `stores`, `streams`,
+`styles`, `types`, `updates`, `vocabs`.
 
 Дополнительно этот тест закрепляет ETag, optimistic locking, soft delete,
 `includeDeleted`, валидацию JSON и CSRF-защиту cookie-аутентификации.
+
+### Динамические фасеты
+
+`TestFacetAuthoringContract` в `test/e2e/facets_test.go` проходит отдельный
+nested contract `/api/v1/facets/{facetIdentity}/documents`: создание,
+редактирование, reorder, ETag conflicts, revision restore, каскадный soft delete,
+portable tombstones и export/import/export. Одинаковый document identity в разных
+фасетах должен разрешаться в разные записи.
 
 ### Прочие покрытые группы
 
@@ -69,11 +68,6 @@ Workbench и настоящий OIDC-провайдер должны эмули�
 | AI catalog | adapters, connections и model profiles: полный lifecycle, RBAC и encrypted credentials | `ai_api_test.go` |
 | AI assistant | capabilities, conversations, messages, reset и SSE run через реальный gRPC adapter + fake Workbench | `ai_api_test.go` |
 
-## Непокрытые операции
-
-Отсутствуют: все 210 операций из `docs/openapi3.yaml` проходят как минимум
-один E2E-сценарий через настоящее Fiber-приложение и временный PostgreSQL.
-
 ## Смежные тестовые уровни
 
 Integration-тесты используют реальный PostgreSQL, но обходят HTTP transport:
@@ -87,7 +81,7 @@ Unit-тесты проверяют transport mapping, config, auth, validation, 
 другие изолированные компоненты. Они полезны, но не заменяют проверку маршрута
 через полный HTTP pipeline.
 
-## Как использовать для точки 0
+## Как проверить карту
 
 Перед рефакторингом и после него нужно запускать:
 
@@ -99,5 +93,6 @@ go test ./...
 `make test-critical` включает unit, integration и E2E. Для integration/E2E
 нужен доступ к Docker, потому что `TestMain` создаёт временный PostgreSQL.
 
-Полная точка 0 на все 210 операций достигнута. Рефакторинг document
-repositories можно начинать только при зелёных проверках из этого документа.
+Успех этих команд подтверждает только покрытые сценарии текущего source. Этот
+Markdown сам по себе не является свидетельством последнего запуска и не заменяет
+проверку новых OpenAPI operations при расширении API.

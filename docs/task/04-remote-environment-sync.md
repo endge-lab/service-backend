@@ -16,7 +16,10 @@ Endge может быть развёрнут в нескольких изоли�
 - production;
 - отдельные инсталляции разных заказчиков.
 
-Пользователь должен иметь возможность перенести выбранный project/tenant/environment с одного backend на другой. Target backend сам подключается к source backend, скачивает immutable deployment bundle, показывает план и только после явного подтверждения атомарно применяет изменения.
+Пользователь должен иметь возможность перенести выбранный динамический контекст
+и корневые Composition с одного backend на другой. Target backend сам подключается
+к source backend, скачивает immutable deployment bundle, показывает план и только
+после явного подтверждения атомарно применяет изменения.
 
 Типичный сценарий:
 
@@ -24,9 +27,8 @@ Endge может быть развёрнут в нескольких изоли�
 development backend
   workspace=dev
   release=2026.08.05
-  project=aodb
-  tenant=ramax
-  environment=production
+  facets={application:aodb, customer:ramax, stage:production}
+  compositions=[aodb-main]
             |
             | authenticated pull
             v
@@ -81,8 +83,8 @@ Remote sync не должен повторно строить dependency closure
 - **Source** — backend, с которого читается release/bundle.
 - **Target** — backend, на котором пользователь создаёт plan и применяет изменения.
 - **Remote** — заранее настроенное доверенное подключение target к source.
-- **Selection** — source project/tenant/environment roots.
-- **Context mapping** — разрешённое отображение source root identities в target root identities.
+- **Selection** — source map выбранных документов фасетов и корневые Composition.
+- **Context mapping** — разрешённое typed-отображение source facets/documents/Composition roots в target identities.
 - **Base** — bundle последней успешно применённой синхронизации для того же remote/mapping.
 - **Incoming** — новый source bundle.
 - **Local** — текущее состояние target.
@@ -253,14 +255,20 @@ X-Endge-Workspace: <target workspace>
   "sourceWorkspaceIdentity": "development",
   "sourceReleaseIdentity": "release-2026-08-05",
   "selection": {
-    "projectIdentity": "aodb",
-    "tenantIdentity": "ramax",
-    "environmentIdentity": "development"
+    "facetSelections": {
+      "application": "aodb",
+      "customer": "ramax",
+      "stage": "development"
+    },
+    "compositionIdentities": ["aodb-main"]
   },
   "mapping": {
-    "projectIdentity": "aodb",
-    "tenantIdentity": "ramax",
-    "environmentIdentity": "production"
+    "facets": {
+      "application": { "facetIdentity": "application", "documentIdentity": "aodb" },
+      "customer": { "facetIdentity": "customer", "documentIdentity": "ramax" },
+      "stage": { "facetIdentity": "stage", "documentIdentity": "production" }
+    },
+    "compositions": { "aodb-main": "aodb-main" }
   }
 }
 ```
@@ -461,25 +469,28 @@ Checksum должен включать authored/portable content, active/deleted
 
 Workspace identities source и target могут различаться.
 
-Разрешить явное mapping только roots:
+Разрешить явное mapping только структурных roots:
 
-- project identity;
-- tenant identity;
-- environment identity.
+- source facet identity в target facet identity;
+- выбранный source facet-document identity в документ target-фасета;
+- source root Composition identity в target Composition identity.
+
+Mapping не содержит фиксированного списка фасетов. Каждый source key обязан
+существовать в `selection.facetSelections`, каждый target facet — в target Domain,
+а target document identity разрешается только внутри указанного target facet.
 
 Backend может переписать только typed structural fields:
 
-- identity соответствующего root document;
-- Composition `kindIdentity` для mapped owner;
-- project `allowedEnvironments` для выбранного mapped environment;
-- typed dependency/ownership refs, если их target однозначно является mapped root.
+- identity соответствующего facet document или корневой Composition;
+- `facetIdentity` mapped facet document;
+- typed dependency refs, если их target однозначно является mapped root.
 
 Запрещено:
 
 - search/replace identity внутри arbitrary source string;
 - изменение identity обычных Query/Store/Component dependencies в v1;
 - неявное mapping по display name;
-- автоматическое создание нескольких target environments из одного source environment.
+- автоматическое создание нескольких target facets/documents из одного source selection.
 
 Если корректность требует переписать authored source, plan invalid с `sync_mapping_requires_source_rewrite`.
 
@@ -537,11 +548,13 @@ Physical purge не входит в sync.
 
 ## Shared dependencies и impact analysis
 
-Один Query/Type/Component может использоваться несколькими target contexts. Обновление shared document может повлиять на проекты вне текущего mapping.
+Один Query/Type/Component может использоваться несколькими target contexts.
+Обновление shared document может повлиять на другие selections и корневые
+Composition вне текущего mapping.
 
 Plan обязан построить reverse impact по доступным target dependency manifests/index:
 
-- какие target project/tenant/environment используют изменяемый документ;
+- какие target facet selections и Composition roots используют изменяемый документ;
 - какие из них не входят в текущий mapping;
 - какие dependencies останутся валидными после update/delete.
 

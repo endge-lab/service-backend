@@ -15,9 +15,10 @@ func (r *EndgeRepository) ListWorkspaces(ctx context.Context, userID string, pla
 	if platform {
 		where = "WHERE TRUE"
 	}
-	rows, err := r.executor(ctx).Query(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.document_structure,w.configuration,w.meta,w.active,w.generation::text,w.head_sequence,w.revision,
+	rows, err := r.executor(ctx).Query(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.document_structure,sc.identity,w.configuration,w.meta,w.active,w.generation::text,w.head_sequence,w.revision,
 		`+actorScan("cu")+`,`+actorScan("uu")+`,w.created_at,w.updated_at FROM workspaces w
 		LEFT JOIN access_grants g ON g.workspace_id=w.id AND g.user_id=$1 AND g.scope_type='workspace'
+		LEFT JOIN compositions sc ON sc.workspace_id=w.id AND sc.id=w.startup_composition_id
 		JOIN service_users cu ON cu.id=w.created_by JOIN service_users uu ON uu.id=w.updated_by `+where+` ORDER BY w.identity`, userID)
 	if err != nil {
 		return nil, err
@@ -35,8 +36,8 @@ func (r *EndgeRepository) ListWorkspaces(ctx context.Context, userID string, pla
 }
 
 func (r *EndgeRepository) GetWorkspace(ctx context.Context, identity string) (*entities.Workspace, error) {
-	row := r.executor(ctx).QueryRow(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.document_structure,w.configuration,w.meta,w.active,w.generation::text,w.head_sequence,w.revision,
-		`+actorScan("cu")+`,`+actorScan("uu")+`,w.created_at,w.updated_at FROM workspaces w JOIN service_users cu ON cu.id=w.created_by JOIN service_users uu ON uu.id=w.updated_by WHERE w.identity=$1`, identity)
+	row := r.executor(ctx).QueryRow(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.document_structure,sc.identity,w.configuration,w.meta,w.active,w.generation::text,w.head_sequence,w.revision,
+		`+actorScan("cu")+`,`+actorScan("uu")+`,w.created_at,w.updated_at FROM workspaces w LEFT JOIN compositions sc ON sc.workspace_id=w.id AND sc.id=w.startup_composition_id JOIN service_users cu ON cu.id=w.created_by JOIN service_users uu ON uu.id=w.updated_by WHERE w.identity=$1`, identity)
 	return scanWorkspace(row)
 }
 
@@ -45,7 +46,7 @@ type scanner interface{ Scan(...any) error }
 func scanWorkspace(row scanner) (*entities.Workspace, error) {
 	value := &entities.Workspace{}
 	var created, updated []byte
-	if err := row.Scan(&value.ID, &value.Identity, &value.DisplayName, &value.Description, &value.DataMode, &value.DocumentStructure, &value.Configuration, &value.Meta, &value.Active, &value.Generation, &value.HeadSequence, &value.Revision, &created, &updated, &value.CreatedAt, &value.UpdatedAt); err != nil {
+	if err := row.Scan(&value.ID, &value.Identity, &value.DisplayName, &value.Description, &value.DataMode, &value.DocumentStructure, &value.StartupCompositionIdentity, &value.Configuration, &value.Meta, &value.Active, &value.Generation, &value.HeadSequence, &value.Revision, &created, &updated, &value.CreatedAt, &value.UpdatedAt); err != nil {
 		return nil, repositoryError(err)
 	}
 	_ = json.Unmarshal(created, &value.CreatedBy)
@@ -59,6 +60,18 @@ func (r *EndgeRepository) CreateWorkspace(ctx context.Context, value entities.Wo
 		return nil, err
 	}
 	return r.GetWorkspace(ctx, value.Identity)
+}
+
+// FinalizeWorkspaceBootstrap связывает новый Workspace с созданной в той же транзакции стартовой Composition без искусственного увеличения revision.
+func (r *EndgeRepository) FinalizeWorkspaceBootstrap(ctx context.Context, workspaceID, compositionID string) (*entities.Workspace, error) {
+	tag, err := r.executor(ctx).Exec(ctx, `UPDATE workspaces w SET startup_composition_id=$2 FROM compositions c WHERE w.id=$1 AND w.startup_composition_id IS NULL AND c.workspace_id=w.id AND c.id=$2 AND c.active=TRUE AND c.deleted_at IS NULL`, workspaceID, compositionID)
+	if err != nil {
+		return nil, err
+	}
+	if tag.RowsAffected() != 1 {
+		return nil, fmt.Errorf("workspace bootstrap conflict")
+	}
+	return r.getWorkspaceByID(ctx, workspaceID)
 }
 
 func (r *EndgeRepository) UpdateWorkspace(ctx context.Context, identity string, patch map[string]any, revision int, actor string) (*entities.Workspace, error) {
@@ -85,6 +98,25 @@ func (r *EndgeRepository) UpdateWorkspace(ctx context.Context, identity string, 
 	if v, ok := patch["documentStructure"].(string); ok {
 		current.DocumentStructure = v
 	}
+	startupChanged := false
+	var startupCompositionID *string
+	if value, exists := patch["startupCompositionIdentity"]; exists {
+		startupChanged = true
+		current.StartupCompositionIdentity = nil
+		if value != nil {
+			startupIdentity, ok := value.(string)
+			if !ok || strings.TrimSpace(startupIdentity) == "" {
+				return nil, fmt.Errorf("startup composition identity is invalid")
+			}
+			startupIdentity = strings.TrimSpace(startupIdentity)
+			resolved, resolveErr := r.resolveActiveDocumentID(ctx, current.ID, entities.CollectionCompositions, startupIdentity)
+			if resolveErr != nil {
+				return nil, resolveErr
+			}
+			startupCompositionID = &resolved
+			current.StartupCompositionIdentity = &startupIdentity
+		}
+	}
 	if v, ok := patch["configuration"]; ok {
 		current.Configuration = mustJSON(v)
 	}
@@ -94,7 +126,7 @@ func (r *EndgeRepository) UpdateWorkspace(ctx context.Context, identity string, 
 	if v, ok := patch["active"].(bool); ok {
 		current.Active = v
 	}
-	tag, err := r.executor(ctx).Exec(ctx, `UPDATE workspaces SET identity=$1,display_name=$2,description=$3,data_mode=$4,document_structure=$5,configuration=$6,meta=$7,active=$8,updated_by=$9,updated_at=NOW(),revision=revision+1 WHERE id=$10 AND revision=$11`, current.Identity, current.DisplayName, current.Description, current.DataMode, current.DocumentStructure, current.Configuration, current.Meta, current.Active, actor, current.ID, revision)
+	tag, err := r.executor(ctx).Exec(ctx, `UPDATE workspaces SET identity=$1,display_name=$2,description=$3,data_mode=$4,document_structure=$5,startup_composition_id=CASE WHEN $6 THEN $7::uuid ELSE startup_composition_id END,configuration=$8,meta=$9,active=$10,updated_by=$11,updated_at=NOW(),revision=revision+1 WHERE id=$12 AND revision=$13`, current.Identity, current.DisplayName, current.Description, current.DataMode, current.DocumentStructure, startupChanged, startupCompositionID, current.Configuration, current.Meta, current.Active, actor, current.ID, revision)
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +134,19 @@ func (r *EndgeRepository) UpdateWorkspace(ctx context.Context, identity string, 
 		return nil, fmt.Errorf("revision conflict")
 	}
 	return r.GetWorkspace(ctx, current.Identity)
+}
+
+// ClearStartupComposition атомарно снимает ссылку только если Workspace всё ещё указывает на удаляемую Composition.
+func (r *EndgeRepository) ClearStartupComposition(ctx context.Context, workspaceID, compositionID, actor string) (*entities.Workspace, bool, error) {
+	tag, err := r.executor(ctx).Exec(ctx, `UPDATE workspaces SET startup_composition_id=NULL,updated_by=$3,updated_at=NOW(),revision=revision+1 WHERE id=$1 AND startup_composition_id=$2`, workspaceID, compositionID, actor)
+	if err != nil {
+		return nil, false, err
+	}
+	if tag.RowsAffected() == 0 {
+		return nil, false, nil
+	}
+	workspace, err := r.getWorkspaceByID(ctx, workspaceID)
+	return workspace, true, err
 }
 
 func (r *EndgeRepository) WorkspaceRole(ctx context.Context, workspaceID, userID string, platform bool) (string, error) {

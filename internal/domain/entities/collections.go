@@ -11,7 +11,6 @@ const (
 	CollectionConfigurations = "configurations"
 	CollectionConverters     = "converters"
 	CollectionDataViews      = "data-views"
-	CollectionEnvironments   = "environments"
 	CollectionFilters        = "filters"
 	CollectionFacetDocuments = "facet-documents"
 	CollectionFacets         = "facets"
@@ -19,13 +18,11 @@ const (
 	CollectionI18nBundles    = "i18n-bundles"
 	CollectionMocks          = "mocks"
 	CollectionNavigations    = "navigations"
-	CollectionProjects       = "projects"
 	CollectionQueries        = "queries"
 	CollectionStores         = "stores"
 	CollectionStreams        = "streams"
 	CollectionSimulations    = "simulations"
 	CollectionStyles         = "styles"
-	CollectionTenants        = "tenants"
 	CollectionTypes          = "types"
 	CollectionUpdates        = "updates"
 	CollectionVocabs         = "vocabs"
@@ -39,9 +36,6 @@ var FacetCollections = []string{CollectionFacets, CollectionFacetDocuments}
 // DocumentCollections is the set of collections supported by the current
 // portable workspace format.
 var DocumentCollections = []string{
-	CollectionProjects,
-	CollectionTenants,
-	CollectionEnvironments,
 	CollectionFolders,
 	CollectionTypes,
 	CollectionQueries,

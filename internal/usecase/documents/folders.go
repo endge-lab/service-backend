@@ -123,51 +123,6 @@ func ensureWorkspaceFolderInput(kind string, input map[string]any) {
 	}
 }
 
-// replaceStructuredRelations обновляет структурированные связи документа.
-func (s *Lifecycle) replaceStructuredRelations(ctx context.Context, document entities.Document) error {
-	if document.Type != entities.CollectionProjects {
-		return nil
-	}
-	var data map[string]any
-	if err := json.Unmarshal(document.Data, &data); err != nil {
-		return domainerrors.InvalidInput("document_data_invalid", "Document data is invalid")
-	}
-	environments := relationIdentities(data["allowedEnvironments"])
-	if len(environments) == 0 {
-		environments = relationIdentities(data["allowedEnvironmentIdentities"])
-	}
-	if err := s.documents.ReplaceProjectEnvironments(ctx, document, environments); err != nil {
-		if strings.Contains(err.Error(), "relation target") {
-			return domainerrors.InvalidInput("relation_target_not_found", err.Error())
-		}
-		return err
-	}
-	return nil
-}
-
-// relationIdentities извлекает identity связанных документов.
-func relationIdentities(value any) []string {
-	items, ok := value.([]any)
-	if !ok {
-		return nil
-	}
-	seen, result := map[string]bool{}, []string{}
-	for _, item := range items {
-		identity := ""
-		switch typed := item.(type) {
-		case string:
-			identity = strings.TrimSpace(typed)
-		case map[string]any:
-			identity = stringField(typed, "identity")
-		}
-		if identity != "" && !seen[identity] {
-			seen[identity] = true
-			result = append(result, identity)
-		}
-	}
-	return result
-}
-
 // isSystemFolder определяет системную папку по владельцу управления.
 func isSystemFolder(document entities.Document) bool {
 	var data map[string]any

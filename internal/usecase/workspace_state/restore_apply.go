@@ -107,6 +107,7 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 				if _, e = s.recordWorkspaceRevision(txctx, *updated, "restore"); e != nil {
 					return e
 				}
+				scope.Workspace = *updated
 				workspaceRevisionRecorded = true
 			}
 		}
@@ -130,9 +131,6 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 			}
 			targets := map[string]map[string]any{}
 			for _, item := range orderedTargets {
-				if e := validateProjectContract(kind, item); e != nil {
-					return e
-				}
 				targets[portableDocumentKey(kind, item)] = item
 			}
 			existing, er := s.repository.ListDocuments(txctx, scope.Workspace.ID, kind, ports.DocumentFilter{IncludeDeleted: true, Limit: 100000})
@@ -194,9 +192,6 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 					if e != nil {
 						return e
 					}
-					if e = s.replaceStructuredRelations(txctx, *updated); e != nil {
-						return e
-					}
 					if _, e = s.recordRevision(txctx, *updated, "restore", nil); e != nil {
 						return e
 					}
@@ -216,9 +211,6 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 				}
 				created, e := s.repository.InsertDocument(txctx, doc, folderID)
 				if e != nil {
-					return e
-				}
-				if e = s.replaceStructuredRelations(txctx, *created); e != nil {
 					return e
 				}
 				if _, e = s.recordRevision(txctx, *created, "restore", nil); e != nil {
@@ -268,6 +260,13 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 				}
 			}
 		}
+		live, e = s.repository.GetWorkspace(txctx, scope.Workspace.Identity)
+		if e != nil {
+			return e
+		}
+		if _, _, e = s.applyStartupComposition(txctx, *live, bundle, current.User.ID, "restore"); e != nil {
+			return e
+		}
 		latest, e := s.repository.LatestCommit(txctx, scope.Workspace.ID)
 		if e != nil {
 			return e
@@ -301,5 +300,5 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 
 // restoreOrder задаёт порядок восстановления коллекций.
 func restoreOrder() []string {
-	return []string{entities.CollectionFolders, entities.CollectionFacets, entities.CollectionFacetDocuments, entities.CollectionEnvironments, entities.CollectionNavigations, entities.CollectionAuthProfiles, entities.CollectionStores, entities.CollectionProjects, entities.CollectionVocabs, entities.CollectionUpdates, entities.CollectionTenants, entities.CollectionTypes, entities.CollectionConfigurations, entities.CollectionQueries, entities.CollectionDataViews, entities.CollectionCompositions, entities.CollectionStreams, entities.CollectionSimulations, entities.CollectionMocks, entities.CollectionComponents, entities.CollectionActions, entities.CollectionFilters, entities.CollectionConverters, entities.CollectionComputations, entities.CollectionI18nBundles, entities.CollectionStyles}
+	return []string{entities.CollectionFolders, entities.CollectionFacets, entities.CollectionFacetDocuments, entities.CollectionNavigations, entities.CollectionAuthProfiles, entities.CollectionStores, entities.CollectionVocabs, entities.CollectionUpdates, entities.CollectionTypes, entities.CollectionConfigurations, entities.CollectionQueries, entities.CollectionDataViews, entities.CollectionCompositions, entities.CollectionStreams, entities.CollectionSimulations, entities.CollectionMocks, entities.CollectionComponents, entities.CollectionActions, entities.CollectionFilters, entities.CollectionConverters, entities.CollectionComputations, entities.CollectionI18nBundles, entities.CollectionStyles}
 }

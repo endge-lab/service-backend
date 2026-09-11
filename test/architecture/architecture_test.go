@@ -107,9 +107,6 @@ func TestDocumentTablesHaveOwningLayers(t *testing.T) {
 		repository string
 		port       string
 	}{
-		{"projects", "projects", "project", "projects_repository.go", "ProjectRepository"},
-		{"tenants", "tenants", "tenant", "tenants_repository.go", "TenantRepository"},
-		{"environments", "environments", "environment", "environments_repository.go", "EnvironmentRepository"},
 		{"folders", "folders", "folder", "folders_repository.go", "FolderRepository"},
 		{"types", "types", "type", "types_repository.go", "TypeRepository"},
 		{"queries", "queries", "query", "queries_repository.go", "QueryRepository"},
