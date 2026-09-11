@@ -18,14 +18,14 @@ func (s *Coordinator) planExactRestore(ctx context.Context, scope entities.Works
 	for _, kind := range restoreOrder() {
 		targets := map[string]bool{}
 		for _, item := range bundle.Documents[kind] {
-			targets[stringField(item, "identity")] = true
+			targets[portableDocumentKey(kind, item)] = true
 		}
 		current, err := s.repository.ListDocuments(ctx, scope.Workspace.ID, kind, ports.DocumentFilter{IncludeDeleted: true, Limit: 100000})
 		if err != nil {
 			return nil, err
 		}
 		for _, doc := range current {
-			if targets[doc.Identity] {
+			if targets[storedDocumentKey(doc)] {
 				plan.Updates++
 			} else if doc.DeletedAt == nil {
 				plan.Updates++
@@ -85,7 +85,7 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 		integrationsChanged := checksum(mustJSON(previousIntegrations)) != checksum(mustJSON(bundle.InstalledIntegrations))
 		workspaceRevisionRecorded := false
 		workspacePatch := map[string]any{}
-		for _, key := range []string{"identity", "displayName", "description", "dataMode", "configuration", "meta"} {
+		for _, key := range []string{"identity", "displayName", "description", "dataMode", "documentStructure", "configuration", "meta"} {
 			if value, ok := bundle.Workspace[key]; ok {
 				workspacePatch[key] = value
 			}
@@ -98,7 +98,7 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 			if e != nil {
 				return e
 			}
-			currentState := map[string]any{"identity": live.Identity, "displayName": live.DisplayName, "description": live.Description, "dataMode": live.DataMode, "configuration": live.Configuration, "meta": live.Meta}
+			currentState := map[string]any{"identity": live.Identity, "displayName": live.DisplayName, "description": live.Description, "dataMode": live.DataMode, "documentStructure": live.DocumentStructure, "configuration": live.Configuration, "meta": live.Meta}
 			if checksum(mustJSON(currentState)) != checksum(mustJSON(workspacePatch)) {
 				updated, e := s.repository.UpdateWorkspace(txctx, live.Identity, workspacePatch, live.Revision, current.User.ID)
 				if e != nil {
@@ -133,7 +133,7 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 				if e := validateProjectContract(kind, item); e != nil {
 					return e
 				}
-				targets[stringField(item, "identity")] = item
+				targets[portableDocumentKey(kind, item)] = item
 			}
 			existing, er := s.repository.ListDocuments(txctx, scope.Workspace.ID, kind, ports.DocumentFilter{IncludeDeleted: true, Limit: 100000})
 			if er != nil {
@@ -141,8 +141,12 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 			}
 			seen := map[string]bool{}
 			for _, doc := range existing {
-				item, ok := targets[doc.Identity]
+				item, ok := targets[storedDocumentKey(doc)]
 				if !ok {
+					if kind == entities.CollectionFacets {
+						// Facet documents must be removed first to preserve the parent invariant.
+						continue
+					}
 					if kind == entities.CollectionFolders && doc.ManagedBy == entities.ManagedBySystem {
 						continue
 					}
@@ -166,8 +170,21 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 					}
 					continue
 				}
-				seen[doc.Identity] = true
+				seen[storedDocumentKey(doc)] = true
 				next := replaceDocumentFromInput(doc, item, current.User.ID)
+				if kind == entities.CollectionFacets && portableDocumentDeleted(item) && doc.DeletedAt == nil {
+					// Keep an active parent available until nested documents have been
+					// reconciled; it is soft-deleted after the facet-document pass.
+					next.DeletedAt = nil
+					next.Active = true
+				}
+				if kind == entities.CollectionFacets {
+					position := facetPosition(doc)
+					if doc.DeletedAt != nil {
+						position = -1
+					}
+					next = replaceDocumentDataField(next, "position", position)
+				}
 				folderID, e := s.resolveDocumentFolder(txctx, scope, next)
 				if e != nil {
 					return e
@@ -186,11 +203,13 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 				}
 			}
 			for _, item := range orderedTargets {
-				identity := stringField(item, "identity")
-				if seen[identity] {
+				if seen[portableDocumentKey(kind, item)] {
 					continue
 				}
 				doc := documentFromInput(kind, scope.Workspace.ID, item, current.User.ID)
+				if kind == entities.CollectionFacets && doc.DeletedAt == nil {
+					doc = replaceDocumentDataField(doc, "position", -1)
+				}
 				folderID, e := s.resolveFolder(txctx, scope, kind, item)
 				if e != nil {
 					return e
@@ -204,6 +223,48 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 				}
 				if _, e = s.recordRevision(txctx, *created, "restore", nil); e != nil {
 					return e
+				}
+			}
+			if kind == entities.CollectionFacetDocuments {
+				facetTargets := map[string]bool{}
+				for _, item := range bundle.Documents[entities.CollectionFacets] {
+					if !portableDocumentDeleted(item) {
+						facetTargets[stringField(item, "identity")] = true
+					}
+				}
+				currentFacets, e := s.repository.ListFacets(txctx, scope.Workspace.ID, false)
+				if e != nil {
+					return e
+				}
+				for _, currentFacet := range currentFacets {
+					if facetTargets[currentFacet.Identity] {
+						continue
+					}
+					now := time.Now().UTC()
+					next := currentFacet
+					next.DeletedAt = &now
+					next.Active = false
+					next.UpdatedBy = entities.Actor{ID: current.User.ID}
+					updated, updateErr := s.repository.UpdateFacet(txctx, next, currentFacet.Revision)
+					if updateErr != nil {
+						return updateErr
+					}
+					if _, e = s.recordRevision(txctx, *updated, "delete", nil); e != nil {
+						return e
+					}
+				}
+				currentFacets, e = s.repository.ListFacets(txctx, scope.Workspace.ID, false)
+				if e != nil {
+					return e
+				}
+				changed, reorderErr := s.repository.ReorderFacets(txctx, scope.Workspace.ID, facetReorderItems(bundle, currentFacets), current.User.ID)
+				if reorderErr != nil {
+					return reorderErr
+				}
+				for _, changedFacet := range changed {
+					if _, e = s.recordRevision(txctx, changedFacet, "restore", nil); e != nil {
+						return e
+					}
 				}
 			}
 		}
@@ -240,5 +301,5 @@ func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.Portabl
 
 // restoreOrder задаёт порядок восстановления коллекций.
 func restoreOrder() []string {
-	return []string{entities.CollectionFolders, entities.CollectionEnvironments, entities.CollectionNavigations, entities.CollectionAuthProfiles, entities.CollectionStores, entities.CollectionProjects, entities.CollectionVocabs, entities.CollectionUpdates, entities.CollectionTenants, entities.CollectionTypes, entities.CollectionConfigurations, entities.CollectionQueries, entities.CollectionDataViews, entities.CollectionCompositions, entities.CollectionStreams, entities.CollectionSimulations, entities.CollectionMocks, entities.CollectionComponents, entities.CollectionActions, entities.CollectionFilters, entities.CollectionConverters, entities.CollectionComputations, entities.CollectionI18nBundles, entities.CollectionStyles}
+	return []string{entities.CollectionFolders, entities.CollectionFacets, entities.CollectionFacetDocuments, entities.CollectionEnvironments, entities.CollectionNavigations, entities.CollectionAuthProfiles, entities.CollectionStores, entities.CollectionProjects, entities.CollectionVocabs, entities.CollectionUpdates, entities.CollectionTenants, entities.CollectionTypes, entities.CollectionConfigurations, entities.CollectionQueries, entities.CollectionDataViews, entities.CollectionCompositions, entities.CollectionStreams, entities.CollectionSimulations, entities.CollectionMocks, entities.CollectionComponents, entities.CollectionActions, entities.CollectionFilters, entities.CollectionConverters, entities.CollectionComputations, entities.CollectionI18nBundles, entities.CollectionStyles}
 }

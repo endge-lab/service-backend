@@ -45,6 +45,7 @@ func (h *Handler) Move(c *fiber.Ctx) error {
 	input := documents.MoveDocumentsInput{
 		Documents:      make([]documents.MoveDocumentInput, 0, len(request.Documents)),
 		FolderIdentity: request.FolderIdentity,
+		Placement:      request.Placement,
 	}
 	for _, item := range request.Documents {
 		input.Documents = append(input.Documents, documents.MoveDocumentInput{

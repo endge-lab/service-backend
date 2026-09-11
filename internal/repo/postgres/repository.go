@@ -69,7 +69,20 @@ func actorScan(prefix string) string {
 
 func mustJSON(value any) json.RawMessage { raw, _ := json.Marshal(value); return raw }
 func stringValue(value any) string       { text, _ := value.(string); return strings.TrimSpace(text) }
-func boolValue(value any) bool           { result, _ := value.(bool); return result }
+func defaultStringValue(value any, fallback string) string {
+	if result := stringValue(value); result != "" {
+		return result
+	}
+	return fallback
+}
+func nullableStringValue(value any) *string {
+	result := stringValue(value)
+	if result == "" {
+		return nil
+	}
+	return &result
+}
+func boolValue(value any) bool { result, _ := value.(bool); return result }
 
 func repositoryError(err error) error {
 	if errors.Is(err, pgx.ErrNoRows) {

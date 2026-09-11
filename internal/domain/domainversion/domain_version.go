@@ -72,6 +72,13 @@ func compute(bundle entities.PortableBundle, versionPrefix string) (string, erro
 			items = append(items, item)
 		}
 		sort.SliceStable(items, func(left, right int) bool {
+			if kind == entities.CollectionFacetDocuments {
+				leftFacet := text(items[left]["facetIdentity"])
+				rightFacet := text(items[right]["facetIdentity"])
+				if leftFacet != rightFacet {
+					return leftFacet < rightFacet
+				}
+			}
 			leftIdentity := text(items[left]["identity"])
 			rightIdentity := text(items[right]["identity"])
 			if leftIdentity != rightIdentity {
@@ -98,7 +105,7 @@ func compute(bundle entities.PortableBundle, versionPrefix string) (string, erro
 // portableWorkspace оставляет только поля Workspace, которые применяет import.
 func portableWorkspace(source map[string]any) map[string]any {
 	result := map[string]any{}
-	for _, key := range []string{"displayName", "description", "dataMode", "configuration", "meta", "active"} {
+	for _, key := range []string{"displayName", "description", "dataMode", "documentStructure", "configuration", "meta", "active"} {
 		if value, exists := source[key]; exists {
 			result[key] = value
 		}

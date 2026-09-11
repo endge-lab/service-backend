@@ -11,144 +11,249 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AccessGrant struct {
+	ID          uuid.UUID   `json:"id"`
+	UserID      uuid.UUID   `json:"user_id"`
+	ScopeType   string      `json:"scope_type"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	Role        string      `json:"role"`
+	CreatedBy   uuid.UUID   `json:"created_by"`
+	UpdatedBy   uuid.UUID   `json:"updated_by"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
+}
+
 type Action struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
+}
+
+type AiModelProfile struct {
+	ID              uuid.UUID `json:"id"`
+	ConnectionID    uuid.UUID `json:"connection_id"`
+	ProviderModelID string    `json:"provider_model_id"`
+	DisplayName     string    `json:"display_name"`
+	Enabled         bool      `json:"enabled"`
+	IsDefault       bool      `json:"is_default"`
+	CreatedBy       uuid.UUID `json:"created_by"`
+	UpdatedBy       uuid.UUID `json:"updated_by"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+type AiProviderConnection struct {
+	ID                  uuid.UUID   `json:"id"`
+	Name                string      `json:"name"`
+	Adapter             string      `json:"adapter"`
+	BaseUrl             string      `json:"base_url"`
+	CredentialEncrypted []byte      `json:"credential_encrypted"`
+	Enabled             bool        `json:"enabled"`
+	CreatedBy           uuid.UUID   `json:"created_by"`
+	UpdatedBy           uuid.UUID   `json:"updated_by"`
+	CreatedAt           time.Time   `json:"created_at"`
+	UpdatedAt           time.Time   `json:"updated_at"`
+	Visibility          string      `json:"visibility"`
+	OwnerUserID         pgtype.UUID `json:"owner_user_id"`
 }
 
 type AuthProfile struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
+}
+
+type BackendConnection struct {
+	ID        uuid.UUID `json:"id"`
+	BaseUrl   string    `json:"base_url"`
+	CreatedBy uuid.UUID `json:"created_by"`
+	CreatedAt time.Time `json:"created_at"`
+	Name      string    `json:"name"`
 }
 
 type Component struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
 }
 
 type Composition struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
 }
 
 type Computation struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
+}
+
+type Configuration struct {
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
+}
+
+type ConfiguratorAuthSession struct {
+	ID                    uuid.UUID          `json:"id"`
+	TokenHash             []byte             `json:"token_hash"`
+	ProviderID            string             `json:"provider_id"`
+	Subject               string             `json:"subject"`
+	Issuer                string             `json:"issuer"`
+	Username              string             `json:"username"`
+	DisplayName           string             `json:"display_name"`
+	GroupsJson            []byte             `json:"groups_json"`
+	PlatformAdmin         bool               `json:"platform_admin"`
+	RefreshTokenEncrypted []byte             `json:"refresh_token_encrypted"`
+	ExpiresAt             time.Time          `json:"expires_at"`
+	RevokedAt             pgtype.Timestamptz `json:"revoked_at"`
+	CreatedAt             time.Time          `json:"created_at"`
+	UpdatedAt             time.Time          `json:"updated_at"`
+	IdentityRefreshAt     time.Time          `json:"identity_refresh_at"`
+	ExternalAccess        []byte             `json:"external_access"`
+}
+
+type ConfiguratorAuthTransaction struct {
+	StateHash          []byte    `json:"state_hash"`
+	BrowserNonceHash   []byte    `json:"browser_nonce_hash"`
+	VerifierEncrypted  []byte    `json:"verifier_encrypted"`
+	OidcNonceEncrypted []byte    `json:"oidc_nonce_encrypted"`
+	ReturnUrl          string    `json:"return_url"`
+	ExpiresAt          time.Time `json:"expires_at"`
+	CreatedAt          time.Time `json:"created_at"`
 }
 
 type Converter struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
 }
 
 type DataView struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
 }
 
 type DocumentRevision struct {
@@ -173,15 +278,43 @@ type DocumentRevision struct {
 }
 
 type Environment struct {
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
+}
+
+type ExternalAccessState struct {
+	UserID             uuid.UUID `json:"user_id"`
+	ConfigVersion      string    `json:"config_version"`
+	TokenHash          string    `json:"token_hash"`
+	IssuedAt           time.Time `json:"issued_at"`
+	GrantsHash         string    `json:"grants_hash"`
+	LastSynchronizedAt time.Time `json:"last_synchronized_at"`
+}
+
+type Facet struct {
 	ID          uuid.UUID          `json:"id"`
 	WorkspaceID uuid.UUID          `json:"workspace_id"`
 	Identity    string             `json:"identity"`
 	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
+	Icon        string             `json:"icon"`
+	Color       string             `json:"color"`
+	Position    int32              `json:"position"`
 	Meta        []byte             `json:"meta"`
 	Active      bool               `json:"active"`
 	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
@@ -192,24 +325,43 @@ type Environment struct {
 	UpdatedAt   time.Time          `json:"updated_at"`
 }
 
+type FacetDocument struct {
+	ID            uuid.UUID          `json:"id"`
+	WorkspaceID   uuid.UUID          `json:"workspace_id"`
+	FacetID       uuid.UUID          `json:"facet_id"`
+	Identity      string             `json:"identity"`
+	DisplayName   string             `json:"display_name"`
+	Description   pgtype.Text        `json:"description"`
+	Configuration []byte             `json:"configuration"`
+	Meta          []byte             `json:"meta"`
+	Active        bool               `json:"active"`
+	DeletedAt     pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy     uuid.UUID          `json:"created_by"`
+	UpdatedBy     uuid.UUID          `json:"updated_by"`
+	Revision      int32              `json:"revision"`
+	CreatedAt     time.Time          `json:"created_at"`
+	UpdatedAt     time.Time          `json:"updated_at"`
+}
+
 type Filter struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
 }
 
 type Folder struct {
@@ -218,7 +370,7 @@ type Folder struct {
 	Identity    string             `json:"identity"`
 	DisplayName string             `json:"display_name"`
 	Description pgtype.Text        `json:"description"`
-	EntityType  string             `json:"entity_type"`
+	EntityType  pgtype.Text        `json:"entity_type"`
 	ParentID    pgtype.UUID        `json:"parent_id"`
 	IsRoot      bool               `json:"is_root"`
 	ManagedBy   string             `json:"managed_by"`
@@ -231,26 +383,30 @@ type Folder struct {
 	Revision    int32              `json:"revision"`
 	CreatedAt   time.Time          `json:"created_at"`
 	UpdatedAt   time.Time          `json:"updated_at"`
+	Scope       string             `json:"scope"`
+	Icon        pgtype.Text        `json:"icon"`
+	Color       pgtype.Text        `json:"color"`
 }
 
 type I18nBundle struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
 }
 
 type Integration struct {
@@ -272,23 +428,24 @@ type Integration struct {
 }
 
 type Mock struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
 }
 
 type MutationBatch struct {
@@ -300,43 +457,45 @@ type MutationBatch struct {
 }
 
 type Navigation struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
 }
 
 type Project struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
 }
 
 type ProjectEnvironment struct {
@@ -347,23 +506,24 @@ type ProjectEnvironment struct {
 }
 
 type Query struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
 }
 
 type Release struct {
@@ -395,164 +555,194 @@ type ServiceUser struct {
 	LastSeenAt  time.Time `json:"last_seen_at"`
 }
 
+type Simulation struct {
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
+}
+
 type Store struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
 }
 
 type Stream struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
 }
 
 type Style struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
 }
 
 type Tenant struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
-	Code        string             `json:"code"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	Code              string             `json:"code"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
 }
 
 type Type struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
 }
 
 type Update struct {
-	ID          uuid.UUID          `json:"id"`
-	WorkspaceID uuid.UUID          `json:"workspace_id"`
-	Identity    string             `json:"identity"`
-	DisplayName string             `json:"display_name"`
-	Description pgtype.Text        `json:"description"`
-	FolderID    pgtype.UUID        `json:"folder_id"`
-	Data        []byte             `json:"data"`
-	ManagedBy   string             `json:"managed_by"`
-	ManagedByID pgtype.Text        `json:"managed_by_id"`
-	Meta        []byte             `json:"meta"`
-	Active      bool               `json:"active"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy   uuid.UUID          `json:"created_by"`
-	UpdatedBy   uuid.UUID          `json:"updated_by"`
-	Revision    int32              `json:"revision"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
-	StoreID     uuid.UUID          `json:"store_id"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	StoreID           uuid.UUID          `json:"store_id"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
 }
 
 type Vocab struct {
-	ID            uuid.UUID          `json:"id"`
-	WorkspaceID   uuid.UUID          `json:"workspace_id"`
-	Identity      string             `json:"identity"`
-	DisplayName   string             `json:"display_name"`
-	Description   pgtype.Text        `json:"description"`
-	FolderID      pgtype.UUID        `json:"folder_id"`
-	Data          []byte             `json:"data"`
-	ManagedBy     string             `json:"managed_by"`
-	ManagedByID   pgtype.Text        `json:"managed_by_id"`
-	Meta          []byte             `json:"meta"`
-	Active        bool               `json:"active"`
-	DeletedAt     pgtype.Timestamptz `json:"deleted_at"`
-	CreatedBy     uuid.UUID          `json:"created_by"`
-	UpdatedBy     uuid.UUID          `json:"updated_by"`
-	Revision      int32              `json:"revision"`
-	CreatedAt     time.Time          `json:"created_at"`
-	UpdatedAt     time.Time          `json:"updated_at"`
-	AuthProfileID pgtype.UUID        `json:"auth_profile_id"`
+	ID                uuid.UUID          `json:"id"`
+	WorkspaceID       uuid.UUID          `json:"workspace_id"`
+	Identity          string             `json:"identity"`
+	DisplayName       string             `json:"display_name"`
+	Description       pgtype.Text        `json:"description"`
+	FolderID          pgtype.UUID        `json:"folder_id"`
+	Data              []byte             `json:"data"`
+	ManagedBy         string             `json:"managed_by"`
+	ManagedByID       pgtype.Text        `json:"managed_by_id"`
+	Meta              []byte             `json:"meta"`
+	Active            bool               `json:"active"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	CreatedBy         uuid.UUID          `json:"created_by"`
+	UpdatedBy         uuid.UUID          `json:"updated_by"`
+	Revision          int32              `json:"revision"`
+	CreatedAt         time.Time          `json:"created_at"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	AuthProfileID     pgtype.UUID        `json:"auth_profile_id"`
+	WorkspaceFolderID pgtype.UUID        `json:"workspace_folder_id"`
 }
 
 type Workspace struct {
-	ID            uuid.UUID   `json:"id"`
-	Identity      string      `json:"identity"`
-	DisplayName   string      `json:"display_name"`
-	Description   pgtype.Text `json:"description"`
-	DataMode      string      `json:"data_mode"`
-	Configuration []byte      `json:"configuration"`
-	Meta          []byte      `json:"meta"`
-	Active        bool        `json:"active"`
-	CreatedBy     uuid.UUID   `json:"created_by"`
-	UpdatedBy     uuid.UUID   `json:"updated_by"`
-	HeadSequence  int64       `json:"head_sequence"`
-	Revision      int32       `json:"revision"`
-	CreatedAt     time.Time   `json:"created_at"`
-	UpdatedAt     time.Time   `json:"updated_at"`
+	ID                uuid.UUID   `json:"id"`
+	Identity          string      `json:"identity"`
+	DisplayName       string      `json:"display_name"`
+	Description       pgtype.Text `json:"description"`
+	DataMode          string      `json:"data_mode"`
+	Configuration     []byte      `json:"configuration"`
+	Meta              []byte      `json:"meta"`
+	Active            bool        `json:"active"`
+	Generation        uuid.UUID   `json:"generation"`
+	CreatedBy         uuid.UUID   `json:"created_by"`
+	UpdatedBy         uuid.UUID   `json:"updated_by"`
+	HeadSequence      int64       `json:"head_sequence"`
+	Revision          int32       `json:"revision"`
+	CreatedAt         time.Time   `json:"created_at"`
+	UpdatedAt         time.Time   `json:"updated_at"`
+	DocumentStructure string      `json:"document_structure"`
 }
 
 type WorkspaceCommit struct {
@@ -566,6 +756,7 @@ type WorkspaceCommit struct {
 	Operation      string      `json:"operation"`
 	CreatedBy      uuid.UUID   `json:"created_by"`
 	CreatedAt      time.Time   `json:"created_at"`
+	DomainVersion  pgtype.Text `json:"domain_version"`
 }
 
 type WorkspaceCommitChange struct {
@@ -601,4 +792,30 @@ type WorkspaceMembership struct {
 	CreatedBy   uuid.UUID `json:"created_by"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type WorkspaceSnapshotBackup struct {
+	ID            uuid.UUID          `json:"id"`
+	WorkspaceID   uuid.UUID          `json:"workspace_id"`
+	Kind          string             `json:"kind"`
+	Description   pgtype.Text        `json:"description"`
+	SchemaVersion int32              `json:"schema_version"`
+	Checksum      string             `json:"checksum"`
+	Data          []byte             `json:"data"`
+	CreatedBy     uuid.UUID          `json:"created_by"`
+	CreatedAt     time.Time          `json:"created_at"`
+	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
+}
+
+type WorkspaceSnapshotImportPlan struct {
+	ID                   uuid.UUID          `json:"id"`
+	WorkspaceID          uuid.UUID          `json:"workspace_id"`
+	SnapshotChecksum     string             `json:"snapshot_checksum"`
+	Snapshot             []byte             `json:"snapshot"`
+	ExpectedGeneration   uuid.UUID          `json:"expected_generation"`
+	ExpectedHeadSequence int64              `json:"expected_head_sequence"`
+	CreatedBy            uuid.UUID          `json:"created_by"`
+	CreatedAt            time.Time          `json:"created_at"`
+	ExpiresAt            time.Time          `json:"expires_at"`
+	AppliedAt            pgtype.Timestamptz `json:"applied_at"`
 }

@@ -85,3 +85,56 @@ func (r *EndgeRepository) GetRevision(ctx context.Context, workspaceID, kind, id
 	}
 	return scanRevision(r.executor(ctx).QueryRow(ctx, revisionSelect()+` WHERE r.workspace_id=$1 AND r.document_type=$2 AND r.document_id=$3 AND r.id=$4`, workspaceID, kind, document.ID, id))
 }
+
+func (r *EndgeRepository) listRevisionsByDocumentID(ctx context.Context, workspaceID, kind, documentID string) ([]entities.Revision, error) {
+	rows, err := r.executor(ctx).Query(ctx, revisionSelect()+` WHERE r.workspace_id=$1 AND r.document_type=$2 AND r.document_id=$3 ORDER BY r.revision_number DESC`, workspaceID, kind, documentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := []entities.Revision{}
+	for rows.Next() {
+		value, scanErr := scanRevision(rows)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		result = append(result, *value)
+	}
+	return result, rows.Err()
+}
+
+func (r *EndgeRepository) getRevisionByDocumentID(ctx context.Context, workspaceID, kind, documentID, revisionID string) (*entities.Revision, error) {
+	return scanRevision(r.executor(ctx).QueryRow(ctx, revisionSelect()+` WHERE r.workspace_id=$1 AND r.document_type=$2 AND r.document_id=$3 AND r.id=$4`, workspaceID, kind, documentID, revisionID))
+}
+
+func (r *EndgeRepository) ListFacetRevisions(ctx context.Context, workspaceID, identity string) ([]entities.Revision, error) {
+	document, err := r.GetFacet(ctx, workspaceID, identity, true)
+	if err != nil {
+		return nil, err
+	}
+	return r.listRevisionsByDocumentID(ctx, workspaceID, entities.CollectionFacets, document.ID)
+}
+
+func (r *EndgeRepository) GetFacetRevision(ctx context.Context, workspaceID, identity, revisionID string) (*entities.Revision, error) {
+	document, err := r.GetFacet(ctx, workspaceID, identity, true)
+	if err != nil {
+		return nil, err
+	}
+	return r.getRevisionByDocumentID(ctx, workspaceID, entities.CollectionFacets, document.ID, revisionID)
+}
+
+func (r *EndgeRepository) ListFacetDocumentRevisions(ctx context.Context, workspaceID, facetIdentity, identity string) ([]entities.Revision, error) {
+	document, err := r.GetFacetDocument(ctx, workspaceID, facetIdentity, identity, true)
+	if err != nil {
+		return nil, err
+	}
+	return r.listRevisionsByDocumentID(ctx, workspaceID, entities.CollectionFacetDocuments, document.ID)
+}
+
+func (r *EndgeRepository) GetFacetDocumentRevision(ctx context.Context, workspaceID, facetIdentity, identity, revisionID string) (*entities.Revision, error) {
+	document, err := r.GetFacetDocument(ctx, workspaceID, facetIdentity, identity, true)
+	if err != nil {
+		return nil, err
+	}
+	return r.getRevisionByDocumentID(ctx, workspaceID, entities.CollectionFacetDocuments, document.ID, revisionID)
+}

@@ -11,7 +11,7 @@ import (
 
 const workspaceRevisionSnapshotVersion = 1
 
-var Collections = append([]string(nil), entities.DocumentCollections...)
+var Collections = append(append([]string(nil), entities.DocumentCollections...), entities.FacetCollections...)
 var UnsupportedCollections = []string{"legacyComponents", "componentsDSL", "componentsTable", "versions", "pages", "pageTemplates", "page-templates", "policies"}
 var readOnlyFields = []string{"id", "type", "revision", "author", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", "created_by", "updated_by", "state"}
 
@@ -20,6 +20,7 @@ type Repository interface {
 	ports.WorkspaceRepository
 	ports.IntegrationRepository
 	ports.DocumentRepository
+	ports.FacetRepository
 	ports.RevisionRepository
 	ports.CommitRepository
 	ports.ReleaseRepository

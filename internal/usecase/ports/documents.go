@@ -107,3 +107,30 @@ type StyleRepository interface{ DocumentResourceRepository }
 
 // ConfigurationRepository задаёт порт хранения workspace-конфигураций.
 type ConfigurationRepository interface{ DocumentResourceRepository }
+
+// FacetOrderItem carries the optimistic revision used by an atomic reorder.
+type FacetOrderItem struct {
+	Identity         string
+	ExpectedRevision int
+}
+
+// FacetRepository owns the non-generic persistence contract of dynamic facets.
+// Facet-document identity is always resolved together with its parent facet.
+type FacetRepository interface {
+	ListFacets(context.Context, string, bool) ([]entities.Document, error)
+	GetFacet(context.Context, string, string, bool) (*entities.Document, error)
+	InsertFacet(context.Context, entities.Document) (*entities.Document, error)
+	UpdateFacet(context.Context, entities.Document, int) (*entities.Document, error)
+	ReorderFacets(context.Context, string, []FacetOrderItem, string) ([]entities.Document, error)
+	CountActiveFacetDocuments(context.Context, string, string) (int, error)
+
+	ListFacetDocuments(context.Context, string, string, DocumentFilter) ([]entities.Document, error)
+	GetFacetDocument(context.Context, string, string, string, bool) (*entities.Document, error)
+	InsertFacetDocument(context.Context, entities.Document) (*entities.Document, error)
+	UpdateFacetDocument(context.Context, entities.Document, int) (*entities.Document, error)
+
+	ListFacetRevisions(context.Context, string, string) ([]entities.Revision, error)
+	GetFacetRevision(context.Context, string, string, string) (*entities.Revision, error)
+	ListFacetDocumentRevisions(context.Context, string, string, string) ([]entities.Revision, error)
+	GetFacetDocumentRevision(context.Context, string, string, string, string) (*entities.Revision, error)
+}

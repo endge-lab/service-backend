@@ -6596,6 +6596,679 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/facets:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Получить фасеты\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить удалённые фасеты\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/facet.FacetListResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Создать фасет\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/facet.CreateRequest\"\n" +
+		"        description: Фасет\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Created\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/facet.FacetResponse\"\n" +
+		"  /api/v1/facets/reorder:\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Изменить порядок фасетов\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/facet.ReorderRequest\"\n" +
+		"        description: Полный порядок активных фасетов\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/facet.FacetListResponse\"\n" +
+		"  \"/api/v1/facets/{facetIdentity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Получить фасет\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity фасета\n" +
+		"          name: facetIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Разрешить удалённый фасет\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/facet.FacetResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Мягко удалить фасет\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity фасета\n" +
+		"          name: facetIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Текущая revision фасета\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/facet.FacetResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Изменить фасет\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity фасета\n" +
+		"          name: facetIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Текущая revision фасета\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/facet.PatchRequest\"\n" +
+		"        description: Изменения фасета\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/facet.FacetResponse\"\n" +
+		"  \"/api/v1/facets/{facetIdentity}/documents\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Получить документы фасета\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity фасета\n" +
+		"          name: facetIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Включить удалённые документы\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Фильтр активности\n" +
+		"          name: active\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"        - description: Смещение\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/facet.FacetDocumentListResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Создать документ фасета\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity фасета\n" +
+		"          name: facetIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/facet.DocumentCreateRequest\"\n" +
+		"        description: Документ фасета\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Created\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/facet.FacetDocumentResponse\"\n" +
+		"  \"/api/v1/facets/{facetIdentity}/documents/{documentIdentity}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Получить документ фасета\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity фасета\n" +
+		"          name: facetIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа внутри фасета\n" +
+		"          name: documentIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Разрешить удалённый документ\n" +
+		"          name: includeDeleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/facet.FacetDocumentResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Мягко удалить документ фасета\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity фасета\n" +
+		"          name: facetIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа внутри фасета\n" +
+		"          name: documentIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/facet.FacetDocumentResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Изменить документ фасета\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity фасета\n" +
+		"          name: facetIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа внутри фасета\n" +
+		"          name: documentIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/facet.DocumentPatchRequest\"\n" +
+		"        description: Изменения документа\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/facet.FacetDocumentResponse\"\n" +
+		"  \"/api/v1/facets/{facetIdentity}/documents/{documentIdentity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Восстановить документ фасета\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity фасета\n" +
+		"          name: facetIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа внутри фасета\n" +
+		"          name: documentIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/facet.FacetDocumentResponse\"\n" +
+		"  \"/api/v1/facets/{facetIdentity}/documents/{documentIdentity}/revisions\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Получить ревизии документа фасета\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity фасета\n" +
+		"          name: facetIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа внутри фасета\n" +
+		"          name: documentIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/revision.ListResponse\"\n" +
+		"  \"/api/v1/facets/{facetIdentity}/documents/{documentIdentity}/revisions/{revisionId}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Получить ревизию документа фасета\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity фасета\n" +
+		"          name: facetIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа внутри фасета\n" +
+		"          name: documentIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: UUID ревизии\n" +
+		"          name: revisionId\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/revision.Response\"\n" +
+		"  \"/api/v1/facets/{facetIdentity}/documents/{documentIdentity}/revisions/{revisionId}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Восстановить ревизию документа фасета\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity фасета\n" +
+		"          name: facetIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity документа внутри фасета\n" +
+		"          name: documentIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: UUID ревизии\n" +
+		"          name: revisionId\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Текущая revision документа\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/facet.FacetDocumentResponse\"\n" +
+		"  \"/api/v1/facets/{facetIdentity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Восстановить фасет\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity фасета\n" +
+		"          name: facetIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Текущая revision фасета\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/facet.FacetResponse\"\n" +
+		"  \"/api/v1/facets/{facetIdentity}/revisions\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Получить ревизии фасета\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity фасета\n" +
+		"          name: facetIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/revision.ListResponse\"\n" +
+		"  \"/api/v1/facets/{facetIdentity}/revisions/{revisionId}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Получить ревизию фасета\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity фасета\n" +
+		"          name: facetIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: UUID ревизии\n" +
+		"          name: revisionId\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/revision.Response\"\n" +
+		"  \"/api/v1/facets/{facetIdentity}/revisions/{revisionId}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Фасеты\n" +
+		"      summary: Восстановить ревизию фасета\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity фасета\n" +
+		"          name: facetIdentity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: UUID ревизии\n" +
+		"          name: revisionId\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Текущая revision фасета\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/facet.FacetResponse\"\n" +
 		"  /api/v1/filters:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -15727,6 +16400,9 @@ var openAPI3YAML = []byte(
 		"          minimum: 1\n" +
 		"        target:\n" +
 		"          type: object\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    action.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -15787,6 +16463,9 @@ var openAPI3YAML = []byte(
 		"          minimum: 1\n" +
 		"        target:\n" +
 		"          type: object\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    action.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -15850,6 +16529,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    ai_assistant.CapabilitiesResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -16214,6 +16896,9 @@ var openAPI3YAML = []byte(
 		"          additionalProperties: {}\n" +
 		"        session:\n" +
 		"          $ref: \"#/components/schemas/auth_profile.SessionPolicy\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    auth_profile.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -16276,6 +16961,9 @@ var openAPI3YAML = []byte(
 		"          additionalProperties: {}\n" +
 		"        session:\n" +
 		"          $ref: \"#/components/schemas/auth_profile.SessionPolicy\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    auth_profile.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -16341,6 +17029,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    auth_profile.SessionPolicy:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -16681,6 +17372,9 @@ var openAPI3YAML = []byte(
 		"        tag:\n" +
 		"          type: string\n" +
 		"          example: main-component\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    component.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -16744,6 +17438,9 @@ var openAPI3YAML = []byte(
 		"        tag:\n" +
 		"          type: string\n" +
 		"          example: main-component\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    component.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -16813,6 +17510,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    composition.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -16864,6 +17564,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    composition.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -16926,6 +17629,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    composition.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -16991,6 +17697,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    computation.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -17040,6 +17749,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    computation.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -17099,6 +17811,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    computation.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -17161,6 +17876,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    configuration.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -17206,6 +17924,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    configuration.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -17262,6 +17983,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    configuration.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -17321,6 +18045,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    converter.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -17357,6 +18084,9 @@ var openAPI3YAML = []byte(
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    converter.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -17406,6 +18136,9 @@ var openAPI3YAML = []byte(
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    converter.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -17459,6 +18192,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    data_view.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -17504,6 +18240,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    data_view.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -17560,6 +18299,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    data_view.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -17619,6 +18361,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    document_move.MoveDocumentRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -17643,6 +18388,7 @@ var openAPI3YAML = []byte(
 		"      required:\n" +
 		"        - documents\n" +
 		"        - folderIdentity\n" +
+		"        - placement\n" +
 		"      properties:\n" +
 		"        documents:\n" +
 		"          type: array\n" +
@@ -17654,6 +18400,12 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: schedule-actions\n" +
+		"        placement:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - frontend\n" +
+		"            - workspace\n" +
+		"          example: workspace\n" +
 		"    document_move.MoveResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -17830,6 +18582,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    domain_type.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -17889,6 +18644,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    domain_type.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -17951,6 +18709,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    entities.AIClarification:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -18235,6 +18996,9 @@ var openAPI3YAML = []byte(
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    environment.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -18287,6 +19051,9 @@ var openAPI3YAML = []byte(
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    environment.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -18343,6 +19110,235 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
+		"    facet.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - color\n" +
+		"        - displayName\n" +
+		"        - icon\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        color:\n" +
+		"          type: string\n" +
+		"          example: \"#2563eb\"\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"          example: Регион\n" +
+		"        icon:\n" +
+		"          type: string\n" +
+		"          maxLength: 80\n" +
+		"          example: MapPin\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: region\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    facet.DocumentCreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - displayName\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"        configuration:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    facet.DocumentPatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"        configuration:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    facet.FacetDocumentListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/facet.FacetDocumentResponse\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"    facet.FacetDocumentResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        configuration:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T11:00:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        facetIdentity:\n" +
+		"          type: string\n" +
+		"        folderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-projects\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        managedBy:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - user\n" +
+		"            - system\n" +
+		"            - integration\n" +
+		"          example: user\n" +
+		"        managedById:\n" +
+		"          type: string\n" +
+		"          example: endge-core\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
+		"    facet.FacetListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/facet.FacetResponse\"\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"    facet.FacetResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"        color:\n" +
+		"          type: string\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"        documentCount:\n" +
+		"          type: integer\n" +
+		"        icon:\n" +
+		"          type: string\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        position:\n" +
+		"          type: integer\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    facet.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        color:\n" +
+		"          type: string\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 255\n" +
+		"        icon:\n" +
+		"          type: string\n" +
+		"          maxLength: 80\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    facet.ReorderItem:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - expectedRevision\n" +
+		"        - identity\n" +
+		"      properties:\n" +
+		"        expectedRevision:\n" +
+		"          type: integer\n" +
+		"          minimum: 1\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"    facet.ReorderRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - items\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          maxItems: 1000\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/facet.ReorderItem\"\n" +
 		"    filter.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -18390,6 +19386,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    filter.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -18450,6 +19449,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    filter.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -18513,16 +19515,21 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    folder.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
 		"        - displayName\n" +
-		"        - entityType\n" +
 		"        - identity\n" +
 		"      properties:\n" +
 		"        active:\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
+		"        color:\n" +
+		"          type: string\n" +
+		"          example: \"#64748b\"\n" +
 		"        description:\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
@@ -18536,6 +19543,10 @@ var openAPI3YAML = []byte(
 		"        folderIdentity:\n" +
 		"          type: string\n" +
 		"          example: root-projects\n" +
+		"        icon:\n" +
+		"          type: string\n" +
+		"          maxLength: 80\n" +
+		"          example: FolderKanban\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -18556,6 +19567,15 @@ var openAPI3YAML = []byte(
 		"        parentIdentity:\n" +
 		"          type: string\n" +
 		"          example: root-projects\n" +
+		"        scope:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - collection\n" +
+		"            - workspace\n" +
+		"          example: collection\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    folder.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -18578,6 +19598,8 @@ var openAPI3YAML = []byte(
 		"        active:\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
+		"        color:\n" +
+		"          type: string\n" +
 		"        description:\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
@@ -18591,6 +19613,9 @@ var openAPI3YAML = []byte(
 		"        folderIdentity:\n" +
 		"          type: string\n" +
 		"          example: root-projects\n" +
+		"        icon:\n" +
+		"          type: string\n" +
+		"          maxLength: 80\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -18611,12 +19636,22 @@ var openAPI3YAML = []byte(
 		"        parentIdentity:\n" +
 		"          type: string\n" +
 		"          example: root-projects\n" +
+		"        scope:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - collection\n" +
+		"            - workspace\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    folder.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
+		"        color:\n" +
+		"          type: string\n" +
 		"        createdAt:\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
@@ -18639,6 +19674,8 @@ var openAPI3YAML = []byte(
 		"        folderIdentity:\n" +
 		"          type: string\n" +
 		"          example: root-projects\n" +
+		"        icon:\n" +
+		"          type: string\n" +
 		"        id:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
@@ -18664,12 +19701,20 @@ var openAPI3YAML = []byte(
 		"        revision:\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
+		"        scope:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - collection\n" +
+		"            - workspace\n" +
 		"        updatedAt:\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    health.ConnectedServiceResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -18761,6 +19806,9 @@ var openAPI3YAML = []byte(
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    i18n_bundle.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -18813,6 +19861,9 @@ var openAPI3YAML = []byte(
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    i18n_bundle.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -18869,6 +19920,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    integration.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -19053,6 +20107,9 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    mock.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -19115,6 +20172,9 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    mock.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -19180,6 +20240,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    mock_data.GenerationMetadata:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -19348,6 +20411,9 @@ var openAPI3YAML = []byte(
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: object\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    navigation.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -19401,6 +20467,9 @@ var openAPI3YAML = []byte(
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: object\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    navigation.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -19458,6 +20527,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    project.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -19513,6 +20585,9 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    project.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -19578,6 +20653,9 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    project.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -19649,6 +20727,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    query.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -19694,6 +20775,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    query.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -19750,6 +20834,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    query.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -19809,6 +20896,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    release.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -20177,6 +21267,12 @@ var openAPI3YAML = []byte(
 		"        displayName:\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
+		"        documentStructure:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - frontend\n" +
+		"            - custom\n" +
+		"          example: frontend\n" +
 		"        headSequence:\n" +
 		"          type: integer\n" +
 		"          example: 42\n" +
@@ -20263,6 +21359,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    simulation.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -20320,6 +21419,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    simulation.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -20380,6 +21482,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    store.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -20425,6 +21530,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    store.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -20481,6 +21589,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    store.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -20540,6 +21651,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    stream.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -20585,6 +21699,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    stream.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -20641,6 +21758,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    stream.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -20700,6 +21820,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    style.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -20745,6 +21868,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    style.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -20801,6 +21927,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    style.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -20860,6 +21989,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    tenant.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -20904,6 +22036,9 @@ var openAPI3YAML = []byte(
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    tenant.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -20960,6 +22095,9 @@ var openAPI3YAML = []byte(
 		"        meta:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    tenant.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -21019,6 +22157,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    update.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -21069,6 +22210,9 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: application-store\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    update.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -21129,6 +22273,9 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: application-store\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    update.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -21191,6 +22338,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    vocab.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -21256,6 +22406,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    vocab.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -21334,6 +22487,9 @@ var openAPI3YAML = []byte(
 		"        sourceVersion:\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    vocab.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -21408,6 +22564,9 @@ var openAPI3YAML = []byte(
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
 		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        workspaceFolderIdentity:\n" +
+		"          type: string\n" +
+		"          example: root-workspace-files\n" +
 		"    workspace.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -21433,6 +22592,12 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
+		"        documentStructure:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - frontend\n" +
+		"            - custom\n" +
+		"          example: frontend\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -21547,6 +22712,12 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
+		"        documentStructure:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - frontend\n" +
+		"            - custom\n" +
+		"          example: frontend\n" +
 		"        identity:\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
@@ -21584,6 +22755,12 @@ var openAPI3YAML = []byte(
 		"        displayName:\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
+		"        documentStructure:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - frontend\n" +
+		"            - custom\n" +
+		"          example: frontend\n" +
 		"        headSequence:\n" +
 		"          type: integer\n" +
 		"          example: 42\n" +

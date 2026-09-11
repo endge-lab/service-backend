@@ -20,6 +20,7 @@ type CreateRequest struct {
 	DisplayName           string                 `json:"displayName" validate:"required,max=255" example:"Основной объект"`
 	Description           *string                `json:"description,omitempty" example:"Описание объекта"`
 	DataMode              string                 `json:"dataMode,omitempty" validate:"omitempty,oneof=development production" example:"development" enums:"development,production"`
+	DocumentStructure     string                 `json:"documentStructure,omitempty" validate:"omitempty,oneof=frontend custom" example:"frontend" enums:"frontend,custom"`
 	Configuration         map[string]any         `json:"configuration,omitempty"`
 	Meta                  map[string]any         `json:"meta,omitempty"`
 	Active                *bool                  `json:"active,omitempty" example:"true"`
@@ -31,6 +32,7 @@ type PatchRequest struct {
 	DisplayName           *string                 `json:"displayName,omitempty" validate:"omitempty,max=255" example:"Основной объект"`
 	Description           *string                 `json:"description,omitempty" example:"Описание объекта"`
 	DataMode              *string                 `json:"dataMode,omitempty" validate:"omitempty,oneof=development production" example:"development" enums:"development,production"`
+	DocumentStructure     *string                 `json:"documentStructure,omitempty" validate:"omitempty,oneof=frontend custom" example:"frontend" enums:"frontend,custom"`
 	Configuration         *map[string]any         `json:"configuration,omitempty"`
 	Meta                  *map[string]any         `json:"meta,omitempty"`
 	Active                *bool                   `json:"active,omitempty" example:"true"`
@@ -42,20 +44,21 @@ type MembershipRequest struct {
 }
 
 type Response struct {
-	ID            string          `json:"id" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
-	Identity      string          `json:"identity" example:"main"`
-	DisplayName   string          `json:"displayName" example:"Основной объект"`
-	Description   *string         `json:"description,omitempty" example:"Описание объекта"`
-	DataMode      string          `json:"dataMode" example:"development" enums:"development,production"`
-	Configuration json.RawMessage `json:"configuration" swaggertype:"object"`
-	Meta          json.RawMessage `json:"meta" swaggertype:"object"`
-	Active        bool            `json:"active" example:"true"`
-	HeadSequence  int64           `json:"headSequence" example:"42"`
-	Revision      int             `json:"revision" example:"3"`
-	CreatedBy     entities.Actor  `json:"createdBy"`
-	UpdatedBy     entities.Actor  `json:"updatedBy"`
-	CreatedAt     time.Time       `json:"createdAt" example:"2026-08-04T10:00:00Z" format:"date-time"`
-	UpdatedAt     time.Time       `json:"updatedAt" example:"2026-08-04T10:05:00Z" format:"date-time"`
+	ID                string          `json:"id" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
+	Identity          string          `json:"identity" example:"main"`
+	DisplayName       string          `json:"displayName" example:"Основной объект"`
+	Description       *string         `json:"description,omitempty" example:"Описание объекта"`
+	DataMode          string          `json:"dataMode" example:"development" enums:"development,production"`
+	DocumentStructure string          `json:"documentStructure" example:"frontend" enums:"frontend,custom"`
+	Configuration     json.RawMessage `json:"configuration" swaggertype:"object"`
+	Meta              json.RawMessage `json:"meta" swaggertype:"object"`
+	Active            bool            `json:"active" example:"true"`
+	HeadSequence      int64           `json:"headSequence" example:"42"`
+	Revision          int             `json:"revision" example:"3"`
+	CreatedBy         entities.Actor  `json:"createdBy"`
+	UpdatedBy         entities.Actor  `json:"updatedBy"`
+	CreatedAt         time.Time       `json:"createdAt" example:"2026-08-04T10:00:00Z" format:"date-time"`
+	UpdatedAt         time.Time       `json:"updatedAt" example:"2026-08-04T10:05:00Z" format:"date-time"`
 }
 
 type MembershipResponse struct {
@@ -82,7 +85,7 @@ type MembershipListResponse struct {
 func (r CreateRequest) Input() resourceusecase.CreateInput {
 	return resourceusecase.CreateInput{
 		Identity: r.Identity, DisplayName: r.DisplayName, Description: r.Description,
-		DataMode: r.DataMode, Configuration: r.Configuration, Meta: r.Meta, Active: r.Active,
+		DataMode: r.DataMode, DocumentStructure: r.DocumentStructure, Configuration: r.Configuration, Meta: r.Meta, Active: r.Active,
 		InstalledIntegrations: integrationInputs(r.InstalledIntegrations),
 	}
 }

@@ -24,21 +24,22 @@ type UserResponse struct {
 }
 
 type WorkspaceResponse struct {
-	ID            string          `json:"id" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
-	Identity      string          `json:"identity" example:"main"`
-	DisplayName   string          `json:"displayName" example:"Основной объект"`
-	Description   *string         `json:"description,omitempty" example:"Описание объекта"`
-	DataMode      string          `json:"dataMode" example:"development" enums:"development,production"`
-	Configuration json.RawMessage `json:"configuration" swaggertype:"object"`
-	Meta          json.RawMessage `json:"meta" swaggertype:"object"`
-	Active        bool            `json:"active" example:"true"`
-	HeadSequence  int64           `json:"headSequence" example:"42"`
-	Revision      int             `json:"revision" example:"3"`
-	CreatedBy     entities.Actor  `json:"createdBy"`
-	UpdatedBy     entities.Actor  `json:"updatedBy"`
-	CreatedAt     time.Time       `json:"createdAt" example:"2026-08-04T10:00:00Z" format:"date-time"`
-	UpdatedAt     time.Time       `json:"updatedAt" example:"2026-08-04T10:05:00Z" format:"date-time"`
-	Role          string          `json:"role" example:"editor" enums:"viewer,editor,admin"`
+	ID                string          `json:"id" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
+	Identity          string          `json:"identity" example:"main"`
+	DisplayName       string          `json:"displayName" example:"Основной объект"`
+	Description       *string         `json:"description,omitempty" example:"Описание объекта"`
+	DataMode          string          `json:"dataMode" example:"development" enums:"development,production"`
+	DocumentStructure string          `json:"documentStructure" example:"frontend" enums:"frontend,custom"`
+	Configuration     json.RawMessage `json:"configuration" swaggertype:"object"`
+	Meta              json.RawMessage `json:"meta" swaggertype:"object"`
+	Active            bool            `json:"active" example:"true"`
+	HeadSequence      int64           `json:"headSequence" example:"42"`
+	Revision          int             `json:"revision" example:"3"`
+	CreatedBy         entities.Actor  `json:"createdBy"`
+	UpdatedBy         entities.Actor  `json:"updatedBy"`
+	CreatedAt         time.Time       `json:"createdAt" example:"2026-08-04T10:00:00Z" format:"date-time"`
+	UpdatedAt         time.Time       `json:"updatedAt" example:"2026-08-04T10:05:00Z" format:"date-time"`
+	Role              string          `json:"role" example:"editor" enums:"viewer,editor,admin"`
 }
 
 type AccessManagementResponse struct {

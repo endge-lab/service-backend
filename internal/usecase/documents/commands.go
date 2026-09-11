@@ -38,12 +38,16 @@ func (s *Lifecycle) Create(ctx context.Context, definition Definition, repositor
 		}
 	}
 	normalizeFolderInput(definition.Collection, values)
+	ensureWorkspaceFolderInput(definition.Collection, values)
 	if err = validateDocument(definition.Collection, values); err != nil {
 		return nil, err
 	}
 	document := documentFromInput(definition.Collection, scope.Workspace.ID, values, current.User.ID)
 	folderID, err := s.resolveFolder(ctx, scope, definition.Collection, values)
 	if err != nil {
+		return nil, err
+	}
+	if err = s.resolveDocumentWorkspaceFolder(ctx, scope, document); err != nil {
 		return nil, err
 	}
 	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
@@ -91,6 +95,11 @@ func (s *Lifecycle) Patch(ctx context.Context, definition Definition, repository
 	if definition.Collection == entities.CollectionFolders && isSystemFolder(*existing) {
 		return nil, domainerrors.Conflict("system_folder_immutable", "Root and system folders cannot be changed")
 	}
+	if definition.Collection == entities.CollectionFolders {
+		if err = validateFolderScopePatch(*existing, patch); err != nil {
+			return nil, err
+		}
+	}
 	next := applyPatch(*existing, patch, current.User.ID)
 	if err = validateDocument(definition.Collection, documentAsInput(next)); err != nil {
 		return nil, err
@@ -100,6 +109,9 @@ func (s *Lifecycle) Patch(ctx context.Context, definition Definition, repository
 	}
 	folderID, err := s.resolveDocumentFolder(ctx, scope, next)
 	if err != nil {
+		return nil, err
+	}
+	if err = s.resolveDocumentWorkspaceFolder(ctx, scope, next); err != nil {
 		return nil, err
 	}
 	if definition.Collection == entities.CollectionFolders && folderID != nil {

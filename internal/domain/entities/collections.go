@@ -13,6 +13,8 @@ const (
 	CollectionDataViews      = "data-views"
 	CollectionEnvironments   = "environments"
 	CollectionFilters        = "filters"
+	CollectionFacetDocuments = "facet-documents"
+	CollectionFacets         = "facets"
 	CollectionFolders        = "folders"
 	CollectionI18nBundles    = "i18n-bundles"
 	CollectionMocks          = "mocks"
@@ -28,6 +30,11 @@ const (
 	CollectionUpdates        = "updates"
 	CollectionVocabs         = "vocabs"
 )
+
+// FacetCollections are persisted through explicit nested facet APIs. They are
+// portable Domain collections, but are intentionally excluded from the generic
+// document lifecycle because facet-document identity is scoped by its facet.
+var FacetCollections = []string{CollectionFacets, CollectionFacetDocuments}
 
 // DocumentCollections is the set of collections supported by the current
 // portable workspace format.

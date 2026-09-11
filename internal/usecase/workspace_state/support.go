@@ -7,9 +7,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
+	"sort"
 	"strings"
+	"time"
 
+	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
 	"github.com/endge-lab/service-backend/internal/domain/domainversion"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
@@ -88,18 +92,20 @@ func (s *Coordinator) mutationBatch(ctx context.Context, workspaceID *string, op
 
 // resolveFolder разрешает identity папки в её внутренний идентификатор.
 func (s *Coordinator) resolveFolder(ctx context.Context, scope entities.WorkspaceAccess, kind string, input map[string]any) (*string, error) {
-	if kind == entities.CollectionConfigurations {
+	if kind == entities.CollectionConfigurations || slices.Contains(entities.FacetCollections, kind) {
 		return nil, nil
 	}
 	identity := stringField(input, "folderIdentity")
 	if kind == entities.CollectionFolders {
+		folderScope := defaultString(stringField(input, "scope"), entities.FolderScopeCollection)
 		entityType := entities.FolderEntityType(stringField(input, "entityType"))
-		if entityType == "" {
-			return nil, domainerrors.InvalidInput("folder_entity_type_required", "entityType is required")
-		}
 		parent := stringField(input, "parentIdentity")
 		if parent == "" && !boolField(input, "isRoot") {
-			parent = entities.RootFolderIdentity(entityType)
+			if folderScope == entities.FolderScopeWorkspace {
+				parent = entities.WorkspaceRootFolderIdentity
+			} else {
+				parent = entities.RootFolderIdentity(entityType)
+			}
 		}
 		parent = resolvableFolderIdentity(parent, entityType)
 		return s.repository.ResolveFolder(ctx, scope.Workspace.ID, parent, entityType)
@@ -114,7 +120,7 @@ func (s *Coordinator) resolveFolder(ctx context.Context, scope entities.Workspac
 
 // resolveDocumentFolder разрешает папку, указанную в документе.
 func (s *Coordinator) resolveDocumentFolder(ctx context.Context, scope entities.WorkspaceAccess, doc entities.Document) (*string, error) {
-	if doc.Type == entities.CollectionConfigurations {
+	if doc.Type == entities.CollectionConfigurations || slices.Contains(entities.FacetCollections, doc.Type) {
 		return nil, nil
 	}
 	identity := ""
@@ -122,10 +128,15 @@ func (s *Coordinator) resolveDocumentFolder(ctx context.Context, scope entities.
 	if doc.Type == entities.CollectionFolders {
 		var data map[string]any
 		_ = json.Unmarshal(doc.Data, &data)
+		folderScope := defaultString(stringField(data, "scope"), entities.FolderScopeCollection)
 		entityType = entities.FolderEntityType(stringField(data, "entityType"))
 		identity = stringField(data, "parentIdentity")
 		if identity == "" && !boolValue(data["isRoot"]) {
-			identity = entities.RootFolderIdentity(entityType)
+			if folderScope == entities.FolderScopeWorkspace {
+				identity = entities.WorkspaceRootFolderIdentity
+			} else {
+				identity = entities.RootFolderIdentity(entityType)
+			}
 		}
 	} else {
 		if doc.FolderIdentity != nil {
@@ -211,13 +222,20 @@ func relationIdentityList(value any) []string {
 // documentFromInput создаёт доменный документ из входных данных.
 func documentFromInput(kind, workspace string, input map[string]any, actorID string) entities.Document {
 	data := copyMap(input)
-	for _, key := range append(readOnlyFields, "identity", "displayName", "description", "folderIdentity", "managedBy", "managedById", "meta", "active") {
+	for _, key := range append(readOnlyFields, "identity", "displayName", "description", "folderIdentity", "workspaceFolderIdentity", "managedBy", "managedById", "meta", "active", "deleted") {
 		delete(data, key)
 	}
 	description := optionalString(input, "description")
 	folder := optionalString(input, "folderIdentity")
+	workspaceFolder := optionalString(input, "workspaceFolderIdentity")
 	managedID := optionalString(input, "managedById")
-	return entities.Document{ID: uuid.NewString(), WorkspaceID: workspace, Type: kind, Identity: stringField(input, "identity"), DisplayName: stringField(input, "displayName"), Description: description, FolderIdentity: folder, ManagedBy: defaultString(stringField(input, "managedBy"), "user"), ManagedByID: managedID, Meta: jsonField(input, "meta", json.RawMessage(`{}`)), Data: mustJSON(data), Active: defaultBool(input, "active", true), Revision: 1, CreatedBy: entities.Actor{ID: actorID}, UpdatedBy: entities.Actor{ID: actorID}}
+	document := entities.Document{ID: uuid.NewString(), WorkspaceID: workspace, Type: kind, Identity: stringField(input, "identity"), DisplayName: stringField(input, "displayName"), Description: description, FolderIdentity: folder, WorkspaceFolderIdentity: workspaceFolder, ManagedBy: defaultString(stringField(input, "managedBy"), "user"), ManagedByID: managedID, Meta: jsonField(input, "meta", json.RawMessage(`{}`)), Data: mustJSON(data), Active: defaultBool(input, "active", true), Revision: 1, CreatedBy: entities.Actor{ID: actorID}, UpdatedBy: entities.Actor{ID: actorID}}
+	if portableDocumentDeleted(input) {
+		now := time.Now().UTC()
+		document.Active = false
+		document.DeletedAt = &now
+	}
+	return document
 }
 
 // replaceDocumentFromInput строит полное новое состояние существующего документа.
@@ -228,8 +246,16 @@ func replaceDocumentFromInput(existing entities.Document, input map[string]any, 
 	next.Revision = existing.Revision
 	next.CreatedBy = existing.CreatedBy
 	next.CreatedAt = existing.CreatedAt
-	next.DeletedAt = nil
+	if next.DeletedAt != nil && existing.DeletedAt != nil {
+		// Portable tombstones intentionally preserve deletion as a boolean, not a
+		// server timestamp. Keep the target timestamp to make exact restore idempotent.
+		next.DeletedAt = existing.DeletedAt
+	}
 	return next
+}
+
+func portableDocumentDeleted(input map[string]any) bool {
+	return boolField(input, "deleted")
 }
 
 // commitChanges формирует изменения коммита по выполненным операциям.
@@ -254,11 +280,73 @@ func commitChanges(revisions []entities.Revision) []entities.CommitChange {
 
 // validateDocument проверяет общие и зависящие от типа ограничения документа.
 func validateDocument(kind string, input map[string]any) error {
+	if deleted, exists := input["deleted"]; exists {
+		if _, ok := deleted.(bool); !ok {
+			return domainerrors.InvalidInput("document_deleted_invalid", "deleted must be a boolean")
+		}
+		if !slices.Contains(entities.FacetCollections, kind) {
+			return domainerrors.InvalidInput("document_deleted_unsupported", "deleted is only supported for facet collections")
+		}
+	}
 	if err := validateIdentity(stringField(input, "identity")); err != nil {
 		return err
 	}
 	if stringField(input, "displayName") == "" {
 		return domainerrors.InvalidInput("display_name_required", "displayName is required")
+	}
+	if kind == entities.CollectionFacets {
+		if stringField(input, "folderIdentity") != "" {
+			return domainerrors.InvalidInput("facet_folder_unsupported", "Facets do not support folders")
+		}
+		if !facetIconPattern.MatchString(stringField(input, "icon")) {
+			return domainerrors.InvalidInput("facet_icon_invalid", "icon must be a PascalCase token")
+		}
+		if !facetColorPattern.MatchString(stringField(input, "color")) {
+			return domainerrors.InvalidInput("facet_color_invalid", "color must be canonical lowercase #rrggbb")
+		}
+		if !portableDocumentDeleted(input) {
+			position, ok := numberField(input, "position")
+			if !ok || position < 0 {
+				return domainerrors.InvalidInput("facet_position_invalid", "position must be a non-negative integer")
+			}
+		}
+	}
+	if kind == entities.CollectionFacetDocuments {
+		if stringField(input, "folderIdentity") != "" {
+			return domainerrors.InvalidInput("facet_document_folder_unsupported", "Facet documents do not support folders")
+		}
+		if err := validateIdentity(stringField(input, "facetIdentity")); err != nil {
+			return domainerrors.InvalidInput("facet_identity_invalid", "facetIdentity is required and must not exceed 160 characters")
+		}
+		configuration, ok := input["configuration"].(map[string]any)
+		if !ok {
+			return domainerrors.InvalidInput("facet_configuration_invalid", "configuration must be an object")
+		}
+		mode, _ := configuration["mode"].(string)
+		switch mode {
+		case "inherit":
+			if _, ok := configuration["patch"].(map[string]any); !ok {
+				return domainerrors.InvalidInput("facet_configuration_invalid", "inherit contribution requires an object patch")
+			}
+		case "replace":
+			value, ok := configuration["value"].(map[string]any)
+			if !ok {
+				return domainerrors.InvalidInput("facet_configuration_invalid", "replace contribution requires an object value")
+			}
+			if err := configurationdomain.ValidateValuesShape(value); err != nil {
+				return domainerrors.InvalidInput("facet_configuration_invalid", err.Error())
+			}
+		default:
+			return domainerrors.InvalidInput("facet_configuration_invalid", "configuration mode must be inherit or replace")
+		}
+		if err := validateSecrets(configuration); err != nil {
+			return err
+		}
+	}
+	if slices.Contains(entities.FacetCollections, kind) {
+		if err := validateSecrets(input["meta"]); err != nil {
+			return err
+		}
 	}
 	managed := defaultString(stringField(input, "managedBy"), "user")
 	if !slices.Contains([]string{"user", entities.ManagedBySystem, "integration"}, managed) {
@@ -364,9 +452,25 @@ func validateDocument(kind string, input map[string]any) error {
 		return err
 	}
 	if kind == entities.CollectionFolders {
+		scope := defaultString(stringField(input, "scope"), entities.FolderScopeCollection)
 		entityType := stringField(input, "entityType")
-		if !slices.Contains(Collections, entityType) || entityType == entities.CollectionFolders {
-			return domainerrors.InvalidInput("folder_entity_type_invalid", "entityType must be a folderable collection")
+		switch scope {
+		case entities.FolderScopeCollection:
+			if !slices.Contains(Collections, entityType) || entityType == entities.CollectionFolders || entityType == entities.CollectionConfigurations {
+				return domainerrors.InvalidInput("folder_entity_type_invalid", "entityType must be a folderable collection")
+			}
+		case entities.FolderScopeWorkspace:
+			if entityType != "" {
+				return domainerrors.InvalidInput("folder_workspace_entity_type_invalid", "Workspace folders must not define entityType")
+			}
+		default:
+			return domainerrors.InvalidInput("folder_scope_invalid", "scope must be collection or workspace")
+		}
+		if icon := stringField(input, "icon"); icon != "" && !facetIconPattern.MatchString(icon) {
+			return domainerrors.InvalidInput("folder_icon_invalid", "icon must be a PascalCase token")
+		}
+		if color := stringField(input, "color"); color != "" && !facetColorPattern.MatchString(color) {
+			return domainerrors.InvalidInput("folder_color_invalid", "color must be canonical lowercase #rrggbb")
 		}
 		if _, exists := input["isSystem"]; exists {
 			return domainerrors.InvalidInput("folder_is_system_unsupported", "isSystem is replaced by managedBy")
@@ -376,6 +480,32 @@ func validateDocument(kind string, input map[string]any) error {
 		}
 	}
 	return nil
+}
+
+// validatePortableDocument разрешает только канонические system roots,
+// которые являются частью полного snapshot, но недоступны через live CRUD.
+func validatePortableDocument(kind string, input map[string]any) error {
+	if kind != entities.CollectionFolders || !boolField(input, "isRoot") {
+		return validateDocument(kind, input)
+	}
+
+	scope := defaultString(stringField(input, "scope"), entities.FolderScopeCollection)
+	entityType := stringField(input, "entityType")
+	identity := stringField(input, "identity")
+	if stringField(input, "managedBy") != entities.ManagedBySystem || stringField(input, "parentIdentity") != "" || portableDocumentDeleted(input) {
+		return domainerrors.InvalidInput("folder_root_invalid", "Root folders must be active system-managed top-level folders")
+	}
+	if scope == entities.FolderScopeWorkspace {
+		if identity != entities.WorkspaceRootFolderIdentity || entityType != "" {
+			return domainerrors.InvalidInput("folder_root_invalid", "Workspace root folder has an invalid identity or entityType")
+		}
+	} else if scope != entities.FolderScopeCollection || identity != entities.RootFolderIdentity(entityType) {
+		return domainerrors.InvalidInput("folder_root_invalid", "Collection root folder has an invalid identity or scope")
+	}
+
+	validated := copyMap(input)
+	delete(validated, "isRoot")
+	return validateDocument(kind, validated)
 }
 
 // validateProjectContract проверяет контракт проекта и запрещённые устаревшие поля.
@@ -403,12 +533,125 @@ func validateIdentity(value string) error {
 	return nil
 }
 
+var (
+	facetIconPattern  = regexp.MustCompile(`^[A-Z][A-Za-z0-9]{0,79}$`)
+	facetColorPattern = regexp.MustCompile(`^#[0-9a-f]{6}$`)
+)
+
+func portableDocumentKey(kind string, input map[string]any) string {
+	if kind == entities.CollectionFacetDocuments {
+		return stringField(input, "facetIdentity") + "\x00" + stringField(input, "identity")
+	}
+	return stringField(input, "identity")
+}
+
+func storedDocumentKey(document entities.Document) string {
+	if document.Type == entities.CollectionFacetDocuments {
+		var data map[string]any
+		_ = json.Unmarshal(document.Data, &data)
+		return stringField(data, "facetIdentity") + "\x00" + document.Identity
+	}
+	return document.Identity
+}
+
+func repositoryDocumentIdentity(document entities.Document) string {
+	if document.Type == entities.CollectionFacetDocuments {
+		var data map[string]any
+		_ = json.Unmarshal(document.Data, &data)
+		return stringField(data, "facetIdentity") + "/" + document.Identity
+	}
+	return document.Identity
+}
+
+func replaceDocumentDataField(document entities.Document, key string, value any) entities.Document {
+	data := map[string]any{}
+	_ = json.Unmarshal(document.Data, &data)
+	data[key] = value
+	document.Data = mustJSON(data)
+	return document
+}
+
+func facetPosition(document entities.Document) int {
+	data := map[string]any{}
+	_ = json.Unmarshal(document.Data, &data)
+	position, _ := numberField(data, "position")
+	return position
+}
+
+func facetReorderItems(bundle entities.PortableBundle, current []entities.Document) []ports.FacetOrderItem {
+	incoming := make([]map[string]any, 0, len(bundle.Documents[entities.CollectionFacets]))
+	for _, item := range bundle.Documents[entities.CollectionFacets] {
+		if !portableDocumentDeleted(item) {
+			incoming = append(incoming, item)
+		}
+	}
+	sort.SliceStable(incoming, func(i, j int) bool {
+		return integerField(incoming[i], "position") < integerField(incoming[j], "position")
+	})
+	byIdentity := make(map[string]entities.Document, len(current))
+	for _, document := range current {
+		byIdentity[document.Identity] = document
+	}
+	result := make([]ports.FacetOrderItem, 0, len(current))
+	seen := map[string]bool{}
+	for _, item := range incoming {
+		identity := stringField(item, "identity")
+		if document, ok := byIdentity[identity]; ok {
+			result = append(result, ports.FacetOrderItem{Identity: identity, ExpectedRevision: document.Revision})
+			seen[identity] = true
+		}
+	}
+	extras := make([]entities.Document, 0, len(current)-len(result))
+	for _, document := range current {
+		if !seen[document.Identity] {
+			extras = append(extras, document)
+		}
+	}
+	sort.SliceStable(extras, func(i, j int) bool {
+		left, right := facetPosition(extras[i]), facetPosition(extras[j])
+		if left != right {
+			return left < right
+		}
+		return extras[i].Identity < extras[j].Identity
+	})
+	for _, document := range extras {
+		result = append(result, ports.FacetOrderItem{Identity: document.Identity, ExpectedRevision: document.Revision})
+	}
+	return result
+}
+
+func integerField(input map[string]any, key string) int {
+	value, _ := numberField(input, key)
+	return value
+}
+
+func validateFacetPositions(items []map[string]any) error {
+	activeCount := 0
+	for _, item := range items {
+		if !portableDocumentDeleted(item) {
+			activeCount++
+		}
+	}
+	seen := make(map[int]bool, activeCount)
+	for _, item := range items {
+		if portableDocumentDeleted(item) {
+			continue
+		}
+		position, ok := numberField(item, "position")
+		if !ok || position < 0 || position >= activeCount || seen[position] {
+			return domainerrors.InvalidInput("facet_positions_invalid", "Facet positions must be a unique contiguous range starting at zero")
+		}
+		seen[position] = true
+	}
+	return nil
+}
+
 // validateSecrets проверяет, что входные данные не содержат открытых секретов.
 func validateSecrets(value any) error { return shared.ValidateSecrets(value) }
 
 // checksumContent вычисляет контрольную сумму содержимого документа.
 func checksumContent(doc entities.Document) string {
-	return checksum(mustJSON(map[string]any{"identity": doc.Identity, "displayName": doc.DisplayName, "description": doc.Description, "folderIdentity": doc.FolderIdentity, "managedBy": doc.ManagedBy, "managedById": doc.ManagedByID, "meta": doc.Meta, "data": doc.Data, "active": doc.Active, "deletedAt": doc.DeletedAt}))
+	return checksum(mustJSON(map[string]any{"identity": doc.Identity, "displayName": doc.DisplayName, "description": doc.Description, "folderIdentity": doc.FolderIdentity, "workspaceFolderIdentity": doc.WorkspaceFolderIdentity, "managedBy": doc.ManagedBy, "managedById": doc.ManagedByID, "meta": doc.Meta, "data": doc.Data, "active": doc.Active, "deletedAt": doc.DeletedAt}))
 }
 
 // checksum вычисляет SHA-256 контрольную сумму сериализованных данных.
@@ -559,6 +802,24 @@ func finalizeImportDomainVersion(bundle *entities.PortableBundle, providedDomain
 
 // orderPortableItems упорядочивает элементы пакета с учётом зависимостей.
 func orderPortableItems(kind string, items []map[string]any) ([]map[string]any, error) {
+	if kind == entities.CollectionFacets {
+		result := append([]map[string]any(nil), items...)
+		sort.SliceStable(result, func(i, j int) bool {
+			leftDeleted, rightDeleted := portableDocumentDeleted(result[i]), portableDocumentDeleted(result[j])
+			if leftDeleted != rightDeleted {
+				return !leftDeleted
+			}
+			if leftDeleted {
+				return stringField(result[i], "identity") < stringField(result[j], "identity")
+			}
+			left, right := integerField(result[i], "position"), integerField(result[j], "position")
+			if left != right {
+				return left < right
+			}
+			return stringField(result[i], "identity") < stringField(result[j], "identity")
+		})
+		return result, nil
+	}
 	if kind != "folders" || len(items) < 2 {
 		return items, nil
 	}

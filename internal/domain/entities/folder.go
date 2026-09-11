@@ -2,6 +2,12 @@ package entities
 
 const LegacyRootStreamsIdentity = "root-streams"
 
+const (
+	FolderScopeCollection       = "collection"
+	FolderScopeWorkspace        = "workspace"
+	WorkspaceRootFolderIdentity = "root-workspace-files"
+)
+
 // FolderEntityType возвращает физический тип папок для коллекции документов.
 func FolderEntityType(collection string) string {
 	if collection == "streams" {

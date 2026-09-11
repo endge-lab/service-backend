@@ -6591,6 +6591,679 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/facets:
+    get:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Получить фасеты
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Включить удалённые фасеты
+          name: includeDeleted
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/facet.FacetListResponse"
+    post:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Создать фасет
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/facet.CreateRequest"
+        description: Фасет
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/facet.FacetResponse"
+  /api/v1/facets/reorder:
+    post:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Изменить порядок фасетов
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/facet.ReorderRequest"
+        description: Полный порядок активных фасетов
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/facet.FacetListResponse"
+  "/api/v1/facets/{facetIdentity}":
+    get:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Получить фасет
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity фасета
+          name: facetIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Разрешить удалённый фасет
+          name: includeDeleted
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/facet.FacetResponse"
+    delete:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Мягко удалить фасет
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity фасета
+          name: facetIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Текущая revision фасета
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/facet.FacetResponse"
+    patch:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Изменить фасет
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity фасета
+          name: facetIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Текущая revision фасета
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/facet.PatchRequest"
+        description: Изменения фасета
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/facet.FacetResponse"
+  "/api/v1/facets/{facetIdentity}/documents":
+    get:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Получить документы фасета
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity фасета
+          name: facetIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Включить удалённые документы
+          name: includeDeleted
+          in: query
+          schema:
+            type: boolean
+        - description: Фильтр активности
+          name: active
+          in: query
+          schema:
+            type: boolean
+        - description: Размер страницы
+          name: limit
+          in: query
+          schema:
+            type: integer
+        - description: Смещение
+          name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/facet.FacetDocumentListResponse"
+    post:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Создать документ фасета
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity фасета
+          name: facetIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/facet.DocumentCreateRequest"
+        description: Документ фасета
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/facet.FacetDocumentResponse"
+  "/api/v1/facets/{facetIdentity}/documents/{documentIdentity}":
+    get:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Получить документ фасета
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity фасета
+          name: facetIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Identity документа внутри фасета
+          name: documentIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Разрешить удалённый документ
+          name: includeDeleted
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/facet.FacetDocumentResponse"
+    delete:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Мягко удалить документ фасета
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity фасета
+          name: facetIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Identity документа внутри фасета
+          name: documentIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Текущая revision документа
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/facet.FacetDocumentResponse"
+    patch:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Изменить документ фасета
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity фасета
+          name: facetIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Identity документа внутри фасета
+          name: documentIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Текущая revision документа
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/facet.DocumentPatchRequest"
+        description: Изменения документа
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/facet.FacetDocumentResponse"
+  "/api/v1/facets/{facetIdentity}/documents/{documentIdentity}/restore":
+    post:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Восстановить документ фасета
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity фасета
+          name: facetIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Identity документа внутри фасета
+          name: documentIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Текущая revision документа
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/facet.FacetDocumentResponse"
+  "/api/v1/facets/{facetIdentity}/documents/{documentIdentity}/revisions":
+    get:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Получить ревизии документа фасета
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity фасета
+          name: facetIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Identity документа внутри фасета
+          name: documentIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/revision.ListResponse"
+  "/api/v1/facets/{facetIdentity}/documents/{documentIdentity}/revisions/{revisionId}":
+    get:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Получить ревизию документа фасета
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity фасета
+          name: facetIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Identity документа внутри фасета
+          name: documentIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: UUID ревизии
+          name: revisionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/revision.Response"
+  "/api/v1/facets/{facetIdentity}/documents/{documentIdentity}/revisions/{revisionId}/restore":
+    post:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Восстановить ревизию документа фасета
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity фасета
+          name: facetIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Identity документа внутри фасета
+          name: documentIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: UUID ревизии
+          name: revisionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Текущая revision документа
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/facet.FacetDocumentResponse"
+  "/api/v1/facets/{facetIdentity}/restore":
+    post:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Восстановить фасет
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity фасета
+          name: facetIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Текущая revision фасета
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/facet.FacetResponse"
+  "/api/v1/facets/{facetIdentity}/revisions":
+    get:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Получить ревизии фасета
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity фасета
+          name: facetIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/revision.ListResponse"
+  "/api/v1/facets/{facetIdentity}/revisions/{revisionId}":
+    get:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Получить ревизию фасета
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity фасета
+          name: facetIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: UUID ревизии
+          name: revisionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/revision.Response"
+  "/api/v1/facets/{facetIdentity}/revisions/{revisionId}/restore":
+    post:
+      security:
+        - BearerAuth: []
+      tags:
+        - Фасеты
+      summary: Восстановить ревизию фасета
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity фасета
+          name: facetIdentity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: UUID ревизии
+          name: revisionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Текущая revision фасета
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/facet.FacetResponse"
   /api/v1/filters:
     get:
       security:
@@ -15722,6 +16395,9 @@ components:
           minimum: 1
         target:
           type: object
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     action.ListResponse:
       type: object
       properties:
@@ -15782,6 +16458,9 @@ components:
           minimum: 1
         target:
           type: object
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     action.Response:
       type: object
       properties:
@@ -15845,6 +16524,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     ai_assistant.CapabilitiesResponse:
       type: object
       properties:
@@ -16209,6 +16891,9 @@ components:
           additionalProperties: {}
         session:
           $ref: "#/components/schemas/auth_profile.SessionPolicy"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     auth_profile.ListResponse:
       type: object
       properties:
@@ -16271,6 +16956,9 @@ components:
           additionalProperties: {}
         session:
           $ref: "#/components/schemas/auth_profile.SessionPolicy"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     auth_profile.Response:
       type: object
       properties:
@@ -16336,6 +17024,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     auth_profile.SessionPolicy:
       type: object
       required:
@@ -16676,6 +17367,9 @@ components:
         tag:
           type: string
           example: main-component
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     component.ListResponse:
       type: object
       properties:
@@ -16739,6 +17433,9 @@ components:
         tag:
           type: string
           example: main-component
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     component.Response:
       type: object
       properties:
@@ -16808,6 +17505,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     composition.CreateRequest:
       type: object
       required:
@@ -16859,6 +17559,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     composition.ListResponse:
       type: object
       properties:
@@ -16921,6 +17624,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     composition.Response:
       type: object
       properties:
@@ -16986,6 +17692,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     computation.CreateRequest:
       type: object
       required:
@@ -17035,6 +17744,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     computation.ListResponse:
       type: object
       properties:
@@ -17094,6 +17806,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     computation.Response:
       type: object
       properties:
@@ -17156,6 +17871,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     configuration.CreateRequest:
       type: object
       required:
@@ -17201,6 +17919,9 @@ components:
         sourceVersion:
           type: integer
           example: 1
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     configuration.ListResponse:
       type: object
       properties:
@@ -17257,6 +17978,9 @@ components:
         sourceVersion:
           type: integer
           example: 1
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     configuration.Response:
       type: object
       properties:
@@ -17316,6 +18040,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     converter.CreateRequest:
       type: object
       required:
@@ -17352,6 +18079,9 @@ components:
         meta:
           type: object
           additionalProperties: {}
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     converter.ListResponse:
       type: object
       properties:
@@ -17401,6 +18131,9 @@ components:
         meta:
           type: object
           additionalProperties: {}
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     converter.Response:
       type: object
       properties:
@@ -17454,6 +18187,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     data_view.CreateRequest:
       type: object
       required:
@@ -17499,6 +18235,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     data_view.ListResponse:
       type: object
       properties:
@@ -17555,6 +18294,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     data_view.Response:
       type: object
       properties:
@@ -17614,6 +18356,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     document_move.MoveDocumentRequest:
       type: object
       required:
@@ -17638,6 +18383,7 @@ components:
       required:
         - documents
         - folderIdentity
+        - placement
       properties:
         documents:
           type: array
@@ -17649,6 +18395,12 @@ components:
           type: string
           maxLength: 160
           example: schedule-actions
+        placement:
+          type: string
+          enum:
+            - frontend
+            - workspace
+          example: workspace
     document_move.MoveResponse:
       type: object
       properties:
@@ -17825,6 +18577,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     domain_type.ListResponse:
       type: object
       properties:
@@ -17884,6 +18639,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     domain_type.Response:
       type: object
       properties:
@@ -17946,6 +18704,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     entities.AIClarification:
       type: object
       properties:
@@ -18230,6 +18991,9 @@ components:
         meta:
           type: object
           additionalProperties: {}
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     environment.ListResponse:
       type: object
       properties:
@@ -18282,6 +19046,9 @@ components:
         meta:
           type: object
           additionalProperties: {}
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     environment.Response:
       type: object
       properties:
@@ -18338,6 +19105,235 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
+    facet.CreateRequest:
+      type: object
+      required:
+        - color
+        - displayName
+        - icon
+        - identity
+      properties:
+        color:
+          type: string
+          example: "#2563eb"
+        displayName:
+          type: string
+          maxLength: 255
+          example: Регион
+        icon:
+          type: string
+          maxLength: 80
+          example: MapPin
+        identity:
+          type: string
+          maxLength: 160
+          example: region
+        meta:
+          type: object
+          additionalProperties: {}
+    facet.DocumentCreateRequest:
+      type: object
+      required:
+        - displayName
+        - identity
+      properties:
+        active:
+          type: boolean
+        configuration:
+          type: object
+          additionalProperties: {}
+        description:
+          type: string
+        displayName:
+          type: string
+          maxLength: 255
+        identity:
+          type: string
+          maxLength: 160
+        meta:
+          type: object
+          additionalProperties: {}
+    facet.DocumentPatchRequest:
+      type: object
+      properties:
+        active:
+          type: boolean
+        configuration:
+          type: object
+          additionalProperties: {}
+        description:
+          type: string
+        displayName:
+          type: string
+          maxLength: 255
+        identity:
+          type: string
+          maxLength: 160
+        meta:
+          type: object
+          additionalProperties: {}
+    facet.FacetDocumentListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/facet.FacetDocumentResponse"
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+    facet.FacetDocumentResponse:
+      type: object
+      properties:
+        active:
+          type: boolean
+          example: true
+        configuration:
+          type: object
+          additionalProperties: {}
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-08-04T10:00:00Z
+        createdBy:
+          $ref: "#/components/schemas/entities.Actor"
+        deletedAt:
+          type: string
+          format: date-time
+          example: 2026-08-04T11:00:00Z
+        description:
+          type: string
+          example: Описание объекта
+        displayName:
+          type: string
+          example: Основной объект
+        facetIdentity:
+          type: string
+        folderIdentity:
+          type: string
+          example: root-projects
+        id:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        identity:
+          type: string
+          example: main
+        managedBy:
+          type: string
+          enum:
+            - user
+            - system
+            - integration
+          example: user
+        managedById:
+          type: string
+          example: endge-core
+        meta:
+          type: object
+        revision:
+          type: integer
+          example: 3
+        updatedAt:
+          type: string
+          format: date-time
+          example: 2026-08-04T10:05:00Z
+        updatedBy:
+          $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
+    facet.FacetListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/facet.FacetResponse"
+        total:
+          type: integer
+    facet.FacetResponse:
+      type: object
+      properties:
+        active:
+          type: boolean
+        color:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          $ref: "#/components/schemas/entities.Actor"
+        deletedAt:
+          type: string
+          format: date-time
+        displayName:
+          type: string
+        documentCount:
+          type: integer
+        icon:
+          type: string
+        id:
+          type: string
+          format: uuid
+        identity:
+          type: string
+        meta:
+          type: object
+        position:
+          type: integer
+        revision:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+        updatedBy:
+          $ref: "#/components/schemas/entities.Actor"
+    facet.PatchRequest:
+      type: object
+      properties:
+        color:
+          type: string
+        displayName:
+          type: string
+          maxLength: 255
+        icon:
+          type: string
+          maxLength: 80
+        identity:
+          type: string
+          maxLength: 160
+        meta:
+          type: object
+          additionalProperties: {}
+    facet.ReorderItem:
+      type: object
+      required:
+        - expectedRevision
+        - identity
+      properties:
+        expectedRevision:
+          type: integer
+          minimum: 1
+        identity:
+          type: string
+          maxLength: 160
+    facet.ReorderRequest:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/facet.ReorderItem"
     filter.CreateRequest:
       type: object
       required:
@@ -18385,6 +19381,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     filter.ListResponse:
       type: object
       properties:
@@ -18445,6 +19444,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     filter.Response:
       type: object
       properties:
@@ -18508,16 +19510,21 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     folder.CreateRequest:
       type: object
       required:
         - displayName
-        - entityType
         - identity
       properties:
         active:
           type: boolean
           example: true
+        color:
+          type: string
+          example: "#64748b"
         description:
           type: string
           example: Описание объекта
@@ -18531,6 +19538,10 @@ components:
         folderIdentity:
           type: string
           example: root-projects
+        icon:
+          type: string
+          maxLength: 80
+          example: FolderKanban
         identity:
           type: string
           maxLength: 160
@@ -18551,6 +19562,15 @@ components:
         parentIdentity:
           type: string
           example: root-projects
+        scope:
+          type: string
+          enum:
+            - collection
+            - workspace
+          example: collection
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     folder.ListResponse:
       type: object
       properties:
@@ -18573,6 +19593,8 @@ components:
         active:
           type: boolean
           example: true
+        color:
+          type: string
         description:
           type: string
           example: Описание объекта
@@ -18586,6 +19608,9 @@ components:
         folderIdentity:
           type: string
           example: root-projects
+        icon:
+          type: string
+          maxLength: 80
         identity:
           type: string
           maxLength: 160
@@ -18606,12 +19631,22 @@ components:
         parentIdentity:
           type: string
           example: root-projects
+        scope:
+          type: string
+          enum:
+            - collection
+            - workspace
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     folder.Response:
       type: object
       properties:
         active:
           type: boolean
           example: true
+        color:
+          type: string
         createdAt:
           type: string
           format: date-time
@@ -18634,6 +19669,8 @@ components:
         folderIdentity:
           type: string
           example: root-projects
+        icon:
+          type: string
         id:
           type: string
           format: uuid
@@ -18659,12 +19696,20 @@ components:
         revision:
           type: integer
           example: 3
+        scope:
+          type: string
+          enum:
+            - collection
+            - workspace
         updatedAt:
           type: string
           format: date-time
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     health.ConnectedServiceResponse:
       type: object
       properties:
@@ -18756,6 +19801,9 @@ components:
         meta:
           type: object
           additionalProperties: {}
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     i18n_bundle.ListResponse:
       type: object
       properties:
@@ -18808,6 +19856,9 @@ components:
         meta:
           type: object
           additionalProperties: {}
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     i18n_bundle.Response:
       type: object
       properties:
@@ -18864,6 +19915,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     integration.CreateRequest:
       type: object
       required:
@@ -19048,6 +20102,9 @@ components:
           type: string
           maxLength: 8388608
           example: export default {}
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     mock.ListResponse:
       type: object
       properties:
@@ -19110,6 +20167,9 @@ components:
           type: string
           maxLength: 8388608
           example: export default {}
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     mock.Response:
       type: object
       properties:
@@ -19175,6 +20235,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     mock_data.GenerationMetadata:
       type: object
       properties:
@@ -19343,6 +20406,9 @@ components:
           type: array
           items:
             type: object
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     navigation.ListResponse:
       type: object
       properties:
@@ -19396,6 +20462,9 @@ components:
           type: array
           items:
             type: object
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     navigation.Response:
       type: object
       properties:
@@ -19453,6 +20522,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     project.CreateRequest:
       type: object
       required:
@@ -19508,6 +20580,9 @@ components:
           type: string
         sourceVersion:
           type: integer
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     project.ListResponse:
       type: object
       properties:
@@ -19573,6 +20648,9 @@ components:
           type: string
         sourceVersion:
           type: integer
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     project.Response:
       type: object
       properties:
@@ -19644,6 +20722,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     query.CreateRequest:
       type: object
       required:
@@ -19689,6 +20770,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     query.ListResponse:
       type: object
       properties:
@@ -19745,6 +20829,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     query.Response:
       type: object
       properties:
@@ -19804,6 +20891,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     release.CreateRequest:
       type: object
       required:
@@ -20172,6 +21262,12 @@ components:
         displayName:
           type: string
           example: Основной объект
+        documentStructure:
+          type: string
+          enum:
+            - frontend
+            - custom
+          example: frontend
         headSequence:
           type: integer
           example: 42
@@ -20258,6 +21354,9 @@ components:
         sourceVersion:
           type: integer
           example: 1
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     simulation.ListResponse:
       type: object
       properties:
@@ -20315,6 +21414,9 @@ components:
         sourceVersion:
           type: integer
           example: 1
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     simulation.Response:
       type: object
       properties:
@@ -20375,6 +21477,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     store.CreateRequest:
       type: object
       required:
@@ -20420,6 +21525,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     store.ListResponse:
       type: object
       properties:
@@ -20476,6 +21584,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     store.Response:
       type: object
       properties:
@@ -20535,6 +21646,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     stream.CreateRequest:
       type: object
       required:
@@ -20580,6 +21694,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     stream.ListResponse:
       type: object
       properties:
@@ -20636,6 +21753,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     stream.Response:
       type: object
       properties:
@@ -20695,6 +21815,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     style.CreateRequest:
       type: object
       required:
@@ -20740,6 +21863,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     style.ListResponse:
       type: object
       properties:
@@ -20796,6 +21922,9 @@ components:
         sourceVersion:
           type: integer
           example: 2
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     style.Response:
       type: object
       properties:
@@ -20855,6 +21984,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     tenant.CreateRequest:
       type: object
       required:
@@ -20899,6 +22031,9 @@ components:
         meta:
           type: object
           additionalProperties: {}
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     tenant.ListResponse:
       type: object
       properties:
@@ -20955,6 +22090,9 @@ components:
         meta:
           type: object
           additionalProperties: {}
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     tenant.Response:
       type: object
       properties:
@@ -21014,6 +22152,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     update.CreateRequest:
       type: object
       required:
@@ -21064,6 +22205,9 @@ components:
           type: string
           maxLength: 160
           example: application-store
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     update.ListResponse:
       type: object
       properties:
@@ -21124,6 +22268,9 @@ components:
           type: string
           maxLength: 160
           example: application-store
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     update.Response:
       type: object
       properties:
@@ -21186,6 +22333,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     vocab.CreateRequest:
       type: object
       required:
@@ -21251,6 +22401,9 @@ components:
         sourceVersion:
           type: integer
           example: 1
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     vocab.ListResponse:
       type: object
       properties:
@@ -21329,6 +22482,9 @@ components:
         sourceVersion:
           type: integer
           example: 1
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     vocab.Response:
       type: object
       properties:
@@ -21403,6 +22559,9 @@ components:
           example: 2026-08-04T10:05:00Z
         updatedBy:
           $ref: "#/components/schemas/entities.Actor"
+        workspaceFolderIdentity:
+          type: string
+          example: root-workspace-files
     workspace.CreateRequest:
       type: object
       required:
@@ -21428,6 +22587,12 @@ components:
           type: string
           maxLength: 255
           example: Основной объект
+        documentStructure:
+          type: string
+          enum:
+            - frontend
+            - custom
+          example: frontend
         identity:
           type: string
           maxLength: 160
@@ -21542,6 +22707,12 @@ components:
           type: string
           maxLength: 255
           example: Основной объект
+        documentStructure:
+          type: string
+          enum:
+            - frontend
+            - custom
+          example: frontend
         identity:
           type: string
           maxLength: 160
@@ -21579,6 +22750,12 @@ components:
         displayName:
           type: string
           example: Основной объект
+        documentStructure:
+          type: string
+          enum:
+            - frontend
+            - custom
+          example: frontend
         headSequence:
           type: integer
           example: 42

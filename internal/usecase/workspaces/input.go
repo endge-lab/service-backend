@@ -19,6 +19,7 @@ type CreateInput struct {
 	DisplayName           string                      `json:"displayName"`
 	Description           *string                     `json:"description,omitempty"`
 	DataMode              string                      `json:"dataMode,omitempty"`
+	DocumentStructure     string                      `json:"documentStructure,omitempty"`
 	Configuration         map[string]any              `json:"configuration,omitempty"`
 	Meta                  map[string]any              `json:"meta,omitempty"`
 	Active                *bool                       `json:"active,omitempty"`

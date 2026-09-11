@@ -15,7 +15,7 @@ func (r *EndgeRepository) ListWorkspaces(ctx context.Context, userID string, pla
 	if platform {
 		where = "WHERE TRUE"
 	}
-	rows, err := r.executor(ctx).Query(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.configuration,w.meta,w.active,w.generation::text,w.head_sequence,w.revision,
+	rows, err := r.executor(ctx).Query(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.document_structure,w.configuration,w.meta,w.active,w.generation::text,w.head_sequence,w.revision,
 		`+actorScan("cu")+`,`+actorScan("uu")+`,w.created_at,w.updated_at FROM workspaces w
 		LEFT JOIN access_grants g ON g.workspace_id=w.id AND g.user_id=$1 AND g.scope_type='workspace'
 		JOIN service_users cu ON cu.id=w.created_by JOIN service_users uu ON uu.id=w.updated_by `+where+` ORDER BY w.identity`, userID)
@@ -35,7 +35,7 @@ func (r *EndgeRepository) ListWorkspaces(ctx context.Context, userID string, pla
 }
 
 func (r *EndgeRepository) GetWorkspace(ctx context.Context, identity string) (*entities.Workspace, error) {
-	row := r.executor(ctx).QueryRow(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.configuration,w.meta,w.active,w.generation::text,w.head_sequence,w.revision,
+	row := r.executor(ctx).QueryRow(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.document_structure,w.configuration,w.meta,w.active,w.generation::text,w.head_sequence,w.revision,
 		`+actorScan("cu")+`,`+actorScan("uu")+`,w.created_at,w.updated_at FROM workspaces w JOIN service_users cu ON cu.id=w.created_by JOIN service_users uu ON uu.id=w.updated_by WHERE w.identity=$1`, identity)
 	return scanWorkspace(row)
 }
@@ -45,7 +45,7 @@ type scanner interface{ Scan(...any) error }
 func scanWorkspace(row scanner) (*entities.Workspace, error) {
 	value := &entities.Workspace{}
 	var created, updated []byte
-	if err := row.Scan(&value.ID, &value.Identity, &value.DisplayName, &value.Description, &value.DataMode, &value.Configuration, &value.Meta, &value.Active, &value.Generation, &value.HeadSequence, &value.Revision, &created, &updated, &value.CreatedAt, &value.UpdatedAt); err != nil {
+	if err := row.Scan(&value.ID, &value.Identity, &value.DisplayName, &value.Description, &value.DataMode, &value.DocumentStructure, &value.Configuration, &value.Meta, &value.Active, &value.Generation, &value.HeadSequence, &value.Revision, &created, &updated, &value.CreatedAt, &value.UpdatedAt); err != nil {
 		return nil, repositoryError(err)
 	}
 	_ = json.Unmarshal(created, &value.CreatedBy)
@@ -54,7 +54,7 @@ func scanWorkspace(row scanner) (*entities.Workspace, error) {
 }
 
 func (r *EndgeRepository) CreateWorkspace(ctx context.Context, value entities.Workspace, actor string) (*entities.Workspace, error) {
-	_, err := r.executor(ctx).Exec(ctx, `INSERT INTO workspaces(id,identity,display_name,description,data_mode,configuration,meta,active,created_by,updated_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)`, value.ID, value.Identity, value.DisplayName, value.Description, value.DataMode, value.Configuration, value.Meta, value.Active, actor)
+	_, err := r.executor(ctx).Exec(ctx, `INSERT INTO workspaces(id,identity,display_name,description,data_mode,document_structure,configuration,meta,active,created_by,updated_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$10)`, value.ID, value.Identity, value.DisplayName, value.Description, value.DataMode, value.DocumentStructure, value.Configuration, value.Meta, value.Active, actor)
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +82,9 @@ func (r *EndgeRepository) UpdateWorkspace(ctx context.Context, identity string, 
 	if v, ok := patch["dataMode"].(string); ok {
 		current.DataMode = v
 	}
+	if v, ok := patch["documentStructure"].(string); ok {
+		current.DocumentStructure = v
+	}
 	if v, ok := patch["configuration"]; ok {
 		current.Configuration = mustJSON(v)
 	}
@@ -91,7 +94,7 @@ func (r *EndgeRepository) UpdateWorkspace(ctx context.Context, identity string, 
 	if v, ok := patch["active"].(bool); ok {
 		current.Active = v
 	}
-	tag, err := r.executor(ctx).Exec(ctx, `UPDATE workspaces SET identity=$1,display_name=$2,description=$3,data_mode=$4,configuration=$5,meta=$6,active=$7,updated_by=$8,updated_at=NOW(),revision=revision+1 WHERE id=$9 AND revision=$10`, current.Identity, current.DisplayName, current.Description, current.DataMode, current.Configuration, current.Meta, current.Active, actor, current.ID, revision)
+	tag, err := r.executor(ctx).Exec(ctx, `UPDATE workspaces SET identity=$1,display_name=$2,description=$3,data_mode=$4,document_structure=$5,configuration=$6,meta=$7,active=$8,updated_by=$9,updated_at=NOW(),revision=revision+1 WHERE id=$10 AND revision=$11`, current.Identity, current.DisplayName, current.Description, current.DataMode, current.DocumentStructure, current.Configuration, current.Meta, current.Active, actor, current.ID, revision)
 	if err != nil {
 		return nil, err
 	}

@@ -47,6 +47,11 @@ func CanonicalizeInPlace(bundle *entities.PortableBundle) CanonicalizationReport
 	if _, exists := bundle.Documents[entities.CollectionConfigurations]; !exists {
 		bundle.Documents[entities.CollectionConfigurations] = []map[string]any{}
 	}
+	for _, kind := range entities.FacetCollections {
+		if _, exists := bundle.Documents[kind]; !exists {
+			bundle.Documents[kind] = []map[string]any{}
+		}
+	}
 	if bundle.Kind == "" {
 		bundle.Kind = "workspace-snapshot"
 	}
@@ -54,6 +59,9 @@ func CanonicalizeInPlace(bundle *entities.PortableBundle) CanonicalizationReport
 		bundle.Workspace = map[string]any{}
 	}
 	delete(bundle.Workspace, "state")
+	if _, exists := bundle.Workspace["documentStructure"]; !exists {
+		bundle.Workspace["documentStructure"] = entities.WorkspaceDocumentStructureFrontend
+	}
 	configurationdomain.RemoveLegacySSE(bundle.Workspace["configuration"])
 	if configuration, exists := bundle.Workspace["configuration"]; exists {
 		before := canonicalText(configuration)
@@ -81,13 +89,34 @@ func CanonicalizeInPlace(bundle *entities.PortableBundle) CanonicalizationReport
 			report.MigratedLegacyVocabs++
 		}
 	}
+	hasWorkspaceRoot := false
 	for _, folder := range bundle.Documents[entities.CollectionFolders] {
+		if _, exists := folder["scope"]; !exists {
+			folder["scope"] = entities.FolderScopeCollection
+		}
+		if _, exists := folder["icon"]; !exists {
+			folder["icon"] = nil
+		}
+		if _, exists := folder["color"]; !exists {
+			folder["color"] = nil
+		}
+		if stringValue(folder, "identity") == entities.WorkspaceRootFolderIdentity {
+			hasWorkspaceRoot = true
+		}
 		if entityType := stringValue(folder, "entityType"); entityType != "" {
 			folder["entityType"] = entities.FolderEntityType(entityType)
 		}
 		if stringValue(folder, "parentIdentity") == entities.LegacyRootStreamsIdentity {
 			folder["parentIdentity"] = entities.RootFolderIdentity(entities.CollectionStreams)
 		}
+	}
+	if !hasWorkspaceRoot {
+		bundle.Documents[entities.CollectionFolders] = append(bundle.Documents[entities.CollectionFolders], map[string]any{
+			"identity": entities.WorkspaceRootFolderIdentity, "displayName": "Workspace",
+			"description": nil, "scope": entities.FolderScopeWorkspace, "entityType": nil,
+			"parentIdentity": nil, "isRoot": true, "icon": nil, "color": nil,
+			"managedBy": entities.ManagedBySystem, "managedById": nil, "meta": map[string]any{}, "active": true,
+		})
 	}
 
 	folderTypes := map[string]string{}
@@ -110,12 +139,25 @@ func CanonicalizeInPlace(bundle *entities.PortableBundle) CanonicalizationReport
 				}
 			} else {
 				normalizeFolderReference(kind, item, folderTypes, &report)
+				if !contains(entities.FacetCollections, kind) && strings.TrimSpace(stringValue(item, "workspaceFolderIdentity")) == "" {
+					item["workspaceFolderIdentity"] = entities.WorkspaceRootFolderIdentity
+					report.NormalizedFolderReferences++
+				}
 			}
 			filtered = append(filtered, item)
 		}
 		bundle.Documents[kind] = filtered
 	}
 	return report
+}
+
+func contains(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
 }
 
 func normalizeFolderReference(kind string, item map[string]any, folderTypes map[string]string, report *CanonicalizationReport) {

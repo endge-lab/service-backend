@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -18,6 +19,11 @@ var Collections = append([]string(nil), entities.DocumentCollections...)
 var sourceVersionCollections = []string{entities.CollectionProjects, entities.CollectionTypes, entities.CollectionQueries, entities.CollectionDataViews, entities.CollectionCompositions, entities.CollectionStores, entities.CollectionStreams, entities.CollectionSimulations, entities.CollectionUpdates, entities.CollectionFilters, entities.CollectionComputations, entities.CollectionVocabs, entities.CollectionStyles, entities.CollectionConfigurations}
 
 var readOnlyFields = []string{"id", "type", "revision", "author", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", "created_by", "updated_by"}
+
+var (
+	folderIconPattern  = regexp.MustCompile(`^[A-Z][A-Za-z0-9]*$`)
+	folderColorPattern = regexp.MustCompile(`^#[0-9a-f]{6}$`)
+)
 
 // validateCollection проверяет, что коллекция поддерживается документным API.
 func validateCollection(collection string) error {
@@ -114,9 +120,25 @@ func validateDocument(kind string, input map[string]any) error {
 		}
 	}
 	if kind == entities.CollectionFolders {
+		scope := defaultString(stringField(input, "scope"), entities.FolderScopeCollection)
 		entityType := stringField(input, "entityType")
-		if !slices.Contains(Collections, entityType) || entityType == entities.CollectionFolders || entityType == entities.CollectionConfigurations {
-			return domainerrors.InvalidInput("folder_entity_type_invalid", "entityType must be a folderable collection")
+		switch scope {
+		case entities.FolderScopeCollection:
+			if !slices.Contains(Collections, entityType) || entityType == entities.CollectionFolders || entityType == entities.CollectionConfigurations {
+				return domainerrors.InvalidInput("folder_entity_type_invalid", "entityType must be a folderable collection")
+			}
+		case entities.FolderScopeWorkspace:
+			if entityType != "" {
+				return domainerrors.InvalidInput("folder_workspace_entity_type_invalid", "Workspace folders must not define entityType")
+			}
+		default:
+			return domainerrors.InvalidInput("folder_scope_invalid", "scope must be collection or workspace")
+		}
+		if icon := stringField(input, "icon"); icon != "" && (len(icon) > 80 || !folderIconPattern.MatchString(icon)) {
+			return domainerrors.InvalidInput("folder_icon_invalid", "icon must be a PascalCase token")
+		}
+		if color := stringField(input, "color"); color != "" && !folderColorPattern.MatchString(color) {
+			return domainerrors.InvalidInput("folder_color_invalid", "color must be canonical lowercase #rrggbb")
 		}
 		if _, exists := input["isSystem"]; exists {
 			return domainerrors.InvalidInput("folder_is_system_unsupported", "isSystem is replaced by managedBy")
@@ -153,13 +175,13 @@ func validateSecrets(value any) error {
 // documentFromInput создаёт доменный документ из входных данных.
 func documentFromInput(kind, workspaceID string, input map[string]any, actorID string) entities.Document {
 	data := copyMap(input)
-	for _, key := range append(readOnlyFields, "identity", "displayName", "description", "folderIdentity", "managedBy", "managedById", "meta", "active") {
+	for _, key := range append(readOnlyFields, "identity", "displayName", "description", "folderIdentity", "workspaceFolderIdentity", "managedBy", "managedById", "meta", "active") {
 		delete(data, key)
 	}
 	return entities.Document{
 		ID: uuid.NewString(), WorkspaceID: workspaceID, Type: kind,
 		Identity: stringField(input, "identity"), DisplayName: stringField(input, "displayName"),
-		Description: optionalString(input, "description"), FolderIdentity: optionalString(input, "folderIdentity"),
+		Description: optionalString(input, "description"), FolderIdentity: optionalString(input, "folderIdentity"), WorkspaceFolderIdentity: optionalString(input, "workspaceFolderIdentity"),
 		ManagedBy: defaultString(stringField(input, "managedBy"), "user"), ManagedByID: optionalString(input, "managedById"),
 		Meta: jsonField(input, "meta", json.RawMessage(`{}`)), Data: mustJSON(data), Active: defaultBool(input, "active", true),
 		Revision: 1, CreatedBy: entities.Actor{ID: actorID}, UpdatedBy: entities.Actor{ID: actorID},
@@ -180,6 +202,9 @@ func applyPatch(document entities.Document, patch map[string]any, actorID string
 	if _, ok := patch["folderIdentity"]; ok {
 		document.FolderIdentity = optionalString(patch, "folderIdentity")
 	}
+	if _, ok := patch["workspaceFolderIdentity"]; ok {
+		document.WorkspaceFolderIdentity = optionalString(patch, "workspaceFolderIdentity")
+	}
 	if value, ok := patch["managedBy"].(string); ok {
 		document.ManagedBy = value
 	}
@@ -195,7 +220,7 @@ func applyPatch(document entities.Document, patch map[string]any, actorID string
 	var data map[string]any
 	_ = json.Unmarshal(document.Data, &data)
 	for key, value := range patch {
-		if !slices.Contains(append(readOnlyFields, "identity", "displayName", "description", "folderIdentity", "managedBy", "managedById", "meta", "active"), key) {
+		if !slices.Contains(append(readOnlyFields, "identity", "displayName", "description", "folderIdentity", "workspaceFolderIdentity", "managedBy", "managedById", "meta", "active"), key) {
 			data[key] = value
 		}
 	}
@@ -213,7 +238,7 @@ func documentAsInput(document entities.Document) map[string]any {
 
 // checksumContent вычисляет контрольную сумму содержимого документа.
 func checksumContent(document entities.Document) string {
-	return checksum(mustJSON(map[string]any{"identity": document.Identity, "displayName": document.DisplayName, "description": document.Description, "folderIdentity": document.FolderIdentity, "managedBy": document.ManagedBy, "managedById": document.ManagedByID, "meta": canonicalJSONValue(document.Meta), "data": canonicalJSONValue(document.Data), "active": document.Active, "deletedAt": document.DeletedAt}))
+	return checksum(mustJSON(map[string]any{"identity": document.Identity, "displayName": document.DisplayName, "description": document.Description, "folderIdentity": document.FolderIdentity, "workspaceFolderIdentity": document.WorkspaceFolderIdentity, "managedBy": document.ManagedBy, "managedById": document.ManagedByID, "meta": canonicalJSONValue(document.Meta), "data": canonicalJSONValue(document.Data), "active": document.Active, "deletedAt": document.DeletedAt}))
 }
 
 // canonicalJSONValue устраняет различия форматирования JSONB перед no-op сравнением.

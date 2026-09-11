@@ -16,13 +16,15 @@ func (s *Lifecycle) resolveFolder(ctx context.Context, scope entities.WorkspaceA
 	}
 	identity := stringField(input, "folderIdentity")
 	if kind == entities.CollectionFolders {
+		folderScope := defaultString(stringField(input, "scope"), entities.FolderScopeCollection)
 		entityType := entities.FolderEntityType(stringField(input, "entityType"))
-		if entityType == "" {
-			return nil, domainerrors.InvalidInput("folder_entity_type_required", "entityType is required")
-		}
 		identity = stringField(input, "parentIdentity")
 		if identity == "" && !isRoot(input) {
-			identity = entities.RootFolderIdentity(entityType)
+			if folderScope == entities.FolderScopeWorkspace {
+				identity = entities.WorkspaceRootFolderIdentity
+			} else {
+				identity = entities.RootFolderIdentity(entityType)
+			}
 		}
 		return s.documents.ResolveFolder(ctx, scope.Workspace.ID, identity, entityType)
 	}
@@ -30,6 +32,19 @@ func (s *Lifecycle) resolveFolder(ctx context.Context, scope entities.WorkspaceA
 		identity = entities.RootFolderIdentity(kind)
 	}
 	return s.documents.ResolveFolder(ctx, scope.Workspace.ID, identity, entities.FolderEntityType(kind))
+}
+
+// resolveDocumentWorkspaceFolder проверяет вторую, общую для Workspace, папку документа.
+func (s *Lifecycle) resolveDocumentWorkspaceFolder(ctx context.Context, scope entities.WorkspaceAccess, document entities.Document) error {
+	if document.Type == entities.CollectionFolders {
+		return nil
+	}
+	identity := entities.WorkspaceRootFolderIdentity
+	if document.WorkspaceFolderIdentity != nil && strings.TrimSpace(*document.WorkspaceFolderIdentity) != "" {
+		identity = strings.TrimSpace(*document.WorkspaceFolderIdentity)
+	}
+	_, err := s.documents.ResolveFolder(ctx, scope.Workspace.ID, identity, "")
+	return err
 }
 
 // resolveDocumentFolder разрешает папку, указанную в документе.
@@ -41,9 +56,14 @@ func (s *Lifecycle) resolveDocumentFolder(ctx context.Context, scope entities.Wo
 	_ = json.Unmarshal(document.Data, &data)
 	if document.Type == entities.CollectionFolders {
 		entityType := entities.FolderEntityType(stringField(data, "entityType"))
+		folderScope := defaultString(stringField(data, "scope"), entities.FolderScopeCollection)
 		parent := stringField(data, "parentIdentity")
 		if parent == "" && !isRoot(data) {
-			parent = entities.RootFolderIdentity(entityType)
+			if folderScope == entities.FolderScopeWorkspace {
+				parent = entities.WorkspaceRootFolderIdentity
+			} else {
+				parent = entities.RootFolderIdentity(entityType)
+			}
 		}
 		return s.documents.ResolveFolder(ctx, scope.Workspace.ID, parent, entityType)
 	}
@@ -60,9 +80,46 @@ func (s *Lifecycle) resolveDocumentFolder(ctx context.Context, scope entities.Wo
 // normalizeFolderInput приводит тип папок к общей физической секции коллекции.
 func normalizeFolderInput(kind string, input map[string]any) {
 	if kind == entities.CollectionFolders {
+		if scope := stringField(input, "scope"); scope != "" {
+			input["scope"] = scope
+		}
 		if entityType := stringField(input, "entityType"); entityType != "" {
 			input["entityType"] = entities.FolderEntityType(entityType)
 		}
+	}
+}
+
+// validateFolderScopePatch запрещает превращать существующую папку в папку другой проекции.
+func validateFolderScopePatch(existing entities.Document, patch map[string]any) error {
+	var data map[string]any
+	_ = json.Unmarshal(existing.Data, &data)
+	currentScope := defaultString(stringField(data, "scope"), entities.FolderScopeCollection)
+	currentEntityType := entities.FolderEntityType(stringField(data, "entityType"))
+	if value, exists := patch["scope"]; exists {
+		patchedScope, _ := value.(string)
+		if defaultString(strings.TrimSpace(patchedScope), entities.FolderScopeCollection) != currentScope {
+			return domainerrors.Conflict("folder_scope_immutable", "Folder scope cannot be changed")
+		}
+	}
+	if value, exists := patch["entityType"]; exists {
+		patchedEntityType := ""
+		if value != nil {
+			patchedEntityType = entities.FolderEntityType(stringField(map[string]any{"entityType": value}, "entityType"))
+		}
+		if patchedEntityType != currentEntityType {
+			return domainerrors.Conflict("folder_entity_type_immutable", "Folder entityType cannot be changed")
+		}
+	}
+	return nil
+}
+
+// ensureWorkspaceFolderInput задаёт скрытый Workspace-корень для нового документа.
+func ensureWorkspaceFolderInput(kind string, input map[string]any) {
+	if kind == entities.CollectionFolders {
+		return
+	}
+	if stringField(input, "workspaceFolderIdentity") == "" {
+		input["workspaceFolderIdentity"] = entities.WorkspaceRootFolderIdentity
 	}
 }
 

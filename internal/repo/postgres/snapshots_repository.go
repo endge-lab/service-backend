@@ -23,16 +23,13 @@ func (r *EndgeRepository) ExportLiveWorkspace(ctx context.Context, workspaceID s
 		Kind: "workspace-snapshot", SchemaVersion: r.workspaceSchemaVersion,
 		Workspace: map[string]any{
 			"identity": workspace.Identity, "displayName": workspace.DisplayName, "description": workspace.Description,
-			"dataMode": workspace.DataMode, "configuration": workspaceConfiguration, "meta": workspace.Meta,
+			"dataMode": workspace.DataMode, "documentStructure": workspace.DocumentStructure, "configuration": workspaceConfiguration, "meta": workspace.Meta,
 			"active": workspace.Active,
 			"state":  map[string]any{"id": workspace.ID, "generation": workspace.Generation, "headSequence": workspace.HeadSequence, "revision": workspace.Revision, "createdBy": workspace.CreatedBy, "updatedBy": workspace.UpdatedBy, "createdAt": workspace.CreatedAt, "updatedAt": workspace.UpdatedAt},
 		},
 		Documents: map[string][]map[string]any{}, InstalledIntegrations: []map[string]any{},
 	}
-	kinds := make([]string, 0, len(documentTables))
-	for kind := range documentTables {
-		kinds = append(kinds, kind)
-	}
+	kinds := append(append([]string(nil), entities.DocumentCollections...), entities.FacetCollections...)
 	sort.Strings(kinds)
 	for _, kind := range kinds {
 		documents, listErr := r.listAllDocuments(ctx, workspaceID, kind, true)
@@ -48,6 +45,7 @@ func (r *EndgeRepository) ExportLiveWorkspace(ctx context.Context, workspaceID s
 			item["displayName"] = document.DisplayName
 			item["description"] = document.Description
 			item["folderIdentity"] = document.FolderIdentity
+			item["workspaceFolderIdentity"] = document.WorkspaceFolderIdentity
 			item["managedBy"] = document.ManagedBy
 			item["managedById"] = document.ManagedByID
 			item["meta"] = document.Meta

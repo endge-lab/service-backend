@@ -21,6 +21,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/document_move"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/domain"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/environment"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/facet"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/filter"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/folder"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/i18n_bundle"
@@ -72,6 +73,7 @@ func HandlerModules() fx.Option {
 			project.BindUseCase,
 			tenant.BindUseCase,
 			environment.BindUseCase,
+			facet.BindUseCase,
 			folder.BindUseCase,
 			domain_type.BindUseCase,
 			query.BindUseCase,
@@ -110,6 +112,7 @@ func HandlerModules() fx.Option {
 			project.NewHandler,
 			tenant.NewHandler,
 			environment.NewHandler,
+			facet.NewHandler,
 			folder.NewHandler,
 			domain_type.NewHandler,
 			query.NewHandler,

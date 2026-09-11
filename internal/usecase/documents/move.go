@@ -22,6 +22,7 @@ type MoveDocumentInput struct {
 type MoveDocumentsInput struct {
 	Documents      []MoveDocumentInput
 	FolderIdentity string
+	Placement      string
 }
 
 // MovedDocument содержит актуальное состояние документа после переноса.
@@ -50,11 +51,15 @@ func (s *Lifecycle) MoveDocuments(ctx context.Context, input MoveDocumentsInput)
 	}
 
 	folderIdentity := strings.TrimSpace(input.FolderIdentity)
+	placement := strings.TrimSpace(input.Placement)
 	if folderIdentity == "" {
 		return result, domainerrors.InvalidInput("folder_identity_required", "folderIdentity is required")
 	}
 	if len(folderIdentity) > 160 {
 		return result, domainerrors.InvalidInput("folder_identity_too_long", "folderIdentity must not exceed 160 characters")
+	}
+	if placement != "frontend" && placement != "workspace" {
+		return result, domainerrors.InvalidInput("folder_placement_invalid", "placement must be frontend or workspace")
 	}
 	if len(input.Documents) == 0 || len(input.Documents) > maxMoveDocuments {
 		return result, domainerrors.InvalidInput("move_documents_count_invalid", "documents must contain from 1 to 500 items")
@@ -110,10 +115,17 @@ func (s *Lifecycle) MoveDocuments(ctx context.Context, input MoveDocumentsInput)
 			}
 
 			next := *existing
-			next.FolderIdentity = &folderIdentity
+			if placement == "workspace" {
+				next.WorkspaceFolderIdentity = &folderIdentity
+			} else {
+				next.FolderIdentity = &folderIdentity
+			}
 			next.UpdatedBy = entities.Actor{ID: current.User.ID}
 			folderID, resolveErr := s.resolveDocumentFolder(txctx, scope, next)
 			if resolveErr != nil {
+				return resolveErr
+			}
+			if resolveErr = s.resolveDocumentWorkspaceFolder(txctx, scope, next); resolveErr != nil {
 				return resolveErr
 			}
 

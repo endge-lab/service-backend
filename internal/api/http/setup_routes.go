@@ -24,6 +24,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/document_move"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/domain"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/environment"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/facet"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/filter"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/folder"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/i18n_bundle"
@@ -70,6 +71,7 @@ type Handlers struct {
 	Project           *project.Handler
 	Tenant            *tenant.Handler
 	Environment       *environment.Handler
+	Facet             *facet.Handler
 	Folder            *folder.Handler
 	Type              *domain_type.Handler
 	Query             *query.Handler
@@ -130,6 +132,7 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, connectedServices *service_
 	project.RegisterRoutes(scoped, handlers.Project)
 	tenant.RegisterRoutes(scoped, handlers.Tenant)
 	environment.RegisterRoutes(scoped, handlers.Environment)
+	facet.RegisterRoutes(scoped, handlers.Facet)
 	folder.RegisterRoutes(scoped, handlers.Folder)
 	domain_type.RegisterRoutes(scoped, handlers.Type)
 	query.RegisterRoutes(scoped, handlers.Query)

@@ -21,6 +21,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/data_views"
 	"github.com/endge-lab/service-backend/internal/usecase/documents"
 	"github.com/endge-lab/service-backend/internal/usecase/environments"
+	"github.com/endge-lab/service-backend/internal/usecase/facets"
 	"github.com/endge-lab/service-backend/internal/usecase/filters"
 	"github.com/endge-lab/service-backend/internal/usecase/folders"
 	"github.com/endge-lab/service-backend/internal/usecase/history"
@@ -72,6 +73,7 @@ func UseCaseModules() fx.Option {
 		projects.NewUseCase,
 		tenants.NewUseCase,
 		environments.NewUseCase,
+		facets.NewUseCase,
 		folders.NewUseCase,
 		types.NewUseCase,
 		queries.NewUseCase,

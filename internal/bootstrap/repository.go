@@ -25,6 +25,7 @@ type endgeRepositoryPorts struct {
 	AICatalog          ports.AICatalogRepository
 	AccessControl      ports.AccessControlRepository
 	Documents          ports.DocumentRepository
+	Facets             ports.FacetRepository
 	Revisions          ports.RevisionRepository
 	Commits            ports.CommitRepository
 	Releases           ports.ReleaseRepository
@@ -43,6 +44,7 @@ func exposeEndgeRepository(store *postgres.EndgeRepository) endgeRepositoryPorts
 		AICatalog:          store,
 		AccessControl:      store,
 		Documents:          store,
+		Facets:             store,
 		Revisions:          store,
 		Commits:            store,
 		Releases:           store,

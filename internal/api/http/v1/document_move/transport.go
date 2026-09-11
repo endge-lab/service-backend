@@ -14,6 +14,7 @@ type MoveDocumentRequest struct {
 type MoveRequest struct {
 	Documents      []MoveDocumentRequest `json:"documents" validate:"required,min=1,max=500,dive"`
 	FolderIdentity string                `json:"folderIdentity" validate:"required,max=160" example:"schedule-actions"`
+	Placement      string                `json:"placement" validate:"required,oneof=frontend workspace" example:"workspace" enums:"frontend,workspace"`
 }
 
 type MovedDocumentResponse struct {

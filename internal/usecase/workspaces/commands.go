@@ -46,7 +46,11 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entiti
 	if displayName == "" {
 		return nil, domainerrors.InvalidInput("display_name_required", "displayName is required")
 	}
-	value := entities.Workspace{ID: uuid.NewString(), Identity: identity, DisplayName: displayName, Description: workspaceOptional(values, "description"), DataMode: workspaceDefault(workspaceText(values, "dataMode"), "development"), Configuration: workspaceJSON(values["configuration"]), Meta: workspaceJSON(values["meta"]), Active: workspaceBool(values, "active", true), Revision: 1, CreatedBy: entities.Actor{ID: current.User.ID}, UpdatedBy: entities.Actor{ID: current.User.ID}}
+	documentStructure := workspaceDefault(workspaceText(values, "documentStructure"), entities.WorkspaceDocumentStructureFrontend)
+	if !entities.IsWorkspaceDocumentStructure(documentStructure) {
+		return nil, domainerrors.InvalidInput("workspace_document_structure_invalid", "documentStructure must be frontend or custom")
+	}
+	value := entities.Workspace{ID: uuid.NewString(), Identity: identity, DisplayName: displayName, Description: workspaceOptional(values, "description"), DataMode: workspaceDefault(workspaceText(values, "dataMode"), "development"), DocumentStructure: documentStructure, Configuration: workspaceJSON(values["configuration"]), Meta: workspaceJSON(values["meta"]), Active: workspaceBool(values, "active", true), Revision: 1, CreatedBy: entities.Actor{ID: current.User.ID}, UpdatedBy: entities.Actor{ID: current.User.ID}}
 	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
 		created, txErr := s.workspaces.CreateWorkspace(txctx, value, current.User.ID)
 		if txErr != nil {
@@ -85,6 +89,19 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entiti
 			if _, insertErr = s.history.RecordDocument(txctx, *createdRoot, "create", nil); insertErr != nil {
 				return insertErr
 			}
+		}
+		workspaceRoot := entities.Document{
+			ID: uuid.NewString(), WorkspaceID: created.ID, Type: entities.CollectionFolders,
+			Identity: entities.WorkspaceRootFolderIdentity, DisplayName: "Workspace", ManagedBy: entities.ManagedBySystem,
+			Meta: json.RawMessage(`{}`), Data: workspaceJSON(map[string]any{"scope": entities.FolderScopeWorkspace, "entityType": nil, "isRoot": true, "icon": nil, "color": nil}),
+			Active: true, Revision: 1, CreatedBy: entities.Actor{ID: current.User.ID}, UpdatedBy: entities.Actor{ID: current.User.ID},
+		}
+		createdWorkspaceRoot, txErr := s.documents.InsertDocument(txctx, workspaceRoot, nil)
+		if txErr != nil {
+			return txErr
+		}
+		if _, txErr = s.history.RecordDocument(txctx, *createdWorkspaceRoot, "create", nil); txErr != nil {
+			return txErr
 		}
 		pending, txErr := s.commits.PendingRevisions(txctx, created.ID, 0)
 		if txErr != nil {
@@ -135,6 +152,12 @@ func (s *UseCase) Patch(ctx context.Context, identity string, input PatchInput, 
 	if err = shared.ValidateSecrets(patch); err != nil {
 		return nil, err
 	}
+	if value, exists := patch["documentStructure"]; exists {
+		documentStructure, valid := value.(string)
+		if !valid || !entities.IsWorkspaceDocumentStructure(strings.TrimSpace(documentStructure)) {
+			return nil, domainerrors.InvalidInput("workspace_document_structure_invalid", "documentStructure must be frontend or custom")
+		}
+	}
 	if configuration, exists := patch["configuration"]; exists {
 		patch["configuration"] = configurationdomain.EnsureSFCEditingDefaults(configuration)
 		configurationdomain.RemoveLegacySSE(patch["configuration"])
@@ -145,12 +168,16 @@ func (s *UseCase) Patch(ctx context.Context, identity string, input PatchInput, 
 	if scope.Workspace.Revision != expected {
 		return nil, shared.RevisionConflict()
 	}
+	scope.Workspace.DocumentStructure = entities.NormalizeWorkspaceDocumentStructure(scope.Workspace.DocumentStructure)
 	next := applyWorkspacePatch(scope.Workspace, patch)
 	if err = validateWorkspaceIdentity(next.Identity); err != nil {
 		return nil, err
 	}
 	if strings.TrimSpace(next.DisplayName) == "" {
 		return nil, domainerrors.InvalidInput("display_name_required", "displayName is required")
+	}
+	if !entities.IsWorkspaceDocumentStructure(next.DocumentStructure) {
+		return nil, domainerrors.InvalidInput("workspace_document_structure_invalid", "documentStructure must be frontend or custom")
 	}
 	contentChanged := workspaceDigest(scope.Workspace) != workspaceDigest(next)
 	bindings, bindingsPresent, err := patchedWorkspaceIntegrations(patch)
@@ -200,6 +227,9 @@ func applyWorkspacePatch(workspace entities.Workspace, patch map[string]any) ent
 	}
 	if value, ok := patch["dataMode"].(string); ok {
 		workspace.DataMode = value
+	}
+	if value, ok := patch["documentStructure"].(string); ok {
+		workspace.DocumentStructure = strings.TrimSpace(value)
 	}
 	if value, ok := patch["configuration"]; ok {
 		workspace.Configuration = workspaceJSON(value)
@@ -323,5 +353,5 @@ func genericDigest(value any) string {
 
 // workspaceDigest вычисляет контрольную сумму рабочего пространства.
 func workspaceDigest(value entities.Workspace) string {
-	return genericDigest(map[string]any{"identity": value.Identity, "displayName": value.DisplayName, "description": value.Description, "dataMode": value.DataMode, "configuration": value.Configuration, "meta": value.Meta, "active": value.Active})
+	return genericDigest(map[string]any{"identity": value.Identity, "displayName": value.DisplayName, "description": value.Description, "dataMode": value.DataMode, "documentStructure": value.DocumentStructure, "configuration": value.Configuration, "meta": value.Meta, "active": value.Active})
 }

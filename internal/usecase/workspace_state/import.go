@@ -78,6 +78,10 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 		plan.Valid = false
 		plan.ValidationErrors = append(plan.ValidationErrors, "workspace.dataMode must be development or production")
 	}
+	if documentStructure := stringField(bundle.Workspace, "documentStructure"); !entities.IsWorkspaceDocumentStructure(documentStructure) {
+		plan.Valid = false
+		plan.ValidationErrors = append(plan.ValidationErrors, "workspace.documentStructure must be frontend or custom")
+	}
 	if secretErr := validateSecrets(bundle.Workspace["configuration"]); secretErr != nil {
 		plan.Valid = false
 		plan.ValidationErrors = append(plan.ValidationErrors, "workspace.configuration: "+secretErr.Error())
@@ -107,12 +111,12 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 			continue
 		}
 		for _, item := range items {
-			if validationErr := validateDocument(kind, item); validationErr != nil {
+			if validationErr := validatePortableDocument(kind, item); validationErr != nil {
 				plan.Valid = false
 				plan.ValidationErrors = append(plan.ValidationErrors, kind+":"+stringField(item, "identity")+": "+validationErr.Error())
 				continue
 			}
-			key := kind + ":" + stringField(item, "identity")
+			key := kind + ":" + portableDocumentKey(kind, item)
 			if seen[key] {
 				plan.Valid = false
 				plan.ValidationErrors = append(plan.ValidationErrors, "duplicate document "+key)
@@ -120,6 +124,10 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 			seen[key] = true
 			plan.Incoming.Documents++
 		}
+	}
+	if positionErr := validateFacetPositions(bundle.Documents[entities.CollectionFacets]); positionErr != nil {
+		plan.Valid = false
+		plan.ValidationErrors = append(plan.ValidationErrors, "documents.facets: "+positionErr.Error())
 	}
 	sfcEditingDefaultsAdded, versionErr := finalizeImportDomainVersion(&bundle, providedDomainVersion)
 	if versionErr != nil {
@@ -290,7 +298,7 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 		txctx = context.WithValue(txctx, mutationBatchContextKey{}, batch)
 		revisions := []entities.Revision{}
 		workspacePatch := map[string]any{}
-		for _, key := range []string{"displayName", "description", "dataMode", "configuration", "meta", "active"} {
+		for _, key := range []string{"displayName", "description", "dataMode", "documentStructure", "configuration", "meta", "active"} {
 			if value, exists := bundle.Workspace[key]; exists {
 				workspacePatch[key] = value
 			}
@@ -318,6 +326,7 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 			}
 			for _, item := range items {
 				identity := stringField(item, "identity")
+				key := portableDocumentKey(kind, item)
 				folderID, resolveErr := s.resolveFolder(txctx, importScope, kind, item)
 				if resolveErr != nil {
 					return fmt.Errorf("resolve imported %s:%s folder: %w", kind, identity, resolveErr)
@@ -325,14 +334,34 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 				document := documentFromInput(kind, live.ID, item, current.User.ID)
 				operation := "create"
 				var stored *entities.Document
-				if previous, exists := existing[kind][identity]; exists {
+				if previous, exists := existing[kind][key]; exists {
 					document = replaceDocumentFromInput(previous, item, current.User.ID)
-					operation = "update"
-					if previous.DeletedAt != nil {
+					if kind == entities.CollectionFacets && portableDocumentDeleted(item) && previous.DeletedAt == nil {
+						// Active nested documents are reconciled later in restore order;
+						// keep the parent active until that has completed.
+						document.DeletedAt = nil
+						document.Active = true
+					}
+					if kind == entities.CollectionFacets {
+						position := facetPosition(previous)
+						if previous.DeletedAt != nil {
+							position = -1
+						}
+						document = replaceDocumentDataField(document, "position", position)
+					}
+					switch {
+					case previous.DeletedAt == nil && document.DeletedAt != nil:
+						operation = "delete"
+					case previous.DeletedAt != nil && document.DeletedAt == nil:
 						operation = "restore"
+					default:
+						operation = "update"
 					}
 					stored, txErr = s.repository.UpdateDocument(txctx, document, previous.Revision, folderID)
 				} else {
+					if kind == entities.CollectionFacets && document.DeletedAt == nil {
+						document = replaceDocumentDataField(document, "position", -1)
+					}
 					stored, txErr = s.repository.InsertDocument(txctx, document, folderID)
 				}
 				if txErr != nil {
@@ -349,6 +378,8 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 				switch operation {
 				case "create":
 					result.Creates++
+				case "delete":
+					result.Deletes++
 				case "restore":
 					result.Restores++
 				default:
@@ -356,6 +387,10 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 				}
 				result.Imported.Documents++
 			}
+		}
+		existing, txErr = s.loadSnapshotDocuments(txctx, live.ID)
+		if txErr != nil {
+			return txErr
 		}
 		for _, document := range documentsMissingFromSnapshot(existing, incoming) {
 			now := time.Now().UTC()
@@ -377,6 +412,48 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 			}
 			revisions = append(revisions, *revision)
 			result.Deletes++
+		}
+		for _, item := range bundle.Documents[entities.CollectionFacets] {
+			if !portableDocumentDeleted(item) {
+				continue
+			}
+			facet, facetErr := s.repository.GetFacet(txctx, live.ID, stringField(item, "identity"), true)
+			if facetErr != nil {
+				return facetErr
+			}
+			if facet.DeletedAt != nil {
+				continue
+			}
+			now := time.Now().UTC()
+			next := *facet
+			next.Active = false
+			next.DeletedAt = &now
+			next.UpdatedBy = entities.Actor{ID: current.User.ID}
+			deleted, deleteErr := s.repository.UpdateFacet(txctx, next, facet.Revision)
+			if deleteErr != nil {
+				return fmt.Errorf("soft-delete imported facet:%s: %w", facet.Identity, deleteErr)
+			}
+			revision, revisionErr := s.recordRevision(txctx, *deleted, "delete", nil)
+			if revisionErr != nil {
+				return revisionErr
+			}
+			revisions = append(revisions, *revision)
+			result.Deletes++
+		}
+		currentFacets, txErr := s.repository.ListFacets(txctx, live.ID, false)
+		if txErr != nil {
+			return txErr
+		}
+		changedFacets, txErr := s.repository.ReorderFacets(txctx, live.ID, facetReorderItems(bundle, currentFacets), current.User.ID)
+		if txErr != nil {
+			return fmt.Errorf("reorder imported facets: %w", txErr)
+		}
+		for _, document := range changedFacets {
+			revision, revisionErr := s.recordRevision(txctx, document, "update", nil)
+			if revisionErr != nil {
+				return revisionErr
+			}
+			revisions = append(revisions, *revision)
 		}
 		head := latest.HeadSequence
 		for _, revision := range revisions {
@@ -416,12 +493,20 @@ func (s *Coordinator) planSnapshotChanges(ctx context.Context, workspaceID strin
 		return err
 	}
 	incoming := snapshotDocumentIdentities(bundle)
+	tombstones := snapshotDocumentTombstones(bundle)
 	for kind, identities := range incoming {
 		for identity := range identities {
 			document, exists := existing[kind][identity]
 			switch {
 			case !exists:
 				plan.Creates++
+			case tombstones[kind][identity] && document.DeletedAt != nil:
+				plan.Updates++
+			case tombstones[kind][identity] && document.DeletedAt == nil:
+				if kind == entities.CollectionFacets {
+					plan.Updates++
+				}
+				plan.Deletes++
 			case document.DeletedAt != nil:
 				plan.Restores++
 			default:
@@ -442,7 +527,7 @@ func (s *Coordinator) loadSnapshotDocuments(ctx context.Context, workspaceID str
 		}
 		result[kind] = make(map[string]entities.Document, len(documents))
 		for _, document := range documents {
-			result[kind][document.Identity] = document
+			result[kind][storedDocumentKey(document)] = document
 		}
 	}
 	return result, nil
@@ -453,7 +538,18 @@ func snapshotDocumentIdentities(bundle entities.PortableBundle) map[string]map[s
 	for _, kind := range Collections {
 		result[kind] = map[string]bool{}
 		for _, item := range bundle.Documents[kind] {
-			result[kind][stringField(item, "identity")] = true
+			result[kind][portableDocumentKey(kind, item)] = true
+		}
+	}
+	return result
+}
+
+func snapshotDocumentTombstones(bundle entities.PortableBundle) map[string]map[string]bool {
+	result := make(map[string]map[string]bool, len(Collections))
+	for _, kind := range Collections {
+		result[kind] = map[string]bool{}
+		for _, item := range bundle.Documents[kind] {
+			result[kind][portableDocumentKey(kind, item)] = portableDocumentDeleted(item)
 		}
 	}
 	return result
@@ -522,10 +618,18 @@ func shortChecksum(value string) string {
 
 func validateSnapshotRelations(bundle entities.PortableBundle) []string {
 	available := map[string]map[string]bool{}
+	folderScopes := map[string]string{}
+	deletedFacets := map[string]bool{}
 	for kind, items := range bundle.Documents {
 		available[kind] = map[string]bool{}
 		for _, item := range items {
 			available[kind][stringField(item, "identity")] = true
+			if kind == entities.CollectionFolders {
+				folderScopes[stringField(item, "identity")] = defaultString(stringField(item, "scope"), entities.FolderScopeCollection)
+			}
+			if kind == entities.CollectionFacets {
+				deletedFacets[stringField(item, "identity")] = portableDocumentDeleted(item)
+			}
 		}
 	}
 	result := []string{}
@@ -537,9 +641,27 @@ func validateSnapshotRelations(bundle entities.PortableBundle) []string {
 				entityType := stringField(item, "entityType")
 				if parent != "" && parent != entities.RootFolderIdentity(entityType) && !available[entities.CollectionFolders][parent] {
 					result = append(result, kind+":"+identity+": parentIdentity target is missing")
+				} else if parent != "" && folderScopes[parent] != defaultString(stringField(item, "scope"), entities.FolderScopeCollection) {
+					result = append(result, kind+":"+identity+": parentIdentity scope does not match")
 				}
-			} else if folder := stringField(item, "folderIdentity"); folder != "" && folder != entities.RootFolderIdentity(kind) && !available[entities.CollectionFolders][folder] {
-				result = append(result, kind+":"+identity+": folderIdentity target is missing")
+			} else if !slices.Contains(entities.FacetCollections, kind) {
+				if folder := stringField(item, "folderIdentity"); folder != "" && folder != entities.RootFolderIdentity(kind) && !available[entities.CollectionFolders][folder] {
+					result = append(result, kind+":"+identity+": folderIdentity target is missing")
+				}
+				workspaceFolder := defaultString(stringField(item, "workspaceFolderIdentity"), entities.WorkspaceRootFolderIdentity)
+				if !available[entities.CollectionFolders][workspaceFolder] {
+					result = append(result, kind+":"+identity+": workspaceFolderIdentity target is missing")
+				} else if folderScopes[workspaceFolder] != entities.FolderScopeWorkspace {
+					result = append(result, kind+":"+identity+": workspaceFolderIdentity target is not a Workspace folder")
+				}
+			}
+			if kind == entities.CollectionFacetDocuments {
+				facetIdentity := stringField(item, "facetIdentity")
+				if !available[entities.CollectionFacets][facetIdentity] {
+					result = append(result, kind+":"+facetIdentity+"/"+identity+": parent facet is missing")
+				} else if deletedFacets[facetIdentity] && !portableDocumentDeleted(item) {
+					result = append(result, kind+":"+facetIdentity+"/"+identity+": active document cannot belong to a deleted facet")
+				}
 			}
 			if kind == entities.CollectionUpdates && !available[entities.CollectionStores][stringField(item, "storeIdentity")] {
 				result = append(result, kind+":"+identity+": storeIdentity target is missing")

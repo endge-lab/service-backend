@@ -7,20 +7,29 @@ import (
 
 type CreateRequest struct {
 	shared.CreateDocumentRequest
-	EntityType     string  `json:"entityType" validate:"required" example:"projects"`
+	Scope          string  `json:"scope,omitempty" validate:"omitempty,oneof=collection workspace" example:"collection" enums:"collection,workspace"`
+	EntityType     *string `json:"entityType,omitempty" example:"projects"`
 	ParentIdentity *string `json:"parentIdentity,omitempty" example:"root-projects"`
+	Icon           *string `json:"icon,omitempty" validate:"omitempty,max=80" example:"FolderKanban"`
+	Color          *string `json:"color,omitempty" validate:"omitempty,len=7" example:"#64748b"`
 }
 
 type PatchRequest struct {
 	shared.PatchDocumentRequest
+	Scope          *string `json:"scope,omitempty" validate:"omitempty,oneof=collection workspace" enums:"collection,workspace"`
 	EntityType     *string `json:"entityType,omitempty" example:"projects"`
 	ParentIdentity *string `json:"parentIdentity,omitempty" example:"root-projects"`
+	Icon           *string `json:"icon,omitempty" validate:"omitempty,max=80"`
+	Color          *string `json:"color,omitempty" validate:"omitempty,len=7"`
 }
 
 type Response struct {
 	shared.DocumentMetadata
-	EntityType     string  `json:"entityType" example:"projects"`
+	Scope          string  `json:"scope" enums:"collection,workspace"`
+	EntityType     *string `json:"entityType,omitempty" example:"projects"`
 	ParentIdentity *string `json:"parentIdentity,omitempty" example:"root-projects"`
+	Icon           *string `json:"icon,omitempty"`
+	Color          *string `json:"color,omitempty"`
 }
 
 type ListResponse struct {
