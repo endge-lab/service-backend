@@ -101,10 +101,21 @@ func (s *UseCase) RebuildWorkspaceFoldersFromFrontend(ctx context.Context, confi
 			return createErr
 		}
 
+		workspaceRootPlacement := folderPlacement{ID: workspaceRoot.ID, Identity: workspaceRoot.Identity}
+		storePlacements := make(map[string]folderPlacement)
 		for _, document := range documents {
-			target := placements[targetFrontendFolder(document)]
-			if target.ID == "" {
-				target = folderPlacement{ID: workspaceRoot.ID, Identity: workspaceRoot.Identity}
+			if document.Type == entities.CollectionStores {
+				storePlacements[document.Identity] = frontendPlacement(document, placements, workspaceRootPlacement)
+			}
+		}
+
+		for _, document := range documents {
+			target := frontendPlacement(document, placements, workspaceRootPlacement)
+			if document.Type == entities.CollectionUpdates {
+				storeIdentity := stringField(folderData(document), "storeIdentity")
+				if storeTarget := storePlacements[storeIdentity]; storeTarget.ID != "" {
+					target = storeTarget
+				}
 			}
 			if document.WorkspaceFolderIdentity != nil && *document.WorkspaceFolderIdentity == target.Identity {
 				continue
@@ -318,14 +329,23 @@ func parentID(folder entities.Document, folders []entities.Document) *string {
 }
 
 func targetFrontendFolder(document entities.Document) string {
-	if document.FolderIdentity != nil && strings.TrimSpace(*document.FolderIdentity) != "" {
-		return strings.TrimSpace(*document.FolderIdentity)
-	}
+	// Updates во Frontend принадлежат Store и не имеют отдельного видимого корня.
+	// В Workspace-проекции группируем их под скопированным корнем хранилищ.
 	if document.Type == entities.CollectionUpdates {
-		return "root-stores"
+		return entities.RootFolderIdentity(entities.CollectionStores)
 	}
 	if document.Type == entities.CollectionConfigurations {
 		return ""
 	}
+	if document.FolderIdentity != nil && strings.TrimSpace(*document.FolderIdentity) != "" {
+		return strings.TrimSpace(*document.FolderIdentity)
+	}
 	return entities.RootFolderIdentity(document.Type)
+}
+
+func frontendPlacement(document entities.Document, placements map[string]folderPlacement, fallback folderPlacement) folderPlacement {
+	if target := placements[targetFrontendFolder(document)]; target.ID != "" {
+		return target
+	}
+	return fallback
 }
