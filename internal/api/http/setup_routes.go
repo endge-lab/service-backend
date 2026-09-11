@@ -29,6 +29,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/folder"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/i18n_bundle"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/integration"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/legacy"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/mock"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/mock_data"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/navigation"
@@ -68,6 +69,7 @@ type Handlers struct {
 	BackendConnection *backend_connection.Handler
 	Session           *httpsession.Handler
 	Integration       *integration.Handler
+	Legacy            *legacy.Handler
 	Project           *project.Handler
 	Tenant            *tenant.Handler
 	Environment       *environment.Handler
@@ -158,6 +160,7 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, connectedServices *service_
 	commit.RegisterRoutes(scoped, handlers.Commit)
 	domain.RegisterRoutes(scoped, handlers.Domain)
 	document_move.RegisterRoutes(scoped, handlers.DocumentMove)
+	legacy.RegisterRoutes(scoped, handlers.Legacy)
 	backup.RegisterRoutes(scoped, handlers.Backup)
 	release.RegisterRoutes(scoped, handlers.Release)
 	ai_assistant.RegisterRoutes(scoped, handlers.AIAssistant)

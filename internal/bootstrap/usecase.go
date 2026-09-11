@@ -27,6 +27,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/history"
 	"github.com/endge-lab/service-backend/internal/usecase/i18n_bundles"
 	"github.com/endge-lab/service-backend/internal/usecase/integrations"
+	"github.com/endge-lab/service-backend/internal/usecase/legacy"
 	"github.com/endge-lab/service-backend/internal/usecase/mock_data"
 	"github.com/endge-lab/service-backend/internal/usecase/mocks"
 	"github.com/endge-lab/service-backend/internal/usecase/navigations"
@@ -69,6 +70,7 @@ func UseCaseModules() fx.Option {
 		workspaces.NewUseCase,
 		backend_connections.NewUseCase,
 		integrations.NewUseCase,
+		legacy.NewUseCase,
 		session.NewUseCase,
 		projects.NewUseCase,
 		tenants.NewUseCase,

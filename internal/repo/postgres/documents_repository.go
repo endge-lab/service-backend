@@ -276,6 +276,26 @@ func (r *EndgeRepository) UpdateDocument(ctx context.Context, v entities.Documen
 	return r.GetDocument(ctx, v.WorkspaceID, v.Type, v.Identity, true)
 }
 
+// UpdateDocumentWorkspaceFolder меняет только независимое Workspace-размещение документа.
+// Специализированная операция не переписывает payload и типизированный folder_id.
+func (r *EndgeRepository) UpdateDocumentWorkspaceFolder(ctx context.Context, workspaceID, kind, identity, workspaceFolderID, actorID string, expected int) (*entities.Document, error) {
+	if kind == entities.CollectionFolders || kind == entities.CollectionFacets || kind == entities.CollectionFacetDocuments {
+		return nil, fmt.Errorf("workspace folder placement is unsupported for %q", kind)
+	}
+	table, err := tableFor(kind)
+	if err != nil {
+		return nil, err
+	}
+	tag, err := r.executor(ctx).Exec(ctx, `UPDATE `+table+` SET workspace_folder_id=$1,updated_by=$2,updated_at=NOW(),revision=revision+1 WHERE workspace_id=$3 AND identity=$4 AND revision=$5`, workspaceFolderID, actorID, workspaceID, identity, expected)
+	if err != nil {
+		return nil, err
+	}
+	if tag.RowsAffected() != 1 {
+		return nil, fmt.Errorf("revision conflict")
+	}
+	return r.GetDocument(ctx, workspaceID, kind, identity, true)
+}
+
 func (r *EndgeRepository) resolveDocumentWorkspaceFolderID(ctx context.Context, document entities.Document) (*string, error) {
 	if document.Type == entities.CollectionFolders || document.Type == entities.CollectionFacets || document.Type == entities.CollectionFacetDocuments {
 		return nil, nil

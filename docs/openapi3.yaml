@@ -9084,6 +9084,69 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/legacy/workspace-folders/rebuild-from-frontend:
+    post:
+      security:
+        - BearerAuth: []
+      description: Удаляет текущие пользовательские Workspace-папки, копирует
+        Frontend-корни с подпапками и перепривязывает документы. Не изменяет
+        документы и их folderId.
+      tags:
+        - Legacy
+      summary: Пересоздать Workspace-папки из Frontend
+      operationId: legacyRebuildWorkspaceFoldersFromFrontend
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/legacy.RebuildWorkspaceFoldersRequest"
+        description: Явное подтверждение целевого Workspace
+        required: true
+      responses:
+        "200":
+          description: Результат пересоздания
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/legacy.RebuildWorkspaceFoldersResponse"
+        "400":
+          description: Некорректное подтверждение
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Требуется аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Требуется роль Workspace Admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Конфликт состояния
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
   /api/v1/mock-data/capabilities:
     get:
       security:
@@ -20053,6 +20116,27 @@ components:
         version:
           type: string
           example: 1.0.0
+    legacy.RebuildWorkspaceFoldersRequest:
+      type: object
+      required:
+        - confirmation
+      properties:
+        confirmation:
+          type: string
+          maxLength: 160
+          example: default
+    legacy.RebuildWorkspaceFoldersResponse:
+      type: object
+      properties:
+        documentsRelinked:
+          type: integer
+          example: 42
+        foldersCreated:
+          type: integer
+          example: 24
+        foldersDeleted:
+          type: integer
+          example: 3
     mock.CreateRequest:
       type: object
       required:

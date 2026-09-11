@@ -9089,6 +9089,69 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/legacy/workspace-folders/rebuild-from-frontend:\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Удаляет текущие пользовательские Workspace-папки, копирует\n" +
+		"        Frontend-корни с подпапками и перепривязывает документы. Не изменяет\n" +
+		"        документы и их folderId.\n" +
+		"      tags:\n" +
+		"        - Legacy\n" +
+		"      summary: Пересоздать Workspace-папки из Frontend\n" +
+		"      operationId: legacyRebuildWorkspaceFoldersFromFrontend\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/legacy.RebuildWorkspaceFoldersRequest\"\n" +
+		"        description: Явное подтверждение целевого Workspace\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Результат пересоздания\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/legacy.RebuildWorkspaceFoldersResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректное подтверждение\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Требуется роль Workspace Admin\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт состояния\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /api/v1/mock-data/capabilities:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -20058,6 +20121,27 @@ var openAPI3YAML = []byte(
 		"        version:\n" +
 		"          type: string\n" +
 		"          example: 1.0.0\n" +
+		"    legacy.RebuildWorkspaceFoldersRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - confirmation\n" +
+		"      properties:\n" +
+		"        confirmation:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: default\n" +
+		"    legacy.RebuildWorkspaceFoldersResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        documentsRelinked:\n" +
+		"          type: integer\n" +
+		"          example: 42\n" +
+		"        foldersCreated:\n" +
+		"          type: integer\n" +
+		"          example: 24\n" +
+		"        foldersDeleted:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
 		"    mock.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +

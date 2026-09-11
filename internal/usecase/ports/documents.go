@@ -21,6 +21,7 @@ type DocumentRepository interface {
 	GetDocument(context.Context, string, string, string, bool) (*entities.Document, error)
 	InsertDocument(context.Context, entities.Document, *string) (*entities.Document, error)
 	UpdateDocument(context.Context, entities.Document, int, *string) (*entities.Document, error)
+	UpdateDocumentWorkspaceFolder(context.Context, string, string, string, string, string, int) (*entities.Document, error)
 	MoveFolderContents(context.Context, string, string, *string, string) ([]entities.Document, error)
 	ResolveFolder(context.Context, string, string, string) (*string, error)
 	FolderWouldCycle(context.Context, string, string, string) (bool, error)
