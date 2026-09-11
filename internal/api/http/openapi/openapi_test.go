@@ -124,7 +124,7 @@ func TestDocumentContractContainsOnlyMVPCollections(t *testing.T) {
 			t.Fatalf("generic Scalar path %q must not be present", generic)
 		}
 	}
-	for _, excluded := range []string{"parameters", "pages", "page-templates", "policies", "versions"} {
+	for _, excluded := range []string{"pages", "page-templates", "policies", "versions"} {
 		if _, ok := document.Paths["/api/v1/"+excluded]; ok {
 			t.Fatalf("excluded collection %q is present", excluded)
 		}

@@ -12,7 +12,7 @@ import (
 const workspaceRevisionSnapshotVersion = 1
 
 var Collections = append([]string(nil), entities.DocumentCollections...)
-var UnsupportedCollections = []string{"parameters", "legacyComponents", "componentsDSL", "componentsTable", "versions", "pages", "pageTemplates", "page-templates", "policies"}
+var UnsupportedCollections = []string{"legacyComponents", "componentsDSL", "componentsTable", "versions", "pages", "pageTemplates", "page-templates", "policies"}
 var readOnlyFields = []string{"id", "type", "revision", "author", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", "created_by", "updated_by", "state"}
 
 // Repository задаёт необходимые координатору операции хранилища.

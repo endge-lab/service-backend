@@ -44,7 +44,7 @@ actions, filters, converters, computations,
 vocabs, i18n-bundles, auth-profiles, navigations, styles
 ```
 
-`parameters`, `pages`, `page-templates`, `policies`, `versions`, legacy
+`pages`, `page-templates`, `policies`, `versions`, legacy
 components, hard-delete, release tags и channels намеренно отсутствуют в MVP.
 
 ## Локальный запуск

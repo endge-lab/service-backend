@@ -51,7 +51,7 @@ func TestMigrationSchemaGuards(t *testing.T) {
 	ctx := context.Background()
 	assertBootstrapState(t, database)
 
-	for _, table := range []string{"parameters", "pages", "page_templates", "policies", "versions", "components_legacy", "domain_dependencies", "domain_dependency_states"} {
+	for _, table := range []string{"pages", "page_templates", "policies", "versions", "components_legacy", "domain_dependencies", "domain_dependency_states"} {
 		var exists bool
 		if err := database.Pool.QueryRow(ctx, `SELECT to_regclass('public.' || $1) IS NOT NULL`, table).Scan(&exists); err != nil {
 			t.Fatalf("проверить исключённую таблицу %s: %v", table, err)
