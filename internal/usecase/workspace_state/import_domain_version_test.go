@@ -96,3 +96,36 @@ func TestLegacyDV1IsVerifiedBeforeCanonicalActionMigrationAndStoredAsDV2(t *test
 		t.Fatalf("effective domain version mismatch: got %q, want %q", bundle.DomainVersion, normalizedDomainVersion)
 	}
 }
+
+func TestNormalizePortableBundleCorrectsStaleFacetDocumentCountsAfterSourceVerification(t *testing.T) {
+	bundle := entities.PortableBundle{
+		Kind:          "workspace-snapshot",
+		SchemaVersion: 9,
+		Workspace:     map[string]any{"displayName": "Imported workspace", "dataMode": "development"},
+		Documents: map[string][]map[string]any{
+			entities.CollectionFacets: {{"identity": "project", "documentCount": float64(1)}},
+			entities.CollectionFacetDocuments: {{
+				"facetIdentity": "project", "identity": "legacy-project", "deleted": true,
+			}},
+		},
+	}
+	providedDomainVersion, err := domainversion.Compute(bundle)
+	if err != nil {
+		t.Fatalf("compute source domain version: %v", err)
+	}
+	bundle.DomainVersion = providedDomainVersion
+
+	computedSourceDomainVersion, normalization, err := normalizePortableBundleForImport(&bundle)
+	if err != nil {
+		t.Fatalf("normalize portable bundle for import: %v", err)
+	}
+	if computedSourceDomainVersion != providedDomainVersion {
+		t.Fatalf("source domain version was not verified before normalization: got %q, want %q", computedSourceDomainVersion, providedDomainVersion)
+	}
+	if normalization.NormalizedFacetDocumentCounts != 1 {
+		t.Fatalf("stale facet document count was not reported: %+v", normalization)
+	}
+	if count, valid := numberField(bundle.Documents[entities.CollectionFacets][0], "documentCount"); !valid || count != 0 {
+		t.Fatalf("stale facet document count was not normalized: %#v", bundle.Documents[entities.CollectionFacets][0])
+	}
+}

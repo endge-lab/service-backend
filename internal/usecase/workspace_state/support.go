@@ -702,11 +702,12 @@ func copyMap(input map[string]any) map[string]any {
 }
 
 type portableBundleNormalization struct {
-	IgnoredIntegrations        int
-	IgnoredLegacyFolders       int
-	NormalizedFolderReferences int
-	MigratedLegacyActions      int
-	MigratedLegacyVocabs       int
+	IgnoredIntegrations           int
+	IgnoredLegacyFolders          int
+	NormalizedFolderReferences    int
+	MigratedLegacyActions         int
+	MigratedLegacyVocabs          int
+	NormalizedFacetDocumentCounts int
 }
 
 // normalizePortableBundleForImport validates the source artifact according to
@@ -742,8 +743,30 @@ func normalizePortableBundle(bundle *entities.PortableBundle) portableBundleNorm
 		MigratedLegacyActions:      report.MigratedLegacyActions,
 		MigratedLegacyVocabs:       report.MigratedLegacyVocabs,
 	}
+	result.NormalizedFacetDocumentCounts = normalizeFacetDocumentCounts(bundle)
 	bundle.InstalledIntegrations = []map[string]any{}
 	return result
+}
+
+// normalizeFacetDocumentCounts replaces stale derived values from older
+// historical exports with counts implied by the portable facet documents.
+func normalizeFacetDocumentCounts(bundle *entities.PortableBundle) int {
+	counts := map[string]int{}
+	for _, document := range bundle.Documents[entities.CollectionFacetDocuments] {
+		if !portableDocumentDeleted(document) {
+			counts[stringField(document, "facetIdentity")]++
+		}
+	}
+	changed := 0
+	for _, facet := range bundle.Documents[entities.CollectionFacets] {
+		expected := counts[stringField(facet, "identity")]
+		current, valid := numberField(facet, "documentCount")
+		if !valid || current != expected {
+			facet["documentCount"] = expected
+			changed++
+		}
+	}
+	return changed
 }
 
 // finalizeImportDomainVersion переводит уже проверенный и нормализованный snapshot

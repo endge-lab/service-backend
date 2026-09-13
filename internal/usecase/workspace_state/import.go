@@ -59,6 +59,9 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 	if normalization.MigratedLegacyVocabs > 0 {
 		plan.Warnings = append(plan.Warnings, fmt.Sprintf("%d legacy external Payload Vocab documents were migrated to Source", normalization.MigratedLegacyVocabs))
 	}
+	if normalization.NormalizedFacetDocumentCounts > 0 {
+		plan.Warnings = append(plan.Warnings, fmt.Sprintf("%d derived facet document counts were normalized", normalization.NormalizedFacetDocumentCounts))
+	}
 	if bundle.Kind != "workspace-snapshot" {
 		plan.Valid = false
 		plan.ValidationErrors = append(plan.ValidationErrors, "kind must be workspace-snapshot")
