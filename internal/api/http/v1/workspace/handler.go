@@ -41,6 +41,29 @@ func (h *Handler) List(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"items": items, "total": len(items)})
 }
 
+// ListArchive returns deleted workspaces visible to the current user.
+// @Summary Получить архив рабочих пространств
+// @Description Возвращает удалённые рабочие пространства, к которым у пользователя сохранилось назначение роли. Platform Admin видит все.
+// @ID listWorkspaceArchive
+// @Tags Рабочие пространства
+// @Produce json
+// @Success 200 {object} ArchiveListResponse "Архив рабочих пространств"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/workspaces/archive [get]
+func (h *Handler) ListArchive(c *fiber.Ctx) error {
+	values, err := h.usecase.ListArchive(c.UserContext())
+	if err != nil {
+		return respond.RespondDomainError(c, nil, err)
+	}
+	items, err := shared.MapValues(values, NewArchiveItemResponse)
+	if err != nil {
+		return respond.RespondDomainError(c, nil, err)
+	}
+	return c.JSON(ArchiveListResponse{Items: items, Total: len(items)})
+}
+
 // Create проверяет запрос и создаёт рабочее пространство.
 // @Summary Создать рабочее пространство
 // @Description Создаёт рабочее пространство. Операция доступна администратору платформы.
@@ -173,6 +196,40 @@ func (h *Handler) Delete(c *fiber.Ctx) error {
 		return respond.WriteErrorResponse(c, err)
 	}
 	value, err := h.usecase.Delete(c.UserContext(), c.Params("identity"), expected)
+	if err != nil {
+		return respond.RespondDomainError(c, nil, err)
+	}
+	response, err := NewResponse(*value)
+	if err != nil {
+		return respond.RespondDomainError(c, nil, err)
+	}
+	c.Set(fiber.HeaderETag, shared.ETag(value.Revision))
+	return c.JSON(response)
+}
+
+// Restore restores a deleted Workspace with optimistic concurrency.
+// @Summary Восстановить рабочее пространство
+// @Description Снимает tombstone рабочего пространства, сохраняя документы и назначения ролей.
+// @ID restoreWorkspace
+// @Tags Рабочие пространства
+// @Produce json
+// @Param identity path string true "Identity рабочего пространства" maxlength(160)
+// @Param If-Match header string true "Revision tombstone" example("3")
+// @Success 200 {object} Response "Рабочее пространство восстановлено"
+// @Header 200 {string} ETag "Новая revision"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Требуются права администратора рабочего пространства"
+// @Failure 404 {object} shared.ErrorResponse "Удалённое рабочее пространство не найдено"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт revision"
+// @Failure 428 {object} shared.ErrorResponse "Требуется If-Match"
+// @Security BearerAuth
+// @Router /api/v1/workspaces/{identity}/restore [post]
+func (h *Handler) Restore(c *fiber.Ctx) error {
+	expected, err := shared.IfMatch(c)
+	if err != nil {
+		return respond.WriteErrorResponse(c, err)
+	}
+	value, err := h.usecase.Restore(c.UserContext(), c.Params("identity"), expected)
 	if err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}

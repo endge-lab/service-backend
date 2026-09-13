@@ -67,6 +67,30 @@ func (s *UseCase) ListAccess(ctx context.Context) ([]entities.WorkspaceAccess, e
 	return result, nil
 }
 
+// ListArchive returns Workspace tombstones visible to the current actor.
+func (s *UseCase) ListArchive(ctx context.Context) ([]entities.WorkspaceAccess, error) {
+	current, err := shared.Actor(ctx)
+	if err != nil {
+		return nil, err
+	}
+	items, err := s.workspaces.ListDeletedWorkspaces(ctx, current.User.ID, current.PlatformAdmin)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]entities.WorkspaceAccess, 0, len(items))
+	for _, workspace := range items {
+		role, roleErr := s.workspaces.DeletedWorkspaceRole(ctx, workspace.ID, current.User.ID, current.PlatformAdmin)
+		if roleErr != nil {
+			return nil, roleErr
+		}
+		if role == "platform_admin" {
+			role = "admin"
+		}
+		result = append(result, entities.WorkspaceAccess{Workspace: workspace, Role: role})
+	}
+	return result, nil
+}
+
 // Get возвращает рабочее пространство по identity.
 func (s *UseCase) Get(ctx context.Context, identity string) (*entities.Workspace, error) {
 	if _, err := s.Authorize(ctx, identity); err != nil {

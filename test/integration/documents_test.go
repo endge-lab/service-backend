@@ -384,6 +384,9 @@ func newRepositoryFixture(t *testing.T) *repositoryFixture {
 	workspaceUseCase := workspaces.NewUseCase(store, store, store, tx, recorder, nil)
 	actor := entities.CurrentActor{User: &entities.User{ID: userID, ProviderID: "integration", Subject: "subject-" + userID, Issuer: "urn:endge:test", Username: "tester", DisplayName: "Integration Tester", Active: true}, PlatformAdmin: true}
 	ctx := entities.WithCurrentActor(context.Background(), actor)
+	if _, err = workspaceUseCase.Create(ctx, workspaces.CreateInput{Identity: "default", DisplayName: "Default"}); err != nil {
+		t.Fatalf("создать тестовый default workspace: %v", err)
+	}
 	scope, err := workspaceUseCase.Authorize(ctx, "default")
 	if err != nil {
 		t.Fatalf("авторизовать default workspace: %v", err)

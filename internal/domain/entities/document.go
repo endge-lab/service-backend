@@ -28,3 +28,14 @@ type Document struct {
 	CreatedAt               time.Time       `json:"createdAt"`
 	UpdatedAt               time.Time       `json:"updatedAt"`
 }
+
+// ArchivedDocument is the minimal cross-collection projection used by the
+// workspace archive. It intentionally excludes document payloads.
+type ArchivedDocument struct {
+	Type        string    `json:"type"`
+	Identity    string    `json:"identity"`
+	DisplayName string    `json:"displayName"`
+	Description *string   `json:"description,omitempty"`
+	DeletedAt   time.Time `json:"deletedAt"`
+	Revision    int       `json:"revision"`
+}

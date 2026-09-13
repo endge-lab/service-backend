@@ -6,6 +6,8 @@ import "github.com/gofiber/fiber/v2"
 func RegisterRoutes(router fiber.Router, handler *Handler) {
 	router.Get("/workspaces", handler.List)
 	router.Post("/workspaces", handler.Create)
+	router.Get("/workspaces/archive", handler.ListArchive)
+	router.Post("/workspaces/:identity/restore", handler.Restore)
 	router.Get("/workspaces/:identity", handler.Get)
 	router.Patch("/workspaces/:identity", handler.Patch)
 	router.Delete("/workspaces/:identity", handler.Delete)

@@ -5318,6 +5318,61 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/domain/archive:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает cursor-страницу удалённых документов текущего workspace\n" +
+		"        без facets и facet documents.\n" +
+		"      tags:\n" +
+		"        - Домен\n" +
+		"      summary: Получить архив документов\n" +
+		"      operationId: listDomainArchive\n" +
+		"      parameters:\n" +
+		"        - example: main\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Размер страницы\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            maximum: 200\n" +
+		"            default: 100\n" +
+		"        - description: Opaque cursor следующей страницы\n" +
+		"          name: cursor\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Архив документов\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/domain.ArchiveResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный cursor или limit\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /api/v1/domain/backups:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -14436,6 +14491,35 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/workspaces/archive:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает удалённые рабочие пространства, к которым у пользователя\n" +
+		"        сохранилось назначение роли. Platform Admin видит все.\n" +
+		"      tags:\n" +
+		"        - Рабочие пространства\n" +
+		"      summary: Получить архив рабочих пространств\n" +
+		"      operationId: listWorkspaceArchive\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Архив рабочих пространств\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/workspace.ArchiveListResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  \"/api/v1/workspaces/{identity}\":\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -14809,6 +14893,73 @@ var openAPI3YAML = []byte(
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/workspaces/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Снимает tombstone рабочего пространства, сохраняя документы и\n" +
+		"        назначения ролей.\n" +
+		"      tags:\n" +
+		"        - Рабочие пространства\n" +
+		"      summary: Восстановить рабочее пространство\n" +
+		"      operationId: restoreWorkspace\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Revision tombstone\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Рабочее пространство восстановлено\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/workspace.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Требуются права администратора рабочего пространства\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Удалённое рабочее пространство не найдено\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется If-Match\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
@@ -17115,6 +17266,15 @@ var openAPI3YAML = []byte(
 		"        document:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
+		"    domain.ArchiveResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/entities.ArchivedDocument\"\n" +
+		"        nextCursor:\n" +
+		"          type: string\n" +
 		"    domain.ExportResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -17549,6 +17709,21 @@ var openAPI3YAML = []byte(
 		"        id:\n" +
 		"          type: string\n" +
 		"        username:\n" +
+		"          type: string\n" +
+		"    entities.ArchivedDocument:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"        type:\n" +
 		"          type: string\n" +
 		"    entities.CommitChange:\n" +
 		"      type: object\n" +
@@ -20733,6 +20908,84 @@ var openAPI3YAML = []byte(
 		"        workspaceFolderIdentity:\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
+		"    workspace.ArchiveItemResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        active:\n" +
+		"          type: boolean\n" +
+		"          example: true\n" +
+		"        configuration:\n" +
+		"          type: object\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:00:00Z\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        dataMode:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - development\n" +
+		"            - production\n" +
+		"          example: development\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          example: Описание объекта\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          example: Основной объект\n" +
+		"        documentStructure:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - frontend\n" +
+		"            - custom\n" +
+		"          example: frontend\n" +
+		"        headSequence:\n" +
+		"          type: integer\n" +
+		"          example: 42\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"          example: main\n" +
+		"        meta:\n" +
+		"          type: object\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"          example: 3\n" +
+		"        role:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - viewer\n" +
+		"            - editor\n" +
+		"            - admin\n" +
+		"          example: admin\n" +
+		"        startupCompositionIdentity:\n" +
+		"          type: string\n" +
+		"          example: workspace-startup\n" +
+		"          nullable: true\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"    workspace.ArchiveListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/workspace.ArchiveItemResponse\"\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
 		"    workspace.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +

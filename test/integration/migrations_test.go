@@ -7,8 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/endge-lab/service-backend/internal/domain/entities"
-	"github.com/endge-lab/service-backend/internal/usecase/documents"
 	"github.com/endge-lab/service-backend/test/support"
 	"github.com/pressly/goose/v3"
 )
@@ -147,10 +145,8 @@ func assertBootstrapState(t *testing.T, database *support.TestDatabase) {
 		want  int
 	}{
 		{name: "system user", query: `SELECT count(*) FROM service_users WHERE id='00000000-0000-0000-0000-000000000001' AND is_system`, want: 1},
-		{name: "default workspace", query: `SELECT count(*) FROM workspaces WHERE id='00000000-0000-0000-0000-000000000010' AND identity='default'`, want: 1},
-		{name: "active workspace startup composition", query: `SELECT count(*) FROM workspaces w JOIN compositions c ON c.workspace_id=w.id AND c.id=w.startup_composition_id WHERE w.active AND c.active AND c.deleted_at IS NULL`, want: 1},
-		{name: "system roots", query: `SELECT count(*) FROM folders WHERE workspace_id='00000000-0000-0000-0000-000000000010' AND is_root AND managed_by='system'`, want: expectedSystemRootCount()},
-		{name: "initial commit", query: `SELECT count(*) FROM workspace_commits WHERE workspace_id='00000000-0000-0000-0000-000000000010' AND operation='bootstrap'`, want: 1},
+		{name: "no default workspace", query: `SELECT count(*) FROM workspaces WHERE identity='default'`, want: 0},
+		{name: "no bootstrapped workspace", query: `SELECT count(*) FROM workspaces`, want: 0},
 	}
 	for _, check := range checks {
 		var count int
@@ -161,15 +157,4 @@ func assertBootstrapState(t *testing.T, database *support.TestDatabase) {
 			t.Fatalf("%s: count=%d, ожидалось %d", check.name, count, check.want)
 		}
 	}
-}
-
-func expectedSystemRootCount() int {
-	entityTypes := make(map[string]struct{}, len(documents.Collections))
-	for _, collection := range documents.Collections {
-		if collection == "folders" || collection == "configurations" {
-			continue
-		}
-		entityTypes[entities.FolderEntityType(collection)] = struct{}{}
-	}
-	return len(entityTypes) + 1 // collection roots plus root-workspace-files
 }

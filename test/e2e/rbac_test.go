@@ -20,6 +20,7 @@ func TestWorkspaceRBAC(t *testing.T) {
 	editorHeaders := bearer(provider.Token(t, support.TokenInput{Subject: "editor", Username: "editor", DisplayName: "Editor"}))
 
 	_ = currentUserID(t, app, adminHeaders)
+	createWorkspace(t, app, adminHeaders, "default")
 	viewerID := currentUserID(t, app, viewerHeaders)
 	editorID := currentUserID(t, app, editorHeaders)
 
@@ -91,6 +92,7 @@ func TestSensitiveWorkspaceMutationsRequireAdmin(t *testing.T) {
 	outsider := bearer(provider.Token(t, support.TokenInput{Subject: "security-outsider", Username: "security-outsider", DisplayName: "Security Outsider"}))
 
 	_ = currentUserID(t, app, platform)
+	createWorkspace(t, app, platform, "default")
 	adminID := currentUserID(t, app, admin)
 	editorID := currentUserID(t, app, editor)
 	viewerID := currentUserID(t, app, viewer)

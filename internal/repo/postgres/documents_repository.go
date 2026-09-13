@@ -65,6 +65,36 @@ func (r *EndgeRepository) ListDocuments(ctx context.Context, workspaceID, kind s
 	return result, rows.Err()
 }
 
+// ListArchivedDocuments reads tombstone metadata across generic document
+// collections. Facets and facet documents have their own contextual archive.
+func (r *EndgeRepository) ListArchivedDocuments(ctx context.Context, workspaceID string, limit, offset int) ([]entities.ArchivedDocument, error) {
+	parts := make([]string, 0, len(entities.DocumentCollections))
+	for _, kind := range entities.DocumentCollections {
+		table, err := tableFor(kind)
+		if err != nil {
+			return nil, err
+		}
+		parts = append(parts, fmt.Sprintf(
+			`SELECT '%s' AS type,d.identity,d.display_name,d.description,d.deleted_at,d.revision FROM %s d WHERE d.workspace_id=$1 AND d.deleted_at IS NOT NULL`,
+			kind, table,
+		))
+	}
+	rows, err := r.executor(ctx).Query(ctx, strings.Join(parts, " UNION ALL ")+` ORDER BY deleted_at DESC,type,identity LIMIT $2 OFFSET $3`, workspaceID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := make([]entities.ArchivedDocument, 0, limit)
+	for rows.Next() {
+		var value entities.ArchivedDocument
+		if err = rows.Scan(&value.Type, &value.Identity, &value.DisplayName, &value.Description, &value.DeletedAt, &value.Revision); err != nil {
+			return nil, err
+		}
+		result = append(result, value)
+	}
+	return result, rows.Err()
+}
+
 // listAllActiveDocuments читает полный набор документов для snapshot/export без
 // пользовательской пагинации и искусственного ограничения размера коллекции.
 func (r *EndgeRepository) listAllActiveDocuments(ctx context.Context, workspaceID, kind string) ([]entities.Document, error) {

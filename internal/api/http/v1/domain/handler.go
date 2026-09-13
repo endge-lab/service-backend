@@ -1,8 +1,10 @@
 package domain
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/endge-lab/service-backend/internal/api/http/respond"
@@ -45,6 +47,61 @@ func (h *Handler) Live(c *fiber.Ctx) error {
 	}
 	c.Type("json")
 	return c.Send(raw)
+}
+
+// ListArchive returns deleted documents from the current workspace.
+// @Summary Получить архив документов
+// @Description Возвращает cursor-страницу удалённых документов текущего workspace без facets и facet documents.
+// @ID listDomainArchive
+// @Tags Домен
+// @Produce json
+// @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(main)
+// @Param limit query int false "Размер страницы" default(100) maximum(200)
+// @Param cursor query string false "Opaque cursor следующей страницы"
+// @Success 200 {object} ArchiveResponse "Архив документов"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный cursor или limit"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав"
+// @Security BearerAuth
+// @Router /api/v1/domain/archive [get]
+func (h *Handler) ListArchive(c *fiber.Ctx) error {
+	limit := 100
+	if raw := strings.TrimSpace(c.Query("limit")); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil || value <= 0 || value > 200 {
+			return respond.WriteErrorResponse(c, domainerrors.InvalidInput("archive_limit_invalid", "limit must be between 1 and 200"))
+		}
+		limit = value
+	}
+	offset, err := decodeArchiveCursor(c.Query("cursor"))
+	if err != nil {
+		return respond.WriteErrorResponse(c, domainerrors.InvalidInput("archive_cursor_invalid", "cursor is invalid"))
+	}
+	page, err := h.usecase.ListArchive(c.UserContext(), limit, offset)
+	if err != nil {
+		return respond.RespondDomainError(c, nil, err)
+	}
+	response := ArchiveResponse{Items: page.Items}
+	if page.NextOffset != nil {
+		cursor := base64.RawURLEncoding.EncodeToString([]byte(strconv.Itoa(*page.NextOffset)))
+		response.NextCursor = &cursor
+	}
+	return c.JSON(response)
+}
+
+func decodeArchiveCursor(value string) (int, error) {
+	if strings.TrimSpace(value) == "" {
+		return 0, nil
+	}
+	raw, err := base64.RawURLEncoding.DecodeString(value)
+	if err != nil {
+		return 0, err
+	}
+	offset, err := strconv.Atoi(string(raw))
+	if err != nil || offset < 0 {
+		return 0, fmt.Errorf("invalid cursor")
+	}
+	return offset, nil
 }
 
 type Handler struct {

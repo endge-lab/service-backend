@@ -9,13 +9,17 @@ import (
 // WorkspaceRepository задаёт порт хранения рабочих пространств для use case-слоя.
 type WorkspaceRepository interface {
 	ListWorkspaces(context.Context, string, bool) ([]entities.Workspace, error)
+	ListDeletedWorkspaces(context.Context, string, bool) ([]entities.Workspace, error)
 	GetWorkspace(context.Context, string) (*entities.Workspace, error)
+	GetDeletedWorkspace(context.Context, string) (*entities.Workspace, error)
 	CreateWorkspace(context.Context, entities.Workspace, string) (*entities.Workspace, error)
 	FinalizeWorkspaceBootstrap(context.Context, string, string) (*entities.Workspace, error)
 	UpdateWorkspace(context.Context, string, map[string]any, int, string) (*entities.Workspace, error)
 	SoftDeleteWorkspace(context.Context, string, int, string) (*entities.Workspace, error)
+	RestoreWorkspace(context.Context, string, int, string) (*entities.Workspace, error)
 	ClearStartupComposition(context.Context, string, string, string) (*entities.Workspace, bool, error)
 	WorkspaceRole(context.Context, string, string, bool) (string, error)
+	DeletedWorkspaceRole(context.Context, string, string, bool) (string, error)
 	ListMemberships(context.Context, string) ([]entities.Membership, error)
 	PutMembership(context.Context, string, string, string, string) (*entities.Membership, error)
 	DeleteMembership(context.Context, string, string) error

@@ -27,6 +27,11 @@ type ImportResponse struct {
 	DomainVersion  string                  `json:"domainVersion" example:"dv2:sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
 }
 
+type ArchiveResponse struct {
+	Items      []entities.ArchivedDocument `json:"items"`
+	NextCursor *string                     `json:"nextCursor,omitempty"`
+}
+
 func newImportResponse(value entities.SnapshotImportResult) ImportResponse {
 	return ImportResponse{
 		Workspace: value.WorkspaceIdentity, Imported: value.Imported,

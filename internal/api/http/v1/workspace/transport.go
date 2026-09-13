@@ -79,6 +79,16 @@ type ListResponse struct {
 	Total int        `json:"total" example:"1"`
 }
 
+type ArchiveItemResponse struct {
+	Response
+	Role string `json:"role" example:"admin" enums:"viewer,editor,admin"`
+}
+
+type ArchiveListResponse struct {
+	Items []ArchiveItemResponse `json:"items"`
+	Total int                   `json:"total" example:"1"`
+}
+
 type MembershipListResponse struct {
 	Items []MembershipResponse `json:"items"`
 	Total int                  `json:"total" example:"1"`
@@ -111,6 +121,14 @@ func integrationInputs(values []InstalledIntegration) []resourceusecase.Installe
 // NewResponse безопасно преобразует application-результат в HTTP-ответ.
 func NewResponse(value entities.Workspace) (Response, error) {
 	return shared.DecodeValue[Response](value)
+}
+
+func NewArchiveItemResponse(value entities.WorkspaceAccess) (ArchiveItemResponse, error) {
+	workspace, err := NewResponse(value.Workspace)
+	if err != nil {
+		return ArchiveItemResponse{}, err
+	}
+	return ArchiveItemResponse{Response: workspace, Role: value.Role}, nil
 }
 
 // NewMembershipResponse безопасно преобразует membership в HTTP-ответ.

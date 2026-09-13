@@ -305,6 +305,46 @@ func (s *UseCase) Delete(ctx context.Context, identity string, expected int) (re
 	return result, shared.MapConflict(err)
 }
 
+// Restore restores a deleted Workspace while preserving its documents and grants.
+func (s *UseCase) Restore(ctx context.Context, identity string, expected int) (result *entities.Workspace, err error) {
+	current, err := shared.Actor(ctx)
+	if err != nil {
+		return nil, err
+	}
+	workspace, err := s.workspaces.GetDeletedWorkspace(ctx, strings.TrimSpace(identity))
+	if errors.Is(err, ports.ErrNotFound) {
+		return nil, domainerrors.NotFound("workspace_not_found", "Deleted workspace not found")
+	}
+	if err != nil {
+		return nil, err
+	}
+	role, err := s.workspaces.DeletedWorkspaceRole(ctx, workspace.ID, current.User.ID, current.PlatformAdmin)
+	if err != nil {
+		return nil, err
+	}
+	if !shared.CanAdmin(role) {
+		return nil, domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
+	}
+	if expected <= 0 {
+		return nil, shared.PreconditionRequired()
+	}
+	if workspace.Revision != expected {
+		return nil, shared.RevisionConflict()
+	}
+	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
+		updated, txErr := s.workspaces.RestoreWorkspace(txctx, workspace.ID, expected, current.User.ID)
+		if txErr != nil {
+			return txErr
+		}
+		if txErr = s.history.RecordWorkspace(txctx, *updated, "restore"); txErr != nil {
+			return txErr
+		}
+		result = updated
+		return nil
+	})
+	return result, shared.MapConflict(err)
+}
+
 // applyWorkspacePatch применяет частичное обновление к рабочему пространству.
 func applyWorkspacePatch(workspace entities.Workspace, patch map[string]any) entities.Workspace {
 	if value, ok := patch["identity"].(string); ok {
