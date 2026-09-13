@@ -2213,6 +2213,239 @@ var openAPI3YAML = []byte(
 		"            \"*/*\":\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/build-profiles:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает общие профили workspace и личные профили текущего actor.\n" +
+		"      tags:\n" +
+		"        - Профили сборки\n" +
+		"      summary: Получить профили сборки\n" +
+		"      operationId: listBuildProfiles\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/build_profile.ListResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Сохраняет новый личный или общий профиль с автоматически\n" +
+		"        сформированными identity и именем.\n" +
+		"      tags:\n" +
+		"        - Профили сборки\n" +
+		"      summary: Создать профиль сборки\n" +
+		"      operationId: createBuildProfile\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/build_profile.CreateRequest\"\n" +
+		"        description: Профиль\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Created\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/build_profile.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/build-profiles/{identity}\":\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Физически удаляет профиль, которым текущий actor вправе управлять,\n" +
+		"        с проверкой revision.\n" +
+		"      tags:\n" +
+		"        - Профили сборки\n" +
+		"      summary: Удалить профиль сборки\n" +
+		"      operationId: deleteBuildProfile\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity профиля\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Revision\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"204\":\n" +
+		"          description: No Content\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Conflict\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Precondition Required\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Изменяет имя, видимость или настройки профиля с оптимистической\n" +
+		"        проверкой revision.\n" +
+		"      tags:\n" +
+		"        - Профили сборки\n" +
+		"      summary: Изменить профиль сборки\n" +
+		"      operationId: patchBuildProfile\n" +
+		"      parameters:\n" +
+		"        - example: default\n" +
+		"          description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity профиля\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Revision\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/build_profile.PatchRequest\"\n" +
+		"        description: Изменения\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/build_profile.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Conflict\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Precondition Required\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /api/v1/commits:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -5964,8 +6197,8 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает переносимый пакет без UUID-связей, пользователей,\n" +
-		"        назначения ролей, истории и секретов.\n" +
+		"      description: Возвращает переносимый пакет с общими профилями сборки, без private\n" +
+		"        records, AI-каталога, назначения ролей, истории и секретов.\n" +
 		"      tags:\n" +
 		"        - Перенос домена\n" +
 		"      summary: Экспортировать рабочее пространство\n" +
@@ -6005,6 +6238,61 @@ var openAPI3YAML = []byte(
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"500\":\n" +
 		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Credentials включаются только по явному выбору; без password они\n" +
+		"        находятся в JSON открытым текстом, а password шифрует весь JSON\n" +
+		"        artifact.\n" +
+		"      tags:\n" +
+		"        - Перенос домена\n" +
+		"      summary: Экспортировать workspace с параметрами\n" +
+		"      operationId: exportDomainWithOptions\n" +
+		"      parameters:\n" +
+		"        - description: Скачать JSON как файл\n" +
+		"          name: download\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: false\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/domain.ExportRequest\"\n" +
+		"        description: Параметры экспорта\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/domain.ExportResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректные параметры\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Недостаточно прав для выбранных данных\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Workspace содержит незакоммиченные изменения\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
@@ -6082,8 +6370,8 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Валидирует переносимый пакет и возвращает план импорта без\n" +
-		"        изменения данных.\n" +
+		"      description: Валидирует обычный bundle либо wrapper с encrypted artifact и\n" +
+		"        password, не изменяя данные.\n" +
 		"      tags:\n" +
 		"        - Перенос домена\n" +
 		"      summary: Проверить импорт домена\n" +
@@ -6100,8 +6388,8 @@ var openAPI3YAML = []byte(
 		"        content:\n" +
 		"          application/json:\n" +
 		"            schema:\n" +
-		"              $ref: \"#/components/schemas/entities.PortableBundle\"\n" +
-		"        description: Полный workspace snapshot\n" +
+		"              $ref: \"#/components/schemas/domain.ImportPlanArtifactRequest\"\n" +
+		"        description: Artifact и пароль; обычный bundle также принимается для совместимости\n" +
 		"        required: true\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
@@ -15943,6 +16231,12 @@ var openAPI3YAML = []byte(
 		"    backup.ExportResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
+		"        aiCatalog:\n" +
+		"          $ref: \"#/components/schemas/entities.PortableAICatalog\"\n" +
+		"        buildProfiles:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/entities.PortableBuildProfile\"\n" +
 		"        documents:\n" +
 		"          type: object\n" +
 		"          additionalProperties:\n" +
@@ -16004,6 +16298,74 @@ var openAPI3YAML = []byte(
 		"        workspaceId:\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
+		"    build_profile.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - settings\n" +
+		"        - visibility\n" +
+		"      properties:\n" +
+		"        settings:\n" +
+		"          $ref: \"#/components/schemas/entities.BuildProfileSettings\"\n" +
+		"        visibility:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - shared\n" +
+		"            - private\n" +
+		"    build_profile.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/entities.BuildProfile\"\n" +
+		"        total:\n" +
+		"          type: integer\n" +
+		"    build_profile.PatchRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"        settings:\n" +
+		"          $ref: \"#/components/schemas/entities.BuildProfileSettings\"\n" +
+		"        visibility:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - shared\n" +
+		"            - private\n" +
+		"    build_profile.Response:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        canChangeVisibility:\n" +
+		"          type: boolean\n" +
+		"        canManage:\n" +
+		"          type: boolean\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"        ownedByMe:\n" +
+		"          type: boolean\n" +
+		"        ownerLogin:\n" +
+		"          type: string\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"        settings:\n" +
+		"          type: object\n" +
+		"        settingsVersion:\n" +
+		"          type: integer\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        visibility:\n" +
+		"          type: string\n" +
 		"    commit.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -17275,9 +17637,35 @@ var openAPI3YAML = []byte(
 		"            $ref: \"#/components/schemas/entities.ArchivedDocument\"\n" +
 		"        nextCursor:\n" +
 		"          type: string\n" +
+		"    domain.ExportRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        includePublicAI:\n" +
+		"          type: boolean\n" +
+		"        password:\n" +
+		"          type: string\n" +
+		"          maxLength: 1024\n" +
+		"        privateAIConnections:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - none\n" +
+		"            - own\n" +
+		"            - all\n" +
+		"        privateBuildProfiles:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - none\n" +
+		"            - own\n" +
+		"            - all\n" +
 		"    domain.ExportResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
+		"        aiCatalog:\n" +
+		"          $ref: \"#/components/schemas/entities.PortableAICatalog\"\n" +
+		"        buildProfiles:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/entities.PortableBuildProfile\"\n" +
 		"        documents:\n" +
 		"          type: object\n" +
 		"          additionalProperties:\n" +
@@ -17299,6 +17687,16 @@ var openAPI3YAML = []byte(
 		"        workspace:\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
+		"    domain.ImportPlanArtifactRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - artifact\n" +
+		"      properties:\n" +
+		"        artifact:\n" +
+		"          type: object\n" +
+		"        password:\n" +
+		"          type: string\n" +
+		"          maxLength: 1024\n" +
 		"    domain.ImportPlanResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -17725,6 +18123,61 @@ var openAPI3YAML = []byte(
 		"          type: integer\n" +
 		"        type:\n" +
 		"          type: string\n" +
+		"    entities.BuildProfile:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        canChangeVisibility:\n" +
+		"          type: boolean\n" +
+		"        canManage:\n" +
+		"          type: boolean\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"        createdBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"        ownedByMe:\n" +
+		"          type: boolean\n" +
+		"        ownerLogin:\n" +
+		"          type: string\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
+		"        settings:\n" +
+		"          type: object\n" +
+		"        settingsVersion:\n" +
+		"          type: integer\n" +
+		"        updatedAt:\n" +
+		"          type: string\n" +
+		"        updatedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        visibility:\n" +
+		"          type: string\n" +
+		"    entities.BuildProfileSettings:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        buildScope:\n" +
+		"          type: string\n" +
+		"        contexts:\n" +
+		"          type: string\n" +
+		"        debuggerStructure:\n" +
+		"          type: string\n" +
+		"        diagnostics:\n" +
+		"          type: string\n" +
+		"        topology:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/entities.BuildProfileTopologyNode\"\n" +
+		"    entities.BuildProfileTopologyNode:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        node:\n" +
+		"          type: string\n" +
+		"        runtime:\n" +
+		"          type: string\n" +
 		"    entities.CommitChange:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -17791,36 +18244,76 @@ var openAPI3YAML = []byte(
 		"          type: integer\n" +
 		"        status:\n" +
 		"          type: string\n" +
-		"    entities.PortableBundle:\n" +
+		"    entities.PortableAICatalog:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
-		"        documents:\n" +
-		"          type: object\n" +
-		"          additionalProperties:\n" +
-		"            type: array\n" +
-		"            items:\n" +
-		"              type: object\n" +
-		"              additionalProperties: {}\n" +
-		"        domainVersion:\n" +
-		"          type: string\n" +
-		"        installedIntegrations:\n" +
+		"        connections:\n" +
 		"          type: array\n" +
 		"          items:\n" +
-		"            type: object\n" +
-		"            additionalProperties: {}\n" +
-		"        kind:\n" +
+		"            $ref: \"#/components/schemas/entities.PortableAIConnection\"\n" +
+		"    entities.PortableAIConnection:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        adapter:\n" +
 		"          type: string\n" +
-		"        schemaVersion:\n" +
-		"          type: integer\n" +
-		"        workspace:\n" +
+		"        baseUrl:\n" +
+		"          type: string\n" +
+		"        credential:\n" +
+		"          type: string\n" +
+		"        enabled:\n" +
+		"          type: boolean\n" +
+		"        models:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/entities.PortableAIModel\"\n" +
+		"        name:\n" +
+		"          type: string\n" +
+		"        ownerLogin:\n" +
+		"          type: string\n" +
+		"        visibility:\n" +
+		"          type: string\n" +
+		"    entities.PortableAIModel:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"        enabled:\n" +
+		"          type: boolean\n" +
+		"        isDefault:\n" +
+		"          type: boolean\n" +
+		"        providerModelId:\n" +
+		"          type: string\n" +
+		"    entities.PortableBuildProfile:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"        ownerLogin:\n" +
+		"          type: string\n" +
+		"        settings:\n" +
 		"          type: object\n" +
-		"          additionalProperties: {}\n" +
+		"        settingsVersion:\n" +
+		"          type: integer\n" +
+		"        visibility:\n" +
+		"          type: string\n" +
 		"    entities.SnapshotCounts:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
+		"        aiConnections:\n" +
+		"          type: integer\n" +
+		"        aiModels:\n" +
+		"          type: integer\n" +
+		"        buildProfiles:\n" +
+		"          type: integer\n" +
 		"        documents:\n" +
 		"          type: integer\n" +
 		"        integrations:\n" +
+		"          type: integer\n" +
+		"        skippedAIConnections:\n" +
+		"          type: integer\n" +
+		"        skippedBuildProfiles:\n" +
 		"          type: integer\n" +
 		"    facet.CreateRequest:\n" +
 		"      type: object\n" +
@@ -19433,6 +19926,12 @@ var openAPI3YAML = []byte(
 		"    release.ExportResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
+		"        aiCatalog:\n" +
+		"          $ref: \"#/components/schemas/entities.PortableAICatalog\"\n" +
+		"        buildProfiles:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/entities.PortableBuildProfile\"\n" +
 		"        documents:\n" +
 		"          type: object\n" +
 		"          additionalProperties:\n" +

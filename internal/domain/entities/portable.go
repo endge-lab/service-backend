@@ -17,6 +17,39 @@ type PortableBundle struct {
 	Workspace             map[string]any              `json:"workspace"`
 	Documents             map[string][]map[string]any `json:"documents"`
 	InstalledIntegrations []map[string]any            `json:"installedIntegrations"`
+	BuildProfiles         []PortableBuildProfile      `json:"buildProfiles,omitempty"`
+	AICatalog             *PortableAICatalog          `json:"aiCatalog,omitempty"`
+}
+
+type PortableBuildProfile struct {
+	Identity        string          `json:"identity"`
+	DisplayName     string          `json:"displayName"`
+	Visibility      string          `json:"visibility"`
+	OwnerLogin      string          `json:"ownerLogin,omitempty"`
+	SettingsVersion int             `json:"settingsVersion"`
+	Settings        json.RawMessage `json:"settings" swaggertype:"object"`
+}
+
+type PortableAICatalog struct {
+	Connections []PortableAIConnection `json:"connections"`
+}
+
+type PortableAIConnection struct {
+	Name       string            `json:"name"`
+	Adapter    string            `json:"adapter"`
+	BaseURL    string            `json:"baseUrl"`
+	Visibility string            `json:"visibility"`
+	OwnerLogin string            `json:"ownerLogin,omitempty"`
+	Credential string            `json:"credential,omitempty"`
+	Enabled    bool              `json:"enabled"`
+	Models     []PortableAIModel `json:"models"`
+}
+
+type PortableAIModel struct {
+	ProviderModelID string `json:"providerModelId"`
+	DisplayName     string `json:"displayName"`
+	Enabled         bool   `json:"enabled"`
+	Default         bool   `json:"isDefault"`
 }
 
 type ImportPlan struct {
@@ -40,8 +73,13 @@ type ImportPlan struct {
 }
 
 type SnapshotCounts struct {
-	Documents    int `json:"documents"`
-	Integrations int `json:"integrations"`
+	Documents            int `json:"documents"`
+	Integrations         int `json:"integrations"`
+	BuildProfiles        int `json:"buildProfiles,omitempty"`
+	AIConnections        int `json:"aiConnections,omitempty"`
+	AIModels             int `json:"aiModels,omitempty"`
+	SkippedBuildProfiles int `json:"skippedBuildProfiles,omitempty"`
+	SkippedAIConnections int `json:"skippedAIConnections,omitempty"`
 }
 
 type SnapshotImportPlan struct {

@@ -226,8 +226,9 @@ If-Match: "3"
 - Release является immutable portable snapshot существующего Commit и скачивается
   без replay истории.
 - Restore revision/commit/release добавляет новую историю и не переписывает старую.
-- Export/import не содержит UUID-связей, пользователей, memberships, истории и
-  секретов.
+- Безопасный `GET` export не содержит private records, AI-каталог, memberships,
+  историю и секреты; расширенный `POST` export может явно включить выбранные
+  профили и AI credentials по описанному ниже transfer contract.
 
 ## Snapshot, перенос и backups
 
@@ -235,6 +236,20 @@ If-Match: "3"
 server-only полем `state`. `GET /api/v1/domain/export` отдаёт тот же переносимый
 контракт без локальных UUID, истории и времён хранения. Оба export endpoint
 возвращают JSON inline; `?download=true` включает скачивание файла.
+
+`POST /api/v1/domain/export` добавляет выбранные private build profiles,
+private/public AI connections, модели и credentials. Без пароля credential
+находится в JSON открытым текстом; с паролем весь внутренний snapshot шифруется
+AES-256-GCM, а ключ выводится Argon2id. Import plan принимает как обычный bundle,
+так и `{artifact, password}` для encrypted envelope. Владельцы personal records
+сопоставляются по нормализованному login; отсутствующие и неоднозначные записи
+пропускаются с warnings/counts.
+
+Профили сборки доступны через `/api/v1/build-profiles`. Это отдельные
+workspace-scoped operational records с UUID identity, typed settings,
+`shared | private`, owner и optimistic `revision`; они не входят в revisions,
+commits, releases, backups и `domainVersion`. В import они merge-обновляются в
+одной транзакции с Domain и выбранным AI-каталогом.
 
 Перед export и проверкой import backend приводит переносимую часть домена к одной
 идемпотентной канонической форме. Текущий `domainVersion` использует контракт

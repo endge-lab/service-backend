@@ -5,6 +5,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/config"
 	"github.com/endge-lab/service-backend/internal/domain/access"
 	platformbridge "github.com/endge-lab/service-backend/internal/platform/bridge"
+	platformencryption "github.com/endge-lab/service-backend/internal/platform/encryption"
 	"github.com/endge-lab/service-backend/internal/usecase/access_control"
 	"github.com/endge-lab/service-backend/internal/usecase/actions"
 	"github.com/endge-lab/service-backend/internal/usecase/ai_assistant"
@@ -12,6 +13,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/auth_profiles"
 	"github.com/endge-lab/service-backend/internal/usecase/backend_connections"
 	"github.com/endge-lab/service-backend/internal/usecase/backups"
+	"github.com/endge-lab/service-backend/internal/usecase/build_profiles"
 	"github.com/endge-lab/service-backend/internal/usecase/commits"
 	"github.com/endge-lab/service-backend/internal/usecase/components"
 	"github.com/endge-lab/service-backend/internal/usecase/compositions"
@@ -95,6 +97,7 @@ func UseCaseModules() fx.Option {
 		fx.Annotate(release_artifacts.NewReader, fx.As(new(ports.ReleaseArtifactReader))),
 		releases.NewUseCase,
 		backups.NewUseCase,
+		build_profiles.NewUseCase,
 	))
 }
 
@@ -102,8 +105,8 @@ func releaseArtifactCacheConfig(cfg *config.Config) config.ReleaseArtifactCacheC
 	return cfg.ReleaseArtifactCache
 }
 
-func newWorkspaceStateCoordinator(repository workspace_state.Repository, tx ports.TxManager, artifacts ports.ReleaseArtifactReader, cfg *config.Config) *workspace_state.Coordinator {
-	return workspace_state.NewCoordinator(repository, tx, artifacts, cfg.WorkspaceSchemaVersion)
+func newWorkspaceStateCoordinator(repository workspace_state.Repository, tx ports.TxManager, artifacts ports.ReleaseArtifactReader, keyring *platformencryption.Keyring, cfg *config.Config) *workspace_state.Coordinator {
+	return workspace_state.NewCoordinator(repository, tx, artifacts, keyring, cfg.WorkspaceSchemaVersion)
 }
 
 func newMockDataUseCase(lc fx.Lifecycle, g ports.MockGeneratorGateway, cfg *config.Config) *mock_data.UseCase {

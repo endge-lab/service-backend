@@ -6,6 +6,7 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	platformencryption "github.com/endge-lab/service-backend/internal/platform/encryption"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 )
 
@@ -26,6 +27,7 @@ type Repository interface {
 	ports.ReleaseRepository
 	ports.PortableRepository
 	ports.SnapshotRepository
+	ports.WorkspaceAdjunctRepository
 }
 
 // Coordinator координирует импорт и восстановление состояния рабочего пространства.
@@ -33,6 +35,7 @@ type Coordinator struct {
 	repository    Repository
 	tx            ports.TxManager
 	artifacts     ports.ReleaseArtifactReader
+	keyring       *platformencryption.Keyring
 	schemaVersion int
 }
 
@@ -40,8 +43,8 @@ type Coordinator struct {
 type mutationBatchContextKey struct{}
 
 // NewCoordinator создаёт координатор операций над состоянием рабочего пространства.
-func NewCoordinator(repository Repository, tx ports.TxManager, artifacts ports.ReleaseArtifactReader, schemaVersion int) *Coordinator {
-	return &Coordinator{repository: repository, tx: tx, artifacts: artifacts, schemaVersion: schemaVersion}
+func NewCoordinator(repository Repository, tx ports.TxManager, artifacts ports.ReleaseArtifactReader, keyring *platformencryption.Keyring, schemaVersion int) *Coordinator {
+	return &Coordinator{repository: repository, tx: tx, artifacts: artifacts, keyring: keyring, schemaVersion: schemaVersion}
 }
 
 // actor возвращает текущего пользователя из контекста.

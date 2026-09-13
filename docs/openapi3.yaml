@@ -2208,6 +2208,239 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/build-profiles:
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает общие профили workspace и личные профили текущего actor.
+      tags:
+        - Профили сборки
+      summary: Получить профили сборки
+      operationId: listBuildProfiles
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/build_profile.ListResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+    post:
+      security:
+        - BearerAuth: []
+      description: Сохраняет новый личный или общий профиль с автоматически
+        сформированными identity и именем.
+      tags:
+        - Профили сборки
+      summary: Создать профиль сборки
+      operationId: createBuildProfile
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/build_profile.CreateRequest"
+        description: Профиль
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/build_profile.Response"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/build-profiles/{identity}":
+    delete:
+      security:
+        - BearerAuth: []
+      description: Физически удаляет профиль, которым текущий actor вправе управлять,
+        с проверкой revision.
+      tags:
+        - Профили сборки
+      summary: Удалить профиль сборки
+      operationId: deleteBuildProfile
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity профиля
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Revision
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "428":
+          description: Precondition Required
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+    patch:
+      security:
+        - BearerAuth: []
+      description: Изменяет имя, видимость или настройки профиля с оптимистической
+        проверкой revision.
+      tags:
+        - Профили сборки
+      summary: Изменить профиль сборки
+      operationId: patchBuildProfile
+      parameters:
+        - example: default
+          description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity профиля
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Revision
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/build_profile.PatchRequest"
+        description: Изменения
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/build_profile.Response"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "428":
+          description: Precondition Required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
   /api/v1/commits:
     get:
       security:
@@ -5959,8 +6192,8 @@ paths:
     get:
       security:
         - BearerAuth: []
-      description: Возвращает переносимый пакет без UUID-связей, пользователей,
-        назначения ролей, истории и секретов.
+      description: Возвращает переносимый пакет с общими профилями сборки, без private
+        records, AI-каталога, назначения ролей, истории и секретов.
       tags:
         - Перенос домена
       summary: Экспортировать рабочее пространство
@@ -6000,6 +6233,61 @@ paths:
                 $ref: "#/components/schemas/shared.ErrorResponse"
         "500":
           description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+    post:
+      security:
+        - BearerAuth: []
+      description: Credentials включаются только по явному выбору; без password они
+        находятся в JSON открытым текстом, а password шифрует весь JSON
+        artifact.
+      tags:
+        - Перенос домена
+      summary: Экспортировать workspace с параметрами
+      operationId: exportDomainWithOptions
+      parameters:
+        - description: Скачать JSON как файл
+          name: download
+          in: query
+          schema:
+            type: boolean
+            default: false
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/domain.ExportRequest"
+        description: Параметры экспорта
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/domain.ExportResponse"
+        "400":
+          description: Некорректные параметры
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Требуется аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Недостаточно прав для выбранных данных
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Workspace содержит незакоммиченные изменения
           content:
             application/json:
               schema:
@@ -6077,8 +6365,8 @@ paths:
     post:
       security:
         - BearerAuth: []
-      description: Валидирует переносимый пакет и возвращает план импорта без
-        изменения данных.
+      description: Валидирует обычный bundle либо wrapper с encrypted artifact и
+        password, не изменяя данные.
       tags:
         - Перенос домена
       summary: Проверить импорт домена
@@ -6095,8 +6383,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/entities.PortableBundle"
-        description: Полный workspace snapshot
+              $ref: "#/components/schemas/domain.ImportPlanArtifactRequest"
+        description: Artifact и пароль; обычный bundle также принимается для совместимости
         required: true
       responses:
         "200":
@@ -15938,6 +16226,12 @@ components:
     backup.ExportResponse:
       type: object
       properties:
+        aiCatalog:
+          $ref: "#/components/schemas/entities.PortableAICatalog"
+        buildProfiles:
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.PortableBuildProfile"
         documents:
           type: object
           additionalProperties:
@@ -15999,6 +16293,74 @@ components:
         workspaceId:
           type: string
           format: uuid
+    build_profile.CreateRequest:
+      type: object
+      required:
+        - settings
+        - visibility
+      properties:
+        settings:
+          $ref: "#/components/schemas/entities.BuildProfileSettings"
+        visibility:
+          type: string
+          enum:
+            - shared
+            - private
+    build_profile.ListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.BuildProfile"
+        total:
+          type: integer
+    build_profile.PatchRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+          maxLength: 160
+        settings:
+          $ref: "#/components/schemas/entities.BuildProfileSettings"
+        visibility:
+          type: string
+          enum:
+            - shared
+            - private
+    build_profile.Response:
+      type: object
+      properties:
+        canChangeVisibility:
+          type: boolean
+        canManage:
+          type: boolean
+        createdAt:
+          type: string
+        createdBy:
+          $ref: "#/components/schemas/entities.Actor"
+        displayName:
+          type: string
+        id:
+          type: string
+        identity:
+          type: string
+        ownedByMe:
+          type: boolean
+        ownerLogin:
+          type: string
+        revision:
+          type: integer
+        settings:
+          type: object
+        settingsVersion:
+          type: integer
+        updatedAt:
+          type: string
+        updatedBy:
+          $ref: "#/components/schemas/entities.Actor"
+        visibility:
+          type: string
     commit.CreateRequest:
       type: object
       required:
@@ -17270,9 +17632,35 @@ components:
             $ref: "#/components/schemas/entities.ArchivedDocument"
         nextCursor:
           type: string
+    domain.ExportRequest:
+      type: object
+      properties:
+        includePublicAI:
+          type: boolean
+        password:
+          type: string
+          maxLength: 1024
+        privateAIConnections:
+          type: string
+          enum:
+            - none
+            - own
+            - all
+        privateBuildProfiles:
+          type: string
+          enum:
+            - none
+            - own
+            - all
     domain.ExportResponse:
       type: object
       properties:
+        aiCatalog:
+          $ref: "#/components/schemas/entities.PortableAICatalog"
+        buildProfiles:
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.PortableBuildProfile"
         documents:
           type: object
           additionalProperties:
@@ -17294,6 +17682,16 @@ components:
         workspace:
           type: object
           additionalProperties: {}
+    domain.ImportPlanArtifactRequest:
+      type: object
+      required:
+        - artifact
+      properties:
+        artifact:
+          type: object
+        password:
+          type: string
+          maxLength: 1024
     domain.ImportPlanResponse:
       type: object
       properties:
@@ -17720,6 +18118,61 @@ components:
           type: integer
         type:
           type: string
+    entities.BuildProfile:
+      type: object
+      properties:
+        canChangeVisibility:
+          type: boolean
+        canManage:
+          type: boolean
+        createdAt:
+          type: string
+        createdBy:
+          $ref: "#/components/schemas/entities.Actor"
+        displayName:
+          type: string
+        id:
+          type: string
+        identity:
+          type: string
+        ownedByMe:
+          type: boolean
+        ownerLogin:
+          type: string
+        revision:
+          type: integer
+        settings:
+          type: object
+        settingsVersion:
+          type: integer
+        updatedAt:
+          type: string
+        updatedBy:
+          $ref: "#/components/schemas/entities.Actor"
+        visibility:
+          type: string
+    entities.BuildProfileSettings:
+      type: object
+      properties:
+        buildScope:
+          type: string
+        contexts:
+          type: string
+        debuggerStructure:
+          type: string
+        diagnostics:
+          type: string
+        topology:
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.BuildProfileTopologyNode"
+    entities.BuildProfileTopologyNode:
+      type: object
+      properties:
+        node:
+          type: string
+        runtime:
+          type: string
     entities.CommitChange:
       type: object
       properties:
@@ -17786,36 +18239,76 @@ components:
           type: integer
         status:
           type: string
-    entities.PortableBundle:
+    entities.PortableAICatalog:
       type: object
       properties:
-        documents:
-          type: object
-          additionalProperties:
-            type: array
-            items:
-              type: object
-              additionalProperties: {}
-        domainVersion:
-          type: string
-        installedIntegrations:
+        connections:
           type: array
           items:
-            type: object
-            additionalProperties: {}
-        kind:
+            $ref: "#/components/schemas/entities.PortableAIConnection"
+    entities.PortableAIConnection:
+      type: object
+      properties:
+        adapter:
           type: string
-        schemaVersion:
-          type: integer
-        workspace:
+        baseUrl:
+          type: string
+        credential:
+          type: string
+        enabled:
+          type: boolean
+        models:
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.PortableAIModel"
+        name:
+          type: string
+        ownerLogin:
+          type: string
+        visibility:
+          type: string
+    entities.PortableAIModel:
+      type: object
+      properties:
+        displayName:
+          type: string
+        enabled:
+          type: boolean
+        isDefault:
+          type: boolean
+        providerModelId:
+          type: string
+    entities.PortableBuildProfile:
+      type: object
+      properties:
+        displayName:
+          type: string
+        identity:
+          type: string
+        ownerLogin:
+          type: string
+        settings:
           type: object
-          additionalProperties: {}
+        settingsVersion:
+          type: integer
+        visibility:
+          type: string
     entities.SnapshotCounts:
       type: object
       properties:
+        aiConnections:
+          type: integer
+        aiModels:
+          type: integer
+        buildProfiles:
+          type: integer
         documents:
           type: integer
         integrations:
+          type: integer
+        skippedAIConnections:
+          type: integer
+        skippedBuildProfiles:
           type: integer
     facet.CreateRequest:
       type: object
@@ -19428,6 +19921,12 @@ components:
     release.ExportResponse:
       type: object
       properties:
+        aiCatalog:
+          $ref: "#/components/schemas/entities.PortableAICatalog"
+        buildProfiles:
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.PortableBuildProfile"
         documents:
           type: object
           additionalProperties:

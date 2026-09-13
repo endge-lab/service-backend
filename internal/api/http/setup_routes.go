@@ -14,6 +14,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/backend_connection"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/backup"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/bridge"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/build_profile"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/commit"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/component"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/composition"
@@ -55,6 +56,7 @@ type Handlers struct {
 	fx.In
 
 	Bridge            *bridge.Handler
+	BuildProfile      *build_profile.Handler
 	CurrentUser       *httpmiddleware.CurrentUserMiddleware
 	AccessControl     *access_control.Handler
 	AICatalog         *ai_catalog.Handler
@@ -123,6 +125,7 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, connectedServices *service_
 	backend_connection.RegisterRoutes(v1, handlers.BackendConnection)
 	integration.RegisterRoutes(v1, handlers.Integration)
 	scoped := v1.Group("", handlers.Workspace.RequireWorkspace())
+	build_profile.RegisterRoutes(scoped, handlers.BuildProfile)
 	facet.RegisterRoutes(scoped, handlers.Facet)
 	folder.RegisterRoutes(scoped, handlers.Folder)
 	domain_type.RegisterRoutes(scoped, handlers.Type)

@@ -65,11 +65,14 @@ func (r *EndgeRepository) ListDocuments(ctx context.Context, workspaceID, kind s
 	return result, rows.Err()
 }
 
-// ListArchivedDocuments reads tombstone metadata across generic document
-// collections. Facets and facet documents have their own contextual archive.
+// ListArchivedDocuments читает metadata tombstones восстанавливаемых документов.
+// Папки, facets и facet documents в этот архив не входят.
 func (r *EndgeRepository) ListArchivedDocuments(ctx context.Context, workspaceID string, limit, offset int) ([]entities.ArchivedDocument, error) {
 	parts := make([]string, 0, len(entities.DocumentCollections))
 	for _, kind := range entities.DocumentCollections {
+		if kind == entities.CollectionFolders {
+			continue
+		}
 		table, err := tableFor(kind)
 		if err != nil {
 			return nil, err

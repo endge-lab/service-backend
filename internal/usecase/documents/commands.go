@@ -222,7 +222,7 @@ func (s *Lifecycle) Restore(ctx context.Context, definition Definition, reposito
 		next.Data = mustJSON(data)
 		next.FolderIdentity = nil
 	}
-	folderID, err := s.resolveDocumentFolder(ctx, scope, next)
+	folderID, err := s.resolveRestoreFolders(ctx, scope, &next)
 	if err != nil {
 		return nil, err
 	}

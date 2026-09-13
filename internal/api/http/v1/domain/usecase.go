@@ -7,13 +7,16 @@ import (
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	"github.com/endge-lab/service-backend/internal/usecase/documents"
 	resourceusecase "github.com/endge-lab/service-backend/internal/usecase/portable"
+	"github.com/endge-lab/service-backend/internal/usecase/workspace_state"
 )
 
 type UseCase interface {
 	Live(context.Context) (json.RawMessage, error)
 	Status(context.Context) (*entities.DomainStatus, error)
 	Export(context.Context) (json.RawMessage, error)
+	ExportWithOptions(context.Context, workspace_state.ExportOptions, string) (json.RawMessage, error)
 	PlanImport(context.Context, entities.PortableBundle) (*entities.ImportPlan, error)
+	PlanImportArtifact(context.Context, json.RawMessage, string) (*entities.ImportPlan, error)
 	Import(context.Context, string, string, string) (*entities.SnapshotImportResult, error)
 	ListArchive(context.Context, int, int) (documents.ArchivePage, error)
 }

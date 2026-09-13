@@ -55,23 +55,7 @@ func (s *Coordinator) RestoreCommit(ctx context.Context, id string, expected int
 
 // Export экспортирует состояние рабочего пространства в переносимый пакет.
 func (s *Coordinator) Export(ctx context.Context) (json.RawMessage, error) {
-	scope, err := access(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var result json.RawMessage
-	err = s.tx.WithinReadTransaction(ctx, func(txctx context.Context) error {
-		latest, txErr := s.repository.LatestCommit(txctx, scope.Workspace.ID)
-		if txErr != nil {
-			return txErr
-		}
-		if latest.HeadSequence != scope.Workspace.HeadSequence {
-			return domainerrors.Conflict("export_requires_clean_commit", "Workspace has uncommitted revisions")
-		}
-		result, txErr = s.repository.ExportWorkspace(txctx, scope.Workspace.ID, &latest.HeadSequence)
-		return txErr
-	})
-	return result, err
+	return s.ExportWithOptions(ctx, ExportOptions{PrivateBuildProfiles: TransferNone, PrivateAIConnections: TransferNone})
 }
 
 // ExportLive возвращает текущее рабочее состояние с локальными server state-полями.

@@ -44,6 +44,9 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 		MissingIntegrations:  []string{}, Unsupported: []string{}, ValidationErrors: []string{},
 		Warnings: []string{},
 	}
+	if err = s.normalizeAdjunctForImport(ctx, &bundle, current, plan); err != nil {
+		return nil, err
+	}
 	if normalization.IgnoredIntegrations > 0 {
 		plan.Warnings = append(plan.Warnings, fmt.Sprintf("Installed integrations from snapshot were ignored: %d; target workspace integrations will be preserved", normalization.IgnoredIntegrations))
 	}
@@ -502,6 +505,9 @@ func (s *Coordinator) Import(ctx context.Context, planID, confirmation, ifMatch 
 			ids = append(ids, revision.ID)
 		}
 		if txErr = s.repository.AttachRevisionsToCommit(txctx, commit.ID, ids); txErr != nil {
+			return txErr
+		}
+		if txErr = s.applyAdjunctImport(txctx, bundle, current, live.ID, result); txErr != nil {
 			return txErr
 		}
 		if txErr = s.repository.MarkSnapshotImportPlanApplied(txctx, plan.ID); txErr != nil {

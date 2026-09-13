@@ -3,10 +3,12 @@ package documents
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 )
 
 // resolveFolder разрешает identity папки в её внутренний идентификатор.
@@ -75,6 +77,25 @@ func (s *Lifecycle) resolveDocumentFolder(ctx context.Context, scope entities.Wo
 		identity = entities.RootFolderIdentity(document.Type)
 	}
 	return s.documents.ResolveFolder(ctx, scope.Workspace.ID, identity, entities.FolderEntityType(document.Type))
+}
+
+// resolveRestoreFolders сохраняет активные папки документа и заменяет удалённые соответствующими корнями.
+func (s *Lifecycle) resolveRestoreFolders(ctx context.Context, scope entities.WorkspaceAccess, document *entities.Document) (*string, error) {
+	folderID, err := s.resolveDocumentFolder(ctx, scope, *document)
+	if errors.Is(err, ports.ErrNotFound) {
+		document.FolderIdentity = nil
+		folderID, err = s.resolveDocumentFolder(ctx, scope, *document)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.resolveDocumentWorkspaceFolder(ctx, scope, *document)
+	if errors.Is(err, ports.ErrNotFound) {
+		document.WorkspaceFolderIdentity = nil
+		err = s.resolveDocumentWorkspaceFolder(ctx, scope, *document)
+	}
+	return folderID, err
 }
 
 // normalizeFolderInput приводит тип папок к общей физической секции коллекции.

@@ -11,6 +11,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/shared"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/usecase/workspace_state"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/gofiber/fiber/v2"
 )
@@ -136,7 +137,7 @@ func (h *Handler) Status(c *fiber.Ctx) error {
 
 // Export выгружает переносимый JSON текущего workspace.
 // @Summary Экспортировать рабочее пространство
-// @Description Возвращает переносимый пакет без UUID-связей, пользователей, назначения ролей, истории и секретов.
+// @Description Возвращает переносимый пакет с общими профилями сборки, без private records, AI-каталога, назначения ролей, истории и секретов.
 // @ID exportDomain
 // @Tags Перенос домена
 // @Produce json
@@ -168,15 +169,59 @@ func (h *Handler) Export(c *fiber.Ctx) error {
 	return c.Send(raw)
 }
 
+// ExportWithOptions exports explicitly selected private operational data and optionally encrypts the whole artifact.
+// @Summary Экспортировать workspace с параметрами
+// @Description Credentials включаются только по явному выбору; без password они находятся в JSON открытым текстом, а password шифрует весь JSON artifact.
+// @ID exportDomainWithOptions
+// @Tags Перенос домена
+// @Accept json
+// @Produce json
+// @Param request body ExportRequest true "Параметры экспорта"
+// @Param download query bool false "Скачать JSON как файл" default(false)
+// @Success 200 {object} ExportResponse
+// @Failure 400 {object} shared.ErrorResponse "Некорректные параметры"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Недостаточно прав для выбранных данных"
+// @Failure 409 {object} shared.ErrorResponse "Workspace содержит незакоммиченные изменения"
+// @Security BearerAuth
+// @Router /api/v1/domain/export [post]
+func (h *Handler) ExportWithOptions(c *fiber.Ctx) error {
+	request, err := shared.DecodeAndValidate[ExportRequest](c, h.validator)
+	if err != nil {
+		return respond.WriteErrorResponse(c, err)
+	}
+	raw, err := h.usecase.ExportWithOptions(c.UserContext(), workspace_state.ExportOptions{
+		PrivateBuildProfiles: request.PrivateBuildProfiles,
+		PrivateAIConnections: request.PrivateAIConnections,
+		IncludePublicAI:      request.IncludePublicAI,
+	}, request.Password)
+	if err != nil {
+		return respond.RespondDomainError(c, nil, err)
+	}
+	c.Type("json")
+	download, err := shared.OptionalBoolQuery(c, "download", false)
+	if err != nil {
+		return respond.WriteErrorResponse(c, err)
+	}
+	if download {
+		identity := "workspace"
+		if scope, ok := entities.WorkspaceAccessFromContext(c.UserContext()); ok {
+			identity = scope.Workspace.Identity
+		}
+		c.Attachment(shared.SafeAttachmentName(identity, "workspace") + "-snapshot.json")
+	}
+	return c.Send(raw)
+}
+
 // PlanImport валидирует bundle и возвращает план импорта без изменения данных.
 // @Summary Проверить импорт домена
-// @Description Валидирует переносимый пакет и возвращает план импорта без изменения данных.
+// @Description Валидирует обычный bundle либо wrapper с encrypted artifact и password, не изменяя данные.
 // @ID planDomainImport
 // @Tags Перенос домена
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
 // @Accept json
-// @Param request body entities.PortableBundle true "Полный workspace snapshot"
+// @Param request body ImportPlanArtifactRequest true "Artifact и пароль; обычный bundle также принимается для совместимости"
 // @Success 200 {object} ImportPlanResponse "План импорта"
 // @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
 // @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
@@ -186,11 +231,18 @@ func (h *Handler) Export(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/domain/import/plan [post]
 func (h *Handler) PlanImport(c *fiber.Ctx) error {
-	snapshot, err := shared.DecodeAndValidate[entities.PortableBundle](c, h.validator)
-	if err != nil {
-		return respond.WriteErrorResponse(c, err)
+	body := json.RawMessage(append([]byte(nil), c.Body()...))
+	artifact := body
+	password := ""
+	var wrapper ImportPlanArtifactRequest
+	if json.Unmarshal(body, &wrapper) == nil && len(wrapper.Artifact) > 0 {
+		artifact = wrapper.Artifact
+		password = wrapper.Password
 	}
-	value, err := h.usecase.PlanImport(c.UserContext(), snapshot)
+	if len([]rune(password)) > 1024 {
+		return respond.WriteErrorResponse(c, domainerrors.InvalidInput("workspace_password_too_long", "Password must not exceed 1024 characters"))
+	}
+	value, err := h.usecase.PlanImportArtifact(c.UserContext(), artifact, password)
 	if err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}
