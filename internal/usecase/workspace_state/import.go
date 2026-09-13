@@ -216,6 +216,16 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 	if !plan.Valid {
 		return plan, nil
 	}
+	retainedTombstones, retainErr := s.retainTargetFacetTombstones(ctx, scope.Workspace.ID, &bundle)
+	if retainErr != nil {
+		return nil, retainErr
+	}
+	if retainedTombstones > 0 {
+		plan.Warnings = append(plan.Warnings, fmt.Sprintf("Target-only Facet tombstones will be retained: %d", retainedTombstones))
+		if _, versionErr = finalizeImportDomainVersion(&bundle, providedDomainVersion); versionErr != nil {
+			return nil, domainerrors.InvalidInput("domain_version_invalid", "Domain version could not be computed")
+		}
+	}
 	raw := mustJSON(bundle)
 	plan.SnapshotChecksum = checksum(raw)
 	expiresAt := time.Now().UTC().Add(importPlanLifetime)
@@ -549,6 +559,41 @@ func (s *Coordinator) loadSnapshotDocuments(ctx context.Context, workspaceID str
 		}
 	}
 	return result, nil
+}
+
+// retainTargetFacetTombstones adds only the target-local records that import
+// necessarily keeps as portable tombstones. Unlike ordinary deleted documents,
+// deleted Facets and Facet documents remain part of the exported dv2 contract.
+func (s *Coordinator) retainTargetFacetTombstones(ctx context.Context, workspaceID string, bundle *entities.PortableBundle) (int, error) {
+	raw, err := s.repository.ExportWorkspace(ctx, workspaceID, nil)
+	if err != nil {
+		return 0, err
+	}
+	var current entities.PortableBundle
+	if err = json.Unmarshal(raw, &current); err != nil {
+		return 0, err
+	}
+	incoming := snapshotDocumentIdentities(*bundle)
+	retained := 0
+	for _, kind := range entities.FacetCollections {
+		for _, item := range current.Documents[kind] {
+			key := portableDocumentKey(kind, item)
+			if incoming[kind][key] {
+				continue
+			}
+			tombstone := copyMap(item)
+			tombstone["active"] = false
+			tombstone["deleted"] = true
+			if kind == entities.CollectionFacets {
+				delete(tombstone, "position")
+				tombstone["documentCount"] = 0
+			}
+			bundle.Documents[kind] = append(bundle.Documents[kind], tombstone)
+			incoming[kind][key] = true
+			retained++
+		}
+	}
+	return retained, nil
 }
 
 func snapshotDocumentIdentities(bundle entities.PortableBundle) map[string]map[string]bool {
