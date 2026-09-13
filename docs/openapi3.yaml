@@ -6121,9 +6121,11 @@ paths:
     get:
       security:
         - BearerAuth: []
+      description: Возвращает список фасетов текущего рабочего пространства.
       tags:
         - Фасеты
       summary: Получить фасеты
+      operationId: listFacets
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6146,9 +6148,11 @@ paths:
     post:
       security:
         - BearerAuth: []
+      description: Создаёт фасет в текущем рабочем пространстве.
       tags:
         - Фасеты
       summary: Создать фасет
+      operationId: createFacet
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6174,9 +6178,11 @@ paths:
     post:
       security:
         - BearerAuth: []
+      description: Заменяет порядок активных фасетов текущего рабочего пространства.
       tags:
         - Фасеты
       summary: Изменить порядок фасетов
+      operationId: reorderFacets
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6202,9 +6208,11 @@ paths:
     get:
       security:
         - BearerAuth: []
+      description: Возвращает фасет по identity.
       tags:
         - Фасеты
       summary: Получить фасет
+      operationId: getFacet
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6233,9 +6241,11 @@ paths:
     delete:
       security:
         - BearerAuth: []
+      description: Мягко удаляет фасет с проверкой текущей revision.
       tags:
         - Фасеты
       summary: Мягко удалить фасет
+      operationId: deleteFacet
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6265,9 +6275,11 @@ paths:
     patch:
       security:
         - BearerAuth: []
+      description: Частично изменяет фасет с проверкой текущей revision.
       tags:
         - Фасеты
       summary: Изменить фасет
+      operationId: patchFacet
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6305,9 +6317,11 @@ paths:
     get:
       security:
         - BearerAuth: []
+      description: Возвращает документы выбранного фасета с фильтрацией и пагинацией.
       tags:
         - Фасеты
       summary: Получить документы фасета
+      operationId: listFacetDocuments
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6351,9 +6365,11 @@ paths:
     post:
       security:
         - BearerAuth: []
+      description: Создаёт документ внутри выбранного фасета.
       tags:
         - Фасеты
       summary: Создать документ фасета
+      operationId: createFacetDocument
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6385,9 +6401,11 @@ paths:
     get:
       security:
         - BearerAuth: []
+      description: Возвращает документ по identity внутри выбранного фасета.
       tags:
         - Фасеты
       summary: Получить документ фасета
+      operationId: getFacetDocument
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6422,9 +6440,11 @@ paths:
     delete:
       security:
         - BearerAuth: []
+      description: Мягко удаляет документ фасета с проверкой текущей revision.
       tags:
         - Фасеты
       summary: Мягко удалить документ фасета
+      operationId: deleteFacetDocument
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6460,9 +6480,11 @@ paths:
     patch:
       security:
         - BearerAuth: []
+      description: Частично изменяет документ фасета с проверкой текущей revision.
       tags:
         - Фасеты
       summary: Изменить документ фасета
+      operationId: patchFacetDocument
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6506,9 +6528,12 @@ paths:
     post:
       security:
         - BearerAuth: []
+      description: Восстанавливает мягко удалённый документ фасета с проверкой текущей
+        revision.
       tags:
         - Фасеты
       summary: Восстановить документ фасета
+      operationId: restoreFacetDocument
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6545,9 +6570,11 @@ paths:
     get:
       security:
         - BearerAuth: []
+      description: Возвращает историю ревизий выбранного документа фасета.
       tags:
         - Фасеты
       summary: Получить ревизии документа фасета
+      operationId: listFacetDocumentRevisions
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6578,9 +6605,11 @@ paths:
     get:
       security:
         - BearerAuth: []
+      description: Возвращает выбранную ревизию документа фасета.
       tags:
         - Фасеты
       summary: Получить ревизию документа фасета
+      operationId: getFacetDocumentRevision
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6617,9 +6646,12 @@ paths:
     post:
       security:
         - BearerAuth: []
+      description: Восстанавливает выбранную ревизию документа фасета с проверкой
+        текущей revision.
       tags:
         - Фасеты
       summary: Восстановить ревизию документа фасета
+      operationId: restoreFacetDocumentRevision
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6662,9 +6694,11 @@ paths:
     post:
       security:
         - BearerAuth: []
+      description: Восстанавливает мягко удалённый фасет с проверкой текущей revision.
       tags:
         - Фасеты
       summary: Восстановить фасет
+      operationId: restoreFacet
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6695,9 +6729,11 @@ paths:
     get:
       security:
         - BearerAuth: []
+      description: Возвращает историю ревизий выбранного фасета.
       tags:
         - Фасеты
       summary: Получить ревизии фасета
+      operationId: listFacetRevisions
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6722,9 +6758,11 @@ paths:
     get:
       security:
         - BearerAuth: []
+      description: Возвращает выбранную ревизию фасета.
       tags:
         - Фасеты
       summary: Получить ревизию фасета
+      operationId: getFacetRevision
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace
@@ -6755,9 +6793,11 @@ paths:
     post:
       security:
         - BearerAuth: []
+      description: Восстанавливает выбранную ревизию фасета с проверкой текущей revision.
       tags:
         - Фасеты
       summary: Восстановить ревизию фасета
+      operationId: restoreFacetRevision
       parameters:
         - description: Identity рабочего пространства
           name: X-Endge-Workspace

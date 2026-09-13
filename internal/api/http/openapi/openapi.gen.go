@@ -6126,9 +6126,11 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Возвращает список фасетов текущего рабочего пространства.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Получить фасеты\n" +
+		"      operationId: listFacets\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6151,9 +6153,11 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Создаёт фасет в текущем рабочем пространстве.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Создать фасет\n" +
+		"      operationId: createFacet\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6179,9 +6183,11 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Заменяет порядок активных фасетов текущего рабочего пространства.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Изменить порядок фасетов\n" +
+		"      operationId: reorderFacets\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6207,9 +6213,11 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Возвращает фасет по identity.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Получить фасет\n" +
+		"      operationId: getFacet\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6238,9 +6246,11 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Мягко удаляет фасет с проверкой текущей revision.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Мягко удалить фасет\n" +
+		"      operationId: deleteFacet\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6270,9 +6280,11 @@ var openAPI3YAML = []byte(
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет фасет с проверкой текущей revision.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Изменить фасет\n" +
+		"      operationId: patchFacet\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6310,9 +6322,11 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Возвращает документы выбранного фасета с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Получить документы фасета\n" +
+		"      operationId: listFacetDocuments\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6356,9 +6370,11 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Создаёт документ внутри выбранного фасета.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Создать документ фасета\n" +
+		"      operationId: createFacetDocument\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6390,9 +6406,11 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Возвращает документ по identity внутри выбранного фасета.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Получить документ фасета\n" +
+		"      operationId: getFacetDocument\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6427,9 +6445,11 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Мягко удаляет документ фасета с проверкой текущей revision.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Мягко удалить документ фасета\n" +
+		"      operationId: deleteFacetDocument\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6465,9 +6485,11 @@ var openAPI3YAML = []byte(
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Частично изменяет документ фасета с проверкой текущей revision.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Изменить документ фасета\n" +
+		"      operationId: patchFacetDocument\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6511,9 +6533,12 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый документ фасета с проверкой текущей\n" +
+		"        revision.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Восстановить документ фасета\n" +
+		"      operationId: restoreFacetDocument\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6550,9 +6575,11 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Возвращает историю ревизий выбранного документа фасета.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Получить ревизии документа фасета\n" +
+		"      operationId: listFacetDocumentRevisions\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6583,9 +6610,11 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Возвращает выбранную ревизию документа фасета.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Получить ревизию документа фасета\n" +
+		"      operationId: getFacetDocumentRevision\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6622,9 +6651,12 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает выбранную ревизию документа фасета с проверкой\n" +
+		"        текущей revision.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Восстановить ревизию документа фасета\n" +
+		"      operationId: restoreFacetDocumentRevision\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6667,9 +6699,11 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает мягко удалённый фасет с проверкой текущей revision.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Восстановить фасет\n" +
+		"      operationId: restoreFacet\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6700,9 +6734,11 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Возвращает историю ревизий выбранного фасета.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Получить ревизии фасета\n" +
+		"      operationId: listFacetRevisions\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6727,9 +6763,11 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Возвращает выбранную ревизию фасета.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Получить ревизию фасета\n" +
+		"      operationId: getFacetRevision\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +
@@ -6760,9 +6798,11 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Восстанавливает выбранную ревизию фасета с проверкой текущей revision.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Восстановить ревизию фасета\n" +
+		"      operationId: restoreFacetRevision\n" +
 		"      parameters:\n" +
 		"        - description: Identity рабочего пространства\n" +
 		"          name: X-Endge-Workspace\n" +

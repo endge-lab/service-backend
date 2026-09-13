@@ -22,6 +22,8 @@ func NewHandler(usecase UseCase, validator appvalidator.Validator) *Handler {
 
 // List godoc
 // @Summary Получить фасеты
+// @Description Возвращает список фасетов текущего рабочего пространства.
+// @ID listFacets
 // @Tags Фасеты
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства"
@@ -47,6 +49,8 @@ func (h *Handler) List(c *fiber.Ctx) error {
 
 // Create godoc
 // @Summary Создать фасет
+// @Description Создаёт фасет в текущем рабочем пространстве.
+// @ID createFacet
 // @Tags Фасеты
 // @Accept json
 // @Produce json
@@ -66,6 +70,8 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 
 // Reorder godoc
 // @Summary Изменить порядок фасетов
+// @Description Заменяет порядок активных фасетов текущего рабочего пространства.
+// @ID reorderFacets
 // @Tags Фасеты
 // @Accept json
 // @Produce json
@@ -92,6 +98,8 @@ func (h *Handler) Reorder(c *fiber.Ctx) error {
 
 // Get godoc
 // @Summary Получить фасет
+// @Description Возвращает фасет по identity.
+// @ID getFacet
 // @Tags Фасеты
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства"
@@ -111,6 +119,8 @@ func (h *Handler) Get(c *fiber.Ctx) error {
 
 // Patch godoc
 // @Summary Изменить фасет
+// @Description Частично изменяет фасет с проверкой текущей revision.
+// @ID patchFacet
 // @Tags Фасеты
 // @Accept json
 // @Produce json
@@ -136,6 +146,8 @@ func (h *Handler) Patch(c *fiber.Ctx) error {
 
 // Delete godoc
 // @Summary Мягко удалить фасет
+// @Description Мягко удаляет фасет с проверкой текущей revision.
+// @ID deleteFacet
 // @Tags Фасеты
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства"
@@ -155,6 +167,8 @@ func (h *Handler) Delete(c *fiber.Ctx) error {
 
 // Restore godoc
 // @Summary Восстановить фасет
+// @Description Восстанавливает мягко удалённый фасет с проверкой текущей revision.
+// @ID restoreFacet
 // @Tags Фасеты
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства"
@@ -174,6 +188,8 @@ func (h *Handler) Restore(c *fiber.Ctx) error {
 
 // ListDocuments godoc
 // @Summary Получить документы фасета
+// @Description Возвращает документы выбранного фасета с фильтрацией и пагинацией.
+// @ID listFacetDocuments
 // @Tags Фасеты
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства"
@@ -207,6 +223,8 @@ func (h *Handler) ListDocuments(c *fiber.Ctx) error {
 
 // CreateDocument godoc
 // @Summary Создать документ фасета
+// @Description Создаёт документ внутри выбранного фасета.
+// @ID createFacetDocument
 // @Tags Фасеты
 // @Accept json
 // @Produce json
@@ -231,6 +249,8 @@ func (h *Handler) CreateDocument(c *fiber.Ctx) error {
 
 // GetDocument godoc
 // @Summary Получить документ фасета
+// @Description Возвращает документ по identity внутри выбранного фасета.
+// @ID getFacetDocument
 // @Tags Фасеты
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства"
@@ -251,6 +271,8 @@ func (h *Handler) GetDocument(c *fiber.Ctx) error {
 
 // PatchDocument godoc
 // @Summary Изменить документ фасета
+// @Description Частично изменяет документ фасета с проверкой текущей revision.
+// @ID patchFacetDocument
 // @Tags Фасеты
 // @Accept json
 // @Produce json
@@ -281,6 +303,8 @@ func (h *Handler) PatchDocument(c *fiber.Ctx) error {
 
 // DeleteDocument godoc
 // @Summary Мягко удалить документ фасета
+// @Description Мягко удаляет документ фасета с проверкой текущей revision.
+// @ID deleteFacetDocument
 // @Tags Фасеты
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства"
@@ -296,6 +320,8 @@ func (h *Handler) DeleteDocument(c *fiber.Ctx) error {
 
 // RestoreDocument godoc
 // @Summary Восстановить документ фасета
+// @Description Восстанавливает мягко удалённый документ фасета с проверкой текущей revision.
+// @ID restoreFacetDocument
 // @Tags Фасеты
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства"
@@ -311,6 +337,8 @@ func (h *Handler) RestoreDocument(c *fiber.Ctx) error {
 
 // ListRevisions godoc
 // @Summary Получить ревизии фасета
+// @Description Возвращает историю ревизий выбранного фасета.
+// @ID listFacetRevisions
 // @Tags Фасеты
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства"
@@ -329,6 +357,8 @@ func (h *Handler) ListRevisions(c *fiber.Ctx) error {
 
 // GetRevision godoc
 // @Summary Получить ревизию фасета
+// @Description Возвращает выбранную ревизию фасета.
+// @ID getFacetRevision
 // @Tags Фасеты
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства"
@@ -348,6 +378,8 @@ func (h *Handler) GetRevision(c *fiber.Ctx) error {
 
 // RestoreRevision godoc
 // @Summary Восстановить ревизию фасета
+// @Description Восстанавливает выбранную ревизию фасета с проверкой текущей revision.
+// @ID restoreFacetRevision
 // @Tags Фасеты
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства"
@@ -368,6 +400,8 @@ func (h *Handler) RestoreRevision(c *fiber.Ctx) error {
 
 // ListDocumentRevisions godoc
 // @Summary Получить ревизии документа фасета
+// @Description Возвращает историю ревизий выбранного документа фасета.
+// @ID listFacetDocumentRevisions
 // @Tags Фасеты
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства"
@@ -387,6 +421,8 @@ func (h *Handler) ListDocumentRevisions(c *fiber.Ctx) error {
 
 // GetDocumentRevision godoc
 // @Summary Получить ревизию документа фасета
+// @Description Возвращает выбранную ревизию документа фасета.
+// @ID getFacetDocumentRevision
 // @Tags Фасеты
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства"
@@ -407,6 +443,8 @@ func (h *Handler) GetDocumentRevision(c *fiber.Ctx) error {
 
 // RestoreDocumentRevision godoc
 // @Summary Восстановить ревизию документа фасета
+// @Description Восстанавливает выбранную ревизию документа фасета с проверкой текущей revision.
+// @ID restoreFacetDocumentRevision
 // @Tags Фасеты
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства"
