@@ -80,7 +80,7 @@ func validateCredentials(value any, path string) error {
 
 // ValidateAuthProfile проверяет discriminated contract встроенных auth adapters.
 func ValidateAuthProfile(input map[string]any) error {
-	if err := requireExactKeys(input, "", "identity", "displayName", "description", "folderIdentity", "managedBy", "managedById", "meta", "active", "adapterId", "config", "credentials", "session"); err != nil {
+	if err := requireExactKeys(input, "", "identity", "displayName", "description", "folderIdentity", "workspaceFolderIdentity", "managedBy", "managedById", "meta", "active", "adapterId", "config", "credentials", "session"); err != nil {
 		return err
 	}
 	adapterID := strings.TrimSpace(stringValue(input["adapterId"]))

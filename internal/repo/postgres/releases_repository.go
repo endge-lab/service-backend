@@ -124,6 +124,7 @@ func (r *EndgeRepository) ExportWorkspace(ctx context.Context, workspaceID strin
 		if err = rows.Err(); err != nil {
 			return nil, err
 		}
+		recomputeFacetDocumentCountsForExport(documents)
 	}
 	sortFacetDocumentsForExport(documents)
 	for _, kind := range append(append([]string(nil), entities.DocumentCollections...), entities.FacetCollections...) {
@@ -176,6 +177,24 @@ func (r *EndgeRepository) ExportWorkspace(ctx context.Context, workspaceID strin
 	}
 	raw, err := json.Marshal(bundle)
 	return raw, err
+}
+
+// recomputeFacetDocumentCountsForExport restores the derived facet count for
+// historical snapshots. Facet revisions capture the count visible when the
+// facet itself changed, which can precede child changes in the same commit.
+func recomputeFacetDocumentCountsForExport(documents map[string][]entities.Document) {
+	counts := map[string]int{}
+	for _, document := range documents[entities.CollectionFacetDocuments] {
+		if document.DeletedAt == nil {
+			counts[facetIdentityFromDocument(document)]++
+		}
+	}
+	for index := range documents[entities.CollectionFacets] {
+		var data map[string]any
+		_ = json.Unmarshal(documents[entities.CollectionFacets][index].Data, &data)
+		data["documentCount"] = counts[documents[entities.CollectionFacets][index].Identity]
+		documents[entities.CollectionFacets][index].Data = mustJSON(data)
+	}
 }
 
 func sortFacetDocumentsForExport(documents map[string][]entities.Document) {

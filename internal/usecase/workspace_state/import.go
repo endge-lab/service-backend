@@ -59,6 +59,9 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 	if normalization.MigratedLegacyVocabs > 0 {
 		plan.Warnings = append(plan.Warnings, fmt.Sprintf("%d legacy external Payload Vocab documents were migrated to Source", normalization.MigratedLegacyVocabs))
 	}
+	if normalization.NormalizedFacetDocumentCounts > 0 {
+		plan.Warnings = append(plan.Warnings, fmt.Sprintf("%d derived facet document counts were normalized", normalization.NormalizedFacetDocumentCounts))
+	}
 	if bundle.Kind != "workspace-snapshot" {
 		plan.Valid = false
 		plan.ValidationErrors = append(plan.ValidationErrors, "kind must be workspace-snapshot")
@@ -212,6 +215,16 @@ func (s *Coordinator) PlanImport(ctx context.Context, bundle entities.PortableBu
 	}
 	if !plan.Valid {
 		return plan, nil
+	}
+	retainedTombstones, retainErr := s.retainTargetFacetTombstones(ctx, scope.Workspace.ID, &bundle)
+	if retainErr != nil {
+		return nil, retainErr
+	}
+	if retainedTombstones > 0 {
+		plan.Warnings = append(plan.Warnings, fmt.Sprintf("Target-only Facet tombstones will be retained: %d", retainedTombstones))
+		if _, versionErr = finalizeImportDomainVersion(&bundle, providedDomainVersion); versionErr != nil {
+			return nil, domainerrors.InvalidInput("domain_version_invalid", "Domain version could not be computed")
+		}
 	}
 	raw := mustJSON(bundle)
 	plan.SnapshotChecksum = checksum(raw)
@@ -548,6 +561,41 @@ func (s *Coordinator) loadSnapshotDocuments(ctx context.Context, workspaceID str
 	return result, nil
 }
 
+// retainTargetFacetTombstones adds only the target-local records that import
+// necessarily keeps as portable tombstones. Unlike ordinary deleted documents,
+// deleted Facets and Facet documents remain part of the exported dv2 contract.
+func (s *Coordinator) retainTargetFacetTombstones(ctx context.Context, workspaceID string, bundle *entities.PortableBundle) (int, error) {
+	raw, err := s.repository.ExportWorkspace(ctx, workspaceID, nil)
+	if err != nil {
+		return 0, err
+	}
+	var current entities.PortableBundle
+	if err = json.Unmarshal(raw, &current); err != nil {
+		return 0, err
+	}
+	incoming := snapshotDocumentIdentities(*bundle)
+	retained := 0
+	for _, kind := range entities.FacetCollections {
+		for _, item := range current.Documents[kind] {
+			key := portableDocumentKey(kind, item)
+			if incoming[kind][key] {
+				continue
+			}
+			tombstone := copyMap(item)
+			tombstone["active"] = false
+			tombstone["deleted"] = true
+			if kind == entities.CollectionFacets {
+				delete(tombstone, "position")
+				tombstone["documentCount"] = 0
+			}
+			bundle.Documents[kind] = append(bundle.Documents[kind], tombstone)
+			incoming[kind][key] = true
+			retained++
+		}
+	}
+	return retained, nil
+}
+
 func snapshotDocumentIdentities(bundle entities.PortableBundle) map[string]map[string]bool {
 	result := make(map[string]map[string]bool, len(Collections))
 	for _, kind := range Collections {
@@ -657,9 +705,10 @@ func validateSnapshotRelations(bundle entities.PortableBundle) []string {
 			if kind == entities.CollectionFolders {
 				parent := stringField(item, "parentIdentity")
 				entityType := stringField(item, "entityType")
-				if parent != "" && parent != entities.RootFolderIdentity(entityType) && !available[entities.CollectionFolders][parent] {
+				rootParent := parent == entities.RootFolderIdentity(entityType)
+				if parent != "" && !rootParent && !available[entities.CollectionFolders][parent] {
 					result = append(result, kind+":"+identity+": parentIdentity target is missing")
-				} else if parent != "" && folderScopes[parent] != defaultString(stringField(item, "scope"), entities.FolderScopeCollection) {
+				} else if parent != "" && !rootParent && folderScopes[parent] != defaultString(stringField(item, "scope"), entities.FolderScopeCollection) {
 					result = append(result, kind+":"+identity+": parentIdentity scope does not match")
 				}
 			} else if !slices.Contains(entities.FacetCollections, kind) {
