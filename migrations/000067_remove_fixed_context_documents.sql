@@ -434,6 +434,22 @@ BEGIN
         RAISE EXCEPTION 'unmigrated Environment documents remain';
     END IF;
 
+    UPDATE simulations
+    SET data = jsonb_set(
+            data,
+            '{source}',
+            to_jsonb(regexp_replace(
+                data ->> 'source',
+                '(^|[^A-Za-z0-9_$])project([[:space:]]*\()',
+                '\1composition\2',
+                'g'
+            )),
+            false
+        ),
+        revision = revision + 1,
+        updated_at = NOW()
+    WHERE data ->> 'source' ~ '(^|[^A-Za-z0-9_$])project[[:space:]]*\(';
+
     IF EXISTS (
         SELECT 1
         FROM simulations
