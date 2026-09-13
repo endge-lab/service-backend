@@ -14450,6 +14450,78 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Помечает рабочее пространство удалённым без физического удаления\n" +
+		"        данных. Операция доступна Workspace Admin и Platform Admin.\n" +
+		"      tags:\n" +
+		"        - Рабочие пространства\n" +
+		"      summary: Мягко удалить рабочее пространство\n" +
+		"      operationId: deleteWorkspace\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            maxLength: 160\n" +
+		"        - example: '\"3\"'\n" +
+		"          description: Текущая revision\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Рабочее пространство помечено удалённым\n" +
+		"          headers:\n" +
+		"            ETag:\n" +
+		"              description: Новая revision\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/workspace.Response\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Требуются права администратора рабочего пространства\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Рабочее пространство не найдено\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт revision\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется If-Match\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
@@ -20808,6 +20880,10 @@ var openAPI3YAML = []byte(
 		"            - development\n" +
 		"            - production\n" +
 		"          example: development\n" +
+		"        deletedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-08-04T10:05:00Z\n" +
 		"        description:\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +

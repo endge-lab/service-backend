@@ -14445,6 +14445,78 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
+    delete:
+      security:
+        - BearerAuth: []
+      description: Помечает рабочее пространство удалённым без физического удаления
+        данных. Операция доступна Workspace Admin и Platform Admin.
+      tags:
+        - Рабочие пространства
+      summary: Мягко удалить рабочее пространство
+      operationId: deleteWorkspace
+      parameters:
+        - description: Identity рабочего пространства
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 160
+        - example: '"3"'
+          description: Текущая revision
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Рабочее пространство помечено удалённым
+          headers:
+            ETag:
+              description: Новая revision
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/workspace.Response"
+        "401":
+          description: Требуется аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Требуются права администратора рабочего пространства
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Рабочее пространство не найдено
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Конфликт revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "428":
+          description: Требуется If-Match
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
     patch:
       security:
         - BearerAuth: []
@@ -20803,6 +20875,10 @@ components:
             - development
             - production
           example: development
+        deletedAt:
+          type: string
+          format: date-time
+          example: 2026-08-04T10:05:00Z
         description:
           type: string
           example: Описание объекта
