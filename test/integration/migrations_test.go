@@ -148,6 +148,7 @@ func assertBootstrapState(t *testing.T, database *support.TestDatabase) {
 	}{
 		{name: "system user", query: `SELECT count(*) FROM service_users WHERE id='00000000-0000-0000-0000-000000000001' AND is_system`, want: 1},
 		{name: "default workspace", query: `SELECT count(*) FROM workspaces WHERE id='00000000-0000-0000-0000-000000000010' AND identity='default'`, want: 1},
+		{name: "active workspace startup composition", query: `SELECT count(*) FROM workspaces w JOIN compositions c ON c.workspace_id=w.id AND c.id=w.startup_composition_id WHERE w.active AND c.active AND c.deleted_at IS NULL`, want: 1},
 		{name: "system roots", query: `SELECT count(*) FROM folders WHERE workspace_id='00000000-0000-0000-0000-000000000010' AND is_root AND managed_by='system'`, want: expectedSystemRootCount()},
 		{name: "initial commit", query: `SELECT count(*) FROM workspace_commits WHERE workspace_id='00000000-0000-0000-0000-000000000010' AND operation='bootstrap'`, want: 1},
 	}
@@ -170,5 +171,5 @@ func expectedSystemRootCount() int {
 		}
 		entityTypes[entities.FolderEntityType(collection)] = struct{}{}
 	}
-	return len(entityTypes)
+	return len(entityTypes) + 1 // collection roots plus root-workspace-files
 }
