@@ -705,9 +705,10 @@ func validateSnapshotRelations(bundle entities.PortableBundle) []string {
 			if kind == entities.CollectionFolders {
 				parent := stringField(item, "parentIdentity")
 				entityType := stringField(item, "entityType")
-				if parent != "" && parent != entities.RootFolderIdentity(entityType) && !available[entities.CollectionFolders][parent] {
+				rootParent := parent == entities.RootFolderIdentity(entityType)
+				if parent != "" && !rootParent && !available[entities.CollectionFolders][parent] {
 					result = append(result, kind+":"+identity+": parentIdentity target is missing")
-				} else if parent != "" && folderScopes[parent] != defaultString(stringField(item, "scope"), entities.FolderScopeCollection) {
+				} else if parent != "" && !rootParent && folderScopes[parent] != defaultString(stringField(item, "scope"), entities.FolderScopeCollection) {
 					result = append(result, kind+":"+identity+": parentIdentity scope does not match")
 				}
 			} else if !slices.Contains(entities.FacetCollections, kind) {

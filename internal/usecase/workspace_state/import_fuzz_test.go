@@ -92,6 +92,44 @@ func TestNormalizePortableBundleMigratesQueryV1(t *testing.T) {
 	}
 }
 
+func TestValidateSnapshotRelationsAcceptsOmittedCollectionRoots(t *testing.T) {
+	bundle := entities.PortableBundle{Documents: map[string][]map[string]any{
+		entities.CollectionFolders: {
+			{
+				"identity": entities.WorkspaceRootFolderIdentity, "displayName": "Workspace",
+				"scope": entities.FolderScopeWorkspace, "entityType": nil,
+				"parentIdentity": nil, "isRoot": true, "managedBy": entities.ManagedBySystem,
+			},
+			{
+				"identity": "custom-types", "displayName": "Custom types",
+				"scope": entities.FolderScopeCollection, "entityType": entities.CollectionTypes,
+				"parentIdentity": entities.RootFolderIdentity(entities.CollectionTypes), "managedBy": "user",
+			},
+		},
+	}}
+
+	if errors := validateSnapshotRelations(bundle); len(errors) != 0 {
+		t.Fatalf("canonical omitted collection root must be accepted: %#v", errors)
+	}
+}
+
+func TestValidatePortableAuthProfileAcceptsWorkspaceFolder(t *testing.T) {
+	profile := map[string]any{
+		"identity": "oidc-default", "displayName": "OIDC", "description": nil,
+		"folderIdentity":          entities.RootFolderIdentity(entities.CollectionAuthProfiles),
+		"workspaceFolderIdentity": entities.WorkspaceRootFolderIdentity,
+		"managedBy":               "user", "managedById": nil, "meta": map[string]any{}, "active": true,
+		"adapterId":   "oidc",
+		"config":      map[string]any{"issuer": "https://example.test", "clientId": "client", "scopes": []any{"openid"}},
+		"credentials": map[string]any{},
+		"session":     map[string]any{"storage": "memory", "persistRefreshToken": false},
+	}
+
+	if err := validatePortableDocument(entities.CollectionAuthProfiles, profile); err != nil {
+		t.Fatalf("exported auth profile workspace folder must be accepted: %v", err)
+	}
+}
+
 func TestNormalizePortableBundleMigratesLegacyExternalPayloadVocab(t *testing.T) {
 	bundle := entities.PortableBundle{Documents: map[string][]map[string]any{
 		"vocabs": {{
