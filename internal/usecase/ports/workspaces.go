@@ -13,6 +13,7 @@ type WorkspaceRepository interface {
 	CreateWorkspace(context.Context, entities.Workspace, string) (*entities.Workspace, error)
 	FinalizeWorkspaceBootstrap(context.Context, string, string) (*entities.Workspace, error)
 	UpdateWorkspace(context.Context, string, map[string]any, int, string) (*entities.Workspace, error)
+	SoftDeleteWorkspace(context.Context, string, int, string) (*entities.Workspace, error)
 	ClearStartupComposition(context.Context, string, string, string) (*entities.Workspace, bool, error)
 	WorkspaceRole(context.Context, string, string, bool) (string, error)
 	ListMemberships(context.Context, string) ([]entities.Membership, error)

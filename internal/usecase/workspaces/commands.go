@@ -272,6 +272,39 @@ func (s *UseCase) Patch(ctx context.Context, identity string, input PatchInput, 
 	return result, shared.MapConflict(err)
 }
 
+// Delete мягко удаляет Workspace, сохраняя все связанные данные и назначения.
+func (s *UseCase) Delete(ctx context.Context, identity string, expected int) (result *entities.Workspace, err error) {
+	current, err := shared.Actor(ctx)
+	if err != nil {
+		return nil, err
+	}
+	scope, err := s.Authorize(ctx, identity)
+	if err != nil {
+		return nil, err
+	}
+	if !shared.CanAdmin(scope.Role) {
+		return nil, domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
+	}
+	if expected <= 0 {
+		return nil, shared.PreconditionRequired()
+	}
+	if scope.Workspace.Revision != expected {
+		return nil, shared.RevisionConflict()
+	}
+	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
+		updated, txErr := s.workspaces.SoftDeleteWorkspace(txctx, scope.Workspace.ID, expected, current.User.ID)
+		if txErr != nil {
+			return txErr
+		}
+		if txErr = s.history.RecordWorkspace(txctx, *updated, "delete"); txErr != nil {
+			return txErr
+		}
+		result = updated
+		return nil
+	})
+	return result, shared.MapConflict(err)
+}
+
 // applyWorkspacePatch применяет частичное обновление к рабочему пространству.
 func applyWorkspacePatch(workspace entities.Workspace, patch map[string]any) entities.Workspace {
 	if value, ok := patch["identity"].(string); ok {

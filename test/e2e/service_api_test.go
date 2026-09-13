@@ -142,6 +142,29 @@ func TestWorkspaceHTTPContracts(t *testing.T) {
 	viewerMembers := perform(t, fixture.app, http.MethodGet, "/api/v1/workspaces/"+fixture.workspace+"/members", nil, fixture.viewer)
 	assertStatus(t, viewerMembers, fiber.StatusForbidden)
 	viewerMembers.Body.Close()
+
+	viewerDeleteHeaders := cloneHeaders(fixture.viewer)
+	viewerDeleteHeaders[fiber.HeaderIfMatch] = newETag
+	viewerDelete := perform(t, fixture.app, http.MethodDelete, "/api/v1/workspaces/"+fixture.workspace, nil, viewerDeleteHeaders)
+	assertStatus(t, viewerDelete, fiber.StatusForbidden)
+	viewerDelete.Body.Close()
+
+	deleteHeaders := cloneHeaders(fixture.workspaceAdmin)
+	deleteHeaders[fiber.HeaderIfMatch] = newETag
+	deleted := perform(t, fixture.app, http.MethodDelete, "/api/v1/workspaces/"+fixture.workspace, nil, deleteHeaders)
+	assertStatus(t, deleted, fiber.StatusOK)
+	if decodeObject(t, deleted)["deletedAt"] == nil {
+		t.Fatal("soft-deleted workspace has no deletedAt")
+	}
+
+	hidden := perform(t, fixture.app, http.MethodGet, "/api/v1/workspaces/"+fixture.workspace, nil, fixture.workspaceAdmin)
+	assertStatus(t, hidden, fiber.StatusNotFound)
+	hidden.Body.Close()
+	list := perform(t, fixture.app, http.MethodGet, "/api/v1/workspaces", nil, fixture.workspaceAdmin)
+	assertStatus(t, list, fiber.StatusOK)
+	if hasIdentity(t, listItems(t, decodeObject(t, list)), fixture.workspace) {
+		t.Fatal("soft-deleted workspace remains in the available workspace list")
+	}
 }
 
 // TestIntegrationHTTPContracts verifies the global integration catalog

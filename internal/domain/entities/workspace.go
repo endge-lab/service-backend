@@ -21,6 +21,7 @@ type Workspace struct {
 	Configuration              json.RawMessage `json:"configuration"`
 	Meta                       json.RawMessage `json:"meta"`
 	Active                     bool            `json:"active"`
+	DeletedAt                  *time.Time      `json:"deletedAt,omitempty"`
 	Generation                 string          `json:"generation"`
 	HeadSequence               int64           `json:"headSequence"`
 	Revision                   int             `json:"revision"`

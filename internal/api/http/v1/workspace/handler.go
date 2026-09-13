@@ -149,6 +149,41 @@ func (h *Handler) Patch(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
+// Delete мягко удаляет рабочее пространство с проверкой If-Match.
+// @Summary Мягко удалить рабочее пространство
+// @Description Помечает рабочее пространство удалённым без физического удаления данных. Операция доступна Workspace Admin и Platform Admin.
+// @ID deleteWorkspace
+// @Tags Рабочие пространства
+// @Produce json
+// @Param identity path string true "Identity рабочего пространства" maxlength(160)
+// @Param If-Match header string true "Текущая revision" example("3")
+// @Success 200 {object} Response "Рабочее пространство помечено удалённым"
+// @Header 200 {string} ETag "Новая revision"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Требуются права администратора рабочего пространства"
+// @Failure 404 {object} shared.ErrorResponse "Рабочее пространство не найдено"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт revision"
+// @Failure 428 {object} shared.ErrorResponse "Требуется If-Match"
+// @Failure 500 {object} shared.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /api/v1/workspaces/{identity} [delete]
+func (h *Handler) Delete(c *fiber.Ctx) error {
+	expected, err := shared.IfMatch(c)
+	if err != nil {
+		return respond.WriteErrorResponse(c, err)
+	}
+	value, err := h.usecase.Delete(c.UserContext(), c.Params("identity"), expected)
+	if err != nil {
+		return respond.RespondDomainError(c, nil, err)
+	}
+	response, err := NewResponse(*value)
+	if err != nil {
+		return respond.RespondDomainError(c, nil, err)
+	}
+	c.Set(fiber.HeaderETag, shared.ETag(value.Revision))
+	return c.JSON(response)
+}
+
 // ListMembers возвращает явные назначение роли рабочего пространства.
 // @Summary Получить назначения ролей рабочего пространства
 // @Description Возвращает явно назначенные роли пользователей.

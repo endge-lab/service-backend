@@ -15,7 +15,7 @@ func TestCriticalOpenAPIEndpoints(t *testing.T) {
 	expected := map[string][]string{
 		"/health": {"get"}, "/version": {"get"}, "/auth/login": {"get"}, "/auth/callback": {"get"}, "/auth/logout": {"post"},
 		"/api/session/me": {"get"}, "/api/v1/workspaces": {"get", "post"},
-		"/api/v1/workspaces/{identity}": {"get", "patch"}, "/api/v1/workspaces/{identity}/members": {"get"},
+		"/api/v1/workspaces/{identity}": {"get", "patch", "delete"}, "/api/v1/workspaces/{identity}/members": {"get"},
 		"/api/v1/workspaces/{identity}/members/{userId}": {"put", "delete"},
 		"/api/v1/integrations":                           {"get", "post"}, "/api/v1/commits/plan": {"post"}, "/api/v1/commits": {"get", "post"},
 		"/api/v1/commits/{id}/restore/plan": {"post"}, "/api/v1/commits/{id}/restore": {"post"},

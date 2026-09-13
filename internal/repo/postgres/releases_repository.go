@@ -225,6 +225,6 @@ func facetDocumentPosition(document entities.Document) int {
 	return intValue(data["position"])
 }
 func (r *EndgeRepository) getWorkspaceByID(ctx context.Context, id string) (*entities.Workspace, error) {
-	row := r.executor(ctx).QueryRow(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.document_structure,sc.identity,w.configuration,w.meta,w.active,w.generation::text,w.head_sequence,w.revision,`+actorScan("cu")+`,`+actorScan("uu")+`,w.created_at,w.updated_at FROM workspaces w LEFT JOIN compositions sc ON sc.workspace_id=w.id AND sc.id=w.startup_composition_id JOIN service_users cu ON cu.id=w.created_by JOIN service_users uu ON uu.id=w.updated_by WHERE w.id=$1`, id)
+	row := r.executor(ctx).QueryRow(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.document_structure,sc.identity,w.configuration,w.meta,w.active,w.deleted_at,w.generation::text,w.head_sequence,w.revision,`+actorScan("cu")+`,`+actorScan("uu")+`,w.created_at,w.updated_at FROM workspaces w LEFT JOIN compositions sc ON sc.workspace_id=w.id AND sc.id=w.startup_composition_id JOIN service_users cu ON cu.id=w.created_by JOIN service_users uu ON uu.id=w.updated_by WHERE w.id=$1`, id)
 	return scanWorkspace(row)
 }

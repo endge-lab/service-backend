@@ -656,23 +656,24 @@ type Vocab struct {
 }
 
 type Workspace struct {
-	ID                   uuid.UUID   `json:"id"`
-	Identity             string      `json:"identity"`
-	DisplayName          string      `json:"display_name"`
-	Description          pgtype.Text `json:"description"`
-	DataMode             string      `json:"data_mode"`
-	Configuration        []byte      `json:"configuration"`
-	Meta                 []byte      `json:"meta"`
-	Active               bool        `json:"active"`
-	Generation           uuid.UUID   `json:"generation"`
-	CreatedBy            uuid.UUID   `json:"created_by"`
-	UpdatedBy            uuid.UUID   `json:"updated_by"`
-	HeadSequence         int64       `json:"head_sequence"`
-	Revision             int32       `json:"revision"`
-	CreatedAt            time.Time   `json:"created_at"`
-	UpdatedAt            time.Time   `json:"updated_at"`
-	DocumentStructure    string      `json:"document_structure"`
-	StartupCompositionID pgtype.UUID `json:"startup_composition_id"`
+	ID                   uuid.UUID          `json:"id"`
+	Identity             string             `json:"identity"`
+	DisplayName          string             `json:"display_name"`
+	Description          pgtype.Text        `json:"description"`
+	DataMode             string             `json:"data_mode"`
+	Configuration        []byte             `json:"configuration"`
+	Meta                 []byte             `json:"meta"`
+	Active               bool               `json:"active"`
+	Generation           uuid.UUID          `json:"generation"`
+	CreatedBy            uuid.UUID          `json:"created_by"`
+	UpdatedBy            uuid.UUID          `json:"updated_by"`
+	HeadSequence         int64              `json:"head_sequence"`
+	Revision             int32              `json:"revision"`
+	CreatedAt            time.Time          `json:"created_at"`
+	UpdatedAt            time.Time          `json:"updated_at"`
+	DocumentStructure    string             `json:"document_structure"`
+	StartupCompositionID pgtype.UUID        `json:"startup_composition_id"`
+	DeletedAt            pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type WorkspaceCommit struct {

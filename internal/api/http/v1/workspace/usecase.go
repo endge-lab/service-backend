@@ -13,6 +13,7 @@ type UseCase interface {
 	Get(context.Context, string) (*entities.Workspace, error)
 	Create(context.Context, resourceusecase.CreateInput) (*entities.Workspace, error)
 	Patch(context.Context, string, resourceusecase.PatchInput, int) (*entities.Workspace, error)
+	Delete(context.Context, string, int) (*entities.Workspace, error)
 	ListMemberships(context.Context, string) ([]entities.Membership, error)
 	PutMembership(context.Context, string, string, string) (*entities.Membership, error)
 	DeleteMembership(context.Context, string, string) error

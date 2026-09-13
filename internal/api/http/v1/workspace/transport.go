@@ -55,6 +55,7 @@ type Response struct {
 	Configuration              json.RawMessage `json:"configuration" swaggertype:"object"`
 	Meta                       json.RawMessage `json:"meta" swaggertype:"object"`
 	Active                     bool            `json:"active" example:"true"`
+	DeletedAt                  *time.Time      `json:"deletedAt,omitempty" example:"2026-08-04T10:05:00Z" format:"date-time"`
 	HeadSequence               int64           `json:"headSequence" example:"42"`
 	Revision                   int             `json:"revision" example:"3"`
 	CreatedBy                  entities.Actor  `json:"createdBy"`

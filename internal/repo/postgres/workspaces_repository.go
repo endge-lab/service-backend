@@ -11,11 +11,11 @@ import (
 )
 
 func (r *EndgeRepository) ListWorkspaces(ctx context.Context, userID string, platform bool) ([]entities.Workspace, error) {
-	where := "WHERE g.user_id=$1"
+	where := "WHERE w.deleted_at IS NULL AND g.user_id=$1"
 	if platform {
-		where = "WHERE TRUE"
+		where = "WHERE w.deleted_at IS NULL"
 	}
-	rows, err := r.executor(ctx).Query(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.document_structure,sc.identity,w.configuration,w.meta,w.active,w.generation::text,w.head_sequence,w.revision,
+	rows, err := r.executor(ctx).Query(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.document_structure,sc.identity,w.configuration,w.meta,w.active,w.deleted_at,w.generation::text,w.head_sequence,w.revision,
 		`+actorScan("cu")+`,`+actorScan("uu")+`,w.created_at,w.updated_at FROM workspaces w
 		LEFT JOIN access_grants g ON g.workspace_id=w.id AND g.user_id=$1 AND g.scope_type='workspace'
 		LEFT JOIN compositions sc ON sc.workspace_id=w.id AND sc.id=w.startup_composition_id
@@ -36,8 +36,8 @@ func (r *EndgeRepository) ListWorkspaces(ctx context.Context, userID string, pla
 }
 
 func (r *EndgeRepository) GetWorkspace(ctx context.Context, identity string) (*entities.Workspace, error) {
-	row := r.executor(ctx).QueryRow(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.document_structure,sc.identity,w.configuration,w.meta,w.active,w.generation::text,w.head_sequence,w.revision,
-		`+actorScan("cu")+`,`+actorScan("uu")+`,w.created_at,w.updated_at FROM workspaces w LEFT JOIN compositions sc ON sc.workspace_id=w.id AND sc.id=w.startup_composition_id JOIN service_users cu ON cu.id=w.created_by JOIN service_users uu ON uu.id=w.updated_by WHERE w.identity=$1`, identity)
+	row := r.executor(ctx).QueryRow(ctx, `SELECT w.id::text,w.identity,w.display_name,w.description,w.data_mode,w.document_structure,sc.identity,w.configuration,w.meta,w.active,w.deleted_at,w.generation::text,w.head_sequence,w.revision,
+		`+actorScan("cu")+`,`+actorScan("uu")+`,w.created_at,w.updated_at FROM workspaces w LEFT JOIN compositions sc ON sc.workspace_id=w.id AND sc.id=w.startup_composition_id JOIN service_users cu ON cu.id=w.created_by JOIN service_users uu ON uu.id=w.updated_by WHERE w.identity=$1 AND w.deleted_at IS NULL`, identity)
 	return scanWorkspace(row)
 }
 
@@ -46,7 +46,7 @@ type scanner interface{ Scan(...any) error }
 func scanWorkspace(row scanner) (*entities.Workspace, error) {
 	value := &entities.Workspace{}
 	var created, updated []byte
-	if err := row.Scan(&value.ID, &value.Identity, &value.DisplayName, &value.Description, &value.DataMode, &value.DocumentStructure, &value.StartupCompositionIdentity, &value.Configuration, &value.Meta, &value.Active, &value.Generation, &value.HeadSequence, &value.Revision, &created, &updated, &value.CreatedAt, &value.UpdatedAt); err != nil {
+	if err := row.Scan(&value.ID, &value.Identity, &value.DisplayName, &value.Description, &value.DataMode, &value.DocumentStructure, &value.StartupCompositionIdentity, &value.Configuration, &value.Meta, &value.Active, &value.DeletedAt, &value.Generation, &value.HeadSequence, &value.Revision, &created, &updated, &value.CreatedAt, &value.UpdatedAt); err != nil {
 		return nil, repositoryError(err)
 	}
 	_ = json.Unmarshal(created, &value.CreatedBy)
@@ -136,6 +136,18 @@ func (r *EndgeRepository) UpdateWorkspace(ctx context.Context, identity string, 
 	return r.GetWorkspace(ctx, current.Identity)
 }
 
+// SoftDeleteWorkspace помечает Workspace tombstone без удаления его данных и назначений.
+func (r *EndgeRepository) SoftDeleteWorkspace(ctx context.Context, workspaceID string, revision int, actor string) (*entities.Workspace, error) {
+	tag, err := r.executor(ctx).Exec(ctx, `UPDATE workspaces SET deleted_at=NOW(),updated_by=$3,updated_at=NOW(),revision=revision+1 WHERE id=$1 AND revision=$2 AND deleted_at IS NULL`, workspaceID, revision, actor)
+	if err != nil {
+		return nil, err
+	}
+	if tag.RowsAffected() != 1 {
+		return nil, fmt.Errorf("revision conflict")
+	}
+	return r.getWorkspaceByID(ctx, workspaceID)
+}
+
 // ClearStartupComposition атомарно снимает ссылку только если Workspace всё ещё указывает на удаляемую Composition.
 func (r *EndgeRepository) ClearStartupComposition(ctx context.Context, workspaceID, compositionID, actor string) (*entities.Workspace, bool, error) {
 	tag, err := r.executor(ctx).Exec(ctx, `UPDATE workspaces SET startup_composition_id=NULL,updated_by=$3,updated_at=NOW(),revision=revision+1 WHERE id=$1 AND startup_composition_id=$2`, workspaceID, compositionID, actor)
@@ -154,7 +166,7 @@ func (r *EndgeRepository) WorkspaceRole(ctx context.Context, workspaceID, userID
 		return "platform_admin", nil
 	}
 	var role string
-	err := r.executor(ctx).QueryRow(ctx, `SELECT COALESCE(g.role,'') FROM workspaces w LEFT JOIN access_grants g ON g.workspace_id=w.id AND g.user_id=$2 AND g.scope_type='workspace' WHERE w.id=$1`, workspaceID, userID).Scan(&role)
+	err := r.executor(ctx).QueryRow(ctx, `SELECT COALESCE(g.role,'') FROM workspaces w LEFT JOIN access_grants g ON g.workspace_id=w.id AND g.user_id=$2 AND g.scope_type='workspace' WHERE w.id=$1 AND w.deleted_at IS NULL`, workspaceID, userID).Scan(&role)
 	if err != nil {
 		return "", repositoryError(err)
 	}

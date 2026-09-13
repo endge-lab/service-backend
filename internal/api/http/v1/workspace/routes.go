@@ -8,6 +8,7 @@ func RegisterRoutes(router fiber.Router, handler *Handler) {
 	router.Post("/workspaces", handler.Create)
 	router.Get("/workspaces/:identity", handler.Get)
 	router.Patch("/workspaces/:identity", handler.Patch)
+	router.Delete("/workspaces/:identity", handler.Delete)
 	router.Get("/workspaces/:identity/members", handler.ListMembers)
 	router.Put("/workspaces/:identity/members/:userId", handler.PutMember)
 	router.Delete("/workspaces/:identity/members/:userId", handler.DeleteMember)
