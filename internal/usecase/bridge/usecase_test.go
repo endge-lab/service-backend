@@ -26,11 +26,12 @@ func (s *accessStub) BridgeUser(_ context.Context, id, _ string) (entities.Actor
 
 type workspaceStub struct {
 	ports.WorkspaceRepository
-	role string
+	role  string
+	names map[string]string
 }
 
 func (s *workspaceStub) GetWorkspace(_ context.Context, id string) (*entities.Workspace, error) {
-	return &entities.Workspace{ID: id, Identity: id, Active: true}, nil
+	return &entities.Workspace{ID: id, Identity: id, DisplayName: s.names[id], Active: true}, nil
 }
 func (s *workspaceStub) WorkspaceRole(context.Context, string, string, bool) (string, error) {
 	return s.role, nil

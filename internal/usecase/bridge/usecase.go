@@ -27,6 +27,7 @@ var hashPattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
 
 type participant struct {
 	ID, Role, Workspace, Label string
+	WorkspaceDisplayName       string
 	Principal                  entities.BridgePrincipal
 	Actor                      entities.Actor
 	Debug                      bool
@@ -77,11 +78,11 @@ func (u *UseCase) Join(ctx context.Context, id, role string, principal entities.
 		if p.Principal.ExpiresAt.IsZero() {
 			p.Principal.ExpiresAt = time.Now().Add(sessionTTL)
 		}
-		actor, accessRole, err := u.authorize(ctx, *p)
+		actor, accessRole, workspaceName, err := u.authorize(ctx, *p)
 		if err != nil {
 			return err
 		}
-		p.Actor, p.AccessRole = actor, accessRole
+		p.Actor, p.AccessRole, p.WorkspaceDisplayName = actor, accessRole, workspaceName
 	}
 	u.mu.Lock()
 	defer u.mu.Unlock()
@@ -116,7 +117,7 @@ func (u *UseCase) Check(ctx context.Context, id string) bool {
 	if snapshot.Role == "client" {
 		return true
 	}
-	actor, role, err := u.authorize(ctx, snapshot)
+	actor, role, workspaceName, err := u.authorize(ctx, snapshot)
 	if err != nil {
 		return false
 	}
@@ -125,8 +126,8 @@ func (u *UseCase) Check(ctx context.Context, id string) bool {
 	if u.peers[id] != p {
 		return false
 	}
-	changed := p.AccessRole != role || p.Actor != actor
-	p.Actor, p.AccessRole = actor, role
+	changed := p.AccessRole != role || p.Actor != actor || p.WorkspaceDisplayName != workspaceName
+	p.Actor, p.AccessRole, p.WorkspaceDisplayName = actor, role, workspaceName
 	if !shared.CanWrite(role) {
 		for sessionID, s := range u.sessions {
 			if s.ConfiguratorID == id {
@@ -351,49 +352,49 @@ func (u *UseCase) end(id, reason string) {
 	u.delivery.Send(s.ConfiguratorID, m)
 }
 
-func (u *UseCase) authorize(ctx context.Context, p participant) (entities.Actor, string, error) {
+func (u *UseCase) authorize(ctx context.Context, p participant) (entities.Actor, string, string, error) {
 	if p.Principal.UserID == "" || !p.Principal.ExpiresAt.After(time.Now()) {
-		return entities.Actor{}, "", fmt.Errorf("Authentication expired")
+		return entities.Actor{}, "", "", fmt.Errorf("Authentication expired")
 	}
 	actor, err := u.access.BridgeUser(ctx, p.Principal.UserID, p.Principal.SessionID)
 	if err != nil {
-		return actor, "", fmt.Errorf("Authentication is not valid")
+		return actor, "", "", fmt.Errorf("Authentication is not valid")
 	}
 	workspace, err := u.workspaces.GetWorkspace(ctx, p.Workspace)
 	if err != nil || workspace == nil || !workspace.Active {
-		return actor, "", fmt.Errorf("Workspace is not available")
+		return actor, "", "", fmt.Errorf("Workspace is not available")
 	}
 	platform, err := u.grants.IsPlatformAdmin(ctx, actor.ID)
 	if err != nil {
-		return actor, "", fmt.Errorf("Access check failed")
+		return actor, "", "", fmt.Errorf("Access check failed")
 	}
 	role, err := u.workspaces.WorkspaceRole(ctx, workspace.ID, actor.ID, platform)
 	if err != nil || (role != "viewer" && !shared.CanWrite(role)) {
-		return actor, "", fmt.Errorf("Workspace access denied")
+		return actor, "", "", fmt.Errorf("Workspace access denied")
 	}
-	return actor, role, nil
+	return actor, role, workspace.DisplayName, nil
 }
 
 func (u *UseCase) broadcast(workspace string) {
 	configurators := []entities.BridgeConfigurator{}
 	clients := []entities.BridgeClient{}
 	for _, p := range u.peers {
-		if p.Workspace != workspace {
-			continue
-		}
 		if p.Role == "configurator" {
-			configurators = append(configurators, entities.BridgeConfigurator{InstanceID: p.ID, UserID: p.Actor.ID, DisplayName: p.Actor.DisplayName, Label: p.Label})
-		} else if p.Debug {
+			configurators = append(configurators, entities.BridgeConfigurator{InstanceID: p.ID, UserID: p.Actor.ID, DisplayName: p.Actor.DisplayName, Label: p.Label, WorkspaceDisplayName: p.WorkspaceDisplayName})
+		} else if p.Debug && p.Workspace == workspace {
 			clients = append(clients, entities.BridgeClient{InstanceID: p.ID, Label: p.Label})
 		}
 	}
 	sort.Slice(configurators, func(i, j int) bool { return configurators[i].InstanceID < configurators[j].InstanceID })
 	sort.Slice(clients, func(i, j int) bool { return clients[i].InstanceID < clients[j].InstanceID })
 	for _, p := range u.peers {
-		if p.Workspace != workspace || p.Role != "configurator" {
+		if p.Role != "configurator" {
 			continue
 		}
 		u.send(p.ID, "configurators", configurators)
+		if p.Workspace != workspace {
+			continue
+		}
 		visible := []entities.BridgeClient{}
 		if p.Debug && shared.CanWrite(p.AccessRole) {
 			visible = clients

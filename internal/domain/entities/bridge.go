@@ -33,10 +33,11 @@ type BridgePrincipal struct {
 }
 
 type BridgeConfigurator struct {
-	InstanceID  string `json:"instanceId"`
-	UserID      string `json:"userId"`
-	DisplayName string `json:"displayName"`
-	Label       string `json:"label"`
+	WorkspaceDisplayName string `json:"workspaceDisplayName"`
+	InstanceID           string `json:"instanceId"`
+	UserID               string `json:"userId"`
+	DisplayName          string `json:"displayName"`
+	Label                string `json:"label"`
 }
 
 type BridgeClient struct {
