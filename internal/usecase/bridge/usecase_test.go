@@ -27,14 +27,27 @@ func (s *accessStub) BridgeUser(_ context.Context, id, _ string) (entities.Actor
 type workspaceStub struct {
 	ports.WorkspaceRepository
 	role  string
+	roles map[string]string
 	names map[string]string
 }
 
 func (s *workspaceStub) GetWorkspace(_ context.Context, id string) (*entities.Workspace, error) {
 	return &entities.Workspace{ID: id, Identity: id, DisplayName: s.names[id], Active: true}, nil
 }
-func (s *workspaceStub) WorkspaceRole(context.Context, string, string, bool) (string, error) {
+func (s *workspaceStub) WorkspaceRole(_ context.Context, workspace, user string, _ bool) (string, error) {
+	if s.roles != nil {
+		return s.roles[user+":"+workspace], nil
+	}
 	return s.role, nil
+}
+func (s *workspaceStub) ListWorkspaces(context.Context, string, bool) ([]entities.Workspace, error) {
+	result := []entities.Workspace{{ID: "workspace", Identity: "workspace", DisplayName: s.names["workspace"], Active: true}}
+	for identity, name := range s.names {
+		if identity != "workspace" {
+			result = append(result, entities.Workspace{ID: identity, Identity: identity, DisplayName: name, Active: true})
+		}
+	}
+	return result, nil
 }
 
 type grantsStub struct{ ports.AccessControlRepository }

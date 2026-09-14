@@ -31,6 +31,9 @@ func (browserWorkspaces) GetWorkspace(_ context.Context, id string) (*entities.W
 	}
 	return &entities.Workspace{ID: id, Identity: id, DisplayName: "Inspection test", Active: true}, nil
 }
+func (browserWorkspaces) ListWorkspaces(context.Context, string, bool) ([]entities.Workspace, error) {
+	return []entities.Workspace{{ID: "inspection-fixture", Identity: "inspection-fixture", DisplayName: "Inspection test", Active: true}}, nil
+}
 func (browserWorkspaces) WorkspaceRole(context.Context, string, string, bool) (string, error) {
 	return "editor", nil
 }

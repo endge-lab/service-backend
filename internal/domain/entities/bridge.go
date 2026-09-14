@@ -19,6 +19,7 @@ type BridgeMessage struct {
 }
 
 type BridgeHello struct {
+	AllWorkspaces     bool   `json:"allWorkspaces,omitempty"`
 	Protocol          int    `json:"protocol"`
 	WorkspaceIdentity string `json:"workspaceIdentity"`
 	Label             string `json:"label"`
@@ -41,8 +42,10 @@ type BridgeConfigurator struct {
 }
 
 type BridgeClient struct {
-	InstanceID string `json:"instanceId"`
-	Label      string `json:"label"`
+	WorkspaceIdentity    string `json:"workspaceIdentity"`
+	WorkspaceDisplayName string `json:"workspaceDisplayName"`
+	InstanceID           string `json:"instanceId"`
+	Label                string `json:"label"`
 }
 
 type BridgeSession struct {

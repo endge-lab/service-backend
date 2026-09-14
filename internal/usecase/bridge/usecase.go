@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"regexp"
 	"sort"
 	"strings"
@@ -25,7 +26,13 @@ const maxCommandBytes = 64 * 1024
 
 var hashPattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
 
+type workspaceAccess struct {
+	Role, DisplayName string
+}
+
 type participant struct {
+	AllWorkspaces              bool
+	Workspaces                 map[string]workspaceAccess
 	ID, Role, Workspace, Label string
 	WorkspaceDisplayName       string
 	Principal                  entities.BridgePrincipal
@@ -37,6 +44,7 @@ type participant struct {
 
 type session struct {
 	entities.BridgeSession
+	Workspace string
 	RequestID string
 	Active    bool
 	Deadline  time.Time
@@ -67,22 +75,25 @@ func NewUseCase(delivery ports.BridgeDelivery, access ports.BridgeAccessReposito
 
 // Join accepts a server-generated connection ID and a transport-authenticated principal.
 func (u *UseCase) Join(ctx context.Context, id, role string, principal entities.BridgePrincipal, hello entities.BridgeHello) error {
-	if hello.Protocol != 1 || len(hello.WorkspaceIdentity) == 0 || len(hello.WorkspaceIdentity) > 160 || len(hello.Label) > 160 || (role != "client" && role != "configurator") {
+	if hello.Protocol != 1 || (len(hello.WorkspaceIdentity) == 0 && !(role == "configurator" && hello.Debug && hello.AllWorkspaces)) || len(hello.WorkspaceIdentity) > 160 || len(hello.Label) > 160 || (role != "client" && role != "configurator") {
 		return fmt.Errorf("Invalid bridge registration")
+	}
+	if hello.AllWorkspaces && (role != "configurator" || !hello.Debug) {
+		return fmt.Errorf("Invalid discovery scope")
 	}
 	if role == "client" && (!u.debugEnabled || !hello.Debug) {
 		return fmt.Errorf("Client debug is disabled")
 	}
-	p := &participant{ID: id, Role: role, Principal: principal, Workspace: hello.WorkspaceIdentity, Label: hello.Label, Debug: hello.Debug && u.debugEnabled}
+	p := &participant{AllWorkspaces: hello.AllWorkspaces, ID: id, Role: role, Principal: principal, Workspace: hello.WorkspaceIdentity, Label: hello.Label, Debug: hello.Debug && u.debugEnabled}
 	if role == "configurator" {
 		if p.Principal.ExpiresAt.IsZero() {
 			p.Principal.ExpiresAt = time.Now().Add(sessionTTL)
 		}
-		actor, accessRole, workspaceName, err := u.authorize(ctx, *p)
+		actor, accessRole, workspaceName, workspaces, err := u.authorize(ctx, *p)
 		if err != nil {
 			return err
 		}
-		p.Actor, p.AccessRole, p.WorkspaceDisplayName = actor, accessRole, workspaceName
+		p.Actor, p.AccessRole, p.WorkspaceDisplayName, p.Workspaces = actor, accessRole, workspaceName, workspaces
 	}
 	u.mu.Lock()
 	defer u.mu.Unlock()
@@ -91,7 +102,7 @@ func (u *UseCase) Join(ctx context.Context, id, role string, principal entities.
 	}
 	count := 0
 	for _, other := range u.peers {
-		if other.Workspace == p.Workspace && other.Role == p.Role {
+		if other.Role == p.Role && ((!p.AllWorkspaces && other.Workspace == p.Workspace) || (p.AllWorkspaces && other.Principal.UserID == p.Principal.UserID)) {
 			count++
 		}
 	}
@@ -117,7 +128,7 @@ func (u *UseCase) Check(ctx context.Context, id string) bool {
 	if snapshot.Role == "client" {
 		return true
 	}
-	actor, role, workspaceName, err := u.authorize(ctx, snapshot)
+	actor, role, workspaceName, workspaces, err := u.authorize(ctx, snapshot)
 	if err != nil {
 		return false
 	}
@@ -126,13 +137,11 @@ func (u *UseCase) Check(ctx context.Context, id string) bool {
 	if u.peers[id] != p {
 		return false
 	}
-	changed := p.AccessRole != role || p.Actor != actor || p.WorkspaceDisplayName != workspaceName
-	p.Actor, p.AccessRole, p.WorkspaceDisplayName = actor, role, workspaceName
-	if !shared.CanWrite(role) {
-		for sessionID, s := range u.sessions {
-			if s.ConfiguratorID == id {
-				u.end(sessionID, "Debug access revoked")
-			}
+	changed := p.AccessRole != role || p.Actor != actor || p.WorkspaceDisplayName != workspaceName || !maps.Equal(p.Workspaces, workspaces)
+	p.Actor, p.AccessRole, p.WorkspaceDisplayName, p.Workspaces = actor, role, workspaceName, workspaces
+	for sessionID, s := range u.sessions {
+		if s.ConfiguratorID == id && !p.canDebug(s.Workspace) {
+			u.end(sessionID, "Debug access revoked")
 		}
 	}
 	if changed {
@@ -202,11 +211,11 @@ func (u *UseCase) Handle(ctx context.Context, id string, message entities.Bridge
 }
 
 func (u *UseCase) requestSession(p *participant, m entities.BridgeMessage) error {
-	if !p.Debug || p.Role != "configurator" || !shared.CanWrite(p.AccessRole) || m.ID == "" {
+	if !p.Debug || p.Role != "configurator" || m.ID == "" {
 		return fmt.Errorf("Debug access denied")
 	}
 	target := u.peers[m.TargetID]
-	if target == nil || target.Role != "client" || !target.Debug || target.Workspace != p.Workspace {
+	if target == nil || target.Role != "client" || !target.Debug || !p.canDebug(target.Workspace) {
 		return fmt.Errorf("Client is not available")
 	}
 	if time.Since(p.LastRequest) < 5*time.Second {
@@ -218,9 +227,9 @@ func (u *UseCase) requestSession(p *participant, m entities.BridgeMessage) error
 		}
 	}
 	p.LastRequest = time.Now()
-	s := &session{BridgeSession: entities.BridgeSession{SessionID: uuid.NewString(), ClientID: target.ID, ConfiguratorID: p.ID}, RequestID: m.ID, Deadline: time.Now().Add(requestTTL)}
+	s := &session{Workspace: target.Workspace, BridgeSession: entities.BridgeSession{SessionID: uuid.NewString(), ClientID: target.ID, ConfiguratorID: p.ID}, RequestID: m.ID, Deadline: time.Now().Add(requestTTL)}
 	u.sessions[s.SessionID] = s
-	u.send(target.ID, "sessionRequested", map[string]any{"sessionId": s.SessionID, "displayName": p.Actor.DisplayName, "workspaceIdentity": p.Workspace, "expiresAt": s.Deadline.UnixMilli()})
+	u.send(target.ID, "sessionRequested", map[string]any{"sessionId": s.SessionID, "displayName": p.Actor.DisplayName, "workspaceIdentity": target.Workspace, "expiresAt": s.Deadline.UnixMilli()})
 	return nil
 }
 
@@ -242,7 +251,7 @@ func (u *UseCase) acceptSession(p *participant, m entities.BridgeMessage) error 
 
 func (u *UseCase) requestCommand(p *participant, m entities.BridgeMessage) error {
 	s := u.sessions[m.SessionID]
-	if !p.Debug || !shared.CanWrite(p.AccessRole) || s == nil || !s.Active || s.ConfiguratorID != p.ID || m.ID == "" {
+	if !p.Debug || s == nil || !p.canDebug(s.Workspace) || !s.Active || s.ConfiguratorID != p.ID || m.ID == "" {
 		return fmt.Errorf("Debug session is not available")
 	}
 	if m.Type == "runSimulation" && (strings.TrimSpace(m.Identity) == "" || !hashPattern.MatchString(m.ExpectedHash)) {
@@ -352,27 +361,59 @@ func (u *UseCase) end(id, reason string) {
 	u.delivery.Send(s.ConfiguratorID, m)
 }
 
-func (u *UseCase) authorize(ctx context.Context, p participant) (entities.Actor, string, string, error) {
+// canDebug evaluates target access, never the authoring workspace of another session.
+func (p *participant) canDebug(workspace string) bool {
+	return p.Debug && p.Role == "configurator" && shared.CanWrite(p.Workspaces[workspace].Role)
+}
+
+// authorize returns a fresh permission projection; no repository I/O holds the registry lock.
+func (u *UseCase) authorize(ctx context.Context, p participant) (entities.Actor, string, string, map[string]workspaceAccess, error) {
 	if p.Principal.UserID == "" || !p.Principal.ExpiresAt.After(time.Now()) {
-		return entities.Actor{}, "", "", fmt.Errorf("Authentication expired")
+		return entities.Actor{}, "", "", nil, fmt.Errorf("Authentication expired")
 	}
 	actor, err := u.access.BridgeUser(ctx, p.Principal.UserID, p.Principal.SessionID)
 	if err != nil {
-		return actor, "", "", fmt.Errorf("Authentication is not valid")
-	}
-	workspace, err := u.workspaces.GetWorkspace(ctx, p.Workspace)
-	if err != nil || workspace == nil || !workspace.Active {
-		return actor, "", "", fmt.Errorf("Workspace is not available")
+		return actor, "", "", nil, fmt.Errorf("Authentication is not valid")
 	}
 	platform, err := u.grants.IsPlatformAdmin(ctx, actor.ID)
 	if err != nil {
-		return actor, "", "", fmt.Errorf("Access check failed")
+		return actor, "", "", nil, fmt.Errorf("Access check failed")
 	}
-	role, err := u.workspaces.WorkspaceRole(ctx, workspace.ID, actor.ID, platform)
-	if err != nil || (role != "viewer" && !shared.CanWrite(role)) {
-		return actor, "", "", fmt.Errorf("Workspace access denied")
+	var candidates []entities.Workspace
+	if p.AllWorkspaces {
+		candidates, err = u.workspaces.ListWorkspaces(ctx, actor.ID, platform)
+	} else {
+		var workspace *entities.Workspace
+		workspace, err = u.workspaces.GetWorkspace(ctx, p.Workspace)
+		if err == nil && workspace != nil && workspace.Active {
+			candidates = []entities.Workspace{*workspace}
+		} else {
+			return actor, "", "", nil, fmt.Errorf("Workspace is not available")
+		}
 	}
-	return actor, role, workspace.DisplayName, nil
+	if err != nil {
+		return actor, "", "", nil, fmt.Errorf("Workspace access check failed")
+	}
+	permissions := make(map[string]workspaceAccess)
+	for _, workspace := range candidates {
+		if !workspace.Active || workspace.DeletedAt != nil {
+			continue
+		}
+		role, err := u.workspaces.WorkspaceRole(ctx, workspace.ID, actor.ID, platform)
+		if err != nil {
+			return actor, "", "", nil, fmt.Errorf("Workspace access check failed")
+		}
+		if role == "viewer" || shared.CanWrite(role) {
+			permissions[workspace.Identity] = workspaceAccess{Role: role, DisplayName: workspace.DisplayName}
+			// Legacy registrations may use a database ID instead of identity.
+			permissions[workspace.ID] = permissions[workspace.Identity]
+		}
+	}
+	selected := permissions[p.Workspace]
+	if !p.AllWorkspaces && selected.Role == "" {
+		return actor, "", "", nil, fmt.Errorf("Workspace access denied")
+	}
+	return actor, selected.Role, selected.DisplayName, permissions, nil
 }
 
 func (u *UseCase) broadcast(workspace string) {
@@ -381,8 +422,8 @@ func (u *UseCase) broadcast(workspace string) {
 	for _, p := range u.peers {
 		if p.Role == "configurator" {
 			configurators = append(configurators, entities.BridgeConfigurator{InstanceID: p.ID, UserID: p.Actor.ID, DisplayName: p.Actor.DisplayName, Label: p.Label, WorkspaceDisplayName: p.WorkspaceDisplayName})
-		} else if p.Debug && p.Workspace == workspace {
-			clients = append(clients, entities.BridgeClient{InstanceID: p.ID, Label: p.Label})
+		} else if p.Debug {
+			clients = append(clients, entities.BridgeClient{InstanceID: p.ID, Label: p.Label, WorkspaceIdentity: p.Workspace})
 		}
 	}
 	sort.Slice(configurators, func(i, j int) bool { return configurators[i].InstanceID < configurators[j].InstanceID })
@@ -392,12 +433,15 @@ func (u *UseCase) broadcast(workspace string) {
 			continue
 		}
 		u.send(p.ID, "configurators", configurators)
-		if p.Workspace != workspace {
+		if !p.AllWorkspaces && p.Workspace != workspace {
 			continue
 		}
 		visible := []entities.BridgeClient{}
-		if p.Debug && shared.CanWrite(p.AccessRole) {
-			visible = clients
+		for _, client := range clients {
+			if p.canDebug(client.WorkspaceIdentity) {
+				client.WorkspaceDisplayName = p.Workspaces[client.WorkspaceIdentity].DisplayName
+				visible = append(visible, client)
+			}
 		}
 		u.send(p.ID, "clients", visible)
 	}
