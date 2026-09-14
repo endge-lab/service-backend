@@ -78,7 +78,7 @@ AUTH_DEV_PLATFORM_ADMIN=true
 
 ```text
 APP_VERSION=0.15.0
-WORKSPACE_SCHEMA_VERSION=9
+WORKSPACE_SCHEMA_VERSION=10
 ```
 
 Перед каждым изменением backend повышается `APP_VERSION` по SemVer.
