@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 )
 
@@ -11,7 +12,10 @@ func (r *EndgeRepository) StoreReleaseBuild(ctx context.Context, workspaceID, re
 	if err != nil {
 		return err
 	}
-	_, err = r.executor(ctx).Exec(ctx, `UPDATE releases SET compiled_bundle=$3, build_metadata=$4 WHERE workspace_id=$1 AND id=$2 AND compiled_bundle IS NULL`, workspaceID, releaseID, data, encoded)
+	tag, err := r.executor(ctx).Exec(ctx, `UPDATE releases SET compiled_bundle=$3, build_metadata=$4 WHERE workspace_id=$1 AND id=$2 AND compiled_bundle IS NULL`, workspaceID, releaseID, data, encoded)
+	if err == nil && tag.RowsAffected() != 1 {
+		return fmt.Errorf("release build is unavailable or already immutable")
+	}
 	return err
 }
 

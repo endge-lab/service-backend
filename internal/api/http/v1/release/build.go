@@ -3,6 +3,7 @@ package release
 import (
 	"encoding/json"
 	"io"
+	"unicode/utf8"
 
 	"github.com/endge-lab/service-backend/internal/api/http/respond"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/shared"
@@ -32,7 +33,7 @@ func (h *Handler) CreateFromBuild(c *fiber.Ctx) error {
 	if len(metadata) > 64*1024 || json.Unmarshal([]byte(metadata), &input) != nil {
 		return respond.WriteErrorResponse(c, domainerrors.InvalidInput("build_metadata_invalid", "Invalid build metadata"))
 	}
-	if len(input.DisplayName) > 255 || (input.Description != nil && len(*input.Description) > 16000) || len(input.CommitMessage) > 4000 {
+	if utf8.RuneCountInString(input.DisplayName) > 255 || (input.Description != nil && utf8.RuneCountInString(*input.Description) > 16000) || utf8.RuneCountInString(input.CommitMessage) > 1000 {
 		return respond.WriteErrorResponse(c, domainerrors.InvalidInput("release_text_too_long", "Release text exceeds limit"))
 	}
 	file, err := c.FormFile("bundle")

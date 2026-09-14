@@ -11022,6 +11022,65 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/releases/from-build:\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Релизы\n" +
+		"      summary: Создать релиз из сборки\n" +
+		"      operationId: createReleaseFromBuild\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          multipart/form-data:\n" +
+		"            schema:\n" +
+		"              type: object\n" +
+		"              properties:\n" +
+		"                metadata:\n" +
+		"                  description: \"JSON: identity, displayName, description, sourceCommitId,\n" +
+		"                    workspaceId, generation, headSequence, commitMessage,\n" +
+		"                    buildMetadata\"\n" +
+		"                  type: string\n" +
+		"                bundle:\n" +
+		"                  description: Gzip Endge Bundle, максимум 15 MiB\n" +
+		"                  type: string\n" +
+		"                  format: binary\n" +
+		"              required:\n" +
+		"                - metadata\n" +
+		"                - bundle\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Created\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/release.Response\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Conflict\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  \"/api/v1/releases/{identity}\":\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -11075,6 +11134,41 @@ var openAPI3YAML = []byte(
 		"          description: Внутренняя ошибка сервера\n" +
 		"          content:\n" +
 		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/releases/{identity}/bundle\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - Релизы\n" +
+		"      summary: Скачать Bundle релиза\n" +
+		"      operationId: exportReleaseBuild\n" +
+		"      parameters:\n" +
+		"        - description: Identity рабочего пространства\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Identity релиза\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/gzip:\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"                format: binary\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            application/gzip:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  \"/api/v1/releases/{identity}/export\":\n" +
@@ -18303,6 +18397,42 @@ var openAPI3YAML = []byte(
 		"          type: integer\n" +
 		"        visibility:\n" +
 		"          type: string\n" +
+		"    entities.ReleaseBuildMetadata:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        checksum:\n" +
+		"          type: string\n" +
+		"        compilerVersion:\n" +
+		"          type: string\n" +
+		"        context:\n" +
+		"          type: object\n" +
+		"        contextMode:\n" +
+		"          type: string\n" +
+		"        fileFormat:\n" +
+		"          type: string\n" +
+		"        includeAst:\n" +
+		"          type: boolean\n" +
+		"        profile:\n" +
+		"          $ref: \"#/components/schemas/entities.ReleaseBuildProfile\"\n" +
+		"        programId:\n" +
+		"          type: string\n" +
+		"        runtime:\n" +
+		"          type: string\n" +
+		"        scope:\n" +
+		"          type: string\n" +
+		"        sizeBytes:\n" +
+		"          type: integer\n" +
+		"        version:\n" +
+		"          type: integer\n" +
+		"    entities.ReleaseBuildProfile:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        displayName:\n" +
+		"          type: string\n" +
+		"        identity:\n" +
+		"          type: string\n" +
+		"        revision:\n" +
+		"          type: integer\n" +
 		"    entities.SnapshotCounts:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -19971,6 +20101,8 @@ var openAPI3YAML = []byte(
 		"    release.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
+		"        buildMetadata:\n" +
+		"          $ref: \"#/components/schemas/entities.ReleaseBuildMetadata\"\n" +
 		"        checksum:\n" +
 		"          type: string\n" +
 		"          example: sha256:0123456789abcdef\n" +

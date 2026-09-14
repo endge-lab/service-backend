@@ -159,7 +159,12 @@ func validateReleaseBuild(data []byte, metadata entities.ReleaseBuildMetadata) (
 	if metadata.ProgramID != program.ProgramID || metadata.CompilerVersion != program.CompilerVersion {
 		return invalid("Build metadata does not match Bundle")
 	}
-	metadata.Context = program.Context
+	var buildContext map[string]json.RawMessage
+	if json.Unmarshal(program.Context, &buildContext) != nil || buildContext == nil {
+		return invalid("Invalid build context")
+	}
+	delete(buildContext, "configuration")
+	metadata.Context, _ = json.Marshal(buildContext)
 	metadata.SizeBytes = int64(len(data))
 	sum := sha256.Sum256(data)
 	metadata.Checksum = hex.EncodeToString(sum[:])

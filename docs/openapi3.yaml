@@ -11017,6 +11017,65 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/releases/from-build:
+    post:
+      security:
+        - BearerAuth: []
+      tags:
+        - Релизы
+      summary: Создать релиз из сборки
+      operationId: createReleaseFromBuild
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                metadata:
+                  description: "JSON: identity, displayName, description, sourceCommitId,
+                    workspaceId, generation, headSequence, commitMessage,
+                    buildMetadata"
+                  type: string
+                bundle:
+                  description: Gzip Endge Bundle, максимум 15 MiB
+                  type: string
+                  format: binary
+              required:
+                - metadata
+                - bundle
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/release.Response"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
   "/api/v1/releases/{identity}":
     get:
       security:
@@ -11070,6 +11129,41 @@ paths:
           description: Внутренняя ошибка сервера
           content:
             application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/releases/{identity}/bundle":
+    get:
+      security:
+        - BearerAuth: []
+      tags:
+        - Релизы
+      summary: Скачать Bundle релиза
+      operationId: exportReleaseBuild
+      parameters:
+        - description: Identity рабочего пространства
+          name: X-Endge-Workspace
+          in: header
+          required: true
+          schema:
+            type: string
+        - description: Identity релиза
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/gzip:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Not Found
+          content:
+            application/gzip:
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
   "/api/v1/releases/{identity}/export":
@@ -18298,6 +18392,42 @@ components:
           type: integer
         visibility:
           type: string
+    entities.ReleaseBuildMetadata:
+      type: object
+      properties:
+        checksum:
+          type: string
+        compilerVersion:
+          type: string
+        context:
+          type: object
+        contextMode:
+          type: string
+        fileFormat:
+          type: string
+        includeAst:
+          type: boolean
+        profile:
+          $ref: "#/components/schemas/entities.ReleaseBuildProfile"
+        programId:
+          type: string
+        runtime:
+          type: string
+        scope:
+          type: string
+        sizeBytes:
+          type: integer
+        version:
+          type: integer
+    entities.ReleaseBuildProfile:
+      type: object
+      properties:
+        displayName:
+          type: string
+        identity:
+          type: string
+        revision:
+          type: integer
     entities.SnapshotCounts:
       type: object
       properties:
@@ -19966,6 +20096,8 @@ components:
     release.Response:
       type: object
       properties:
+        buildMetadata:
+          $ref: "#/components/schemas/entities.ReleaseBuildMetadata"
         checksum:
           type: string
           example: sha256:0123456789abcdef
