@@ -44,6 +44,10 @@ func (u *UseCase) List(ctx context.Context) ([]entities.BuildProfile, error) {
 		return nil, err
 	}
 	for index := range values {
+		values[index].Settings, err = DecodeSettings(values[index].Settings)
+		if err != nil {
+			return nil, err
+		}
 		values[index] = expose(values[index], actor.User.ID, shared.CanWrite(scope.Role))
 	}
 	return values, nil
@@ -105,6 +109,10 @@ func (u *UseCase) Patch(ctx context.Context, identity string, patch Patch, expec
 		return nil, domainerrors.Forbidden("build_profile_forbidden", "Build profile cannot be managed by this user")
 	}
 	next := *current
+	next.Settings, err = DecodeSettings(next.Settings)
+	if err != nil {
+		return nil, err
+	}
 	if patch.DisplayName != nil {
 		next.DisplayName, err = validateDisplayName(*patch.DisplayName)
 		if err != nil {
@@ -172,6 +180,12 @@ func validateVisibility(value string) (string, error) {
 
 // ValidateSettings normalizes the versioned build-settings contract shared by CRUD and portability.
 func ValidateSettings(value entities.BuildProfileSettings) (json.RawMessage, error) {
+	if value.FileFormat == "" {
+		value.FileFormat = "gzip"
+	}
+	if value.FileFormat != "gzip" && value.FileFormat != "json" {
+		return nil, domainerrors.InvalidInput("build_profile.settings_invalid", "fileFormat is not supported")
+	}
 	if value.BuildScope != "complete-model" || value.Contexts != "all-contexts" {
 		return nil, domainerrors.InvalidInput("build_profile.settings_invalid", "buildScope and contexts are not supported")
 	}

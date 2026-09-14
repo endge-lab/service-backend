@@ -150,7 +150,7 @@ func (u *UseCase) Handle(ctx context.Context, id string, message entities.Bridge
 		return fmt.Errorf("Authorization expired")
 	}
 	// A late client response must not bypass revocation of the controlling identity.
-	if message.Type == "acceptSession" || message.Type == "commandResult" || message.Type == "clientEvent" || message.Type == "inspectionSnapshot" {
+	if message.Type == "acceptSession" || message.Type == "commandResult" || message.Type == "clientEvent" || message.Type == "inspectionSnapshot" || message.Type == "inspectionChunk" {
 		u.mu.Lock()
 		s := u.sessions[message.SessionID]
 		controller := ""
@@ -185,7 +185,7 @@ func (u *UseCase) Handle(ctx context.Context, id string, message entities.Bridge
 		return nil
 	case "getSnapshot", "startContextSync", "executeCommand", "runSimulation", "refreshInspection", "setInspectionOptions":
 		return u.requestCommand(p, message)
-	case "clientEvent", "inspectionSnapshot":
+	case "clientEvent", "inspectionSnapshot", "inspectionChunk":
 		return u.forwardClientEvent(p, message)
 	case "commandResult":
 		s := u.sessions[message.SessionID]
@@ -263,7 +263,7 @@ func (u *UseCase) requestCommand(p *participant, m entities.BridgeMessage) error
 	commandID := uuid.NewString()
 	u.commands[commandID] = command{SessionID: s.SessionID, RequestID: m.ID, Deadline: time.Now().Add(requestTTL)}
 	m.ID = commandID
-	if m.Type != "executeCommand" && m.Type != "setInspectionOptions" {
+	if m.Type != "executeCommand" && m.Type != "setInspectionOptions" && m.Type != "refreshInspection" {
 		m.Data = nil
 	}
 	m.Error = ""
@@ -280,7 +280,7 @@ func (u *UseCase) forwardClientEvent(p *participant, m entities.BridgeMessage) e
 		return fmt.Errorf("Event session is not available")
 	}
 	limit := maxEventBytes
-	if m.Type == "inspectionSnapshot" {
+	if m.Type == "inspectionSnapshot" || m.Type == "inspectionChunk" {
 		limit = maxInspectionBytes
 	}
 	if len(m.Data) == 0 || len(m.Data) > limit || !json.Valid(m.Data) {

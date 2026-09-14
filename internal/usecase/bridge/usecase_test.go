@@ -171,7 +171,7 @@ func TestContextSyncRoutesOpaquePayloadsOnlyWithinApprovedSession(t *testing.T) 
 		if message.Type != kind || message.ID == kind || message.SessionID != id {
 			t.Fatalf("invalid correlated request: %+v", message)
 		}
-		if (kind == "executeCommand" || kind == "setInspectionOptions") && string(message.Data) != string(payload) {
+		if (kind == "executeCommand" || kind == "setInspectionOptions" || kind == "refreshInspection") && string(message.Data) != string(payload) {
 			t.Fatal("command payload changed in transport")
 		}
 	}
@@ -196,7 +196,7 @@ func TestContextSyncRoutesOpaquePayloadsOnlyWithinApprovedSession(t *testing.T) 
 }
 
 func TestContextSyncChecksPayloadBoundsAndRevocation(t *testing.T) {
-	for _, kind := range []string{"clientEvent", "executeCommand", "inspectionSnapshot", "setInspectionOptions"} {
+	for _, kind := range []string{"clientEvent", "executeCommand", "inspectionSnapshot", "inspectionChunk", "setInspectionOptions"} {
 		t.Run(kind, func(t *testing.T) {
 			u, _, workspaces, delivery := fixture(t)
 			id := approve(t, u)
@@ -204,7 +204,7 @@ func TestContextSyncChecksPayloadBoundsAndRevocation(t *testing.T) {
 			if kind == "executeCommand" || kind == "setInspectionOptions" {
 				sender, receiver, limit = "config", "client", maxCommandBytes
 			}
-			if kind == "inspectionSnapshot" {
+			if kind == "inspectionSnapshot" || kind == "inspectionChunk" {
 				limit = maxInspectionBytes
 			}
 			for _, payload := range []json.RawMessage{nil, json.RawMessage(`{`), json.RawMessage(`"` + strings.Repeat("x", limit) + `"`)} {
@@ -251,6 +251,34 @@ func TestInspectionSnapshotRouting(t *testing.T) {
 	}
 	u.Leave("config")
 	m.Type = "inspectionSnapshot"
+	if err := u.Handle(context.Background(), "client", m); err == nil {
+		t.Fatal("snapshot accepted after disconnect")
+	}
+}
+
+func TestInspectionChunkRouting(t *testing.T) {
+	u, _, _, delivery := fixture(t)
+	id := approve(t, u)
+	payload := json.RawMessage(`{"sequence":1,"update":{"kind":"data","data":"` + strings.Repeat("x", maxEventBytes+1) + `","generatedAt":1}}`)
+	m := entities.BridgeMessage{Type: "inspectionChunk", SessionID: id, Data: payload, TargetID: "other", Error: "untrusted"}
+	for _, sender := range []string{"config", "other"} {
+		if err := u.Handle(context.Background(), sender, m); err == nil {
+			t.Fatalf("snapshot accepted from %s", sender)
+		}
+	}
+	if err := u.Handle(context.Background(), "client", m); err != nil {
+		t.Fatal(err)
+	}
+	forwarded := delivery.messages["config"][len(delivery.messages["config"])-1]
+	if forwarded.Type != m.Type || string(forwarded.Data) != string(payload) || forwarded.TargetID != "" || forwarded.Error != "" {
+		t.Fatal("snapshot routing changed payload or leaked untrusted envelope fields")
+	}
+	m.Type = "clientEvent"
+	if err := u.Handle(context.Background(), "client", m); err == nil {
+		t.Fatal("snapshot allowance widened ordinary event limit")
+	}
+	u.Leave("config")
+	m.Type = "inspectionChunk"
 	if err := u.Handle(context.Background(), "client", m); err == nil {
 		t.Fatal("snapshot accepted after disconnect")
 	}

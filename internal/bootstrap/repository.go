@@ -30,6 +30,7 @@ type endgeRepositoryPorts struct {
 	Revisions          ports.RevisionRepository
 	Commits            ports.CommitRepository
 	Releases           ports.ReleaseRepository
+	ReleaseBuilds      ports.ReleaseBuildRepository
 	ReleaseArtifacts   ports.ReleaseArtifactRepository
 	Portable           ports.PortableRepository
 	Snapshots          ports.SnapshotRepository
@@ -50,6 +51,7 @@ func exposeEndgeRepository(store *postgres.EndgeRepository) endgeRepositoryPorts
 		Revisions:          store,
 		Commits:            store,
 		Releases:           store,
+		ReleaseBuilds:      store,
 		ReleaseArtifacts:   store,
 		Portable:           store,
 		Snapshots:          store,

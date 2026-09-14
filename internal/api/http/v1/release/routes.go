@@ -6,6 +6,8 @@ import "github.com/gofiber/fiber/v2"
 func RegisterRoutes(router fiber.Router, handler *Handler) {
 	resource := router.Group("/releases")
 	resource.Post("/", handler.Create)
+	resource.Post("/from-build", handler.CreateFromBuild)
+	resource.Get("/:identity/bundle", handler.ExportBuild)
 	resource.Get("/", handler.List)
 	resource.Get("/:identity", handler.Get)
 	resource.Get("/:identity/export", handler.Export)

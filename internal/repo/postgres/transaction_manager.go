@@ -46,7 +46,10 @@ func NewTxManager(pool *pgxpool.Pool, core *observability.Core, metrics *Reposit
 //
 //	error - ошибка callback, открытия, commit или rollback транзакции
 func (m *TxManager) WithinTransaction(ctx context.Context, fn func(ctx context.Context) error) (err error) {
-	return m.withinTransaction(ctx, pgx.TxOptions{}, fn)
+	if _, exists := txFromContext(ctx); exists {
+  return fn(ctx)
+ }
+ return m.withinTransaction(ctx, pgx.TxOptions{}, fn)
 }
 
 // WithinReadTransaction выполняет консистентное read-only чтение в REPEATABLE READ snapshot.

@@ -2,6 +2,7 @@ package build_profiles
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -174,5 +175,46 @@ func validBuildProfileSettings() entities.BuildProfileSettings {
 		BuildScope: "complete-model", Contexts: "all-contexts", Diagnostics: "detailed",
 		DebuggerStructure: "complete-catalog",
 		Topology:          []entities.BuildProfileTopologyNode{{Node: "frontend", Runtime: "ts-browser"}},
+	}
+}
+
+func TestBundleFileSettingsPersistAndLegacyDefaults(t *testing.T) {
+	repository := &buildProfileRepositoryStub{}
+	usecase := NewUseCase(repository, buildProfileTxStub{})
+	ctx := buildProfileContext("owner", "editor")
+	settings := validBuildProfileSettings()
+	legacy, err := ValidateSettings(settings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded entities.BuildProfileSettings
+	if err := json.Unmarshal(legacy, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if decoded.FileFormat != "gzip" || decoded.IncludeAST {
+		t.Fatalf("wrong defaults: %+v", decoded)
+	}
+	settings.FileFormat = "json"
+	settings.IncludeAST = true
+	created, err := usecase.Create(ctx, "private", settings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	profiles, err := usecase.List(ctx)
+	if err != nil || len(profiles) != 1 {
+		t.Fatalf("list: %v", err)
+	}
+	if string(profiles[0].Settings) != string(created.Settings) {
+		t.Fatal("settings lost after reading")
+	}
+	if err := json.Unmarshal(profiles[0].Settings, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if decoded.FileFormat != "json" || !decoded.IncludeAST {
+		t.Fatalf("options lost: %+v", decoded)
+	}
+	settings.FileFormat = "brotli"
+	if _, err := ValidateSettings(settings); err == nil {
+		t.Fatal("unknown codec accepted")
 	}
 }

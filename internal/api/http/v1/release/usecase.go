@@ -8,6 +8,8 @@ import (
 )
 
 type UseCase interface {
+	CreateFromBuild(context.Context, resourceusecase.CreateFromBuildInput) (*entities.Release, error)
+	GetBuild(context.Context, string) ([]byte, *entities.Release, error)
 	Create(context.Context, resourceusecase.CreateInput) (*entities.Release, error)
 	List(context.Context) ([]entities.Release, error)
 	Get(context.Context, string) (*entities.Release, error)

@@ -18158,6 +18158,15 @@ components:
           type: string
         diagnostics:
           type: string
+        fileFormat:
+          type: string
+          default: gzip
+          enum:
+            - gzip
+            - json
+        includeAst:
+          type: boolean
+          default: false
         topology:
           type: array
           items:

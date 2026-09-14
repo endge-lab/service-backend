@@ -20,17 +20,18 @@ type RestoreRequest struct {
 }
 
 type Response struct {
-	ID             string         `json:"id" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
-	WorkspaceID    string         `json:"workspaceId" example:"550e8400-e29b-41d4-a716-446655440001" format:"uuid"`
-	Identity       string         `json:"identity" example:"main"`
-	DisplayName    string         `json:"displayName" example:"Основной объект"`
-	Description    *string        `json:"description,omitempty" example:"Описание объекта"`
-	SourceCommitID string         `json:"sourceCommitId" example:"550e8400-e29b-41d4-a716-446655440006" format:"uuid"`
-	HeadSequence   int64          `json:"headSequence" example:"42"`
-	SchemaVersion  int            `json:"schemaVersion" example:"1"`
-	Checksum       string         `json:"checksum" example:"sha256:0123456789abcdef"`
-	CreatedBy      entities.Actor `json:"createdBy"`
-	CreatedAt      time.Time      `json:"createdAt" example:"2026-08-04T10:00:00Z" format:"date-time"`
+	BuildMetadata  *entities.ReleaseBuildMetadata `json:"buildMetadata,omitempty"`
+	ID             string                         `json:"id" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
+	WorkspaceID    string                         `json:"workspaceId" example:"550e8400-e29b-41d4-a716-446655440001" format:"uuid"`
+	Identity       string                         `json:"identity" example:"main"`
+	DisplayName    string                         `json:"displayName" example:"Основной объект"`
+	Description    *string                        `json:"description,omitempty" example:"Описание объекта"`
+	SourceCommitID string                         `json:"sourceCommitId" example:"550e8400-e29b-41d4-a716-446655440006" format:"uuid"`
+	HeadSequence   int64                          `json:"headSequence" example:"42"`
+	SchemaVersion  int                            `json:"schemaVersion" example:"1"`
+	Checksum       string                         `json:"checksum" example:"sha256:0123456789abcdef"`
+	CreatedBy      entities.Actor                 `json:"createdBy"`
+	CreatedAt      time.Time                      `json:"createdAt" example:"2026-08-04T10:00:00Z" format:"date-time"`
 }
 
 type ListResponse struct {

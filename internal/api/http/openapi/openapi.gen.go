@@ -18163,6 +18163,15 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        diagnostics:\n" +
 		"          type: string\n" +
+		"        fileFormat:\n" +
+		"          type: string\n" +
+		"          default: gzip\n" +
+		"          enum:\n" +
+		"            - gzip\n" +
+		"            - json\n" +
+		"        includeAst:\n" +
+		"          type: boolean\n" +
+		"          default: false\n" +
 		"        topology:\n" +
 		"          type: array\n" +
 		"          items:\n" +

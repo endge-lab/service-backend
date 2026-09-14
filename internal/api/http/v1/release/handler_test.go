@@ -153,3 +153,10 @@ func TestHandlerExportConditionalGET(t *testing.T) {
 		})
 	}
 }
+
+func (s *releaseUseCaseStub) CreateFromBuild(context.Context, resourceusecase.CreateFromBuildInput) (*entities.Release, error) {
+	return &s.metadata, nil
+}
+func (s *releaseUseCaseStub) GetBuild(context.Context, string) ([]byte, *entities.Release, error) {
+	return []byte("bundle"), &s.metadata, nil
+}

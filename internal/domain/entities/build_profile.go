@@ -17,6 +17,8 @@ type BuildProfileTopologyNode struct {
 }
 
 type BuildProfileSettings struct {
+	IncludeAST        bool                       `json:"includeAst" default:"false"`
+	FileFormat        string                     `json:"fileFormat" enums:"gzip,json" default:"gzip"`
 	BuildScope        string                     `json:"buildScope"`
 	Contexts          string                     `json:"contexts"`
 	Diagnostics       string                     `json:"diagnostics"`

@@ -13,7 +13,7 @@ import (
 )
 
 func releaseMetadataSelect() string {
-	return `SELECT r.id::text,r.workspace_id::text,r.identity,r.display_name,r.description,r.source_commit_id::text,r.head_sequence,r.schema_version,r.checksum,` + actorScan("u") + `,r.created_at FROM releases r JOIN service_users u ON u.id=r.created_by`
+	return `SELECT r.id::text,r.workspace_id::text,r.identity,r.display_name,r.description,r.source_commit_id::text,r.head_sequence,r.schema_version,r.checksum,` + actorScan("u") + `,r.created_at,r.build_metadata FROM releases r JOIN service_users u ON u.id=r.created_by`
 }
 
 func releaseArtifactSelect() string {
@@ -21,11 +21,16 @@ func releaseArtifactSelect() string {
 }
 func scanRelease(row scanner) (*entities.Release, error) {
 	v := &entities.Release{}
-	var actor []byte
-	if err := row.Scan(&v.ID, &v.WorkspaceID, &v.Identity, &v.DisplayName, &v.Description, &v.SourceCommitID, &v.HeadSequence, &v.SchemaVersion, &v.Checksum, &actor, &v.CreatedAt); err != nil {
+	var actor, build []byte
+	if err := row.Scan(&v.ID, &v.WorkspaceID, &v.Identity, &v.DisplayName, &v.Description, &v.SourceCommitID, &v.HeadSequence, &v.SchemaVersion, &v.Checksum, &actor, &v.CreatedAt, &build); err != nil {
 		return nil, repositoryError(err)
 	}
 	_ = json.Unmarshal(actor, &v.CreatedBy)
+	if len(build) > 0 {
+		if err := json.Unmarshal(build, &v.BuildMetadata); err != nil {
+			return nil, err
+		}
+	}
 	return v, nil
 }
 func (r *EndgeRepository) CreateRelease(ctx context.Context, v entities.Release, artifact json.RawMessage) (*entities.Release, error) {
