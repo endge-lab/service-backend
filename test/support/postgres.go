@@ -97,8 +97,17 @@ func (s *PostgresSuite) Close(ctx context.Context) error {
 }
 
 // NewDatabase создаёт чистую БД, устанавливает marker и применяет все миграции.
-// Cleanup всегда проверяет marker до DROP DATABASE.
 func (s *PostgresSuite) NewDatabase(t testing.TB) *TestDatabase {
+	return s.newDatabase(t, nil)
+}
+
+// NewDatabaseAt создаёт чистую БД на заданной версии миграций.
+func (s *PostgresSuite) NewDatabaseAt(t testing.TB, version int64) *TestDatabase {
+	return s.newDatabase(t, &version)
+}
+
+// Cleanup всегда проверяет marker до DROP DATABASE.
+func (s *PostgresSuite) newDatabase(t testing.TB, version *int64) *TestDatabase {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
@@ -126,12 +135,28 @@ func (s *PostgresSuite) NewDatabase(t testing.TB) *TestDatabase {
 		pool.Close()
 		t.Fatalf("установить safety marker: %v", err)
 	}
-	if err = database.MigrateUp(ctx); err != nil {
+	if version == nil {
+		err = database.MigrateUp(ctx)
+	} else {
+		err = database.MigrateUpTo(ctx, *version)
+	}
+	if err != nil {
 		pool.Close()
 		t.Fatalf("применить миграции к чистой БД: %v", err)
 	}
 	t.Cleanup(func() { database.cleanup(t) })
 	return database
+}
+
+// MigrateUpTo применяет embedded-миграции до указанной версии.
+func (d *TestDatabase) MigrateUpTo(ctx context.Context, version int64) error {
+	if err := d.AssertSafe(ctx); err != nil {
+		return err
+	}
+	return withMigrationProvider(d.Pool, func(provider *goose.Provider) error {
+		_, err := provider.UpTo(ctx, version)
+		return err
+	})
 }
 
 // MigrateUp применяет все embedded-миграции к проверенной тестовой БД.

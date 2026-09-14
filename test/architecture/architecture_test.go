@@ -198,6 +198,20 @@ func TestHTTPResourcePackagesOwnTheirAdapters(t *testing.T) {
 		if !entry.IsDir() || entry.Name() == "shared" {
 			continue
 		}
+		packageFiles, err := os.ReadDir(filepath.Join(v1Root, entry.Name()))
+		if err != nil {
+			t.Fatalf("read HTTP resource package %s: %v", entry.Name(), err)
+		}
+		hasGoFiles := false
+		for _, packageFile := range packageFiles {
+			if !packageFile.IsDir() && strings.HasSuffix(packageFile.Name(), ".go") {
+				hasGoFiles = true
+				break
+			}
+		}
+		if !hasGoFiles {
+			continue
+		}
 		for _, fileName := range requiredFiles {
 			relativePath := filepath.Join("internal/api/http/v1", entry.Name(), fileName)
 			if _, err := os.Stat(filepath.Join(root, relativePath)); err != nil {

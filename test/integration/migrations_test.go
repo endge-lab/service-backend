@@ -11,8 +11,8 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
-// TestMigrationsRoundTrip проверяет clean up, idempotent up, полный down и повторный up.
-func TestMigrationsRoundTrip(t *testing.T) {
+// TestMigrationsLifecycle проверяет idempotent up и защиту необратимого down.
+func TestMigrationsLifecycle(t *testing.T) {
 	database := postgresSuite.NewDatabase(t)
 	ctx := context.Background()
 
@@ -22,22 +22,12 @@ func TestMigrationsRoundTrip(t *testing.T) {
 	assertMigrationState(t, database, goose.StateApplied)
 	assertBootstrapState(t, database)
 
-	if err := database.MigrateDownToZero(ctx); err != nil {
-		t.Fatalf("полный down: %v", err)
+	err := database.MigrateDownTo(ctx, 66)
+	if err == nil || !strings.Contains(err.Error(), "migration 000067 is irreversible") {
+		t.Fatalf("необратимый down не защищён: %v", err)
 	}
-	assertMigrationState(t, database, goose.StatePending)
-	for _, table := range []string{"service_users", "workspaces", "folders", "document_revisions", "workspace_commits", "releases", "workspace_snapshot_backups", "workspace_snapshot_import_plans", "configurator_auth_sessions"} {
-		var exists bool
-		if err := database.Pool.QueryRow(ctx, `SELECT to_regclass('public.' || $1) IS NOT NULL`, table).Scan(&exists); err != nil {
-			t.Fatalf("проверить таблицу %s после down: %v", table, err)
-		}
-		if exists {
-			t.Fatalf("таблица %s осталась после полного down", table)
-		}
-	}
-
-	if err := database.MigrateUp(ctx); err != nil {
-		t.Fatalf("повторный up после down: %v", err)
+	if err = database.MigrateUp(ctx); err != nil {
+		t.Fatalf("восстановить reversible-миграции после защищённого down: %v", err)
 	}
 	assertMigrationState(t, database, goose.StateApplied)
 	assertBootstrapState(t, database)
@@ -72,10 +62,15 @@ func TestMigrationSchemaGuards(t *testing.T) {
 
 // TestVocabSourceMigrationBackfillsLegacy проверяет sourceVersion 1 и env-проекцию legacy Vocab.
 func TestVocabSourceMigrationBackfillsLegacy(t *testing.T) {
-	database := postgresSuite.NewDatabase(t)
+	database := postgresSuite.NewDatabaseAt(t, 51)
 	ctx := context.Background()
-	if err := database.MigrateDownTo(ctx, 51); err != nil {
-		t.Fatalf("откатить Vocab source migration: %v", err)
+	if _, err := database.Pool.Exec(ctx, `INSERT INTO workspaces(
+		id, identity, display_name, created_by, updated_by
+	) VALUES (
+		'00000000-0000-0000-0000-000000000010', 'migration-vocab', 'Migration Vocab',
+		'00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001'
+	)`); err != nil {
+		t.Fatalf("создать workspace старой схемы: %v", err)
 	}
 
 	_, err := database.Pool.Exec(ctx, `INSERT INTO vocabs(
@@ -88,7 +83,7 @@ func TestVocabSourceMigrationBackfillsLegacy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("создать legacy Vocab: %v", err)
 	}
-	if err = database.MigrateUp(ctx); err != nil {
+	if err = database.MigrateUpTo(ctx, 54); err != nil {
 		t.Fatalf("применить Vocab source migration: %v", err)
 	}
 

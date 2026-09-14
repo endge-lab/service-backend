@@ -14,6 +14,7 @@ import (
 
 // CreateFromBuild creates a release from a saved build and optionally creates its commit.
 // @Summary Создать релиз из сборки
+// @Description Сохраняет релиз, snapshot выбранной ревизии и проверенный Gzip Bundle в одной транзакции.
 // @ID createReleaseFromBuild
 // @Tags Релизы
 // @Accept multipart/form-data
@@ -58,6 +59,7 @@ func (h *Handler) CreateFromBuild(c *fiber.Ctx) error {
 
 // ExportBuild downloads the optional compiled release Bundle.
 // @Summary Скачать Bundle релиза
+// @Description Возвращает сохранённый Gzip Bundle отдельно от JSON snapshot релиза.
 // @ID exportReleaseBuild
 // @Tags Релизы
 // @Produce application/gzip

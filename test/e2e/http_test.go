@@ -74,6 +74,7 @@ func TestCookieAuthenticationRequiresAllowedOrigin(t *testing.T) {
 	database := postgresSuite.NewDatabase(t)
 	cfg := support.DevConfig()
 	app := support.NewTestApp(t, database, cfg)
+	createWorkspace(t, app, nil, "default")
 	cookieToken := "e2e-cookie-token"
 	tokenHash := sha256.Sum256([]byte(cookieToken))
 	_, err := database.Pool.Exec(t.Context(), `
@@ -105,6 +106,7 @@ func TestCookieAuthenticationRequiresAllowedOrigin(t *testing.T) {
 func TestAllDocumentHTTPContracts(t *testing.T) {
 	database := postgresSuite.NewDatabase(t)
 	app := support.NewTestApp(t, database, support.DevConfig())
+	createWorkspace(t, app, nil, "default")
 	headers := map[string]string{"X-Endge-Workspace": "default"}
 
 	createdETags := map[string]string{}
@@ -205,6 +207,7 @@ func assertPortableDocumentDeletedState(t *testing.T, bundle map[string]any, col
 func TestHTTPValidationAndConcurrency(t *testing.T) {
 	database := postgresSuite.NewDatabase(t)
 	app := support.NewTestApp(t, database, support.DevConfig())
+	createWorkspace(t, app, nil, "default")
 	headers := map[string]string{"X-Endge-Workspace": "default"}
 
 	invalidBodies := []struct {
@@ -248,6 +251,7 @@ func TestHTTPValidationAndConcurrency(t *testing.T) {
 func TestFolderSafetyAndReparenting(t *testing.T) {
 	database := postgresSuite.NewDatabase(t)
 	app := support.NewTestApp(t, database, support.DevConfig())
+	createWorkspace(t, app, nil, "default")
 	headers := map[string]string{"X-Endge-Workspace": "default"}
 
 	root := perform(t, app, http.MethodGet, "/api/v1/folders/root-queries", nil, headers)
@@ -297,6 +301,7 @@ func TestFolderSafetyAndReparenting(t *testing.T) {
 func TestBulkDocumentMove(t *testing.T) {
 	database := postgresSuite.NewDatabase(t)
 	app := support.NewTestApp(t, database, support.DevConfig())
+	createWorkspace(t, app, nil, "default")
 	headers := map[string]string{"X-Endge-Workspace": "default"}
 
 	folder := perform(t, app, http.MethodPost, "/api/v1/folders", map[string]any{
@@ -314,6 +319,7 @@ func TestBulkDocumentMove(t *testing.T) {
 
 	move := perform(t, app, http.MethodPost, "/api/v1/domain/documents/move", map[string]any{
 		"folderIdentity": "schedule-actions",
+		"placement":      "frontend",
 		"documents": []map[string]any{
 			{"collection": "actions", "identity": "action-a", "expectedRevision": 1},
 			{"collection": "actions", "identity": "action-b", "expectedRevision": 1},
@@ -331,6 +337,7 @@ func TestBulkDocumentMove(t *testing.T) {
 
 	conflict := perform(t, app, http.MethodPost, "/api/v1/domain/documents/move", map[string]any{
 		"folderIdentity": "root-actions",
+		"placement":      "frontend",
 		"documents": []map[string]any{
 			{"collection": "actions", "identity": "action-a", "expectedRevision": 2},
 			{"collection": "actions", "identity": "action-b", "expectedRevision": 1},

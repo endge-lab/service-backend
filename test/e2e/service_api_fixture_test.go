@@ -53,6 +53,7 @@ func newServiceAPIFixture(t *testing.T) *serviceAPIFixture {
 
 	workspace := "service-api-workspace"
 	createWorkspace(t, app, platform, workspace)
+	createWorkspace(t, app, platform, "default")
 	putMembership(t, app, platform, workspace, adminID, "admin")
 	putMembership(t, app, platform, workspace, viewerID, "viewer")
 

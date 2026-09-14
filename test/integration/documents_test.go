@@ -290,8 +290,9 @@ func TestReleaseExportAndRestoreShareArtifactReader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("создать artifact reader: %v", err)
 	}
-	coordinator := workspace_state.NewCoordinator(fixture.store, fixture.tx, artifacts, 1)
-	releaseUseCase := releases.NewUseCase(fixture.store, fixture.store, fixture.store, coordinator, artifacts)
+	coordinator := workspace_state.NewCoordinator(fixture.store, fixture.tx, artifacts, nil, 1)
+	commitUseCase := commits.NewUseCase(fixture.store, fixture.store, fixture.tx, coordinator)
+	releaseUseCase := releases.NewUseCase(fixture.store, fixture.store, fixture.store, coordinator, artifacts, fixture.store, fixture.tx, commitUseCase)
 	queryRepository := fixture.resources["queries"]
 
 	created, err := fixture.lifecycle.Create(fixture.ctx, documents.Definition{Collection: "queries"}, queryRepository, createInput(t, map[string]any{
@@ -379,9 +380,10 @@ func newRepositoryFixture(t *testing.T) *repositoryFixture {
 	if err != nil {
 		t.Fatalf("создать reader artifact: %v", err)
 	}
-	coordinator := workspace_state.NewCoordinator(store, tx, artifacts, 1)
+	coordinator := workspace_state.NewCoordinator(store, tx, artifacts, nil, 1)
 	lifecycle := documents.NewLifecycle(store, store, tx, recorder)
 	workspaceUseCase := workspaces.NewUseCase(store, store, store, tx, recorder, nil)
+	commitUseCase := commits.NewUseCase(store, store, tx, coordinator)
 	actor := entities.CurrentActor{User: &entities.User{ID: userID, ProviderID: "integration", Subject: "subject-" + userID, Issuer: "urn:endge:test", Username: "tester", DisplayName: "Integration Tester", Active: true}, PlatformAdmin: true}
 	ctx := entities.WithCurrentActor(context.Background(), actor)
 	if _, err = workspaceUseCase.Create(ctx, workspaces.CreateInput{Identity: "default", DisplayName: "Default"}); err != nil {
@@ -394,8 +396,8 @@ func newRepositoryFixture(t *testing.T) *repositoryFixture {
 	ctx = entities.WithWorkspaceAccess(ctx, scope)
 	return &repositoryFixture{
 		database: database, ctx: ctx, store: store, tx: tx, lifecycle: lifecycle, workspaces: workspaceUseCase,
-		revisions: revisions.NewUseCase(store, coordinator), commits: commits.NewUseCase(store, store, tx, coordinator),
-		releases: releases.NewUseCase(store, store, store, coordinator, artifacts), resources: documentRepositories(store),
+		revisions: revisions.NewUseCase(store, coordinator), commits: commitUseCase,
+		releases: releases.NewUseCase(store, store, store, coordinator, artifacts, store, tx, commitUseCase), resources: documentRepositories(store),
 	}
 }
 

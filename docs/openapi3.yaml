@@ -11021,6 +11021,8 @@ paths:
     post:
       security:
         - BearerAuth: []
+      description: Сохраняет релиз, snapshot выбранной ревизии и проверенный Gzip
+        Bundle в одной транзакции.
       tags:
         - Релизы
       summary: Создать релиз из сборки
@@ -11135,6 +11137,7 @@ paths:
     get:
       security:
         - BearerAuth: []
+      description: Возвращает сохранённый Gzip Bundle отдельно от JSON snapshot релиза.
       tags:
         - Релизы
       summary: Скачать Bundle релиза

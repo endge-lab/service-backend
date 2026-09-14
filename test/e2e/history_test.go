@@ -20,6 +20,7 @@ import (
 func TestCommitReleaseBackupAndImportFlow(t *testing.T) {
 	database := postgresSuite.NewDatabase(t)
 	app := support.NewTestApp(t, database, support.DevConfig())
+	createWorkspace(t, app, nil, "default")
 	headers := map[string]string{"X-Endge-Workspace": "default"}
 
 	created := perform(t, app, http.MethodPost, "/api/v1/queries", map[string]any{"identity": "portable-query", "displayName": "Portable", "source": "query {}", "sourceVersion": 2}, headers)

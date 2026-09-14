@@ -17,6 +17,7 @@ func TestFacetAuthoringContract(t *testing.T) {
 	config := support.DevConfig()
 	config.WorkspaceSchemaVersion = 6
 	app := support.NewTestApp(t, database, config)
+	createWorkspace(t, app, nil, "default")
 	headers := map[string]string{"X-Endge-Workspace": "default"}
 
 	createFacet := func(identity, name, icon, color string, meta map[string]any) map[string]any {

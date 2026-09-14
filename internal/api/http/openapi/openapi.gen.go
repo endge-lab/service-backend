@@ -11026,6 +11026,8 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Сохраняет релиз, snapshot выбранной ревизии и проверенный Gzip\n" +
+		"        Bundle в одной транзакции.\n" +
 		"      tags:\n" +
 		"        - Релизы\n" +
 		"      summary: Создать релиз из сборки\n" +
@@ -11140,6 +11142,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Возвращает сохранённый Gzip Bundle отдельно от JSON snapshot релиза.\n" +
 		"      tags:\n" +
 		"        - Релизы\n" +
 		"      summary: Скачать Bundle релиза\n" +

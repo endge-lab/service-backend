@@ -13,6 +13,7 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/config"
 	"github.com/endge-lab/service-backend/test/support"
+	"github.com/gofiber/fiber/v2"
 )
 
 const externalAccessYAML = `version: 1
@@ -56,6 +57,11 @@ func externalHeaders(t *testing.T, provider *support.IdentityProvider, input sup
 	t.Helper()
 	return map[string]string{"Authorization": "Bearer " + provider.Token(t, input), "X-Endge-Workspace": "default"}
 }
+
+func createExternalDefaultWorkspace(t *testing.T, app *fiber.App, provider *support.IdentityProvider, issued time.Time) {
+	t.Helper()
+	createWorkspace(t, app, externalHeaders(t, provider, externalTokenInput("workspace-bootstrap", issued, "platform-admin")), "default")
+}
 func expectCode(t *testing.T, response *http.Response, status int, code string) {
 	t.Helper()
 	assertStatus(t, response, status)
@@ -69,6 +75,7 @@ func TestExternalAccessBearerLifecycle(t *testing.T) {
 	provider := support.NewIdentityProvider(t)
 	app := support.NewTestApp(t, db, externalConfig(t, provider, externalAccessYAML))
 	issued := time.Now().Add(-time.Minute).Truncate(time.Second)
+	createExternalDefaultWorkspace(t, app, provider, issued)
 	// First human and legacy admin groups cannot bypass the mapping.
 	outsider := externalTokenInput("external-outsider", issued)
 	outsider.Groups = []string{"endge-platform-admins"}
@@ -164,6 +171,7 @@ func TestExternalAccessBrowserRefreshAndConfigurationChange(t *testing.T) {
 	cfg := externalConfig(t, provider, externalAccessYAML)
 	app := support.NewTestApp(t, db, cfg)
 	issued := time.Now().Add(-time.Minute).Truncate(time.Second)
+	createExternalDefaultWorkspace(t, app, provider, issued)
 	state, nonce, transaction := beginBrowserLogin(t, app)
 	identity := externalTokenInput("browser-external", issued, "platform-admin")
 	access := externalTokenInput("browser-external", issued, "editor")
@@ -226,6 +234,7 @@ func TestExternalAccessConcurrentTokens(t *testing.T) {
 	provider := support.NewIdentityProvider(t)
 	app := support.NewTestApp(t, db, externalConfig(t, provider, externalAccessYAML))
 	issued := time.Now().Add(-time.Minute).Truncate(time.Second)
+	createExternalDefaultWorkspace(t, app, provider, issued)
 	headers := []map[string]string{
 		externalHeaders(t, provider, externalTokenInput("racing", issued, "admin")),
 		externalHeaders(t, provider, externalTokenInput("racing", issued.Add(time.Second), "viewer")),
@@ -271,6 +280,7 @@ func TestExternalAccessModeTransition(t *testing.T) {
 	provider := support.NewIdentityProvider(t)
 	external := support.NewTestApp(t, db, externalConfig(t, provider, externalAccessYAML))
 	issued := time.Now().Add(-time.Minute)
+	createExternalDefaultWorkspace(t, external, provider, issued)
 	empty := externalHeaders(t, provider, externalTokenInput("switch-user", issued))
 	response := perform(t, external, http.MethodGet, "/api/session/me", nil, empty)
 	assertStatus(t, response, 200)
@@ -309,6 +319,7 @@ func TestExternalAccessTransactionRollsBackWriteFailure(t *testing.T) {
 	provider := support.NewIdentityProvider(t)
 	app := support.NewTestApp(t, db, externalConfig(t, provider, externalAccessYAML))
 	issued := time.Now().Add(-time.Minute)
+	createExternalDefaultWorkspace(t, app, provider, issued)
 	viewer := externalHeaders(t, provider, externalTokenInput("rollback-user", issued, "viewer"))
 	response := perform(t, app, http.MethodGet, "/api/session/me", nil, viewer)
 	assertStatus(t, response, 200)
