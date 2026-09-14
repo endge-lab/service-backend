@@ -6197,8 +6197,9 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает переносимый пакет с общими профилями сборки, без private\n" +
-		"        records, AI-каталога, назначения ролей, истории и секретов.\n" +
+		"      description: \"Возвращает переносимый пакет текущего сохранённого в базе\n" +
+		"        состояния без требования коммита: с общими профилями сборки, без private\n" +
+		"        records, AI-каталога, назначения ролей, истории и секретов.\"\n" +
 		"      tags:\n" +
 		"        - Перенос домена\n" +
 		"      summary: Экспортировать рабочее пространство\n" +
@@ -6245,8 +6246,9 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Credentials включаются только по явному выбору; без password они\n" +
-		"        находятся в JSON открытым текстом, а password шифрует весь JSON\n" +
+		"      description: Экспортирует текущее сохранённое в базе состояние без требования\n" +
+		"        коммита. Credentials включаются только по явному выбору; без password\n" +
+		"        они находятся в JSON открытым текстом, а password шифрует весь JSON\n" +
 		"        artifact.\n" +
 		"      tags:\n" +
 		"        - Перенос домена\n" +
@@ -6287,12 +6289,6 @@ var openAPI3YAML = []byte(
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"403\":\n" +
 		"          description: Недостаточно прав для выбранных данных\n" +
-		"          content:\n" +
-		"            application/json:\n" +
-		"              schema:\n" +
-		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
-		"        \"409\":\n" +
-		"          description: Workspace содержит незакоммиченные изменения\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +

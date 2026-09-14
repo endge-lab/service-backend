@@ -6192,8 +6192,9 @@ paths:
     get:
       security:
         - BearerAuth: []
-      description: Возвращает переносимый пакет с общими профилями сборки, без private
-        records, AI-каталога, назначения ролей, истории и секретов.
+      description: "Возвращает переносимый пакет текущего сохранённого в базе
+        состояния без требования коммита: с общими профилями сборки, без private
+        records, AI-каталога, назначения ролей, истории и секретов."
       tags:
         - Перенос домена
       summary: Экспортировать рабочее пространство
@@ -6240,8 +6241,9 @@ paths:
     post:
       security:
         - BearerAuth: []
-      description: Credentials включаются только по явному выбору; без password они
-        находятся в JSON открытым текстом, а password шифрует весь JSON
+      description: Экспортирует текущее сохранённое в базе состояние без требования
+        коммита. Credentials включаются только по явному выбору; без password
+        они находятся в JSON открытым текстом, а password шифрует весь JSON
         artifact.
       tags:
         - Перенос домена
@@ -6282,12 +6284,6 @@ paths:
                 $ref: "#/components/schemas/shared.ErrorResponse"
         "403":
           description: Недостаточно прав для выбранных данных
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/shared.ErrorResponse"
-        "409":
-          description: Workspace содержит незакоммиченные изменения
           content:
             application/json:
               schema:

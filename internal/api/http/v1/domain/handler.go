@@ -137,7 +137,7 @@ func (h *Handler) Status(c *fiber.Ctx) error {
 
 // Export выгружает переносимый JSON текущего workspace.
 // @Summary Экспортировать рабочее пространство
-// @Description Возвращает переносимый пакет с общими профилями сборки, без private records, AI-каталога, назначения ролей, истории и секретов.
+// @Description Возвращает переносимый пакет текущего сохранённого в базе состояния без требования коммита: с общими профилями сборки, без private records, AI-каталога, назначения ролей, истории и секретов.
 // @ID exportDomain
 // @Tags Перенос домена
 // @Produce json
@@ -171,7 +171,7 @@ func (h *Handler) Export(c *fiber.Ctx) error {
 
 // ExportWithOptions exports explicitly selected private operational data and optionally encrypts the whole artifact.
 // @Summary Экспортировать workspace с параметрами
-// @Description Credentials включаются только по явному выбору; без password они находятся в JSON открытым текстом, а password шифрует весь JSON artifact.
+// @Description Экспортирует текущее сохранённое в базе состояние без требования коммита. Credentials включаются только по явному выбору; без password они находятся в JSON открытым текстом, а password шифрует весь JSON artifact.
 // @ID exportDomainWithOptions
 // @Tags Перенос домена
 // @Accept json
@@ -182,7 +182,6 @@ func (h *Handler) Export(c *fiber.Ctx) error {
 // @Failure 400 {object} shared.ErrorResponse "Некорректные параметры"
 // @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
 // @Failure 403 {object} shared.ErrorResponse "Недостаточно прав для выбранных данных"
-// @Failure 409 {object} shared.ErrorResponse "Workspace содержит незакоммиченные изменения"
 // @Security BearerAuth
 // @Router /api/v1/domain/export [post]
 func (h *Handler) ExportWithOptions(c *fiber.Ctx) error {
