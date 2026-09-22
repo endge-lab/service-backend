@@ -1,0 +1,495 @@
+package workspaces
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"strings"
+
+	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
+	"github.com/endge-lab/service-backend/internal/domain/entities"
+	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/usecase/documents"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
+	"github.com/endge-lab/service-backend/internal/usecase/shared"
+	"github.com/google/uuid"
+)
+
+const workspaceStartupCompositionSource = `defineComposition({
+  activateOn: startup(),
+  data: {},
+  resources: {},
+  runtimes: {},
+  hooks: [],
+  outputs: {},
+})
+`
+
+// Create создаёт рабочее пространство и его начальное состояние.
+func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entities.Workspace, err error) {
+	current, err := shared.Actor(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !current.PlatformAdmin {
+		return nil, domainerrors.Forbidden("platform_admin_required", "Platform Admin role is required")
+	}
+	values, err := inputValues(input)
+	if err != nil {
+		return nil, err
+	}
+	if err = shared.RejectReadOnly(values); err != nil {
+		return nil, err
+	}
+	if err = shared.ValidateSecrets(values); err != nil {
+		return nil, err
+	}
+	values["configuration"] = configurationdomain.EnsureWorkspaceDefaults(values["configuration"])
+	configurationdomain.RemoveLegacySSE(values["configuration"])
+	if err = configurationdomain.ValidateValuesShape(values["configuration"]); err != nil {
+		return nil, domainerrors.InvalidInput("workspace_configuration_values_invalid", err.Error())
+	}
+	identity, displayName := workspaceText(values, "identity"), workspaceText(values, "displayName")
+	if err = validateWorkspaceIdentity(identity); err != nil {
+		return nil, err
+	}
+	if displayName == "" {
+		return nil, domainerrors.InvalidInput("display_name_required", "displayName is required")
+	}
+	documentStructure := workspaceDefault(workspaceText(values, "documentStructure"), entities.WorkspaceDocumentStructureFrontend)
+	if !entities.IsWorkspaceDocumentStructure(documentStructure) {
+		return nil, domainerrors.InvalidInput("workspace_document_structure_invalid", "documentStructure must be frontend or custom")
+	}
+	value := entities.Workspace{ID: uuid.NewString(), Identity: identity, DisplayName: displayName, Description: workspaceOptional(values, "description"), DataMode: workspaceDefault(workspaceText(values, "dataMode"), "development"), DocumentStructure: documentStructure, Configuration: workspaceJSON(values["configuration"]), Meta: workspaceJSON(values["meta"]), Active: workspaceBool(values, "active", true), Revision: 1, CreatedBy: entities.Actor{ID: current.User.ID}, UpdatedBy: entities.Actor{ID: current.User.ID}}
+	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
+		created, txErr := s.workspaces.CreateWorkspace(txctx, value, current.User.ID)
+		if txErr != nil {
+			return txErr
+		}
+		bindings, txErr := workspaceIntegrations(values)
+		if txErr != nil {
+			return txErr
+		}
+		if txErr = s.workspaces.ReplaceWorkspaceIntegrations(txctx, created.ID, bindings, current.User.ID); txErr != nil {
+			return txErr
+		}
+		txctx, txErr = s.history.BeginBatch(txctx, &created.ID, "create", current.User.ID)
+		if txErr != nil {
+			return txErr
+		}
+		createdRootTypes := map[string]bool{}
+		rootIDs := map[string]string{}
+		for _, kind := range documents.Collections {
+			if kind == entities.CollectionFolders || kind == entities.CollectionConfigurations {
+				continue
+			}
+			entityType := entities.FolderEntityType(kind)
+			if createdRootTypes[entityType] {
+				continue
+			}
+			createdRootTypes[entityType] = true
+			root := entities.Document{ID: uuid.NewString(), WorkspaceID: created.ID, Type: entities.CollectionFolders, Identity: entities.RootFolderIdentity(kind), DisplayName: "Root " + entityType, ManagedBy: entities.ManagedBySystem, Meta: json.RawMessage(`{}`), Data: workspaceJSON(map[string]any{"entityType": entityType, "isRoot": true}), Active: true, Revision: 1, CreatedBy: entities.Actor{ID: current.User.ID}, UpdatedBy: entities.Actor{ID: current.User.ID}}
+			createdRoot, insertErr := s.documents.InsertDocument(txctx, root, nil)
+			if insertErr != nil {
+				return insertErr
+			}
+			rootIDs[kind] = createdRoot.ID
+			if _, insertErr = s.history.RecordDocument(txctx, *createdRoot, "create", nil); insertErr != nil {
+				return insertErr
+			}
+		}
+		workspaceRoot := entities.Document{
+			ID: uuid.NewString(), WorkspaceID: created.ID, Type: entities.CollectionFolders,
+			Identity: entities.WorkspaceRootFolderIdentity, DisplayName: "Workspace", ManagedBy: entities.ManagedBySystem,
+			Meta: json.RawMessage(`{}`), Data: workspaceJSON(map[string]any{"scope": entities.FolderScopeWorkspace, "entityType": nil, "isRoot": true, "icon": nil, "color": nil}),
+			Active: true, Revision: 1, CreatedBy: entities.Actor{ID: current.User.ID}, UpdatedBy: entities.Actor{ID: current.User.ID},
+		}
+		createdWorkspaceRoot, txErr := s.documents.InsertDocument(txctx, workspaceRoot, nil)
+		if txErr != nil {
+			return txErr
+		}
+		if _, txErr = s.history.RecordDocument(txctx, *createdWorkspaceRoot, "create", nil); txErr != nil {
+			return txErr
+		}
+		rootCompositionID, exists := rootIDs[entities.CollectionCompositions]
+		if !exists {
+			return domainerrors.Internal("workspace_bootstrap_invalid", "Composition root folder was not created")
+		}
+		workspaceRootIdentity := entities.WorkspaceRootFolderIdentity
+		compositionRootIdentity := entities.RootFolderIdentity(entities.CollectionCompositions)
+		startup := entities.Document{
+			ID: uuid.NewString(), WorkspaceID: created.ID, Type: entities.CollectionCompositions,
+			Identity: "workspace-startup", DisplayName: "Стартовая композиция",
+			FolderIdentity:          &compositionRootIdentity,
+			WorkspaceFolderIdentity: &workspaceRootIdentity,
+			ManagedBy:               "user", Meta: json.RawMessage(`{}`),
+			Data:   workspaceJSON(map[string]any{"source": workspaceStartupCompositionSource, "sourceVersion": 1}),
+			Active: true, Revision: 1, CreatedBy: entities.Actor{ID: current.User.ID}, UpdatedBy: entities.Actor{ID: current.User.ID},
+		}
+		createdStartup, txErr := s.documents.InsertDocument(txctx, startup, &rootCompositionID)
+		if txErr != nil {
+			return txErr
+		}
+		if _, txErr = s.history.RecordDocument(txctx, *createdStartup, "create", nil); txErr != nil {
+			return txErr
+		}
+		created, txErr = s.workspaces.FinalizeWorkspaceBootstrap(txctx, created.ID, createdStartup.ID)
+		if txErr != nil {
+			return txErr
+		}
+		if txErr = s.history.RecordWorkspace(txctx, *created, "create"); txErr != nil {
+			return txErr
+		}
+		pending, txErr := s.commits.PendingRevisions(txctx, created.ID, 0)
+		if txErr != nil {
+			return txErr
+		}
+		head := int64(0)
+		for _, revision := range pending {
+			if revision.WorkspaceSequence != nil && *revision.WorkspaceSequence > head {
+				head = *revision.WorkspaceSequence
+			}
+		}
+		commit, txErr := s.commits.CreateCommit(txctx, entities.Commit{ID: uuid.NewString(), WorkspaceID: created.ID, BaseSequence: 0, HeadSequence: head, Message: "Initial workspace state", RevisionPolicy: "preserve", Operation: "bootstrap", CreatedBy: entities.Actor{ID: current.User.ID}}, workspaceCommitChanges(pending))
+		if txErr != nil {
+			return txErr
+		}
+		ids := make([]string, 0, len(pending))
+		for _, revision := range pending {
+			ids = append(ids, revision.ID)
+		}
+		if txErr = s.commits.AttachRevisionsToCommit(txctx, commit.ID, ids); txErr != nil {
+			return txErr
+		}
+		result, txErr = s.workspaces.GetWorkspace(txctx, created.Identity)
+		return txErr
+	})
+	return result, shared.MapConflict(err)
+}
+
+// Patch частично обновляет рабочее пространство с проверкой ожидаемой ревизии.
+func (s *UseCase) Patch(ctx context.Context, identity string, input PatchInput, expected int) (result *entities.Workspace, err error) {
+	current, err := shared.Actor(ctx)
+	if err != nil {
+		return nil, err
+	}
+	scope, err := s.Authorize(ctx, identity)
+	if err != nil {
+		return nil, err
+	}
+	if !shared.CanAdmin(scope.Role) {
+		return nil, domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
+	}
+	if expected <= 0 {
+		return nil, shared.PreconditionRequired()
+	}
+	patch, err := input.values()
+	if err != nil {
+		return nil, err
+	}
+	if err = shared.RejectReadOnly(patch); err != nil {
+		return nil, err
+	}
+	if err = shared.ValidateSecrets(patch); err != nil {
+		return nil, err
+	}
+	if value, exists := patch["documentStructure"]; exists {
+		documentStructure, valid := value.(string)
+		if !valid || !entities.IsWorkspaceDocumentStructure(strings.TrimSpace(documentStructure)) {
+			return nil, domainerrors.InvalidInput("workspace_document_structure_invalid", "documentStructure must be frontend or custom")
+		}
+	}
+	if value, exists := patch["startupCompositionIdentity"]; exists && value != nil {
+		startupIdentity, valid := value.(string)
+		startupIdentity = strings.TrimSpace(startupIdentity)
+		if !valid || startupIdentity == "" {
+			return nil, domainerrors.InvalidInput("startup_composition_identity_invalid", "startupCompositionIdentity must be a non-empty identity or null")
+		}
+		composition, resolveErr := s.documents.GetDocument(ctx, scope.Workspace.ID, entities.CollectionCompositions, startupIdentity, false)
+		if errors.Is(resolveErr, ports.ErrNotFound) || (resolveErr == nil && !composition.Active) {
+			return nil, domainerrors.InvalidInput("startup_composition_not_found", "startupCompositionIdentity must reference an active Composition in this Workspace")
+		}
+		if resolveErr != nil {
+			return nil, resolveErr
+		}
+		patch["startupCompositionIdentity"] = startupIdentity
+	}
+	if configuration, exists := patch["configuration"]; exists {
+		patch["configuration"] = configurationdomain.EnsureSFCEditingDefaults(configuration)
+		configurationdomain.RemoveLegacySSE(patch["configuration"])
+		if err = configurationdomain.ValidateValuesShape(patch["configuration"]); err != nil {
+			return nil, domainerrors.InvalidInput("workspace_configuration_values_invalid", err.Error())
+		}
+	}
+	if scope.Workspace.Revision != expected {
+		return nil, shared.RevisionConflict()
+	}
+	scope.Workspace.DocumentStructure = entities.NormalizeWorkspaceDocumentStructure(scope.Workspace.DocumentStructure)
+	next := applyWorkspacePatch(scope.Workspace, patch)
+	if err = validateWorkspaceIdentity(next.Identity); err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(next.DisplayName) == "" {
+		return nil, domainerrors.InvalidInput("display_name_required", "displayName is required")
+	}
+	if !entities.IsWorkspaceDocumentStructure(next.DocumentStructure) {
+		return nil, domainerrors.InvalidInput("workspace_document_structure_invalid", "documentStructure must be frontend or custom")
+	}
+	contentChanged := workspaceDigest(scope.Workspace) != workspaceDigest(next)
+	bindings, bindingsPresent, err := patchedWorkspaceIntegrations(patch)
+	if err != nil {
+		return nil, err
+	}
+	bindingsChanged := false
+	if bindingsPresent {
+		currentBindings, listErr := s.workspaces.ListWorkspaceIntegrations(ctx, scope.Workspace.ID)
+		if listErr != nil {
+			return nil, listErr
+		}
+		bindingsChanged = genericDigest(currentBindings) != genericDigest(bindings)
+	}
+	if !contentChanged && !bindingsChanged {
+		return &scope.Workspace, nil
+	}
+	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
+		updated, txErr := s.workspaces.UpdateWorkspace(txctx, identity, patch, expected, current.User.ID)
+		if txErr != nil {
+			return txErr
+		}
+		if bindingsPresent {
+			if txErr = s.workspaces.ReplaceWorkspaceIntegrations(txctx, updated.ID, bindings, current.User.ID); txErr != nil {
+				return txErr
+			}
+		}
+		if txErr = s.history.RecordWorkspace(txctx, *updated, "update"); txErr != nil {
+			return txErr
+		}
+		result = updated
+		return nil
+	})
+	return result, shared.MapConflict(err)
+}
+
+// Delete мягко удаляет Workspace, сохраняя все связанные данные и назначения.
+func (s *UseCase) Delete(ctx context.Context, identity string, expected int) (result *entities.Workspace, err error) {
+	current, err := shared.Actor(ctx)
+	if err != nil {
+		return nil, err
+	}
+	scope, err := s.Authorize(ctx, identity)
+	if err != nil {
+		return nil, err
+	}
+	if !shared.CanAdmin(scope.Role) {
+		return nil, domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
+	}
+	if expected <= 0 {
+		return nil, shared.PreconditionRequired()
+	}
+	if scope.Workspace.Revision != expected {
+		return nil, shared.RevisionConflict()
+	}
+	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
+		updated, txErr := s.workspaces.SoftDeleteWorkspace(txctx, scope.Workspace.ID, expected, current.User.ID)
+		if txErr != nil {
+			return txErr
+		}
+		if txErr = s.history.RecordWorkspace(txctx, *updated, "delete"); txErr != nil {
+			return txErr
+		}
+		result = updated
+		return nil
+	})
+	return result, shared.MapConflict(err)
+}
+
+// Restore restores a deleted Workspace while preserving its documents and grants.
+func (s *UseCase) Restore(ctx context.Context, identity string, expected int) (result *entities.Workspace, err error) {
+	current, err := shared.Actor(ctx)
+	if err != nil {
+		return nil, err
+	}
+	workspace, err := s.workspaces.GetDeletedWorkspace(ctx, strings.TrimSpace(identity))
+	if errors.Is(err, ports.ErrNotFound) {
+		return nil, domainerrors.NotFound("workspace_not_found", "Deleted workspace not found")
+	}
+	if err != nil {
+		return nil, err
+	}
+	role, err := s.workspaces.DeletedWorkspaceRole(ctx, workspace.ID, current.User.ID, current.PlatformAdmin)
+	if err != nil {
+		return nil, err
+	}
+	if !shared.CanAdmin(role) {
+		return nil, domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
+	}
+	if expected <= 0 {
+		return nil, shared.PreconditionRequired()
+	}
+	if workspace.Revision != expected {
+		return nil, shared.RevisionConflict()
+	}
+	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
+		updated, txErr := s.workspaces.RestoreWorkspace(txctx, workspace.ID, expected, current.User.ID)
+		if txErr != nil {
+			return txErr
+		}
+		if txErr = s.history.RecordWorkspace(txctx, *updated, "restore"); txErr != nil {
+			return txErr
+		}
+		result = updated
+		return nil
+	})
+	return result, shared.MapConflict(err)
+}
+
+// applyWorkspacePatch применяет частичное обновление к рабочему пространству.
+func applyWorkspacePatch(workspace entities.Workspace, patch map[string]any) entities.Workspace {
+	if value, ok := patch["identity"].(string); ok {
+		workspace.Identity = strings.TrimSpace(value)
+	}
+	if value, ok := patch["displayName"].(string); ok {
+		workspace.DisplayName = value
+	}
+	if _, ok := patch["description"]; ok {
+		workspace.Description = workspaceOptional(patch, "description")
+	}
+	if value, ok := patch["dataMode"].(string); ok {
+		workspace.DataMode = value
+	}
+	if value, ok := patch["documentStructure"].(string); ok {
+		workspace.DocumentStructure = strings.TrimSpace(value)
+	}
+	if value, exists := patch["startupCompositionIdentity"]; exists {
+		workspace.StartupCompositionIdentity = nil
+		if identity, ok := value.(string); ok {
+			identity = strings.TrimSpace(identity)
+			workspace.StartupCompositionIdentity = &identity
+		}
+	}
+	if value, ok := patch["configuration"]; ok {
+		workspace.Configuration = workspaceJSON(value)
+	}
+	if value, ok := patch["meta"]; ok {
+		workspace.Meta = workspaceJSON(value)
+	}
+	if value, ok := patch["active"].(bool); ok {
+		workspace.Active = value
+	}
+	return workspace
+}
+
+// workspaceCommitChanges формирует изменения коммита рабочего пространства.
+func workspaceCommitChanges(revisions []entities.Revision) []entities.CommitChange {
+	groups, order := map[string][]entities.Revision{}, []string{}
+	for _, revision := range revisions {
+		key := revision.DocumentType + ":" + revision.DocumentID
+		if _, exists := groups[key]; !exists {
+			order = append(order, key)
+		}
+		groups[key] = append(groups[key], revision)
+	}
+	result := make([]entities.CommitChange, 0, len(order))
+	for _, key := range order {
+		items := groups[key]
+		first, last := items[0], items[len(items)-1]
+		result = append(result, entities.CommitChange{DocumentType: last.DocumentType, DocumentID: last.DocumentID, BeforeRevisionID: first.ParentRevisionID, AfterRevisionID: &last.ID, Operation: last.Operation})
+	}
+	return result
+}
+
+// workspaceIntegrations загружает интеграции рабочего пространства для снимка.
+func workspaceIntegrations(values map[string]any) ([]map[string]any, error) {
+	result, _, err := patchedWorkspaceIntegrations(values)
+	return result, err
+}
+
+// patchedWorkspaceIntegrations применяет обновление интеграций к снимку рабочего пространства.
+func patchedWorkspaceIntegrations(values map[string]any) ([]map[string]any, bool, error) {
+	value, exists := values["installedIntegrations"]
+	if !exists || value == nil {
+		return nil, exists, nil
+	}
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return nil, true, domainerrors.InvalidInput("installed_integrations_invalid", "installedIntegrations is invalid")
+	}
+	var result []map[string]any
+	if err = json.Unmarshal(raw, &result); err != nil {
+		return nil, true, domainerrors.InvalidInput("installed_integrations_invalid", "installedIntegrations must be an array")
+	}
+	for _, item := range result {
+		if _, ok := item["configuration"]; !ok {
+			item["configuration"] = map[string]any{}
+		}
+	}
+	return result, true, nil
+}
+
+// validateWorkspaceIdentity проверяет identity рабочего пространства.
+func validateWorkspaceIdentity(value string) error {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return domainerrors.InvalidInput("identity_required", "identity is required")
+	}
+	if len(value) > 160 {
+		return domainerrors.InvalidInput("identity_too_long", "identity must not exceed 160 characters")
+	}
+	return nil
+}
+
+// workspaceText извлекает текстовое поле рабочего пространства.
+func workspaceText(values map[string]any, key string) string {
+	value, _ := values[key].(string)
+	return strings.TrimSpace(value)
+}
+
+// workspaceOptional извлекает необязательное текстовое поле рабочего пространства.
+func workspaceOptional(values map[string]any, key string) *string {
+	value, ok := values[key].(string)
+	value = strings.TrimSpace(value)
+	if !ok || value == "" {
+		return nil
+	}
+	return &value
+}
+
+// workspaceDefault возвращает строковое поле рабочего пространства или значение по умолчанию.
+func workspaceDefault(value, fallback string) string {
+	if value == "" {
+		return fallback
+	}
+	return value
+}
+
+// workspaceBool извлекает логическое поле рабочего пространства.
+func workspaceBool(values map[string]any, key string, fallback bool) bool {
+	value, ok := values[key].(bool)
+	if !ok {
+		return fallback
+	}
+	return value
+}
+
+// workspaceJSON извлекает JSON-поле рабочего пространства.
+func workspaceJSON(value any) json.RawMessage {
+	if value == nil {
+		return json.RawMessage(`{}`)
+	}
+	raw, _ := json.Marshal(value)
+	return raw
+}
+
+// genericDigest вычисляет контрольную сумму произвольного значения.
+func genericDigest(value any) string {
+	raw, _ := json.Marshal(value)
+	sum := sha256.Sum256(raw)
+	return hex.EncodeToString(sum[:])
+}
+
+// workspaceDigest вычисляет контрольную сумму рабочего пространства.
+func workspaceDigest(value entities.Workspace) string {
+	return genericDigest(map[string]any{"identity": value.Identity, "displayName": value.DisplayName, "description": value.Description, "dataMode": value.DataMode, "documentStructure": value.DocumentStructure, "startupCompositionIdentity": value.StartupCompositionIdentity, "configuration": value.Configuration, "meta": value.Meta, "active": value.Active})
+}

@@ -1,0 +1,33 @@
+package errors
+
+import (
+	"errors"
+	"testing"
+)
+
+// TestCodeOfReturnsSpecificWrappedCode проверяет безопасное преобразование доменной ошибки.
+func TestCodeOfReturnsSpecificWrappedCode(t *testing.T) {
+	err := InvalidInput("validation.invalid_input", "Некорректные входные данные")
+
+	if got := CodeOf(err); got != "validation.invalid_input" {
+		t.Fatalf("CodeOf() = %q, want %q", got, "validation.invalid_input")
+	}
+	if got := HTTPStatusOf(err); got != 400 {
+		t.Fatalf("HTTPStatusOf() = %d, want 400", got)
+	}
+	if !errors.Is(err, ErrInvalidInput) {
+		t.Fatal("expected wrapped transport to match ErrInvalidInput")
+	}
+}
+
+// TestWithDetailsPreservesAppError проверяет сохранение кода и безопасных details.
+func TestWithDetailsPreservesAppError(t *testing.T) {
+	err := WithDetails(ErrAuthUserIDRequired, map[string]any{"field": "authUserId"})
+
+	if got := CodeOf(err); got != "session.auth_user_id_required" {
+		t.Fatalf("CodeOf() = %q, want %q", got, "session.auth_user_id_required")
+	}
+	if got := DetailsOf(err)["field"]; got != "authUserId" {
+		t.Fatalf("DetailsOf()[field] = %v, want authUserId", got)
+	}
+}

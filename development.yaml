@@ -1,0 +1,8 @@
+app:
+  name: service_backend
+  public_url: http://localhost:8080
+http:
+  cors_allowed_origins: http://localhost:5173
+postgres:
+  user: postgres
+  database: service_backend

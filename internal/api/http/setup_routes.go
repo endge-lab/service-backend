@@ -1,0 +1,160 @@
+package http
+
+import (
+	configuratorauth "github.com/endge-lab/service-backend/internal/api/http/configurator_auth"
+	"github.com/endge-lab/service-backend/internal/api/http/health"
+	httpmiddleware "github.com/endge-lab/service-backend/internal/api/http/middleware"
+	"github.com/endge-lab/service-backend/internal/api/http/openapi"
+	"github.com/endge-lab/service-backend/internal/api/http/respond"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/access_control"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/action"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/ai_assistant"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/ai_catalog"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/auth_profile"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/backend_connection"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/backup"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/bridge"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/build_profile"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/commit"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/component"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/composition"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/computation"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/configuration"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/converter"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/data_view"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/document_move"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/domain"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/facet"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/filter"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/folder"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/i18n_bundle"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/integration"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/mock"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/mock_data"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/navigation"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/query"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/release"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/revision"
+	httpsession "github.com/endge-lab/service-backend/internal/api/http/v1/session"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/simulation"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/store"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/stream"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/style"
+	domain_type "github.com/endge-lab/service-backend/internal/api/http/v1/type"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/update"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/vocab"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/workspace"
+	"github.com/endge-lab/service-backend/internal/config"
+	"github.com/endge-lab/service-backend/internal/usecase/service_info"
+	"github.com/gofiber/fiber/v2"
+	"go.opentelemetry.io/otel/metric"
+	"go.uber.org/fx"
+	"go.uber.org/zap"
+)
+
+type Handlers struct {
+	fx.In
+
+	Bridge            *bridge.Handler
+	BuildProfile      *build_profile.Handler
+	CurrentUser       *httpmiddleware.CurrentUserMiddleware
+	AccessControl     *access_control.Handler
+	AICatalog         *ai_catalog.Handler
+	AIAssistant       *ai_assistant.Handler
+	MockData          *mock_data.Handler
+	ConfiguratorAuth  *configuratorauth.Handler
+	Workspace         *workspace.Handler
+	BackendConnection *backend_connection.Handler
+	Session           *httpsession.Handler
+	Integration       *integration.Handler
+	Facet             *facet.Handler
+	Folder            *folder.Handler
+	Type              *domain_type.Handler
+	Query             *query.Handler
+	DataView          *data_view.Handler
+	Composition       *composition.Handler
+	Store             *store.Handler
+	Stream            *stream.Handler
+	Simulation        *simulation.Handler
+	Update            *update.Handler
+	Mock              *mock.Handler
+	Component         *component.Handler
+	Action            *action.Handler
+	Filter            *filter.Handler
+	Converter         *converter.Handler
+	Computation       *computation.Handler
+	Vocab             *vocab.Handler
+	I18nBundle        *i18n_bundle.Handler
+	AuthProfile       *auth_profile.Handler
+	Navigation        *navigation.Handler
+	Style             *style.Handler
+	Configuration     *configuration.Handler
+	Revision          *revision.Handler
+	Commit            *commit.Handler
+	Domain            *domain.Handler
+	DocumentMove      *document_move.Handler
+	Backup            *backup.Handler
+	Release           *release.Handler
+}
+
+func SetupRoutes(app *fiber.App, cfg *config.Config, connectedServices *service_info.UseCase, handlers Handlers, authMiddleware httpmiddleware.AuthMiddleware, meter metric.Meter, logger *zap.Logger) {
+	httpmiddleware.Register(app, cfg, meter, logger)
+	var router fiber.Router = app
+	if cfg.HTTPBasePath != "" {
+		router = app.Group(cfg.HTTPBasePath)
+	}
+	if !cfg.App.IsProduction() {
+		openapi.RegisterRoutes(router)
+	}
+	health.RegisterRoutes(router, health.Config{
+		Service:                cfg.App.Name,
+		Version:                cfg.App.Version,
+		WorkspaceSchemaVersion: cfg.WorkspaceSchemaVersion,
+		Env:                    cfg.App.Env,
+	}, connectedServices)
+	configuratorauth.RegisterPublicRoutes(router, handlers.ConfiguratorAuth)
+	router.Get("/auth/session", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve(), handlers.Session.Current)
+	bridge.RegisterPublicRoutes(router, handlers.Bridge)
+	api := router.Group("/api", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve())
+	httpsession.RegisterRoutes(api, handlers.Session)
+	v1 := api.Group("/v1")
+	bridge.RegisterRoutes(v1, handlers.Bridge)
+	workspace.RegisterRoutes(v1, handlers.Workspace)
+	access_control.RegisterRoutes(v1, handlers.AccessControl)
+	ai_catalog.RegisterRoutes(v1, handlers.AICatalog)
+	backend_connection.RegisterRoutes(v1, handlers.BackendConnection)
+	integration.RegisterRoutes(v1, handlers.Integration)
+	scoped := v1.Group("", handlers.Workspace.RequireWorkspace())
+	build_profile.RegisterRoutes(scoped, handlers.BuildProfile)
+	facet.RegisterRoutes(scoped, handlers.Facet)
+	folder.RegisterRoutes(scoped, handlers.Folder)
+	domain_type.RegisterRoutes(scoped, handlers.Type)
+	query.RegisterRoutes(scoped, handlers.Query)
+	data_view.RegisterRoutes(scoped, handlers.DataView)
+	composition.RegisterRoutes(scoped, handlers.Composition)
+	store.RegisterRoutes(scoped, handlers.Store)
+	stream.RegisterRoutes(scoped, handlers.Stream)
+	simulation.RegisterRoutes(scoped, handlers.Simulation)
+	update.RegisterRoutes(scoped, handlers.Update)
+	mock.RegisterRoutes(scoped, handlers.Mock)
+	component.RegisterRoutes(scoped, handlers.Component)
+	action.RegisterRoutes(scoped, handlers.Action)
+	filter.RegisterRoutes(scoped, handlers.Filter)
+	converter.RegisterRoutes(scoped, handlers.Converter)
+	computation.RegisterRoutes(scoped, handlers.Computation)
+	vocab.RegisterRoutes(scoped, handlers.Vocab)
+	i18n_bundle.RegisterRoutes(scoped, handlers.I18nBundle)
+	auth_profile.RegisterRoutes(scoped, handlers.AuthProfile)
+	navigation.RegisterRoutes(scoped, handlers.Navigation)
+	style.RegisterRoutes(scoped, handlers.Style)
+	configuration.RegisterRoutes(scoped, handlers.Configuration)
+	revision.RegisterRoutes(scoped, handlers.Revision)
+	commit.RegisterRoutes(scoped, handlers.Commit)
+	domain.RegisterRoutes(scoped, handlers.Domain)
+	document_move.RegisterRoutes(scoped, handlers.DocumentMove)
+	backup.RegisterRoutes(scoped, handlers.Backup)
+	release.RegisterRoutes(scoped, handlers.Release)
+	ai_assistant.RegisterRoutes(scoped, handlers.AIAssistant)
+	mock_data.RegisterRoutes(scoped, handlers.MockData)
+	app.Use(func(c *fiber.Ctx) error { return respond.WriteErrorResponse(c, respond.ErrRouteNotFound) })
+}

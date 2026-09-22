@@ -1,0 +1,74 @@
+// Package workspace_state владеет атомарным export/import и восстановлением полного состояния workspace.
+package workspace_state
+
+import (
+	"context"
+
+	"github.com/endge-lab/service-backend/internal/domain/entities"
+	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	platformencryption "github.com/endge-lab/service-backend/internal/platform/encryption"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
+)
+
+const workspaceRevisionSnapshotVersion = 1
+
+var Collections = append(append([]string(nil), entities.DocumentCollections...), entities.FacetCollections...)
+var UnsupportedCollections = []string{"legacyComponents", "componentsDSL", "componentsTable", "versions", "pages", "pageTemplates", "page-templates", "policies"}
+var readOnlyFields = []string{"id", "type", "revision", "author", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", "created_by", "updated_by", "state"}
+
+// Repository задаёт необходимые координатору операции хранилища.
+type Repository interface {
+	ports.WorkspaceRepository
+	ports.IntegrationRepository
+	ports.DocumentRepository
+	ports.FacetRepository
+	ports.RevisionRepository
+	ports.CommitRepository
+	ports.ReleaseRepository
+	ports.PortableRepository
+	ports.SnapshotRepository
+	ports.WorkspaceAdjunctRepository
+}
+
+// Coordinator координирует импорт и восстановление состояния рабочего пространства.
+type Coordinator struct {
+	repository    Repository
+	tx            ports.TxManager
+	artifacts     ports.ReleaseArtifactReader
+	keyring       *platformencryption.Keyring
+	schemaVersion int
+}
+
+// mutationBatchContextKey задаёт закрытый тип ключа контекста для пакета мутаций.
+type mutationBatchContextKey struct{}
+
+// NewCoordinator создаёт координатор операций над состоянием рабочего пространства.
+func NewCoordinator(repository Repository, tx ports.TxManager, artifacts ports.ReleaseArtifactReader, keyring *platformencryption.Keyring, schemaVersion int) *Coordinator {
+	return &Coordinator{repository: repository, tx: tx, artifacts: artifacts, keyring: keyring, schemaVersion: schemaVersion}
+}
+
+// actor возвращает текущего пользователя из контекста.
+func actor(ctx context.Context) (entities.CurrentActor, error) {
+	value, ok := entities.CurrentActorFromContext(ctx)
+	if !ok || value.User == nil {
+		return value, domainerrors.Unauthorized("auth.current_user_missing", "Current user is missing")
+	}
+	return value, nil
+}
+
+// access возвращает доступ пользователя к рабочему пространству.
+func access(ctx context.Context) (entities.WorkspaceAccess, error) {
+	value, ok := entities.WorkspaceAccessFromContext(ctx)
+	if !ok {
+		return value, domainerrors.InvalidInput("workspace_required", "Workspace context is required")
+	}
+	return value, nil
+}
+
+// canWrite проверяет право роли изменять рабочее пространство.
+func canWrite(role string) bool {
+	return role == "editor" || role == entities.AccessRoleAdmin || role == "platform_admin"
+}
+
+// canAdmin проверяет административное право роли.
+func canAdmin(role string) bool { return role == entities.AccessRoleAdmin || role == "platform_admin" }

@@ -1,0 +1,53 @@
+apiVersion: 1
+
+deleteDatasources:
+  - name: OpenSearch Traces
+    orgId: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: ${PROMETHEUS_URL}
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: 15s
+
+  - name: OpenSearch Logs
+    uid: opensearch-logs
+    type: grafana-opensearch-datasource
+    access: proxy
+    url: ${OPENSEARCH_URL}
+    editable: false
+    basicAuth: ${OPENSEARCH_BASIC_AUTH}
+    basicAuthUser: ${OPENSEARCH_USERNAME}
+    secureJsonData:
+      basicAuthPassword: ${OPENSEARCH_PASSWORD}
+    jsonData:
+      flavor: opensearch
+      version: ${OPENSEARCH_VERSION}
+      database: ${OPENSEARCH_LOG_INDEX}
+      timeField: "@timestamp"
+      logMessageField: message
+      logLevelField: log.level
+      pplEnabled: false
+      serverless: false
+      maxConcurrentShardRequests: 5
+      timeInterval: 10s
+
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: ${TEMPO_URL}
+    editable: false
+    jsonData:
+      httpMethod: GET
+      tracesToLogsV2:
+        datasourceUid: opensearch-logs
+        spanStartTimeShift: -1h
+        spanEndTimeShift: 1h
+        filterByTraceID: false
+        filterBySpanID: false

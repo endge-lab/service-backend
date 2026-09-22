@@ -1,0 +1,155 @@
+//go:build integration
+
+package integration_test
+
+import (
+	"context"
+	"strings"
+	"testing"
+
+	"github.com/endge-lab/service-backend/test/support"
+	"github.com/pressly/goose/v3"
+)
+
+// TestMigrationsLifecycle проверяет idempotent up и защиту необратимого down.
+func TestMigrationsLifecycle(t *testing.T) {
+	database := postgresSuite.NewDatabase(t)
+	ctx := context.Background()
+
+	if err := database.MigrateUp(ctx); err != nil {
+		t.Fatalf("повторный up должен быть идемпотентным: %v", err)
+	}
+	assertMigrationState(t, database, goose.StateApplied)
+	assertBootstrapState(t, database)
+
+	err := database.MigrateDownTo(ctx, 66)
+	if err == nil || !strings.Contains(err.Error(), "migration 000067 is irreversible") {
+		t.Fatalf("необратимый down не защищён: %v", err)
+	}
+	if err = database.MigrateUp(ctx); err != nil {
+		t.Fatalf("восстановить reversible-миграции после защищённого down: %v", err)
+	}
+	assertMigrationState(t, database, goose.StateApplied)
+	assertBootstrapState(t, database)
+}
+
+// TestMigrationSchemaGuards проверяет bootstrap и отсутствие исключённых MVP-таблиц.
+func TestMigrationSchemaGuards(t *testing.T) {
+	database := postgresSuite.NewDatabase(t)
+	ctx := context.Background()
+	assertBootstrapState(t, database)
+
+	for _, table := range []string{"pages", "page_templates", "policies", "versions", "components_legacy", "domain_dependencies", "domain_dependency_states"} {
+		var exists bool
+		if err := database.Pool.QueryRow(ctx, `SELECT to_regclass('public.' || $1) IS NOT NULL`, table).Scan(&exists); err != nil {
+			t.Fatalf("проверить исключённую таблицу %s: %v", table, err)
+		}
+		if exists {
+			t.Fatalf("исключённая таблица %s присутствует в MVP schema", table)
+		}
+	}
+
+	var accessTokenColumn, identityRefreshColumn bool
+	if err := database.Pool.QueryRow(ctx, `SELECT
+		EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='configurator_auth_sessions' AND column_name='access_token_encrypted'),
+		EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='configurator_auth_sessions' AND column_name='identity_refresh_at')`).Scan(&accessTokenColumn, &identityRefreshColumn); err != nil {
+		t.Fatalf("проверить auth session schema: %v", err)
+	}
+	if accessTokenColumn || !identityRefreshColumn {
+		t.Fatalf("неверная auth session schema: access_token_encrypted=%t identity_refresh_at=%t", accessTokenColumn, identityRefreshColumn)
+	}
+}
+
+// TestVocabSourceMigrationBackfillsLegacy проверяет sourceVersion 1 и env-проекцию legacy Vocab.
+func TestVocabSourceMigrationBackfillsLegacy(t *testing.T) {
+	database := postgresSuite.NewDatabaseAt(t, 51)
+	ctx := context.Background()
+	if _, err := database.Pool.Exec(ctx, `INSERT INTO workspaces(
+		id, identity, display_name, created_by, updated_by
+	) VALUES (
+		'00000000-0000-0000-0000-000000000010', 'migration-vocab', 'Migration Vocab',
+		'00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001'
+	)`); err != nil {
+		t.Fatalf("создать workspace старой схемы: %v", err)
+	}
+
+	_, err := database.Pool.Exec(ctx, `INSERT INTO vocabs(
+		workspace_id, identity, display_name, data, created_by, updated_by
+	) VALUES (
+		'00000000-0000-0000-0000-000000000010', 'airlines', 'Airlines',
+		'{"mode":"external_payload","baseApiUrl":"{ENDPOINT_VOCABS_SERVICE}","collectionSlug":"airlines","authMode":"inherit"}'::jsonb,
+		'00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001'
+	)`)
+	if err != nil {
+		t.Fatalf("создать legacy Vocab: %v", err)
+	}
+	if err = database.MigrateUpTo(ctx, 54); err != nil {
+		t.Fatalf("применить Vocab source migration: %v", err)
+	}
+
+	var source string
+	var sourceVersion int
+	if err = database.Pool.QueryRow(ctx, `SELECT data->>'source', (data->>'sourceVersion')::int FROM vocabs WHERE identity='airlines'`).Scan(&source, &sourceVersion); err != nil {
+		t.Fatalf("прочитать migrated Vocab: %v", err)
+	}
+	for _, fragment := range []string{
+		"defineVocab({", `baseUrl: env("ENDPOINT_VOCABS_SERVICE")`, `collection: "airlines"`, `auth: { mode: "inherit" }`, "items: output().from(response())",
+	} {
+		if !strings.Contains(source, fragment) {
+			t.Fatalf("migrated source не содержит %q: %s", fragment, source)
+		}
+	}
+	if sourceVersion != 1 {
+		t.Fatalf("sourceVersion=%d, ожидался 1", sourceVersion)
+	}
+}
+
+func assertMigrationState(t *testing.T, database interface {
+	MigrationStatus(context.Context) ([]*goose.MigrationStatus, error)
+}, expected goose.State) {
+	t.Helper()
+	statuses, err := database.MigrationStatus(context.Background())
+	if err != nil {
+		t.Fatalf("получить migration status: %v", err)
+	}
+	if len(statuses) == 0 {
+		t.Fatal("список embedded-миграций пуст")
+	}
+	for index, status := range statuses {
+		if status.Source == nil {
+			t.Fatalf("неожиданная migration position %d: %#v", index, status.Source)
+		}
+		if index == 0 && status.Source.Version != 1 {
+			t.Fatalf("первая migration имеет version %d, ожидалась 1", status.Source.Version)
+		}
+		if index > 0 && status.Source.Version != statuses[index-1].Source.Version+1 {
+			t.Fatalf("нарушена последовательность migration: после %d идёт %d", statuses[index-1].Source.Version, status.Source.Version)
+		}
+		if status.State != expected {
+			t.Fatalf("migration %d имеет state %s, ожидался %s", status.Source.Version, status.State, expected)
+		}
+	}
+}
+
+func assertBootstrapState(t *testing.T, database *support.TestDatabase) {
+	t.Helper()
+	ctx := context.Background()
+	checks := []struct {
+		name  string
+		query string
+		want  int
+	}{
+		{name: "system user", query: `SELECT count(*) FROM service_users WHERE id='00000000-0000-0000-0000-000000000001' AND is_system`, want: 1},
+		{name: "no default workspace", query: `SELECT count(*) FROM workspaces WHERE identity='default'`, want: 0},
+		{name: "no bootstrapped workspace", query: `SELECT count(*) FROM workspaces`, want: 0},
+	}
+	for _, check := range checks {
+		var count int
+		if err := database.Pool.QueryRow(ctx, check.query).Scan(&count); err != nil {
+			t.Fatalf("проверить %s: %v", check.name, err)
+		}
+		if count != check.want {
+			t.Fatalf("%s: count=%d, ожидалось %d", check.name, count, check.want)
+		}
+	}
+}

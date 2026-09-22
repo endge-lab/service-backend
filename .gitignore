@@ -1,0 +1,20 @@
+tmp/
+main
+.DS_Store
+.idea/
+.vscode/
+.env
+.env.*
+!.env.*.example
+/endge-access.development.yaml
+/configs/development.yaml
+/configs/production.yaml
+/configs/local.yaml
+/config/local.yaml
+
+# Go test artifacts
+**/testdata/fuzz/
+*.test
+coverage.out
+*.coverprofile
+*.prof
