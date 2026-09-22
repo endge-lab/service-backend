@@ -1,0 +1,478 @@
+package postgres
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
+
+	"github.com/endge-lab/service-backend/internal/domain/entities"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+)
+
+func tableFor(kind string) (string, error) {
+	table, ok := documentTables[kind]
+	if !ok {
+		return "", fmt.Errorf("unsupported document type %q", kind)
+	}
+	return table, nil
+}
+
+func (r *EndgeRepository) ListDocuments(ctx context.Context, workspaceID, kind string, filter ports.DocumentFilter) ([]entities.Document, error) {
+	if kind == entities.CollectionFacets {
+		values, err := r.ListFacets(ctx, workspaceID, filter.IncludeDeleted)
+		return filterSpecialDocuments(values, filter), err
+	}
+	if kind == entities.CollectionFacetDocuments {
+		values, err := r.listAllFacetDocuments(ctx, workspaceID, filter.IncludeDeleted)
+		return filterSpecialDocuments(values, filter), err
+	}
+	table, err := tableFor(kind)
+	if err != nil {
+		return nil, err
+	}
+	args := []any{workspaceID}
+	where := []string{"d.workspace_id=$1"}
+	if !filter.IncludeDeleted {
+		where = append(where, "d.deleted_at IS NULL")
+	}
+	if filter.FolderIdentity != nil {
+		args = append(args, *filter.FolderIdentity)
+		where = append(where, fmt.Sprintf("f.identity=$%d", len(args)))
+	}
+	if filter.Active != nil {
+		args = append(args, *filter.Active)
+		where = append(where, fmt.Sprintf("d.active=$%d", len(args)))
+	}
+	args = append(args, filter.Limit, filter.Offset)
+	query := documentSelect(table, kind) + ` WHERE ` + strings.Join(where, " AND ") + fmt.Sprintf(" ORDER BY d.identity LIMIT $%d OFFSET $%d", len(args)-1, len(args))
+	rows, err := r.executor(ctx).Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := []entities.Document{}
+	for rows.Next() {
+		v, err := scanDocument(rows, kind)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, *v)
+	}
+	return result, rows.Err()
+}
+
+// ListArchivedDocuments читает metadata tombstones восстанавливаемых документов.
+// Папки, facets и facet documents в этот архив не входят.
+func (r *EndgeRepository) ListArchivedDocuments(ctx context.Context, workspaceID string, limit, offset int) ([]entities.ArchivedDocument, error) {
+	parts := make([]string, 0, len(entities.DocumentCollections))
+	for _, kind := range entities.DocumentCollections {
+		if kind == entities.CollectionFolders {
+			continue
+		}
+		table, err := tableFor(kind)
+		if err != nil {
+			return nil, err
+		}
+		parts = append(parts, fmt.Sprintf(
+			`SELECT '%s' AS type,d.identity,d.display_name,d.description,d.deleted_at,d.revision FROM %s d WHERE d.workspace_id=$1 AND d.deleted_at IS NOT NULL`,
+			kind, table,
+		))
+	}
+	rows, err := r.executor(ctx).Query(ctx, strings.Join(parts, " UNION ALL ")+` ORDER BY deleted_at DESC,type,identity LIMIT $2 OFFSET $3`, workspaceID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := make([]entities.ArchivedDocument, 0, limit)
+	for rows.Next() {
+		var value entities.ArchivedDocument
+		if err = rows.Scan(&value.Type, &value.Identity, &value.DisplayName, &value.Description, &value.DeletedAt, &value.Revision); err != nil {
+			return nil, err
+		}
+		result = append(result, value)
+	}
+	return result, rows.Err()
+}
+
+// listAllActiveDocuments читает полный набор документов для snapshot/export без
+// пользовательской пагинации и искусственного ограничения размера коллекции.
+func (r *EndgeRepository) listAllActiveDocuments(ctx context.Context, workspaceID, kind string) ([]entities.Document, error) {
+	return r.listAllDocuments(ctx, workspaceID, kind, false)
+}
+
+// listAllDocuments читает полный набор документов без пользовательской пагинации.
+func (r *EndgeRepository) listAllDocuments(ctx context.Context, workspaceID, kind string, includeDeleted bool) ([]entities.Document, error) {
+	if kind == entities.CollectionFacets {
+		return r.ListFacets(ctx, workspaceID, includeDeleted)
+	}
+	if kind == entities.CollectionFacetDocuments {
+		return r.listAllFacetDocuments(ctx, workspaceID, includeDeleted)
+	}
+	table, err := tableFor(kind)
+	if err != nil {
+		return nil, err
+	}
+	where := ` WHERE d.workspace_id=$1`
+	if !includeDeleted {
+		where += ` AND d.deleted_at IS NULL`
+	}
+	rows, err := r.executor(ctx).Query(ctx, documentSelect(table, kind)+where+` ORDER BY d.identity`, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := []entities.Document{}
+	for rows.Next() {
+		value, scanErr := scanDocument(rows, kind)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		result = append(result, *value)
+	}
+	return result, rows.Err()
+}
+
+// ListAllDocuments читает полную коллекцию workspace без пользовательской пагинации.
+func (r *EndgeRepository) ListAllDocuments(ctx context.Context, workspaceID, kind string, includeDeleted bool) ([]entities.Document, error) {
+	return r.listAllDocuments(ctx, workspaceID, kind, includeDeleted)
+}
+func (r *EndgeRepository) GetDocument(ctx context.Context, workspaceID, kind, identity string, includeDeleted bool) (*entities.Document, error) {
+	if kind == entities.CollectionFacets {
+		return r.GetFacet(ctx, workspaceID, identity, includeDeleted)
+	}
+	if kind == entities.CollectionFacetDocuments {
+		facetIdentity, documentIdentity, ok := splitFacetDocumentIdentity(identity)
+		if !ok {
+			return nil, ports.ErrNotFound
+		}
+		return r.GetFacetDocument(ctx, workspaceID, facetIdentity, documentIdentity, includeDeleted)
+	}
+	table, err := tableFor(kind)
+	if err != nil {
+		return nil, err
+	}
+	query := documentSelect(table, kind) + ` WHERE d.workspace_id=$1 AND d.identity=$2`
+	if !includeDeleted {
+		query += ` AND d.deleted_at IS NULL`
+	}
+	return scanDocument(r.executor(ctx).QueryRow(ctx, query, workspaceID, identity), kind)
+}
+
+func documentSelect(table, kind string) string {
+	data := "d.data"
+	folderJoin := "LEFT JOIN folders f ON f.id=d.folder_id AND f.workspace_id=d.workspace_id"
+	workspaceFolderIdentity := "wf.identity"
+	folderJoin += " JOIN folders wf ON wf.id=d.workspace_folder_id AND wf.workspace_id=d.workspace_id AND wf.scope='workspace'"
+	switch kind {
+	case entities.CollectionFolders:
+		data = `jsonb_build_object('scope',d.scope,'entityType',d.entity_type,'parentIdentity',pf.identity,'isRoot',d.is_root,'icon',d.icon,'color',d.color)`
+		folderJoin = "LEFT JOIN folders f ON f.id=d.parent_id AND f.workspace_id=d.workspace_id LEFT JOIN folders pf ON pf.id=d.parent_id AND pf.workspace_id=d.workspace_id"
+		workspaceFolderIdentity = "NULL::text"
+	case entities.CollectionUpdates:
+		data = `(d.data - 'storeIdentity') || jsonb_build_object('storeIdentity',store.identity)`
+		folderJoin += " JOIN stores store ON store.id=d.store_id AND store.workspace_id=d.workspace_id"
+	case entities.CollectionVocabs:
+		data = `(d.data - 'authProfileIdentity') || jsonb_build_object('authProfileIdentity',auth_profile.identity)`
+		folderJoin += " LEFT JOIN auth_profiles auth_profile ON auth_profile.id=d.auth_profile_id AND auth_profile.workspace_id=d.workspace_id"
+	}
+	return `SELECT d.id::text,d.workspace_id::text,d.identity,d.display_name,d.description,f.identity,` + workspaceFolderIdentity + `,d.managed_by,d.managed_by_id,d.meta,` + data + `,d.active,d.deleted_at,d.revision,` + actorScan("cu") + `,` + actorScan("uu") + `,d.created_at,d.updated_at FROM ` + table + ` d ` + folderJoin + ` JOIN service_users cu ON cu.id=d.created_by JOIN service_users uu ON uu.id=d.updated_by`
+}
+func scanDocument(row scanner, kind string) (*entities.Document, error) {
+	v := &entities.Document{Type: kind}
+	var created, updated []byte
+	if err := row.Scan(&v.ID, &v.WorkspaceID, &v.Identity, &v.DisplayName, &v.Description, &v.FolderIdentity, &v.WorkspaceFolderIdentity, &v.ManagedBy, &v.ManagedByID, &v.Meta, &v.Data, &v.Active, &v.DeletedAt, &v.Revision, &created, &updated, &v.CreatedAt, &v.UpdatedAt); err != nil {
+		return nil, repositoryError(err)
+	}
+	_ = json.Unmarshal(created, &v.CreatedBy)
+	_ = json.Unmarshal(updated, &v.UpdatedBy)
+	return v, nil
+}
+
+func (r *EndgeRepository) InsertDocument(ctx context.Context, v entities.Document, folderID *string) (*entities.Document, error) {
+	if v.Type == entities.CollectionFacets {
+		return r.InsertFacet(ctx, v)
+	}
+	if v.Type == entities.CollectionFacetDocuments {
+		return r.InsertFacetDocument(ctx, v)
+	}
+	table, err := tableFor(v.Type)
+	if err != nil {
+		return nil, err
+	}
+	workspaceFolderID, err := r.resolveDocumentWorkspaceFolderID(ctx, v)
+	if err != nil {
+		return nil, err
+	}
+	switch v.Type {
+	case entities.CollectionFolders:
+		var data map[string]any
+		_ = json.Unmarshal(v.Data, &data)
+		_, err = r.executor(ctx).Exec(ctx, `INSERT INTO folders(id,workspace_id,identity,display_name,description,entity_type,scope,parent_id,is_root,icon,color,managed_by,managed_by_id,meta,active,deleted_at,created_by,updated_by,revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$17,$18)`, v.ID, v.WorkspaceID, v.Identity, v.DisplayName, v.Description, nullableStringValue(data["entityType"]), defaultStringValue(data["scope"], entities.FolderScopeCollection), folderID, boolValue(data["isRoot"]), nullableStringValue(data["icon"]), nullableStringValue(data["color"]), v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.CreatedBy.ID, v.Revision)
+	case entities.CollectionUpdates:
+		data, storeIdentity, relationErr := relationData(v.Data, "storeIdentity")
+		if relationErr != nil {
+			return nil, relationErr
+		}
+		storeID, relationErr := r.resolveActiveDocumentID(ctx, v.WorkspaceID, entities.CollectionStores, storeIdentity)
+		if relationErr != nil {
+			return nil, relationErr
+		}
+		_, err = r.executor(ctx).Exec(ctx, `INSERT INTO updates(id,workspace_id,identity,display_name,description,folder_id,workspace_folder_id,data,store_id,managed_by,managed_by_id,meta,active,deleted_at,created_by,updated_by,revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$15,$16)`, v.ID, v.WorkspaceID, v.Identity, v.DisplayName, v.Description, folderID, workspaceFolderID, data, storeID, v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.CreatedBy.ID, v.Revision)
+	case entities.CollectionVocabs:
+		data, authProfileIdentity, relationErr := relationData(v.Data, "authProfileIdentity")
+		if relationErr != nil {
+			return nil, relationErr
+		}
+		var authProfileID *string
+		if authProfileIdentity != "" {
+			resolved, resolveErr := r.resolveActiveDocumentID(ctx, v.WorkspaceID, entities.CollectionAuthProfiles, authProfileIdentity)
+			if resolveErr != nil {
+				return nil, resolveErr
+			}
+			authProfileID = &resolved
+		}
+		_, err = r.executor(ctx).Exec(ctx, `INSERT INTO vocabs(id,workspace_id,identity,display_name,description,folder_id,workspace_folder_id,data,auth_profile_id,managed_by,managed_by_id,meta,active,deleted_at,created_by,updated_by,revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$15,$16)`, v.ID, v.WorkspaceID, v.Identity, v.DisplayName, v.Description, folderID, workspaceFolderID, data, authProfileID, v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.CreatedBy.ID, v.Revision)
+	default:
+		_, err = r.executor(ctx).Exec(ctx, `INSERT INTO `+table+`(id,workspace_id,identity,display_name,description,folder_id,workspace_folder_id,data,managed_by,managed_by_id,meta,active,deleted_at,created_by,updated_by,revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$15)`, v.ID, v.WorkspaceID, v.Identity, v.DisplayName, v.Description, folderID, workspaceFolderID, v.Data, v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.CreatedBy.ID, v.Revision)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return r.GetDocument(ctx, v.WorkspaceID, v.Type, v.Identity, true)
+}
+func (r *EndgeRepository) UpdateDocument(ctx context.Context, v entities.Document, expected int, folderID *string) (*entities.Document, error) {
+	if v.Type == entities.CollectionFacets {
+		return r.UpdateFacet(ctx, v, expected)
+	}
+	if v.Type == entities.CollectionFacetDocuments {
+		return r.UpdateFacetDocument(ctx, v, expected)
+	}
+	table, err := tableFor(v.Type)
+	if err != nil {
+		return nil, err
+	}
+	workspaceFolderID, err := r.resolveDocumentWorkspaceFolderID(ctx, v)
+	if err != nil {
+		return nil, err
+	}
+	var tag pgconn.CommandTag
+	switch v.Type {
+	case entities.CollectionFolders:
+		var data map[string]any
+		_ = json.Unmarshal(v.Data, &data)
+		tag, err = r.executor(ctx).Exec(ctx, `UPDATE folders SET identity=$1,display_name=$2,description=$3,entity_type=$4,scope=$5,parent_id=$6,is_root=$7,icon=$8,color=$9,managed_by=$10,managed_by_id=$11,meta=$12,active=$13,deleted_at=$14,updated_by=$15,updated_at=NOW(),revision=revision+1 WHERE id=$16 AND workspace_id=$17 AND revision=$18`, v.Identity, v.DisplayName, v.Description, nullableStringValue(data["entityType"]), defaultStringValue(data["scope"], entities.FolderScopeCollection), folderID, boolValue(data["isRoot"]), nullableStringValue(data["icon"]), nullableStringValue(data["color"]), v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.UpdatedBy.ID, v.ID, v.WorkspaceID, expected)
+	case entities.CollectionUpdates:
+		data, storeIdentity, relationErr := relationData(v.Data, "storeIdentity")
+		if relationErr != nil {
+			return nil, relationErr
+		}
+		storeID, relationErr := r.resolveUpdatedDocumentRelation(ctx, v.WorkspaceID, entities.CollectionUpdates, "store_id", v.ID, entities.CollectionStores, storeIdentity)
+		if relationErr != nil {
+			return nil, relationErr
+		}
+		tag, err = r.executor(ctx).Exec(ctx, `UPDATE updates SET identity=$1,display_name=$2,description=$3,folder_id=$4,workspace_folder_id=$5,data=$6,store_id=$7,managed_by=$8,managed_by_id=$9,meta=$10,active=$11,deleted_at=$12,updated_by=$13,updated_at=NOW(),revision=revision+1 WHERE id=$14 AND workspace_id=$15 AND revision=$16`, v.Identity, v.DisplayName, v.Description, folderID, workspaceFolderID, data, storeID, v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.UpdatedBy.ID, v.ID, v.WorkspaceID, expected)
+	case entities.CollectionVocabs:
+		data, authProfileIdentity, relationErr := relationData(v.Data, "authProfileIdentity")
+		if relationErr != nil {
+			return nil, relationErr
+		}
+		var authProfileID *string
+		if authProfileIdentity != "" {
+			resolved, resolveErr := r.resolveUpdatedDocumentRelation(ctx, v.WorkspaceID, entities.CollectionVocabs, "auth_profile_id", v.ID, entities.CollectionAuthProfiles, authProfileIdentity)
+			if resolveErr != nil {
+				return nil, resolveErr
+			}
+			authProfileID = &resolved
+		}
+		tag, err = r.executor(ctx).Exec(ctx, `UPDATE vocabs SET identity=$1,display_name=$2,description=$3,folder_id=$4,workspace_folder_id=$5,data=$6,auth_profile_id=$7,managed_by=$8,managed_by_id=$9,meta=$10,active=$11,deleted_at=$12,updated_by=$13,updated_at=NOW(),revision=revision+1 WHERE id=$14 AND workspace_id=$15 AND revision=$16`, v.Identity, v.DisplayName, v.Description, folderID, workspaceFolderID, data, authProfileID, v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.UpdatedBy.ID, v.ID, v.WorkspaceID, expected)
+	default:
+		tag, err = r.executor(ctx).Exec(ctx, `UPDATE `+table+` SET identity=$1,display_name=$2,description=$3,folder_id=$4,workspace_folder_id=$5,data=$6,managed_by=$7,managed_by_id=$8,meta=$9,active=$10,deleted_at=$11,updated_by=$12,updated_at=NOW(),revision=revision+1 WHERE id=$13 AND workspace_id=$14 AND revision=$15`, v.Identity, v.DisplayName, v.Description, folderID, workspaceFolderID, v.Data, v.ManagedBy, v.ManagedByID, v.Meta, v.Active, v.DeletedAt, v.UpdatedBy.ID, v.ID, v.WorkspaceID, expected)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if tag.RowsAffected() != 1 {
+		return nil, fmt.Errorf("revision conflict")
+	}
+	return r.GetDocument(ctx, v.WorkspaceID, v.Type, v.Identity, true)
+}
+
+// UpdateDocumentWorkspaceFolder меняет только независимое Workspace-размещение документа.
+// Специализированная операция не переписывает payload и типизированный folder_id.
+func (r *EndgeRepository) UpdateDocumentWorkspaceFolder(ctx context.Context, workspaceID, kind, identity, workspaceFolderID, actorID string, expected int) (*entities.Document, error) {
+	if kind == entities.CollectionFolders || kind == entities.CollectionFacets || kind == entities.CollectionFacetDocuments {
+		return nil, fmt.Errorf("workspace folder placement is unsupported for %q", kind)
+	}
+	table, err := tableFor(kind)
+	if err != nil {
+		return nil, err
+	}
+	tag, err := r.executor(ctx).Exec(ctx, `UPDATE `+table+` SET workspace_folder_id=$1,updated_by=$2,updated_at=NOW(),revision=revision+1 WHERE workspace_id=$3 AND identity=$4 AND revision=$5`, workspaceFolderID, actorID, workspaceID, identity, expected)
+	if err != nil {
+		return nil, err
+	}
+	if tag.RowsAffected() != 1 {
+		return nil, fmt.Errorf("revision conflict")
+	}
+	return r.GetDocument(ctx, workspaceID, kind, identity, true)
+}
+
+func (r *EndgeRepository) resolveDocumentWorkspaceFolderID(ctx context.Context, document entities.Document) (*string, error) {
+	if document.Type == entities.CollectionFolders || document.Type == entities.CollectionFacets || document.Type == entities.CollectionFacetDocuments {
+		return nil, nil
+	}
+	identity := entities.WorkspaceRootFolderIdentity
+	if document.WorkspaceFolderIdentity != nil && strings.TrimSpace(*document.WorkspaceFolderIdentity) != "" {
+		identity = strings.TrimSpace(*document.WorkspaceFolderIdentity)
+	}
+	return r.ResolveFolder(ctx, document.WorkspaceID, identity, "")
+}
+
+func filterSpecialDocuments(values []entities.Document, filter ports.DocumentFilter) []entities.Document {
+	filtered := make([]entities.Document, 0, len(values))
+	for _, value := range values {
+		if filter.Active != nil && value.Active != *filter.Active {
+			continue
+		}
+		filtered = append(filtered, value)
+	}
+	start := filter.Offset
+	if start < 0 {
+		start = 0
+	}
+	if start >= len(filtered) {
+		return []entities.Document{}
+	}
+	end := len(filtered)
+	if filter.Limit > 0 && start+filter.Limit < end {
+		end = start + filter.Limit
+	}
+	return filtered[start:end]
+}
+
+func splitFacetDocumentIdentity(value string) (string, string, bool) {
+	parts := strings.SplitN(value, "/", 2)
+	if len(parts) != 2 || strings.TrimSpace(parts[0]) == "" || strings.TrimSpace(parts[1]) == "" {
+		return "", "", false
+	}
+	return strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]), true
+}
+
+func (r *EndgeRepository) MoveFolderContents(ctx context.Context, workspaceID, folderID string, parentID *string, actor string) ([]entities.Document, error) {
+	result := []entities.Document{}
+	type movedIdentity struct{ kind, identity string }
+	movedIdentities := []movedIdentity{}
+	var folderScope string
+	if err := r.executor(ctx).QueryRow(ctx, `SELECT scope FROM folders WHERE workspace_id=$1 AND id=$2`, workspaceID, folderID).Scan(&folderScope); err != nil {
+		return nil, repositoryError(err)
+	}
+	for kind, table := range documentTables {
+		column := "folder_id"
+		if kind == entities.CollectionFolders {
+			column = "parent_id"
+		} else if folderScope == entities.FolderScopeWorkspace {
+			column = "workspace_folder_id"
+		}
+		rows, err := r.executor(ctx).Query(ctx, `UPDATE `+table+` SET `+column+`=$1,updated_by=$2,updated_at=NOW(),revision=revision+1 WHERE workspace_id=$3 AND `+column+`=$4 AND deleted_at IS NULL RETURNING identity`, parentID, actor, workspaceID, folderID)
+		if err != nil {
+			return nil, err
+		}
+		for rows.Next() {
+			var identity string
+			if err := rows.Scan(&identity); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			movedIdentities = append(movedIdentities, movedIdentity{kind: kind, identity: identity})
+		}
+		if err = rows.Err(); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		rows.Close()
+	}
+	for _, moved := range movedIdentities {
+		value, err := r.GetDocument(ctx, workspaceID, moved.kind, moved.identity, true)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, *value)
+	}
+	return result, nil
+}
+func (r *EndgeRepository) ResolveFolder(ctx context.Context, workspaceID, identity, entityType string) (*string, error) {
+	if strings.TrimSpace(identity) == "" {
+		return nil, nil
+	}
+	var id string
+	query := `SELECT id::text FROM folders WHERE workspace_id=$1 AND identity=$2 AND deleted_at IS NULL`
+	args := []any{workspaceID, identity}
+	if strings.TrimSpace(entityType) == "" {
+		query += ` AND scope='workspace' AND entity_type IS NULL`
+	} else {
+		query += ` AND scope='collection' AND entity_type=$3`
+		args = append(args, entityType)
+	}
+	err := r.executor(ctx).QueryRow(ctx, query, args...).Scan(&id)
+	if err != nil {
+		return nil, repositoryError(err)
+	}
+	return &id, nil
+}
+
+func (r *EndgeRepository) FolderWouldCycle(ctx context.Context, workspaceID, folderID, parentID string) (bool, error) {
+	var cycle bool
+	err := r.executor(ctx).QueryRow(ctx, `WITH RECURSIVE ancestors AS (
+		SELECT id,parent_id FROM folders WHERE workspace_id=$1 AND id=$2
+		UNION ALL
+		SELECT f.id,f.parent_id FROM folders f JOIN ancestors a ON f.id=a.parent_id WHERE f.workspace_id=$1
+	) SELECT EXISTS(SELECT 1 FROM ancestors WHERE id=$3)`, workspaceID, parentID, folderID).Scan(&cycle)
+	return cycle, err
+}
+
+func (r *EndgeRepository) resolveActiveDocumentID(ctx context.Context, workspaceID, kind, identity string) (string, error) {
+	table, err := tableFor(kind)
+	if err != nil {
+		return "", err
+	}
+	var id string
+	if err = r.executor(ctx).QueryRow(ctx, `SELECT id::text FROM `+table+` WHERE workspace_id=$1 AND identity=$2 AND deleted_at IS NULL`, workspaceID, identity).Scan(&id); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", fmt.Errorf("relation target %s:%s not found", kind, identity)
+		}
+		return "", err
+	}
+	return id, nil
+}
+
+func (r *EndgeRepository) resolveUpdatedDocumentRelation(ctx context.Context, workspaceID, sourceTable, sourceColumn, sourceID, targetKind, identity string) (string, error) {
+	targetTable, err := tableFor(targetKind)
+	if err != nil {
+		return "", err
+	}
+	var currentID, currentIdentity string
+	err = r.executor(ctx).QueryRow(ctx, `SELECT target.id::text,target.identity FROM `+sourceTable+` source
+		JOIN `+targetTable+` target ON target.workspace_id=source.workspace_id AND target.id=source.`+sourceColumn+`
+		WHERE source.workspace_id=$1 AND source.id=$2`, workspaceID, sourceID).Scan(&currentID, &currentIdentity)
+	if err == nil && currentIdentity == identity {
+		return currentID, nil
+	}
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return "", err
+	}
+	return r.resolveActiveDocumentID(ctx, workspaceID, targetKind, identity)
+}
+
+func relationData(raw json.RawMessage, field string) (json.RawMessage, string, error) {
+	data := map[string]any{}
+	if err := json.Unmarshal(raw, &data); err != nil {
+		return nil, "", fmt.Errorf("document data is invalid: %w", err)
+	}
+	identity := strings.TrimSpace(stringValue(data[field]))
+	delete(data, field)
+	return mustJSON(data), identity, nil
+}

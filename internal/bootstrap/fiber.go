@@ -1,0 +1,28 @@
+package bootstrap
+
+import (
+	"fmt"
+
+	"github.com/endge-lab/service-backend/internal/config"
+	servicefiber "github.com/endge-lab/service-kit-go/pkg/httpkit/fiber"
+
+	"github.com/gofiber/fiber/v2"
+	"go.uber.org/fx"
+	"go.uber.org/zap"
+)
+
+func NewFiber(
+	lc fx.Lifecycle,
+	cfg *config.Config,
+	logger *zap.Logger,
+) *fiber.App {
+	app := fiber.New(fiber.Config{
+		AppName:        cfg.App.Name,
+		BodyLimit:      16 * 1024 * 1024,
+		ReadBufferSize: 32 * 1024, // Вмещает OIDC JWT с корпоративными group claims.
+	})
+
+	servicefiber.RegisterLifecycle(lc, app, fmt.Sprintf(":%s", cfg.HTTP.Port), logger)
+
+	return app
+}

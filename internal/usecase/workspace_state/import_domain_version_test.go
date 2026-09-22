@@ -1,0 +1,131 @@
+package workspace_state
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/endge-lab/service-backend/internal/domain/domainversion"
+	"github.com/endge-lab/service-backend/internal/domain/entities"
+)
+
+func TestFinalizeImportDomainVersionKeepsCanonicalHashWhileApplyingSFCEditingDefaults(t *testing.T) {
+	bundle := entities.PortableBundle{
+		Kind:          "workspace-snapshot",
+		SchemaVersion: 1,
+		Workspace: map[string]any{
+			"displayName":   "Imported workspace",
+			"dataMode":      "development",
+			"configuration": map[string]any{},
+		},
+		Documents: map[string][]map[string]any{},
+	}
+	sourceDomainVersion, err := domainversion.Compute(bundle)
+	if err != nil {
+		t.Fatalf("compute source domain version: %v", err)
+	}
+	bundle.DomainVersion = sourceDomainVersion
+
+	defaultsAdded, err := finalizeImportDomainVersion(&bundle, bundle.DomainVersion)
+	if err != nil {
+		t.Fatalf("finalize import domain version: %v", err)
+	}
+	if !defaultsAdded {
+		t.Fatal("SFC editing defaults were not added")
+	}
+	if configurations, exists := bundle.Documents["configurations"]; !exists || len(configurations) != 0 {
+		t.Fatalf("legacy snapshot was not normalized with an empty configurations collection: %#v", bundle.Documents)
+	}
+	if bundle.DomainVersion != sourceDomainVersion {
+		t.Fatalf("canonical domain version changed after applying defaults: got %q, want %q", bundle.DomainVersion, sourceDomainVersion)
+	}
+
+	effectiveDomainVersion, err := domainversion.Compute(bundle)
+	if err != nil {
+		t.Fatalf("compute effective domain version: %v", err)
+	}
+	if bundle.DomainVersion != effectiveDomainVersion {
+		t.Fatalf("stored domain version does not match migrated snapshot: got %q, want %q", bundle.DomainVersion, effectiveDomainVersion)
+	}
+}
+
+func TestLegacyDV1IsVerifiedBeforeCanonicalActionMigrationAndStoredAsDV2(t *testing.T) {
+	bundle := entities.PortableBundle{
+		Kind:          "workspace-snapshot",
+		SchemaVersion: 1,
+		Workspace: map[string]any{
+			"displayName": "Imported workspace",
+			"dataMode":    "development",
+		},
+		Documents: map[string][]map[string]any{
+			"actions": {{
+				"identity":    "orders.open",
+				"displayName": "Open order",
+				"definition":  map[string]any{"nodes": []any{}, "edges": []any{}},
+			}},
+			"configurations": {},
+		},
+	}
+	providedDomainVersion, err := domainversion.ComputeForDeclaredVersion(bundle, "dv1:sha256:"+strings.Repeat("0", 64))
+	if err != nil {
+		t.Fatalf("compute source domain version: %v", err)
+	}
+	bundle.DomainVersion = providedDomainVersion
+
+	computedSourceDomainVersion, normalization, err := normalizePortableBundleForImport(&bundle)
+	if err != nil {
+		t.Fatalf("normalize portable bundle for import: %v", err)
+	}
+	if computedSourceDomainVersion != providedDomainVersion {
+		t.Fatalf("source domain version mismatch: got %q, want %q", computedSourceDomainVersion, providedDomainVersion)
+	}
+	if normalization.MigratedLegacyActions != 1 {
+		t.Fatalf("legacy Action was not migrated: %+v", normalization)
+	}
+	normalizedDomainVersion, err := domainversion.Compute(bundle)
+	if err != nil {
+		t.Fatalf("compute normalized domain version: %v", err)
+	}
+	if !strings.HasPrefix(normalizedDomainVersion, "dv2:sha256:") {
+		t.Fatalf("normalized domain version does not use current contract: %q", normalizedDomainVersion)
+	}
+
+	if _, err = finalizeImportDomainVersion(&bundle, providedDomainVersion); err != nil {
+		t.Fatalf("finalize import domain version: %v", err)
+	}
+	if bundle.DomainVersion != normalizedDomainVersion {
+		t.Fatalf("effective domain version mismatch: got %q, want %q", bundle.DomainVersion, normalizedDomainVersion)
+	}
+}
+
+func TestNormalizePortableBundleCorrectsStaleFacetDocumentCountsAfterSourceVerification(t *testing.T) {
+	bundle := entities.PortableBundle{
+		Kind:          "workspace-snapshot",
+		SchemaVersion: 9,
+		Workspace:     map[string]any{"displayName": "Imported workspace", "dataMode": "development"},
+		Documents: map[string][]map[string]any{
+			entities.CollectionFacets: {{"identity": "project", "documentCount": float64(1)}},
+			entities.CollectionFacetDocuments: {{
+				"facetIdentity": "project", "identity": "legacy-project", "deleted": true,
+			}},
+		},
+	}
+	providedDomainVersion, err := domainversion.Compute(bundle)
+	if err != nil {
+		t.Fatalf("compute source domain version: %v", err)
+	}
+	bundle.DomainVersion = providedDomainVersion
+
+	computedSourceDomainVersion, normalization, err := normalizePortableBundleForImport(&bundle)
+	if err != nil {
+		t.Fatalf("normalize portable bundle for import: %v", err)
+	}
+	if computedSourceDomainVersion != providedDomainVersion {
+		t.Fatalf("source domain version was not verified before normalization: got %q, want %q", computedSourceDomainVersion, providedDomainVersion)
+	}
+	if normalization.NormalizedFacetDocumentCounts != 1 {
+		t.Fatalf("stale facet document count was not reported: %+v", normalization)
+	}
+	if count, valid := numberField(bundle.Documents[entities.CollectionFacets][0], "documentCount"); !valid || count != 0 {
+		t.Fatalf("stale facet document count was not normalized: %#v", bundle.Documents[entities.CollectionFacets][0])
+	}
+}

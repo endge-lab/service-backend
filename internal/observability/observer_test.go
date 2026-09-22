@@ -1,0 +1,140 @@
+package observability
+
+import (
+	"context"
+	"errors"
+	"testing"
+	"time"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
+)
+
+type recorderStub struct {
+	operation string
+	err       error
+}
+
+func (r *recorderStub) Record(_ context.Context, operation string, _ time.Time, err error) {
+	r.operation = operation
+	r.err = err
+}
+
+// TestObserverCreatesChildSpanAndRecordsOperation проверяет дочерний span и запись операции.
+func TestObserverCreatesChildSpanAndRecordsOperation(t *testing.T) {
+	t.Parallel()
+
+	spans := tracetest.NewSpanRecorder()
+	provider := trace.NewTracerProvider(trace.WithSpanProcessor(spans))
+	defer func() { _ = provider.Shutdown(context.Background()) }()
+
+	ctx, parent := provider.Tracer("test").Start(context.Background(), "http.request")
+	recorder := &recorderStub{}
+	observer := NewCore(provider.Tracer("test"), zap.NewNop()).For(LayerUseCase, "queries_usecase").WithRecorder(recorder)
+	_, operation := observer.Start(ctx, "query.create", nil, nil)
+	operation.End(nil)
+	parent.End()
+
+	ended := spans.Ended()
+	if len(ended) != 2 {
+		t.Fatalf("ended spans = %d, want 2", len(ended))
+	}
+	if ended[0].Name() != "usecase.query.create.execute" || ended[0].Parent().SpanID() != parent.SpanContext().SpanID() {
+		t.Fatalf("unexpected child span: %#v", ended[0])
+	}
+	if recorder.operation != "query.create" || recorder.err != nil {
+		t.Fatalf("unexpected recorder state: %#v", recorder)
+	}
+}
+
+// TestObserverWithRecorderDoesNotMutateSourceObserver проверяет неизменяемость исходного observer.
+func TestObserverWithRecorderDoesNotMutateSourceObserver(t *testing.T) {
+	t.Parallel()
+
+	first := &recorderStub{}
+	second := &recorderStub{}
+	base := NewCore(nil, zap.NewNop()).For(LayerUseCase, "queries_usecase")
+	firstObserver := base.WithRecorder(first)
+	secondObserver := base.WithRecorder(second)
+
+	_, firstOperation := firstObserver.Start(context.Background(), "query.create", nil, nil)
+	firstOperation.End(nil)
+	_, secondOperation := secondObserver.Start(context.Background(), "query.list", nil, nil)
+	secondOperation.End(nil)
+
+	if first.operation != "query.create" || second.operation != "query.list" {
+		t.Fatalf("recorders received unexpected operations: first=%q second=%q", first.operation, second.operation)
+	}
+}
+
+// TestOperationRecordStepWritesTraceEventAndInfoLog проверяет trace event и безопасный info log.
+func TestOperationRecordStepWritesTraceEventAndInfoLog(t *testing.T) {
+	spans := tracetest.NewSpanRecorder()
+	provider := trace.NewTracerProvider(trace.WithSpanProcessor(spans))
+	defer func() { _ = provider.Shutdown(context.Background()) }()
+
+	logCore, logs := observer.New(zap.InfoLevel)
+	core := NewCore(provider.Tracer("test"), zap.New(logCore))
+	_, operation := core.For(LayerUseCase, "queries_usecase").Start(context.Background(), "query.create", nil, nil)
+
+	operation.RecordStep(
+		"query.create.persisted",
+		"query persisted",
+		[]attribute.KeyValue{attribute.String("query.identity", "demo")},
+		zap.String("query_identity", "demo"),
+	)
+	operation.End(nil)
+
+	ended := spans.Ended()
+	if len(ended) != 1 {
+		t.Fatalf("ended spans = %d, want 1", len(ended))
+	}
+	events := ended[0].Events()
+	if len(events) != 2 || events[0].Name != "query.create.persisted" || events[1].Name != "query.create.completed" {
+		t.Fatalf("trace events = %#v, want persisted and completed events", events)
+	}
+
+	entries := logs.FilterMessage("query persisted").All()
+	if len(entries) != 1 {
+		t.Fatalf("info log entries = %d, want 1", len(entries))
+	}
+	if entries[0].ContextMap()["query_identity"] != "demo" {
+		t.Fatalf("log fields = %#v, want query_identity=demo", entries[0].ContextMap())
+	}
+	if completed := logs.FilterMessage("use case operation completed").All(); len(completed) != 0 {
+		t.Fatalf("generic completion log entries = %#v, want none", completed)
+	}
+}
+
+// TestOperationEndRecordsFailedCompletionWithoutSuccessLog проверяет завершение ошибочной операции.
+func TestOperationEndRecordsFailedCompletionWithoutSuccessLog(t *testing.T) {
+	spans := tracetest.NewSpanRecorder()
+	provider := trace.NewTracerProvider(trace.WithSpanProcessor(spans))
+	defer func() { _ = provider.Shutdown(context.Background()) }()
+
+	logCore, logs := observer.New(zap.InfoLevel)
+	_, operation := NewCore(provider.Tracer("test"), zap.New(logCore)).For(LayerUseCase, "queries_usecase").Start(context.Background(), "query.create", nil, nil)
+	err := errors.New("repository unavailable")
+	operation.End(&err)
+
+	ended := spans.Ended()
+	if len(ended) != 1 {
+		t.Fatalf("ended spans = %d, want 1", len(ended))
+	}
+	events := ended[0].Events()
+	if len(events) == 0 || events[0].Name != "query.create.completed" {
+		t.Fatalf("trace events = %#v, want failed completion event", events)
+	}
+	if events[0].Attributes[0].Key != "operation.status" || events[0].Attributes[0].Value.AsString() != "error" {
+		t.Fatalf("completion event attributes = %#v, want operation.status=error", events[0].Attributes)
+	}
+	if completed := logs.FilterMessage("use case operation completed").All(); len(completed) != 0 {
+		t.Fatalf("success completion logs = %#v, want none", completed)
+	}
+	if failed := logs.FilterMessage("span failed").All(); len(failed) != 1 {
+		t.Fatalf("failed span logs = %#v, want one", failed)
+	}
+}

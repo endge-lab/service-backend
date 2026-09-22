@@ -1,0 +1,4 @@
+- targets:
+    - service-backend.observability:9090
+  labels:
+    job: service-backend

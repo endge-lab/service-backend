@@ -1,0 +1,41 @@
+package entities
+
+import (
+	"encoding/json"
+	"time"
+)
+
+const ManagedBySystem = "system"
+
+type Document struct {
+	ID                      string          `json:"id"`
+	WorkspaceID             string          `json:"-"`
+	Type                    string          `json:"type"`
+	Identity                string          `json:"identity"`
+	DisplayName             string          `json:"displayName"`
+	Description             *string         `json:"description,omitempty"`
+	FolderIdentity          *string         `json:"folderIdentity,omitempty"`
+	WorkspaceFolderIdentity *string         `json:"workspaceFolderIdentity,omitempty"`
+	ManagedBy               string          `json:"managedBy"`
+	ManagedByID             *string         `json:"managedById,omitempty"`
+	Meta                    json.RawMessage `json:"meta"`
+	Data                    json.RawMessage `json:"data"`
+	Active                  bool            `json:"active"`
+	DeletedAt               *time.Time      `json:"deletedAt,omitempty"`
+	Revision                int             `json:"revision"`
+	CreatedBy               Actor           `json:"createdBy"`
+	UpdatedBy               Actor           `json:"updatedBy"`
+	CreatedAt               time.Time       `json:"createdAt"`
+	UpdatedAt               time.Time       `json:"updatedAt"`
+}
+
+// ArchivedDocument is the minimal cross-collection projection used by the
+// workspace archive. It intentionally excludes document payloads.
+type ArchivedDocument struct {
+	Type        string    `json:"type"`
+	Identity    string    `json:"identity"`
+	DisplayName string    `json:"displayName"`
+	Description *string   `json:"description,omitempty"`
+	DeletedAt   time.Time `json:"deletedAt"`
+	Revision    int       `json:"revision"`
+}

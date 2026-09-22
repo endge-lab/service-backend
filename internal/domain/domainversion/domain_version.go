@@ -1,0 +1,182 @@
+// Package domainversion computes a portable identity for committed domain content.
+package domainversion
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"sort"
+	"strings"
+
+	"github.com/endge-lab/service-backend/internal/domain/entities"
+)
+
+const (
+	legacyPrefix  = "dv1:sha256:"
+	currentPrefix = "dv2:sha256:"
+)
+
+// IsCurrent reports whether a stored identity already uses the current contract.
+func IsCurrent(value string) bool {
+	return strings.HasPrefix(value, currentPrefix) && validateDeclaredVersion(value) == nil
+}
+
+type canonicalBundle struct {
+	Kind          string                      `json:"kind"`
+	SchemaVersion int                         `json:"schemaVersion"`
+	Workspace     map[string]any              `json:"workspace"`
+	Documents     map[string][]map[string]any `json:"documents"`
+}
+
+// Compute returns the current stable identity for the part of a bundle that import applies.
+// Target-local workspace identity, integrations, credentials and provenance are
+// deliberately outside this contract.
+func Compute(bundle entities.PortableBundle) (string, error) {
+	canonical, _, err := Canonicalize(bundle)
+	if err != nil {
+		return "", err
+	}
+	return compute(canonical, currentPrefix)
+}
+
+// ComputeForDeclaredVersion computes a bundle identity according to the version
+// declared by an imported artifact. dv1 remains available only for validating
+// snapshots produced before canonical export was introduced.
+func ComputeForDeclaredVersion(bundle entities.PortableBundle, declared string) (string, error) {
+	if err := validateDeclaredVersion(declared); err != nil {
+		return "", err
+	}
+	switch {
+	case strings.HasPrefix(declared, legacyPrefix):
+		return compute(bundle, legacyPrefix)
+	case strings.HasPrefix(declared, currentPrefix):
+		return Compute(bundle)
+	default:
+		return "", fmt.Errorf("unsupported domain version %q", declared)
+	}
+}
+
+func compute(bundle entities.PortableBundle, versionPrefix string) (string, error) {
+	workspace := portableWorkspace(bundle.Workspace)
+
+	documents := make(map[string][]map[string]any, len(bundle.Documents))
+	for kind, values := range bundle.Documents {
+		items := make([]map[string]any, 0, len(values))
+		for _, value := range values {
+			item, cloneErr := cloneMap(value)
+			if cloneErr != nil {
+				return "", fmt.Errorf("clone %s document for domain version: %w", kind, cloneErr)
+			}
+			delete(item, "state")
+			items = append(items, item)
+		}
+		sort.SliceStable(items, func(left, right int) bool {
+			if kind == entities.CollectionFacetDocuments {
+				leftFacet := text(items[left]["facetIdentity"])
+				rightFacet := text(items[right]["facetIdentity"])
+				if leftFacet != rightFacet {
+					return leftFacet < rightFacet
+				}
+			}
+			leftIdentity := text(items[left]["identity"])
+			rightIdentity := text(items[right]["identity"])
+			if leftIdentity != rightIdentity {
+				return leftIdentity < rightIdentity
+			}
+			return canonicalText(items[left]) < canonicalText(items[right])
+		})
+		documents[kind] = items
+	}
+
+	raw, err := json.Marshal(canonicalBundle{
+		Kind:          bundle.Kind,
+		SchemaVersion: bundle.SchemaVersion,
+		Workspace:     workspace,
+		Documents:     documents,
+	})
+	if err != nil {
+		return "", fmt.Errorf("marshal canonical domain: %w", err)
+	}
+	sum := sha256.Sum256(raw)
+	return versionPrefix + hex.EncodeToString(sum[:]), nil
+}
+
+// portableWorkspace оставляет только поля Workspace, которые применяет import.
+func portableWorkspace(source map[string]any) map[string]any {
+	result := map[string]any{}
+	for _, key := range []string{"displayName", "description", "dataMode", "documentStructure", "configuration", "meta", "active"} {
+		if value, exists := source[key]; exists {
+			result[key] = value
+		}
+	}
+	return result
+}
+
+// ComputeRaw computes a version from a serialized portable bundle.
+func ComputeRaw(raw json.RawMessage) (string, error) {
+	var bundle entities.PortableBundle
+	if err := json.Unmarshal(raw, &bundle); err != nil {
+		return "", fmt.Errorf("decode portable bundle for domain version: %w", err)
+	}
+	return Compute(bundle)
+}
+
+// Attach computes and assigns the version without including the field in its own digest.
+func Attach(bundle *entities.PortableBundle) error {
+	if bundle == nil {
+		return fmt.Errorf("portable bundle is required")
+	}
+	CanonicalizeInPlace(bundle)
+	value, err := Compute(*bundle)
+	if err != nil {
+		return err
+	}
+	bundle.DomainVersion = value
+	return nil
+}
+
+func validateDeclaredVersion(value string) error {
+	prefix := ""
+	switch {
+	case strings.HasPrefix(value, legacyPrefix):
+		prefix = legacyPrefix
+	case strings.HasPrefix(value, currentPrefix):
+		prefix = currentPrefix
+	default:
+		return fmt.Errorf("unsupported domain version %q", value)
+	}
+	digest := strings.TrimPrefix(value, prefix)
+	if len(digest) != sha256.Size*2 {
+		return fmt.Errorf("invalid domain version digest length")
+	}
+	if _, err := hex.DecodeString(digest); err != nil {
+		return fmt.Errorf("invalid domain version digest: %w", err)
+	}
+	return nil
+}
+
+func cloneMap(value map[string]any) (map[string]any, error) {
+	if value == nil {
+		return map[string]any{}, nil
+	}
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+	result := map[string]any{}
+	if err = json.Unmarshal(raw, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func canonicalText(value any) string {
+	raw, _ := json.Marshal(value)
+	return string(raw)
+}
+
+func text(value any) string {
+	result, _ := value.(string)
+	return result
+}

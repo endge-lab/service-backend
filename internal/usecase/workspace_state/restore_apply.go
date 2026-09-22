@@ -1,0 +1,304 @@
+package workspace_state
+
+import (
+	"context"
+	"time"
+
+	configurationdomain "github.com/endge-lab/service-backend/internal/domain/configuration"
+	"github.com/endge-lab/service-backend/internal/domain/domainversion"
+	"github.com/endge-lab/service-backend/internal/domain/entities"
+	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
+	"github.com/google/uuid"
+)
+
+// planExactRestore строит точный план восстановления состояния.
+func (s *Coordinator) planExactRestore(ctx context.Context, scope entities.WorkspaceAccess, bundle entities.PortableBundle) (*entities.ImportPlan, error) {
+	plan := &entities.ImportPlan{Valid: true, ExpectedHeadSequence: scope.Workspace.HeadSequence}
+	for _, kind := range restoreOrder() {
+		targets := map[string]bool{}
+		for _, item := range bundle.Documents[kind] {
+			targets[portableDocumentKey(kind, item)] = true
+		}
+		current, err := s.repository.ListDocuments(ctx, scope.Workspace.ID, kind, ports.DocumentFilter{IncludeDeleted: true, Limit: 100000})
+		if err != nil {
+			return nil, err
+		}
+		for _, doc := range current {
+			if targets[storedDocumentKey(doc)] {
+				plan.Updates++
+			} else if doc.DeletedAt == nil {
+				plan.Updates++
+			}
+		}
+		for identity := range targets {
+			found := false
+			for _, doc := range current {
+				if doc.Identity == identity {
+					found = true
+					break
+				}
+			}
+			if !found {
+				plan.Creates++
+			}
+		}
+	}
+	return plan, nil
+}
+
+// restoreBundle собирает переносимый пакет из снимка для восстановления.
+func (s *Coordinator) restoreBundle(ctx context.Context, bundle entities.PortableBundle, expected int64, operation, message string) (result *entities.Commit, err error) {
+	domainversion.CanonicalizeInPlace(&bundle)
+	current, scope, err := s.writeContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !canAdmin(scope.Role) {
+		return nil, domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
+	}
+	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
+		if e := s.repository.LockWorkspaceSnapshot(txctx, scope.Workspace.ID); e != nil {
+			return e
+		}
+		live, e := s.repository.GetWorkspace(txctx, scope.Workspace.Identity)
+		if e != nil {
+			return e
+		}
+		if expected != live.HeadSequence {
+			return domainerrors.Conflict("head_sequence_conflict", "Workspace changed after preview")
+		}
+		scope.Workspace = *live
+
+		batch, e := s.repository.CreateMutationBatch(txctx, &scope.Workspace.ID, operation, current.User.ID)
+		if e != nil {
+			return e
+		}
+		txctx = context.WithValue(txctx, mutationBatchContextKey{}, batch)
+		previousIntegrations, e := s.repository.ListWorkspaceIntegrations(txctx, scope.Workspace.ID)
+		if e != nil {
+			return e
+		}
+		if e := s.repository.ReplaceWorkspaceIntegrations(txctx, scope.Workspace.ID, bundle.InstalledIntegrations, current.User.ID); e != nil {
+			return e
+		}
+		integrationsChanged := checksum(mustJSON(previousIntegrations)) != checksum(mustJSON(bundle.InstalledIntegrations))
+		workspaceRevisionRecorded := false
+		workspacePatch := map[string]any{}
+		for _, key := range []string{"identity", "displayName", "description", "dataMode", "documentStructure", "configuration", "meta"} {
+			if value, ok := bundle.Workspace[key]; ok {
+				workspacePatch[key] = value
+			}
+		}
+		if configuration, exists := workspacePatch["configuration"]; exists {
+			workspacePatch["configuration"] = configurationdomain.EnsureSFCEditingDefaults(configuration)
+		}
+		if len(workspacePatch) > 0 {
+			live, e := s.repository.GetWorkspace(txctx, scope.Workspace.Identity)
+			if e != nil {
+				return e
+			}
+			currentState := map[string]any{"identity": live.Identity, "displayName": live.DisplayName, "description": live.Description, "dataMode": live.DataMode, "documentStructure": live.DocumentStructure, "configuration": live.Configuration, "meta": live.Meta}
+			if checksum(mustJSON(currentState)) != checksum(mustJSON(workspacePatch)) {
+				updated, e := s.repository.UpdateWorkspace(txctx, live.Identity, workspacePatch, live.Revision, current.User.ID)
+				if e != nil {
+					return e
+				}
+				if _, e = s.recordWorkspaceRevision(txctx, *updated, "restore"); e != nil {
+					return e
+				}
+				scope.Workspace = *updated
+				workspaceRevisionRecorded = true
+			}
+		}
+		if integrationsChanged && !workspaceRevisionRecorded {
+			live, e := s.repository.GetWorkspace(txctx, scope.Workspace.Identity)
+			if e != nil {
+				return e
+			}
+			updated, e := s.repository.UpdateWorkspace(txctx, live.Identity, map[string]any{}, live.Revision, current.User.ID)
+			if e != nil {
+				return e
+			}
+			if _, e = s.recordWorkspaceRevision(txctx, *updated, "restore"); e != nil {
+				return e
+			}
+		}
+		for _, kind := range restoreOrder() {
+			orderedTargets, orderErr := orderPortableItems(kind, bundle.Documents[kind])
+			if orderErr != nil {
+				return orderErr
+			}
+			targets := map[string]map[string]any{}
+			for _, item := range orderedTargets {
+				targets[portableDocumentKey(kind, item)] = item
+			}
+			existing, er := s.repository.ListDocuments(txctx, scope.Workspace.ID, kind, ports.DocumentFilter{IncludeDeleted: true, Limit: 100000})
+			if er != nil {
+				return er
+			}
+			seen := map[string]bool{}
+			for _, doc := range existing {
+				item, ok := targets[storedDocumentKey(doc)]
+				if !ok {
+					if kind == entities.CollectionFacets {
+						// Facet documents must be removed first to preserve the parent invariant.
+						continue
+					}
+					if kind == entities.CollectionFolders && doc.ManagedBy == entities.ManagedBySystem {
+						continue
+					}
+					if doc.DeletedAt == nil {
+						now := time.Now().UTC()
+						next := doc
+						next.DeletedAt = &now
+						next.Active = false
+						next.UpdatedBy = entities.Actor{ID: current.User.ID}
+						folderID, e := s.resolveDocumentFolder(txctx, scope, next)
+						if e != nil {
+							return e
+						}
+						updated, e := s.repository.UpdateDocument(txctx, next, doc.Revision, folderID)
+						if e != nil {
+							return e
+						}
+						if _, e = s.recordRevision(txctx, *updated, "delete", nil); e != nil {
+							return e
+						}
+					}
+					continue
+				}
+				seen[storedDocumentKey(doc)] = true
+				next := replaceDocumentFromInput(doc, item, current.User.ID)
+				if kind == entities.CollectionFacets && portableDocumentDeleted(item) && doc.DeletedAt == nil {
+					// Keep an active parent available until nested documents have been
+					// reconciled; it is soft-deleted after the facet-document pass.
+					next.DeletedAt = nil
+					next.Active = true
+				}
+				if kind == entities.CollectionFacets {
+					position := facetPosition(doc)
+					if doc.DeletedAt != nil {
+						position = -1
+					}
+					next = replaceDocumentDataField(next, "position", position)
+				}
+				folderID, e := s.resolveDocumentFolder(txctx, scope, next)
+				if e != nil {
+					return e
+				}
+				if checksumContent(doc) != checksumContent(next) {
+					updated, e := s.repository.UpdateDocument(txctx, next, doc.Revision, folderID)
+					if e != nil {
+						return e
+					}
+					if _, e = s.recordRevision(txctx, *updated, "restore", nil); e != nil {
+						return e
+					}
+				}
+			}
+			for _, item := range orderedTargets {
+				if seen[portableDocumentKey(kind, item)] {
+					continue
+				}
+				doc := documentFromInput(kind, scope.Workspace.ID, item, current.User.ID)
+				if kind == entities.CollectionFacets && doc.DeletedAt == nil {
+					doc = replaceDocumentDataField(doc, "position", -1)
+				}
+				folderID, e := s.resolveFolder(txctx, scope, kind, item)
+				if e != nil {
+					return e
+				}
+				created, e := s.repository.InsertDocument(txctx, doc, folderID)
+				if e != nil {
+					return e
+				}
+				if _, e = s.recordRevision(txctx, *created, "restore", nil); e != nil {
+					return e
+				}
+			}
+			if kind == entities.CollectionFacetDocuments {
+				facetTargets := map[string]bool{}
+				for _, item := range bundle.Documents[entities.CollectionFacets] {
+					if !portableDocumentDeleted(item) {
+						facetTargets[stringField(item, "identity")] = true
+					}
+				}
+				currentFacets, e := s.repository.ListFacets(txctx, scope.Workspace.ID, false)
+				if e != nil {
+					return e
+				}
+				for _, currentFacet := range currentFacets {
+					if facetTargets[currentFacet.Identity] {
+						continue
+					}
+					now := time.Now().UTC()
+					next := currentFacet
+					next.DeletedAt = &now
+					next.Active = false
+					next.UpdatedBy = entities.Actor{ID: current.User.ID}
+					updated, updateErr := s.repository.UpdateFacet(txctx, next, currentFacet.Revision)
+					if updateErr != nil {
+						return updateErr
+					}
+					if _, e = s.recordRevision(txctx, *updated, "delete", nil); e != nil {
+						return e
+					}
+				}
+				currentFacets, e = s.repository.ListFacets(txctx, scope.Workspace.ID, false)
+				if e != nil {
+					return e
+				}
+				changed, reorderErr := s.repository.ReorderFacets(txctx, scope.Workspace.ID, facetReorderItems(bundle, currentFacets), current.User.ID)
+				if reorderErr != nil {
+					return reorderErr
+				}
+				for _, changedFacet := range changed {
+					if _, e = s.recordRevision(txctx, changedFacet, "restore", nil); e != nil {
+						return e
+					}
+				}
+			}
+		}
+		live, e = s.repository.GetWorkspace(txctx, scope.Workspace.Identity)
+		if e != nil {
+			return e
+		}
+		if _, _, e = s.applyStartupComposition(txctx, *live, bundle, current.User.ID, "restore"); e != nil {
+			return e
+		}
+		latest, e := s.repository.LatestCommit(txctx, scope.Workspace.ID)
+		if e != nil {
+			return e
+		}
+		pending, e := s.repository.PendingRevisions(txctx, scope.Workspace.ID, latest.HeadSequence)
+		if e != nil {
+			return e
+		}
+		if len(pending) == 0 {
+			return domainerrors.Conflict("nothing_to_restore", "Workspace already matches target state")
+		}
+		head := scope.Workspace.HeadSequence
+		for _, revision := range pending {
+			if revision.WorkspaceSequence != nil && *revision.WorkspaceSequence > head {
+				head = *revision.WorkspaceSequence
+			}
+		}
+		value := entities.Commit{ID: uuid.NewString(), WorkspaceID: scope.Workspace.ID, ParentCommitID: &latest.ID, BaseSequence: latest.HeadSequence, HeadSequence: head, Message: message, RevisionPolicy: "preserve", Operation: operation, CreatedBy: entities.Actor{ID: current.User.ID}}
+		result, e = s.repository.CreateCommit(txctx, value, commitChanges(pending))
+		if e != nil {
+			return e
+		}
+		ids := []string{}
+		for _, revision := range pending {
+			ids = append(ids, revision.ID)
+		}
+		return s.repository.AttachRevisionsToCommit(txctx, result.ID, ids)
+	})
+	return result, mapConflict(err)
+}
+
+// restoreOrder задаёт порядок восстановления коллекций.
+func restoreOrder() []string {
+	return []string{entities.CollectionFolders, entities.CollectionFacets, entities.CollectionFacetDocuments, entities.CollectionNavigations, entities.CollectionAuthProfiles, entities.CollectionStores, entities.CollectionVocabs, entities.CollectionUpdates, entities.CollectionTypes, entities.CollectionConfigurations, entities.CollectionQueries, entities.CollectionDataViews, entities.CollectionCompositions, entities.CollectionStreams, entities.CollectionSimulations, entities.CollectionMocks, entities.CollectionComponents, entities.CollectionActions, entities.CollectionFilters, entities.CollectionConverters, entities.CollectionComputations, entities.CollectionI18nBundles, entities.CollectionStyles}
+}

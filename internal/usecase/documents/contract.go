@@ -1,0 +1,317 @@
+package documents
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"regexp"
+	"slices"
+	"strings"
+
+	"github.com/endge-lab/service-backend/internal/domain/entities"
+	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
+	"github.com/endge-lab/service-backend/internal/usecase/shared"
+	"github.com/google/uuid"
+)
+
+var Collections = append([]string(nil), entities.DocumentCollections...)
+
+var sourceVersionCollections = []string{entities.CollectionTypes, entities.CollectionQueries, entities.CollectionDataViews, entities.CollectionCompositions, entities.CollectionStores, entities.CollectionStreams, entities.CollectionSimulations, entities.CollectionUpdates, entities.CollectionFilters, entities.CollectionComputations, entities.CollectionVocabs, entities.CollectionStyles, entities.CollectionConfigurations}
+
+var readOnlyFields = []string{"id", "type", "revision", "author", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", "created_by", "updated_by"}
+
+var (
+	folderIconPattern  = regexp.MustCompile(`^[A-Z][A-Za-z0-9]*$`)
+	folderColorPattern = regexp.MustCompile(`^#[0-9a-f]{6}$`)
+)
+
+// validateCollection проверяет, что коллекция поддерживается документным API.
+func validateCollection(collection string) error {
+	if slices.Contains(Collections, collection) {
+		return nil
+	}
+	return domainerrors.WithDetails(domainerrors.InvalidInput("collection_unsupported", "Collection is not supported by this MVP"), map[string]any{"collection": collection})
+}
+
+// validateDocument проверяет общие и зависящие от типа ограничения документа.
+func validateDocument(kind string, input map[string]any) error {
+	if err := validateIdentity(stringField(input, "identity")); err != nil {
+		return err
+	}
+	if stringField(input, "displayName") == "" {
+		return domainerrors.InvalidInput("display_name_required", "displayName is required")
+	}
+	managedBy := defaultString(stringField(input, "managedBy"), "user")
+	if !slices.Contains([]string{"user", entities.ManagedBySystem, "integration"}, managedBy) {
+		return domainerrors.InvalidInput("managed_by_invalid", "managedBy is invalid")
+	}
+	if source, ok := input["source"]; ok {
+		value, valid := source.(string)
+		if !valid {
+			return domainerrors.InvalidInput("source_invalid", "source must be a string")
+		}
+		if len(value) > 8*1024*1024 {
+			return domainerrors.InvalidInput("source_too_large", "source exceeds 8 MiB")
+		}
+		if slices.Contains(sourceVersionCollections, kind) {
+			version, valid := sourceVersion(input)
+			if !valid || version <= 0 {
+				return domainerrors.InvalidInput("source_version_invalid", "sourceVersion must be positive")
+			}
+		}
+	}
+	if kind == entities.CollectionCompositions {
+		compositionKind := strings.ToLower(strings.TrimSpace(stringField(input, "kind")))
+		if compositionKind != "" && !slices.Contains([]string{"library", "query", "workspace"}, compositionKind) {
+			return domainerrors.InvalidInput("composition_kind_invalid", "Composition kind must be library, query, or workspace")
+		}
+	}
+	if kind == "queries" {
+		version, _ := sourceVersion(input)
+		if version != 2 {
+			return domainerrors.InvalidInput("query_source_version_invalid", "Query sourceVersion must be 2")
+		}
+	}
+	if kind == entities.CollectionSimulations {
+		version, hasVersion := sourceVersion(input)
+		if _, hasSource := input["source"].(string); !hasSource || !hasVersion || version != 1 {
+			return domainerrors.InvalidInput("simulation_source_version_invalid", "Simulation source and sourceVersion 1 are required")
+		}
+	}
+	if kind == entities.CollectionConfigurations {
+		version, hasVersion := sourceVersion(input)
+		if _, hasSource := input["source"].(string); !hasSource || !hasVersion || version != 1 {
+			return domainerrors.InvalidInput("configuration_source_version_invalid", "Configuration source and sourceVersion 1 are required")
+		}
+		if stringField(input, "folderIdentity") != "" {
+			return domainerrors.InvalidInput("configuration_folder_unsupported", "Configuration documents do not support folders")
+		}
+	}
+	if kind == entities.CollectionVocabs {
+		source, hasSource := input["source"].(string)
+		version, hasVersion := sourceVersion(input)
+		if hasSource != hasVersion {
+			return domainerrors.InvalidInput("vocab_source_contract_invalid", "Vocab source and sourceVersion must be provided together")
+		}
+		if hasSource && strings.TrimSpace(source) == "" {
+			return domainerrors.InvalidInput("vocab_source_invalid", "Vocab source must not be empty")
+		}
+		if hasVersion && version != 1 {
+			return domainerrors.InvalidInput("vocab_source_version_invalid", "Vocab sourceVersion must be 1")
+		}
+	}
+	if kind == entities.CollectionUpdates && stringField(input, "storeIdentity") == "" {
+		return domainerrors.InvalidInput("update_store_required", "storeIdentity is required")
+	}
+	if kind == entities.CollectionAuthProfiles {
+		if err := shared.ValidateAuthProfile(input); err != nil {
+			return err
+		}
+	}
+	if kind == entities.CollectionFolders {
+		scope := defaultString(stringField(input, "scope"), entities.FolderScopeCollection)
+		entityType := stringField(input, "entityType")
+		switch scope {
+		case entities.FolderScopeCollection:
+			if !slices.Contains(Collections, entityType) || entityType == entities.CollectionFolders || entityType == entities.CollectionConfigurations {
+				return domainerrors.InvalidInput("folder_entity_type_invalid", "entityType must be a folderable collection")
+			}
+		case entities.FolderScopeWorkspace:
+			if entityType != "" {
+				return domainerrors.InvalidInput("folder_workspace_entity_type_invalid", "Workspace folders must not define entityType")
+			}
+		default:
+			return domainerrors.InvalidInput("folder_scope_invalid", "scope must be collection or workspace")
+		}
+		if icon := stringField(input, "icon"); icon != "" && (len(icon) > 80 || !folderIconPattern.MatchString(icon)) {
+			return domainerrors.InvalidInput("folder_icon_invalid", "icon must be a PascalCase token")
+		}
+		if color := stringField(input, "color"); color != "" && !folderColorPattern.MatchString(color) {
+			return domainerrors.InvalidInput("folder_color_invalid", "color must be canonical lowercase #rrggbb")
+		}
+		if _, exists := input["isSystem"]; exists {
+			return domainerrors.InvalidInput("folder_is_system_unsupported", "isSystem is replaced by managedBy")
+		}
+		if isRoot(input) {
+			return domainerrors.InvalidInput("folder_root_field_read_only", "isRoot is server-managed")
+		}
+	}
+	return validateSecrets(input)
+}
+
+// rejectReadOnly отклоняет изменение серверных полей только для чтения.
+func rejectReadOnly(input map[string]any) error {
+	return shared.RejectReadOnly(input)
+}
+
+// validateIdentity проверяет обязательность и допустимую длину identity.
+func validateIdentity(value string) error {
+	length := len(strings.TrimSpace(value))
+	if length == 0 {
+		return domainerrors.InvalidInput("identity_required", "identity is required")
+	}
+	if length > 160 {
+		return domainerrors.InvalidInput("identity_too_long", "identity must not exceed 160 characters")
+	}
+	return nil
+}
+
+// validateSecrets проверяет, что входные данные не содержат открытых секретов.
+func validateSecrets(value any) error {
+	return shared.ValidateSecrets(value)
+}
+
+// documentFromInput создаёт доменный документ из входных данных.
+func documentFromInput(kind, workspaceID string, input map[string]any, actorID string) entities.Document {
+	data := copyMap(input)
+	for _, key := range append(readOnlyFields, "identity", "displayName", "description", "folderIdentity", "workspaceFolderIdentity", "managedBy", "managedById", "meta", "active") {
+		delete(data, key)
+	}
+	return entities.Document{
+		ID: uuid.NewString(), WorkspaceID: workspaceID, Type: kind,
+		Identity: stringField(input, "identity"), DisplayName: stringField(input, "displayName"),
+		Description: optionalString(input, "description"), FolderIdentity: optionalString(input, "folderIdentity"), WorkspaceFolderIdentity: optionalString(input, "workspaceFolderIdentity"),
+		ManagedBy: defaultString(stringField(input, "managedBy"), "user"), ManagedByID: optionalString(input, "managedById"),
+		Meta: jsonField(input, "meta", json.RawMessage(`{}`)), Data: mustJSON(data), Active: defaultBool(input, "active", true),
+		Revision: 1, CreatedBy: entities.Actor{ID: actorID}, UpdatedBy: entities.Actor{ID: actorID},
+	}
+}
+
+// applyPatch применяет частичное обновление к документу.
+func applyPatch(document entities.Document, patch map[string]any, actorID string) entities.Document {
+	if value, ok := patch["identity"].(string); ok {
+		document.Identity = strings.TrimSpace(value)
+	}
+	if value, ok := patch["displayName"].(string); ok {
+		document.DisplayName = value
+	}
+	if _, ok := patch["description"]; ok {
+		document.Description = optionalString(patch, "description")
+	}
+	if _, ok := patch["folderIdentity"]; ok {
+		document.FolderIdentity = optionalString(patch, "folderIdentity")
+	}
+	if _, ok := patch["workspaceFolderIdentity"]; ok {
+		document.WorkspaceFolderIdentity = optionalString(patch, "workspaceFolderIdentity")
+	}
+	if value, ok := patch["managedBy"].(string); ok {
+		document.ManagedBy = value
+	}
+	if _, ok := patch["managedById"]; ok {
+		document.ManagedByID = optionalString(patch, "managedById")
+	}
+	if value, ok := patch["meta"]; ok {
+		document.Meta = mustJSON(value)
+	}
+	if value, ok := patch["active"].(bool); ok {
+		document.Active = value
+	}
+	var data map[string]any
+	_ = json.Unmarshal(document.Data, &data)
+	for key, value := range patch {
+		if !slices.Contains(append(readOnlyFields, "identity", "displayName", "description", "folderIdentity", "workspaceFolderIdentity", "managedBy", "managedById", "meta", "active"), key) {
+			data[key] = value
+		}
+	}
+	document.Data, document.UpdatedBy = mustJSON(data), entities.Actor{ID: actorID}
+	return document
+}
+
+// documentAsInput преобразует доменный документ в данные для повторной проверки.
+func documentAsInput(document entities.Document) map[string]any {
+	result := map[string]any{}
+	_ = json.Unmarshal(document.Data, &result)
+	result["identity"], result["displayName"], result["managedBy"] = document.Identity, document.DisplayName, document.ManagedBy
+	return result
+}
+
+// checksumContent вычисляет контрольную сумму содержимого документа.
+func checksumContent(document entities.Document) string {
+	return checksum(mustJSON(map[string]any{"identity": document.Identity, "displayName": document.DisplayName, "description": document.Description, "folderIdentity": document.FolderIdentity, "workspaceFolderIdentity": document.WorkspaceFolderIdentity, "managedBy": document.ManagedBy, "managedById": document.ManagedByID, "meta": canonicalJSONValue(document.Meta), "data": canonicalJSONValue(document.Data), "active": document.Active, "deletedAt": document.DeletedAt}))
+}
+
+// canonicalJSONValue устраняет различия форматирования JSONB перед no-op сравнением.
+func canonicalJSONValue(raw json.RawMessage) any {
+	var value any
+	decoder := json.NewDecoder(strings.NewReader(string(raw)))
+	decoder.UseNumber()
+	if err := decoder.Decode(&value); err != nil {
+		return nil
+	}
+	return value
+}
+
+// checksum вычисляет SHA-256 контрольную сумму сериализованных данных.
+func checksum(raw []byte) string { sum := sha256.Sum256(raw); return hex.EncodeToString(sum[:]) }
+
+// mustJSON сериализует значение в JSON для внутреннего конвейера.
+func mustJSON(value any) json.RawMessage { raw, _ := json.Marshal(value); return raw }
+
+// stringField извлекает и нормализует строковое поле.
+func stringField(input map[string]any, key string) string {
+	value, _ := input[key].(string)
+	return strings.TrimSpace(value)
+}
+
+// optionalString извлекает необязательное строковое поле.
+func optionalString(input map[string]any, key string) *string {
+	value, ok := input[key].(string)
+	if !ok || strings.TrimSpace(value) == "" {
+		return nil
+	}
+	value = strings.TrimSpace(value)
+	return &value
+}
+
+// boolField извлекает логическое поле.
+func isRoot(input map[string]any) bool { value, _ := input["isRoot"].(bool); return value }
+
+// defaultBool возвращает логическое поле или значение по умолчанию.
+func defaultBool(input map[string]any, key string, fallback bool) bool {
+	value, ok := input[key].(bool)
+	if !ok {
+		return fallback
+	}
+	return value
+}
+
+// defaultString возвращает строку или значение по умолчанию.
+func defaultString(value, fallback string) string {
+	if value == "" {
+		return fallback
+	}
+	return value
+}
+
+// jsonField извлекает поле и сериализует его в JSON.
+func jsonField(input map[string]any, key string, fallback json.RawMessage) json.RawMessage {
+	value, ok := input[key]
+	if !ok {
+		return fallback
+	}
+	return mustJSON(value)
+}
+
+// copyMap создаёт поверхностную копию карты данных.
+func copyMap(input map[string]any) map[string]any {
+	result := map[string]any{}
+	for key, value := range input {
+		result[key] = value
+	}
+	return result
+}
+
+// numberField извлекает целочисленное поле без потери точности.
+func sourceVersion(input map[string]any) (int, bool) {
+	switch value := input["sourceVersion"].(type) {
+	case float64:
+		return int(value), value == float64(int(value))
+	case int:
+		return value, true
+	case json.Number:
+		number, err := value.Int64()
+		return int(number), err == nil
+	default:
+		return 0, false
+	}
+}
