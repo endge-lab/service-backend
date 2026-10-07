@@ -28,11 +28,12 @@ func NewHandler(sessions *auth.SessionManager, logger *zap.Logger, access UseCas
 // @ID configuratorLogin
 // @Tags Авторизация
 // @Param returnTo query string false "Безопасный URL возврата после входа"
+// @Param prompt query string false "login — показать форму входа повторно"
 // @Success 302 "Перенаправление на провайдера"
 // @Failure 503 {object} map[string]string "Провайдер временно недоступен"
 // @Router /auth/login [get]
 func (h *Handler) Login(c *fiber.Ctx) error {
-	start, err := h.sessions.Begin(c.UserContext(), c.Query("returnTo"))
+	start, err := h.sessions.Begin(c.UserContext(), c.Query("returnTo"), c.Query("prompt") == "login")
 	if err != nil {
 		h.logger.Warn("failed to start Configurator login", zap.Error(err))
 		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"code": "auth_login_unavailable", "message": "login is temporarily unavailable"})

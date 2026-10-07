@@ -15390,6 +15390,11 @@ paths:
           in: query
           schema:
             type: string
+        - description: login — показать форму входа повторно
+          name: prompt
+          in: query
+          schema:
+            type: string
       responses:
         "302":
           description: Перенаправление на провайдера

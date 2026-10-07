@@ -69,7 +69,7 @@ func (m *SessionManager) LoginCallbackPath() string {
 	return m.basePath + "/auth/callback"
 }
 
-func (m *SessionManager) Begin(ctx context.Context, requestedReturnURL string) (LoginStart, error) {
+func (m *SessionManager) Begin(ctx context.Context, requestedReturnURL string, promptLogin bool) (LoginStart, error) {
 	if m.config.Adapter == config.IdentityModeDev {
 		return LoginStart{Location: m.safeReturnURL(requestedReturnURL)}, nil
 	}
@@ -110,7 +110,7 @@ func (m *SessionManager) Begin(ctx context.Context, requestedReturnURL string) (
 		return LoginStart{}, fmt.Errorf("store Configurator login transaction: %w", err)
 	}
 	challengeSum := sha256.Sum256([]byte(verifier))
-	location, err := adapter.LoginURL(state, rawURLEncoding.EncodeToString(challengeSum[:]), oidcNonce)
+	location, err := adapter.LoginURL(state, rawURLEncoding.EncodeToString(challengeSum[:]), oidcNonce, promptLogin)
 	if err != nil {
 		return LoginStart{}, err
 	}
@@ -209,10 +209,18 @@ func (m *SessionManager) Resolve(ctx context.Context, cookieToken string) (Sessi
 	if !m.identityRefreshDue(record, time.Now()) {
 		return record.identity(), nil
 	}
-	return m.resolveWithRefresh(ctx, cookieToken)
+	return m.resolveWithRefresh(ctx, cookieToken, "")
 }
 
-func (m *SessionManager) resolveWithRefresh(ctx context.Context, cookieToken string) (SessionIdentity, error) {
+// ResolveAfterStale обновляет cookie-сессию, если её снимок всё ещё содержит отклонённый токен.
+func (m *SessionManager) ResolveAfterStale(ctx context.Context, cookieToken, staleTokenHash string) (SessionIdentity, error) {
+	if strings.TrimSpace(cookieToken) == "" || staleTokenHash == "" || !m.access.External() {
+		return SessionIdentity{}, fmt.Errorf("stale external session evidence is required")
+	}
+	return m.resolveWithRefresh(ctx, cookieToken, staleTokenHash)
+}
+
+func (m *SessionManager) resolveWithRefresh(ctx context.Context, cookieToken, staleTokenHash string) (SessionIdentity, error) {
 	tx, err := m.pool.Begin(ctx)
 	if err != nil {
 		return SessionIdentity{}, fmt.Errorf("begin Configurator session resolution: %w", err)
@@ -224,7 +232,9 @@ func (m *SessionManager) resolveWithRefresh(ctx context.Context, cookieToken str
 	}
 	// После получения блокировки состояние перечитывается: другой запрос мог
 	// успеть обновить identity claims, пока этот запрос ожидал FOR UPDATE.
-	if m.identityRefreshDue(record, time.Now()) {
+	// Конкурентный запрос мог уже заменить снимок этой cookie-сессии под той же блокировкой.
+	staleSnapshot := staleTokenHash != "" && record.ExternalAccess != nil && record.ExternalAccess.TokenHash == staleTokenHash
+	if m.identityRefreshDue(record, time.Now()) || staleSnapshot {
 		identity, refreshErr := m.refresh(ctx, tx, cookieToken, record)
 		if refreshErr != nil {
 			_, _ = tx.Exec(ctx, `UPDATE configurator_auth_sessions SET revoked_at=NOW(),updated_at=NOW() WHERE token_hash=$1`, hashToken(cookieToken))
