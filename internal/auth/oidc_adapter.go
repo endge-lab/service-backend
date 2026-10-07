@@ -27,7 +27,7 @@ func NewOIDCAdapter(cfg *config.Config) *OIDCAdapter {
 
 func (a *OIDCAdapter) ID() string { return "oidc" }
 
-func (a *OIDCAdapter) LoginURL(state, codeChallenge, nonce string) (string, error) {
+func (a *OIDCAdapter) LoginURL(state, codeChallenge, nonce string, promptLogin bool) (string, error) {
 	endpoint, err := url.Parse(a.config.AuthorizationURL)
 	if err != nil {
 		return "", fmt.Errorf("parse OIDC authorization URL: %w", err)
@@ -41,6 +41,9 @@ func (a *OIDCAdapter) LoginURL(state, codeChallenge, nonce string) (string, erro
 	query.Set("nonce", nonce)
 	query.Set("code_challenge", codeChallenge)
 	query.Set("code_challenge_method", "S256")
+	if promptLogin {
+		query.Set("prompt", "login")
+	}
 	endpoint.RawQuery = query.Encode()
 	return endpoint.String(), nil
 }

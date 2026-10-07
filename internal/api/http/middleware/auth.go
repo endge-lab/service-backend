@@ -36,9 +36,7 @@ func (m *authMiddleware) AuthMiddleware() fiber.Handler {
 				return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"code": "csrf_origin_rejected", "message": "request origin is not allowed"})
 			}
 		}
-		identity := RequestIdentity{ProviderID: claims.ProviderID, Subject: claims.Subject, Issuer: claims.Issuer, AuthUserID: claims.Subject,
-			Username: claims.Username, DisplayName: claims.DisplayName, Groups: claims.Groups, PlatformAdmin: claims.PlatformAdmin,
-			ExternalAccess: claims.ExternalAccess, SessionID: sessionID, ExpiresAt: claims.ExpiresAt.Format("2006-01-02T15:04:05Z07:00")}
+		identity := requestIdentity(claims, sessionID)
 		ctx := context.WithValue(c.UserContext(), identityKey, identity)
 		if sessionID != "" {
 			ctx = context.WithValue(ctx, sessionIDKey, sessionID)
@@ -46,6 +44,12 @@ func (m *authMiddleware) AuthMiddleware() fiber.Handler {
 		c.SetUserContext(ctx)
 		return c.Next()
 	}
+}
+
+func requestIdentity(claims auth.Claims, sessionID string) RequestIdentity {
+	return RequestIdentity{ProviderID: claims.ProviderID, Subject: claims.Subject, Issuer: claims.Issuer, AuthUserID: claims.Subject,
+		Username: claims.Username, DisplayName: claims.DisplayName, Groups: claims.Groups, PlatformAdmin: claims.PlatformAdmin,
+		ExternalAccess: claims.ExternalAccess, SessionID: sessionID, ExpiresAt: claims.ExpiresAt.Format("2006-01-02T15:04:05Z07:00")}
 }
 
 func (m *authMiddleware) authenticate(c *fiber.Ctx) (auth.Claims, string, bool, error) {

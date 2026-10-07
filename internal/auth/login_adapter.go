@@ -17,7 +17,7 @@ type TokenSet struct {
 // Configurator HTTP contract.
 type LoginAdapter interface {
 	ID() string
-	LoginURL(state, codeChallenge, nonce string) (string, error)
+	LoginURL(state, codeChallenge, nonce string, promptLogin bool) (string, error)
 	Exchange(context.Context, string, string) (TokenSet, error)
 	Refresh(context.Context, string) (TokenSet, error)
 	Logout(context.Context, string) error

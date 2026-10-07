@@ -15,7 +15,7 @@ func TestOIDCAdapterBuildsProviderRedirectWithoutFrontendSDK(t *testing.T) {
 		RedirectURL:      "https://backend.example/auth/callback",
 		Scopes:           []string{"openid", "email"},
 	}})
-	raw, err := adapter.LoginURL("state", "challenge", "nonce")
+	raw, err := adapter.LoginURL("state", "challenge", "nonce", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,6 +31,17 @@ func TestOIDCAdapterBuildsProviderRedirectWithoutFrontendSDK(t *testing.T) {
 		if query.Get(key) != expected {
 			t.Fatalf("%s=%q, want %q", key, query.Get(key), expected)
 		}
+	}
+	if query.Has("prompt") {
+		t.Fatal("ordinary login unexpectedly forces authentication")
+	}
+	freshURL, err := adapter.LoginURL("state", "challenge", "nonce", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fresh, err := url.Parse(freshURL)
+	if err != nil || fresh.Query().Get("prompt") != "login" {
+		t.Fatalf("fresh login prompt missing: %s %v", freshURL, err)
 	}
 }
 

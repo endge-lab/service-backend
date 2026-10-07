@@ -15395,6 +15395,11 @@ var openAPI3YAML = []byte(
 		"          in: query\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: login — показать форму входа повторно\n" +
+		"          name: prompt\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"302\":\n" +
 		"          description: Перенаправление на провайдера\n" +
