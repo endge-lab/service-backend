@@ -229,6 +229,43 @@ func TestExternalAccessBrowserRefreshAndConfigurationChange(t *testing.T) {
 	response.Body.Close()
 }
 
+func TestExternalAccessBrowserRefreshesAfterNewerBearer(t *testing.T) {
+	db := postgresSuite.NewDatabase(t)
+	provider := support.NewIdentityProvider(t)
+	app := support.NewTestApp(t, db, externalConfig(t, provider, externalAccessYAML))
+	issued := time.Now().Add(-time.Minute).Truncate(time.Second)
+	createExternalDefaultWorkspace(t, app, provider, issued)
+	state, nonce, transaction := beginBrowserLogin(t, app)
+	identity := externalTokenInput("shared-user", issued, "viewer")
+	code := provider.AuthorizationCodeWithTokens(t, identity, identity, nonce)
+	callback := perform(t, app, http.MethodGet, callbackURL(state, code), nil, map[string]string{"Cookie": transaction.Name + "=" + transaction.Value})
+	assertStatus(t, callback, 303)
+	cookie := responseCookie(t, callback, "endge_test_session")
+	callback.Body.Close()
+
+	bearer := externalHeaders(t, provider, externalTokenInput("shared-user", issued.Add(time.Second), "admin"))
+	response := perform(t, app, http.MethodGet, "/api/session/me", nil, bearer)
+	assertStatus(t, response, 200)
+	response.Body.Close()
+	provider.SetRefreshTokens(t, identity, externalTokenInput("shared-user", issued.Add(2*time.Second), "viewer"))
+	headers := map[string]string{"Cookie": cookie.Name + "=" + cookie.Value}
+	response = perform(t, app, http.MethodGet, "/api/session/me", nil, headers)
+	assertStatus(t, response, 200)
+	if role := decodeObject(t, response)["workspaces"].([]any)[0].(map[string]any)["role"]; role != "viewer" {
+		t.Fatalf("browser session kept stale access: %v", role)
+	}
+	if provider.RefreshCalls() != 1 {
+		t.Fatalf("stale browser refresh calls=%d", provider.RefreshCalls())
+	}
+	response = perform(t, app, http.MethodGet, "/api/session/me", nil, headers)
+	assertStatus(t, response, 200)
+	response.Body.Close()
+	if provider.RefreshCalls() != 1 {
+		t.Fatalf("fresh browser session refreshed again: %d", provider.RefreshCalls())
+	}
+	expectCode(t, perform(t, app, http.MethodGet, "/api/session/me", nil, bearer), 403, "external_access_stale")
+}
+
 func TestExternalAccessConcurrentTokens(t *testing.T) {
 	db := postgresSuite.NewDatabase(t)
 	provider := support.NewIdentityProvider(t)
