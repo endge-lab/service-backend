@@ -9,7 +9,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/shared"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
-	"github.com/endge-lab/service-backend/internal/usecase/documents"
+	"github.com/endge-lab/service-backend/internal/usecase/commits"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -23,6 +23,7 @@ type tools struct {
 	useCases  UseCases
 	contracts Contracts
 	logger    *zap.Logger
+	docs      *docsSource
 }
 
 func boolPtr(value bool) *bool { return &value }
@@ -36,22 +37,40 @@ func mutating(title string, destructive bool) *mcp.ToolAnnotations {
 	return &mcp.ToolAnnotations{Title: title, DestructiveHint: boolPtr(destructive), OpenWorldHint: boolPtr(false)}
 }
 
-// collectionProperty ограничивает collection списком коллекций документного API.
+// collectionProperty ограничивает collection коллекциями документного API и фасетов.
 func collectionProperty(properties map[string]*jsonschema.Schema) {
-	enum := make([]any, 0, len(entities.DocumentCollections))
-	for _, name := range entities.DocumentCollections {
+	enum := make([]any, 0, len(toolCollections))
+	for _, name := range toolCollections {
 		enum = append(enum, name)
 	}
 	properties["collection"].Enum = enum
 }
+
+// revisionProperty требует неотрицательную revision.
+func revisionProperty(properties map[string]*jsonschema.Schema) {
+	properties["revision"].Minimum = new(float64)
+}
+
+// pageProperties задаёт пределы и значение limit по умолчанию.
+func pageProperties(properties map[string]*jsonschema.Schema, defaultLimit int) {
+	properties["limit"].Minimum, properties["limit"].Maximum = intRange(1, 500)
+	properties["limit"].Default = rawDefault(defaultLimit)
+	properties["offset"].Minimum = new(float64)
+}
+
+const (
+	collectionDescription = "Коллекция: документы (queries, components, data-views и др.), фасеты facets или документы фасета facet-documents"
+	facetDescription      = "Только для collection=facet-documents: identity фасета (endge_list_documents с collection=facets)"
+)
 
 type workspaceInput struct {
 	Workspace string `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
 }
 
 type listDocumentsInput struct {
-	Collection     string `json:"collection" jsonschema:"Коллекция документов, например queries, components или data-views"`
+	Collection     string `json:"collection" jsonschema:"Коллекция: документы (queries, components, data-views и др.), фасеты facets или документы фасета facet-documents"`
 	Workspace      string `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
+	FacetIdentity  string `json:"facetIdentity,omitempty" jsonschema:"Только для collection=facet-documents: identity фасета (endge_list_documents с collection=facets)"`
 	FolderIdentity string `json:"folderIdentity,omitempty" jsonschema:"Только документы этой папки"`
 	IncludeDeleted bool   `json:"includeDeleted,omitempty" jsonschema:"Включить мягко удалённые документы"`
 	WithSource     bool   `json:"withSource,omitempty" jsonschema:"Вернуть документы целиком, вместе с source и meta"`
@@ -60,7 +79,8 @@ type listDocumentsInput struct {
 }
 
 type documentInput struct {
-	Collection     string `json:"collection" jsonschema:"Коллекция документов, например queries, components или data-views"`
+	FacetIdentity  string `json:"facetIdentity,omitempty" jsonschema:"Только для collection=facet-documents: identity фасета (endge_list_documents с collection=facets)"`
+	Collection     string `json:"collection" jsonschema:"Коллекция: документы (queries, components, data-views и др.), фасеты facets или документы фасета facet-documents"`
 	Identity       string `json:"identity" jsonschema:"Identity документа"`
 	Workspace      string `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
 	IncludeDeleted bool   `json:"includeDeleted,omitempty" jsonschema:"Разрешить чтение мягко удалённого документа"`
@@ -72,33 +92,37 @@ type workspaceSnapshotInput struct {
 }
 
 type revisionsInput struct {
-	Collection   string `json:"collection" jsonschema:"Коллекция документов, например queries, components или data-views"`
-	Identity     string `json:"identity" jsonschema:"Identity документа"`
-	Workspace    string `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
-	WithSnapshot bool   `json:"withSnapshot,omitempty" jsonschema:"Включить снимки документа в каждой ревизии"`
-	Limit        int    `json:"limit,omitempty" jsonschema:"Размер страницы, от новых ревизий к старым"`
-	Offset       int    `json:"offset,omitempty" jsonschema:"Смещение"`
+	FacetIdentity string `json:"facetIdentity,omitempty" jsonschema:"Только для collection=facet-documents: identity фасета (endge_list_documents с collection=facets)"`
+	Collection    string `json:"collection" jsonschema:"Коллекция: документы (queries, components, data-views и др.), фасеты facets или документы фасета facet-documents"`
+	Identity      string `json:"identity" jsonschema:"Identity документа"`
+	Workspace     string `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
+	WithSnapshot  bool   `json:"withSnapshot,omitempty" jsonschema:"Включить снимки документа в каждой ревизии"`
+	Limit         int    `json:"limit,omitempty" jsonschema:"Размер страницы, от новых ревизий к старым"`
+	Offset        int    `json:"offset,omitempty" jsonschema:"Смещение"`
 }
 
 type createInput struct {
-	Collection string         `json:"collection" jsonschema:"Коллекция документов, например queries, components или data-views"`
-	Workspace  string         `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
-	Document   map[string]any `json:"document" jsonschema:"Тело создания, как в REST POST /api/v1/<коллекция>: identity, displayName, source, sourceVersion, folderIdentity, description, meta"`
+	FacetIdentity string         `json:"facetIdentity,omitempty" jsonschema:"Только для collection=facet-documents: identity фасета (endge_list_documents с collection=facets)"`
+	Collection    string         `json:"collection" jsonschema:"Коллекция: документы (queries, components, data-views и др.), фасеты facets или документы фасета facet-documents"`
+	Workspace     string         `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
+	Document      map[string]any `json:"document" jsonschema:"Тело создания, как в REST POST /api/v1/<коллекция> (схема <коллекция>.CreateRequest): identity, displayName, source, поле версии формата (sourceVersion или modelVersion — по коллекции, см. описание инструмента), folderIdentity, description, meta. Фасет: identity, displayName, icon, color, meta. Документ фасета: identity, displayName, description, configuration, meta, active"`
 }
 
 type updateInput struct {
-	Collection string         `json:"collection" jsonschema:"Коллекция документов, например queries, components или data-views"`
-	Identity   string         `json:"identity" jsonschema:"Identity документа"`
-	Revision   int            `json:"revision" jsonschema:"Текущая revision документа (поле revision из endge_get_document)"`
-	Workspace  string         `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
-	Changes    map[string]any `json:"changes" jsonschema:"Изменяемые поля, например {\"source\": \"...\"}"`
+	FacetIdentity string         `json:"facetIdentity,omitempty" jsonschema:"Только для collection=facet-documents: identity фасета (endge_list_documents с collection=facets)"`
+	Collection    string         `json:"collection" jsonschema:"Коллекция: документы (queries, components, data-views и др.), фасеты facets или документы фасета facet-documents"`
+	Identity      string         `json:"identity" jsonschema:"Identity документа"`
+	Revision      int            `json:"revision" jsonschema:"Текущая revision документа (поле revision из endge_get_document)"`
+	Workspace     string         `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
+	Changes       map[string]any `json:"changes" jsonschema:"Изменяемые поля, например {\"source\": \"...\"}"`
 }
 
 type mutateInput struct {
-	Collection string `json:"collection" jsonschema:"Коллекция документов, например queries, components или data-views"`
-	Identity   string `json:"identity" jsonschema:"Identity документа"`
-	Revision   int    `json:"revision" jsonschema:"Текущая revision документа (поле revision из endge_get_document)"`
-	Workspace  string `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
+	FacetIdentity string `json:"facetIdentity,omitempty" jsonschema:"Только для collection=facet-documents: identity фасета (endge_list_documents с collection=facets)"`
+	Collection    string `json:"collection" jsonschema:"Коллекция: документы (queries, components, data-views и др.), фасеты facets или документы фасета facet-documents"`
+	Identity      string `json:"identity" jsonschema:"Identity документа"`
+	Revision      int    `json:"revision" jsonschema:"Текущая revision документа (поле revision из endge_get_document)"`
+	Workspace     string `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
 }
 
 type commitInput struct {
@@ -121,18 +145,16 @@ func (t *tools) registerReadTools(server *mcp.Server) {
 	}, t.listWorkspaces)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "endge_list_documents",
-		Description: "Документы коллекции: кратко (без source) или целиком с withSource=true.",
+		Description: "Документы коллекции: кратко (без source) или целиком с withSource=true. collection=facets — фасеты (тенанты, регионы); collection=facet-documents с facetIdentity — документы фасета.",
 		Annotations: readOnly("Список документов коллекции"),
 		InputSchema: inputSchema[listDocumentsInput](func(p map[string]*jsonschema.Schema) {
 			collectionProperty(p)
-			p["limit"].Minimum, p["limit"].Maximum = intRange(1, 500)
-			p["limit"].Default = rawDefault(100)
-			p["offset"].Minimum = new(float64)
+			pageProperties(p, 100)
 		}),
 	}, t.listDocuments)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "endge_get_document",
-		Description: "Документ целиком: source, meta и текущая revision.",
+		Description: "Документ целиком: source, meta и текущая revision. Фасет и документ фасета (configuration) — коллекции facets и facet-documents.",
 		Annotations: readOnly("Документ"),
 		InputSchema: inputSchema[documentInput](collectionProperty),
 	}, t.getDocument)
@@ -143,57 +165,84 @@ func (t *tools) registerReadTools(server *mcp.Server) {
 	}, t.getWorkspace)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "endge_document_revisions",
-		Description: "История ревизий документа от новых к старым: автор, операция, время, accessTokenId/accessTokenName для изменений агента. Снимки — только с withSnapshot=true.",
+		Description: "История ревизий документа от новых к старым: id ревизии, номер, автор, операция, время, коммит, accessTokenId/accessTokenName для изменений агента. Снимки — только с withSnapshot=true или в endge_get_revision.",
 		Annotations: readOnly("История ревизий документа"),
 		InputSchema: inputSchema[revisionsInput](func(p map[string]*jsonschema.Schema) {
 			collectionProperty(p)
-			p["limit"].Minimum, p["limit"].Maximum = intRange(1, 500)
-			p["limit"].Default = rawDefault(20)
-			p["offset"].Minimum = new(float64)
+			pageProperties(p, 20)
 		}),
 	}, t.revisions)
 	mcp.AddTool(server, &mcp.Tool{
+		Name:        "endge_get_revision",
+		Description: "Одна ревизия документа со снимком (snapshot) — состоянием документа после этой ревизии. Используйте перед откатом endge_restore_revision, чтобы сравнить с текущим документом.",
+		Annotations: readOnly("Ревизия документа"),
+		InputSchema: inputSchema[revisionInput](collectionProperty),
+	}, t.getRevision)
+	mcp.AddTool(server, &mcp.Tool{
 		Name:        "endge_commit_plan",
-		Description: "Ревизии, ожидающие коммита, участники и headSequence для endge_commit. Ничего не меняет.",
+		Description: "План коммита: документы с ревизиями, ожидающими коммита (коллекция, identity, displayName, число ревизий, операции, авторы, токены агентов), счётчики, участники и headSequence для endge_commit. Ничего не меняет. Покажите пользователю чужие правки в плане до коммита.",
 		Annotations: readOnly("План коммита"),
 	}, t.commitPlan)
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "endge_list_commits",
+		Description: "История коммитов workspace от новых к старым: id, сообщение, автор, время, headSequence, политика ревизий. Изменения коммита — endge_get_commit.",
+		Annotations: readOnly("История коммитов"),
+		InputSchema: inputSchema[listCommitsInput](func(p map[string]*jsonschema.Schema) { pageProperties(p, 20) }),
+	}, t.listCommits)
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "endge_get_commit",
+		Description: "Коммит и его изменения (diff, как REST GET /api/v1/commits/{id}/diff): для каждого документа — коллекция, identity, операция, ревизии до и после. Содержимое версий — endge_get_revision по beforeRevisionId/afterRevisionId.",
+		Annotations: readOnly("Изменения коммита"),
+	}, t.getCommit)
 }
 
 func (t *tools) registerWriteTools(server *mcp.Server) {
 	mcp.AddTool(server, &mcp.Tool{
-		Name:        "endge_create_document",
-		Description: "Создаёт документ в коллекции. Поля как в REST (схема <коллекция>.CreateRequest справочника API): identity, displayName, source, sourceVersion и другие. Возвращает краткий вид с revision.",
+		Name: "endge_create_document",
+		Description: "Создаёт документ в коллекции. Поля как в REST (схема <коллекция>.CreateRequest справочника API, ресурс llms-full/api/{group}.txt): identity, displayName, source, поле версии формата и другие. Возвращает краткий вид с revision.\n" +
+			"Поле версии формата по коллекциям (неизвестное поле — validation_error):\n" + formatVersionSummary(t.contracts.FormatVersions, entities.DocumentCollections) + "\n" +
+			"- facets: нет поля версии; тело — identity, displayName, icon (имя иконки, например MapPin), color (#rrggbb), meta\n" +
+			"- facet-documents (с facetIdentity): нет поля версии; тело — identity, displayName, description, configuration (обязательно: {\"mode\":\"inherit\",\"patch\":{…}} или {\"mode\":\"replace\",\"value\":{…}}), meta, active",
 		Annotations: mutating("Создать документ", false),
 		InputSchema: inputSchema[createInput](collectionProperty),
 	}, t.createDocument)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "endge_update_document",
-		Description: "Частично изменяет документ (как PATCH): передайте только изменяемые поля и текущую revision. Возвращает краткий вид с новой revision.",
+		Description: "Частично изменяет документ (как PATCH): передайте только изменяемые поля и текущую revision. Меняя source, передавайте поле версии формата коллекции (sourceVersion или modelVersion у components, см. endge_create_document). Возвращает краткий вид с новой revision.",
 		Annotations: mutating("Изменить документ", false),
 		InputSchema: inputSchema[updateInput](func(p map[string]*jsonschema.Schema) {
 			collectionProperty(p)
-			p["revision"].Minimum = new(float64)
+			revisionProperty(p)
 		}),
 	}, t.updateDocument)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "endge_restore_document",
-		Description: "Восстанавливает мягко удалённый документ.",
+		Description: "Восстанавливает мягко удалённый документ. Вернуть прошлое содержимое существующего документа — endge_restore_revision.",
 		Annotations: mutating("Восстановить документ", false),
 		InputSchema: inputSchema[mutateInput](func(p map[string]*jsonschema.Schema) {
 			collectionProperty(p)
-			p["revision"].Minimum = new(float64)
+			revisionProperty(p)
 		}),
 	}, t.restoreDocument)
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "endge_restore_revision",
+		Description: "Откатывает документ к прошлой ревизии (как REST POST .../revisions/{revisionId}/restore с If-Match): содержимое берётся из снимка ревизии, создаётся новая ревизия restore, история не переписывается. Нужны revisionId из endge_document_revisions и текущая revision документа.",
+		Annotations: mutating("Откатить документ к ревизии", false),
+		InputSchema: inputSchema[restoreRevisionInput](func(p map[string]*jsonschema.Schema) {
+			collectionProperty(p)
+			revisionProperty(p)
+		}),
+	}, t.restoreRevision)
 }
 
 func (t *tools) registerDeleteTool(server *mcp.Server) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "endge_delete_document",
-		Description: "Мягко удаляет документ. Только по явной просьбе пользователя; восстановление — endge_restore_document.",
+		Description: "Мягко удаляет документ, фасет или документ фасета. Только по явной просьбе пользователя; восстановление — endge_restore_document.",
 		Annotations: mutating("Удалить документ", true),
 		InputSchema: inputSchema[mutateInput](func(p map[string]*jsonschema.Schema) {
 			collectionProperty(p)
-			p["revision"].Minimum = new(float64)
+			revisionProperty(p)
 		}),
 	}, t.deleteDocument)
 }
@@ -225,17 +274,8 @@ func (t *tools) workspaceContext(ctx context.Context, requested string) (context
 	return entities.WithWorkspaceAccess(ctx, access), nil
 }
 
-// documentUseCase выбирает use case коллекции; неизвестная коллекция — та же ошибка, что в REST.
-func (t *tools) documentUseCase(collection string) (DocumentUseCase, error) {
-	useCase, ok := t.useCases.Documents[collection]
-	if !ok {
-		return nil, domainerrors.WithDetails(domainerrors.InvalidInput("collection_unsupported", "Collection is not supported"), map[string]any{"collection": collection})
-	}
-	return useCase, nil
-}
-
 // documentContract возвращает DTO REST коллекции. Коллекция уже проверена
-// documentUseCase, а BindContracts покрывает все коллекции (тест contracts_test.go);
+// store, а BindContracts покрывает все коллекции (тест contracts_test.go);
 // отсутствие контракта — ошибка сборки, поэтому проверка отклоняет любое тело.
 func (t *tools) documentContract(collection string) shared.DocumentContract {
 	if contract, ok := t.contracts.Documents[collection]; ok {
@@ -298,7 +338,7 @@ func (t *tools) status(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) 
 		result["authentication"] = "user"
 		result["defaultWorkspace"] = nil
 	}
-	if links := docLinks(t.cfg.AgentDocsURL); links != nil {
+	if links := t.docs.links(); links != nil {
 		result["docs"] = links
 	}
 	return jsonResult(result)
@@ -320,13 +360,22 @@ func (t *tools) listWorkspaces(ctx context.Context, _ *mcp.CallToolRequest, _ st
 	return jsonResult(result)
 }
 
+// documentTarget проверяет коллекцию и workspace: общий пролог инструментов документов.
+func (t *tools) documentTarget(ctx context.Context, collection, facetIdentity, workspace string) (context.Context, collectionStore, string, error) {
+	store, facet, err := t.store(collection, facetIdentity)
+	if err != nil {
+		return nil, nil, "", err
+	}
+	ctx, err = t.workspaceContext(ctx, workspace)
+	if err != nil {
+		return nil, nil, "", err
+	}
+	return ctx, store, facet, nil
+}
+
 func (t *tools) listDocuments(ctx context.Context, _ *mcp.CallToolRequest, in listDocumentsInput) (*mcp.CallToolResult, any, error) {
 	const tool = "endge_list_documents"
-	useCase, err := t.documentUseCase(in.Collection)
-	if err != nil {
-		return errorResult(t.logger, tool, err)
-	}
-	ctx, err = t.workspaceContext(ctx, in.Workspace)
+	ctx, store, facet, err := t.documentTarget(ctx, in.Collection, in.FacetIdentity, in.Workspace)
 	if err != nil {
 		return errorResult(t.logger, tool, err)
 	}
@@ -337,13 +386,13 @@ func (t *tools) listDocuments(ctx context.Context, _ *mcp.CallToolRequest, in li
 	if folder := strings.TrimSpace(in.FolderIdentity); folder != "" {
 		filter.FolderIdentity = &folder
 	}
-	values, err := useCase.List(ctx, filter)
+	values, err := store.list(ctx, facet, filter)
 	if err != nil {
 		return errorResult(t.logger, tool, err)
 	}
 	items := make([]map[string]any, 0, len(values))
 	for _, value := range values {
-		item, mapErr := documentView(value)
+		item, mapErr := store.view(value)
 		if mapErr != nil {
 			return errorResult(t.logger, tool, mapErr)
 		}
@@ -352,24 +401,24 @@ func (t *tools) listDocuments(ctx context.Context, _ *mcp.CallToolRequest, in li
 		}
 		items = append(items, item)
 	}
-	return jsonResult(map[string]any{"collection": in.Collection, "items": items, "total": len(items), "limit": filter.Limit, "offset": filter.Offset})
+	result := map[string]any{"collection": in.Collection, "items": items, "total": len(items), "limit": filter.Limit, "offset": filter.Offset}
+	if facet != "" {
+		result["facetIdentity"] = facet
+	}
+	return jsonResult(result)
 }
 
 func (t *tools) getDocument(ctx context.Context, _ *mcp.CallToolRequest, in documentInput) (*mcp.CallToolResult, any, error) {
 	const tool = "endge_get_document"
-	useCase, err := t.documentUseCase(in.Collection)
+	ctx, store, facet, err := t.documentTarget(ctx, in.Collection, in.FacetIdentity, in.Workspace)
 	if err != nil {
 		return errorResult(t.logger, tool, err)
 	}
-	ctx, err = t.workspaceContext(ctx, in.Workspace)
+	document, err := store.get(ctx, facet, in.Identity, in.IncludeDeleted)
 	if err != nil {
 		return errorResult(t.logger, tool, err)
 	}
-	document, err := useCase.Get(ctx, in.Identity, in.IncludeDeleted)
-	if err != nil {
-		return errorResult(t.logger, tool, err)
-	}
-	view, err := documentView(*document)
+	view, err := store.view(*document)
 	if err != nil {
 		return errorResult(t.logger, tool, err)
 	}
@@ -414,60 +463,25 @@ func (t *tools) getWorkspace(ctx context.Context, _ *mcp.CallToolRequest, in wor
 	return jsonResult(map[string]any{"workspace": workspace, "domainVersion": snapshot.DomainVersion, "documents": collections})
 }
 
-func (t *tools) revisions(ctx context.Context, _ *mcp.CallToolRequest, in revisionsInput) (*mcp.CallToolResult, any, error) {
-	const tool = "endge_document_revisions"
-	ctx, err := t.workspaceContext(ctx, in.Workspace)
-	if err != nil {
-		return errorResult(t.logger, tool, err)
-	}
-	options := ports.RevisionListOptions{IncludeSnapshot: in.WithSnapshot, Limit: in.Limit, Offset: in.Offset}
-	if options.Limit == 0 {
-		options.Limit = 20
-	}
-	page, err := t.useCases.Revisions.List(ctx, in.Collection, in.Identity, options)
-	if err != nil {
-		return errorResult(t.logger, tool, err)
-	}
-	items := make([]map[string]any, 0, len(page.Items))
-	for _, revision := range page.Items {
-		item := map[string]any{
-			"id": revision.ID, "revisionNumber": revision.RevisionNumber, "operation": revision.Operation,
-			"createdBy": revision.CreatedBy, "createdAt": revision.CreatedAt, "committedInCommitId": revision.CommittedInCommitID,
-		}
-		if revision.AccessTokenID != nil {
-			item["accessTokenId"] = *revision.AccessTokenID
-		}
-		if revision.AccessTokenName != nil {
-			item["accessTokenName"] = *revision.AccessTokenName
-		}
-		if in.WithSnapshot {
-			item["snapshot"] = revision.Snapshot
-		}
-		items = append(items, item)
-	}
-	return jsonResult(map[string]any{"items": items, "total": page.Total, "limit": options.Limit, "offset": options.Offset})
-}
-
 func (t *tools) commitPlan(ctx context.Context, _ *mcp.CallToolRequest, in workspaceInput) (*mcp.CallToolResult, any, error) {
 	const tool = "endge_commit_plan"
 	ctx, err := t.workspaceContext(ctx, in.Workspace)
 	if err != nil {
 		return errorResult(t.logger, tool, err)
 	}
-	plan, err := t.useCases.Commits.Plan(ctx)
+	plan, err := t.useCases.Commits.PlanWithDocuments(ctx)
 	if err != nil {
 		return errorResult(t.logger, tool, err)
+	}
+	if plan.Documents == nil {
+		plan.Documents = []commits.PlanDocument{}
 	}
 	return jsonResult(plan)
 }
 
 func (t *tools) createDocument(ctx context.Context, _ *mcp.CallToolRequest, in createInput) (*mcp.CallToolResult, any, error) {
 	const tool = "endge_create_document"
-	useCase, err := t.documentUseCase(in.Collection)
-	if err != nil {
-		return errorResult(t.logger, tool, err)
-	}
-	ctx, err = t.workspaceContext(ctx, in.Workspace)
+	ctx, store, facet, err := t.documentTarget(ctx, in.Collection, in.FacetIdentity, in.Workspace)
 	if err != nil {
 		return errorResult(t.logger, tool, err)
 	}
@@ -475,23 +489,12 @@ func (t *tools) createDocument(ctx context.Context, _ *mcp.CallToolRequest, in c
 	if err != nil {
 		return errorResult(t.logger, tool, domainerrors.InvalidInput("invalid_json", "document must be a JSON object"))
 	}
-	if err = t.documentContract(in.Collection).Create.Validate(payload); err != nil {
-		return errorResult(t.logger, tool, err)
-	}
-	input, err := documents.NewCreateInputJSON(payload)
-	if err != nil {
-		return errorResult(t.logger, tool, err)
-	}
-	return t.writeSummary(tool, func() (*entities.Document, error) { return useCase.Create(ctx, input) })
+	return t.writeSummary(tool, in.Collection, store, func() (*entities.Document, error) { return store.create(ctx, facet, payload) })
 }
 
 func (t *tools) updateDocument(ctx context.Context, _ *mcp.CallToolRequest, in updateInput) (*mcp.CallToolResult, any, error) {
 	const tool = "endge_update_document"
-	useCase, err := t.documentUseCase(in.Collection)
-	if err != nil {
-		return errorResult(t.logger, tool, err)
-	}
-	ctx, err = t.workspaceContext(ctx, in.Workspace)
+	ctx, store, facet, err := t.documentTarget(ctx, in.Collection, in.FacetIdentity, in.Workspace)
 	if err != nil {
 		return errorResult(t.logger, tool, err)
 	}
@@ -499,27 +502,18 @@ func (t *tools) updateDocument(ctx context.Context, _ *mcp.CallToolRequest, in u
 	if err != nil {
 		return errorResult(t.logger, tool, domainerrors.InvalidInput("invalid_json", "changes must be a JSON object"))
 	}
-	if err = t.documentContract(in.Collection).Patch.Validate(payload); err != nil {
-		return errorResult(t.logger, tool, err)
-	}
-	input, err := documents.NewPatchInputJSON(payload)
-	if err != nil {
-		return errorResult(t.logger, tool, err)
-	}
-	return t.writeSummary(tool, func() (*entities.Document, error) { return useCase.Patch(ctx, in.Identity, input, in.Revision) })
+	return t.writeSummary(tool, in.Collection, store, func() (*entities.Document, error) {
+		return store.patch(ctx, facet, in.Identity, payload, in.Revision)
+	})
 }
 
 func (t *tools) restoreDocument(ctx context.Context, _ *mcp.CallToolRequest, in mutateInput) (*mcp.CallToolResult, any, error) {
 	const tool = "endge_restore_document"
-	useCase, err := t.documentUseCase(in.Collection)
+	ctx, store, facet, err := t.documentTarget(ctx, in.Collection, in.FacetIdentity, in.Workspace)
 	if err != nil {
 		return errorResult(t.logger, tool, err)
 	}
-	ctx, err = t.workspaceContext(ctx, in.Workspace)
-	if err != nil {
-		return errorResult(t.logger, tool, err)
-	}
-	return t.writeSummary(tool, func() (*entities.Document, error) { return useCase.Restore(ctx, in.Identity, in.Revision) })
+	return t.writeSummary(tool, in.Collection, store, func() (*entities.Document, error) { return store.restore(ctx, facet, in.Identity, in.Revision) })
 }
 
 // deleteDocument дублирует проверку флага delete: инструмент скрыт от такого токена,
@@ -529,23 +523,19 @@ func (t *tools) deleteDocument(ctx context.Context, _ *mcp.CallToolRequest, in m
 	if !permissionsFrom(ctx).delete {
 		return errorResult(t.logger, tool, domainerrors.Forbidden("access_token_delete_forbidden", "Access token does not allow deletion"))
 	}
-	useCase, err := t.documentUseCase(in.Collection)
+	ctx, store, facet, err := t.documentTarget(ctx, in.Collection, in.FacetIdentity, in.Workspace)
 	if err != nil {
 		return errorResult(t.logger, tool, err)
 	}
-	ctx, err = t.workspaceContext(ctx, in.Workspace)
+	document, err := store.remove(ctx, facet, in.Identity, in.Revision)
 	if err != nil {
 		return errorResult(t.logger, tool, err)
 	}
-	document, err := useCase.Delete(ctx, in.Identity, in.Revision)
+	view, err := store.view(*document)
 	if err != nil {
 		return errorResult(t.logger, tool, err)
 	}
-	summary, err := documentSummary(*document)
-	if err != nil {
-		return errorResult(t.logger, tool, err)
-	}
-	return jsonResult(map[string]any{"deleted": true, "document": summary})
+	return jsonResult(map[string]any{"deleted": true, "document": summarize(view)})
 }
 
 // commit дублирует проверку флага commit по той же причине, что deleteDocument.
@@ -573,14 +563,32 @@ func (t *tools) commit(ctx context.Context, _ *mcp.CallToolRequest, in commitInp
 }
 
 // writeSummary выполняет изменение и возвращает краткий вид документа с новой revision.
-func (t *tools) writeSummary(tool string, operation func() (*entities.Document, error)) (*mcp.CallToolResult, any, error) {
+// Ошибка проверки тела дополняется подсказкой о поле версии формата коллекции.
+func (t *tools) writeSummary(tool, collection string, store collectionStore, operation func() (*entities.Document, error)) (*mcp.CallToolResult, any, error) {
 	document, err := operation()
 	if err != nil {
-		return errorResult(t.logger, tool, err)
+		return errorResultWithHint(t.logger, tool, err, t.formatVersionHint(collection, err))
 	}
-	summary, err := documentSummary(*document)
+	view, err := store.view(*document)
 	if err != nil {
 		return errorResult(t.logger, tool, err)
 	}
-	return jsonResult(summary)
+	return jsonResult(summarize(view))
+}
+
+// formatVersionHint напоминает поле версии формата коллекции при ошибке проверки тела.
+func (t *tools) formatVersionHint(collection string, err error) string {
+	switch domainerrors.CodeOf(err) {
+	case "validation_error", "source_version_invalid", "query_source_version_invalid", "simulation_source_version_invalid":
+	default:
+		return ""
+	}
+	version, ok := t.contracts.FormatVersions[collection]
+	if !ok {
+		return ""
+	}
+	if version.Field == "" {
+		return "У коллекции " + collection + " нет поля версии формата: не передавайте sourceVersion и modelVersion."
+	}
+	return "Поле версии формата коллекции " + collection + ": " + version.describe() + "."
 }

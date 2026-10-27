@@ -1,0 +1,443 @@
+# Словарь описаний OpenAPI для агентов (поддерживается вручную).
+#
+# internal/tools/openapienrich применяет его к docs/openapi3.yaml в `make docs`:
+#   properties — описание свойства по имени во всех схемах;
+#   schemas    — переопределения для схемы (точное имя или шаблон вида composition.*), ключ "" — описание схемы;
+#   описания из аннотаций кода не перезаписываются.
+# Инструмент падает, если у свойства нет описания или запись словаря ничему не соответствует.
+# Описания пишутся по коду backend, а не по названию поля.
+
+info:
+  description: |
+    Версия документа совпадает с APP_VERSION backend (файл VERSION).
+
+    Для агентов: аутентификация — заголовок Authorization: Bearer с JWT access token провайдера OIDC
+    или персональным токеном endge_pat_… (раздел «Агенты» → «Токены» документации Endge).
+    Операции с документами workspace требуют заголовок X-Endge-Workspace; изменение, удаление и восстановление —
+    If-Match с текущей revision. Ошибки приходят как {code, message, details}; смысл каждого code и следующий шаг
+    описаны в каталоге docs/error-codes.yaml репозитория github.com/endge-lab/service-backend и в разделе
+    «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).
+
+securitySchemes:
+  BearerAuth: |
+    Authorization: Bearer <JWT access token провайдера OIDC | персональный токен endge_pat_…>.
+    JWT выдаёт провайдер OIDC (например, Keycloak) при входе пользователя; права берутся из назначений Endge
+    и групп токена. Персональный токен выпускает пользователь в Configurator («Для агента») или через
+    POST /api/v1/access-tokens: он действует в одном workspace, имеет scope read или write, флаги commit и delete
+    и срок действия; секрет показывается один раз. Без заголовка браузер использует HttpOnly cookie сессии после /auth/login.
+
+properties:
+  accessManagement: "Как управляются права на этой установке: локально в Endge или внешней системой (группы провайдера OIDC)."
+  accessToken: "Выпущенный персональный токен: метаданные и, только в ответе на создание, секрет token."
+  accessTokenId: "UUID персонального токена, которым выполнено изменение; пусто, если изменение сделано в пользовательской сессии."
+  accessTokenName: "Имя персонального токена, которым выполнено изменение (для аудита)."
+  active: "Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt)."
+  adapter: "Адаптер провайдера AI: anthropic или ollama."
+  adapterId: "Адаптер профиля аутентификации (например, oidc, bearer, basic, oauth2-client-credentials, oauth2-password); определяет допустимые config, credentials и session."
+  adapters: "Адаптеры AI-провайдеров, доступные на установке."
+  affected: "Сколько назначений затронуто массовой операцией."
+  afterRevisionId: "UUID ревизии документа после изменения, входящего в коммит."
+  aiCatalog: "AI-каталог workspace в переносимом виде: подключения к провайдерам и профили моделей (без секретов, если они не переносятся)."
+  aiConnections: "Количество AI-подключений."
+  aiModels: "Количество профилей AI-моделей."
+  archived: "Признак архивного (скрытого из активного списка) объекта."
+  artifact: "Переносимый артефакт workspace (JSON экспорта или зашифрованный конверт) для построения плана импорта."
+  authMode: "Как справочник аутентифицируется при запросах: inherit — профиль workspace по умолчанию, profile — профиль из authProfileIdentity, none — без аутентификации."
+  authProfileIdentity: "identity профиля аутентификации (коллекция auth-profiles) для authMode=profile."
+  available: "Доступна ли функция на установке (подключён ли сервис)."
+  baseApiUrl: "Базовый URL внешнего API, из которого справочник получает данные."
+  baseSequence: "headSequence workspace, с которого начинается диапазон коммита: в коммит входят ревизии после baseSequence до headSequence."
+  baseUrl: "Абсолютный http/https URL сервиса без userinfo, query и fragment."
+  beforeRevisionId: "UUID ревизии документа до изменения, входящего в коммит; пусто для создания."
+  buildMetadata: "Метаданные сборки, из которой создан релиз: программа, версия компилятора, профиль и контексты."
+  buildProfiles: "Профили сборки workspace (в экспорте — переносимые профили с настройками)."
+  buildScope: "Область сборки профиля."
+  canChangeVisibility: "Может ли текущий пользователь менять видимость профиля (только владелец)."
+  canManage: "Может ли текущий пользователь изменять или удалять этот объект."
+  canRun: "Может ли текущий пользователь запускать AI-ассистента в этом workspace."
+  canView: "Может ли текущий пользователь просматривать AI-ассистента в этом workspace."
+  candidateId: "Идентификатор варианта ответа на уточнение AI."
+  candidates: "Варианты ответа на уточняющий вопрос AI."
+  changes: "Изменения документов, вошедшие в коммит или восстановление: документ, операция, ревизии до и после."
+  checksum: "Контрольная сумма содержимого (снимка, резервной копии или ревизии) для проверки целостности."
+  code: "Машиночитаемый код ошибки."
+  codeRef: "Ссылка на внешний файл с данными мока (для contentSource, отличного от inline)."
+  collection: "Коллекция документов workspace (путь коллекции в API, например types, queries, compositions)."
+  collectionSlug: "Имя коллекции во внешнем API справочника."
+  color: "Цвет в формате #rrggbb (строчные буквы)."
+  commit: "Флаг персонального токена: разрешены коммиты и релизы. Требует scope=write и роли Admin у владельца."
+  commitId: "UUID коммита."
+  commitMessage: "Сообщение коммита."
+  committedAt: "Время коммита (RFC 3339)."
+  committedInCommitId: "UUID коммита, в который вошла ревизия; пусто, пока ревизия не закоммичена."
+  compilerVersion: "Версия компилятора, которым собран бандл."
+  config: "Несекретная конфигурация адаптера профиля аутентификации (например, issuer, clientId, tokenEndpoint); секреты — только в credentials."
+  configuration: "Конфигурация (JSON-объект): переменные, локали, темы, адаптеры и другие настройки."
+  confirmation: "Подтверждение необратимой операции: точный identity целевого workspace."
+  conflicts: "Конфликты, из-за которых план нельзя применить без изменений."
+  connection: "AI-подключение к провайдеру."
+  connectionId: "UUID AI-подключения к провайдеру."
+  connectionName: "Имя AI-подключения."
+  connections: "AI-подключения к провайдерам."
+  content: "Текст сообщения."
+  contentSource: "Источник данных мока: inline — данные в source, иначе внешний файл codeRef."
+  contentType: "MIME-тип данных мока (например, application/json)."
+  context: "Контекст сборки (значения structural context, для которых собран бандл)."
+  contextMode: "Режим выбора контекста запуска AI."
+  contexts: "Какие контексты включаются в сборку."
+  contractVersion: "Версия контракта входа/выхода вычисления; положительное целое."
+  contributors: "Авторы ревизий, вошедших в коммит."
+  conversationId: "UUID AI-диалога."
+  count: "Количество генерируемых записей."
+  created: "Сколько назначений создано массовой операцией."
+  createdAt: "Время создания (RFC 3339, UTC). Заполняет сервер."
+  createdBy: "Кто создал объект. Заполняет сервер; в запросах не передаётся."
+  creates: "Сколько документов будет создано (или создано) при применении плана."
+  credential: "Секрет AI-подключения (API-ключ). Только в запросах; в ответах не возвращается — см. hasCredential."
+  credentials: "Секреты профиля аутентификации (именованные строки: token, username, password, clientSecret). Только запись; в ответах не возвращаются."
+  currentConversationId: "UUID текущего AI-диалога пользователя."
+  dataMode: "Режим данных workspace: development (моки и симуляции) или production."
+  debuggerStructure: "Включать ли в сборку структуру для отладчика."
+  defaultArrayLength: "Длина генерируемых массивов по умолчанию."
+  defaultImplementation: "Реализация действия по умолчанию (JSON-объект)."
+  deletes: "Сколько документов будет удалено (или удалено) при применении плана."
+  delete: "Флаг персонального токена: разрешено удаление документов. Требует scope=write."
+  deletedAt: "Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match."
+  description: "Произвольное описание для людей."
+  details: "Дополнительные сведения об ошибке: field — поле запроса, fields — ошибки валидации полей, reason — причина разбора тела."
+  diagnostics: "Уровень диагностических сведений в сборке."
+  displayName: "Отображаемое имя для людей; не идентификатор."
+  document: "Документ (JSON-объект)."
+  documentCount: "Количество документов."
+  documentId: "UUID документа."
+  documentIdentity: "identity документа в его коллекции."
+  documentStructure: "Структура документов workspace: frontend (стандартные коллекции фронтенда) или custom."
+  documentType: "Коллекция документа (например, types, queries)."
+  documents: "Документы по коллекциям."
+  domainVersion: "Версия домена: детерминированный отпечаток содержимого документов workspace (формат dv2). Совпадает у одинакового содержимого; используется для сверки экспорта, импорта, коммитов и релизов."
+  emitImmediately: "Отправить первое сообщение потока сразу, не дожидаясь интервала."
+  enabled: "Включён ли объект; выключенный не используется для запусков."
+  entityType: "Коллекция, документы которой хранит папка (для scope=collection); не задаётся для папок workspace."
+  env: "Окружение сервиса (development, production и т. п.)."
+  error: "Ошибка JSON-RPC."
+  eventsUrl: "URL подписки на события потока (Server-Sent Events)."
+  expectedHeadSequence: "headSequence workspace из плана (POST /api/v1/commits/plan или план восстановления/импорта). Сервер применит операцию, только если с тех пор не появилось новых ревизий; иначе 409 head_sequence_conflict."
+  expectedRevision: "Текущая revision документа, ожидаемая сервером (аналог If-Match в теле запроса)."
+  expiresAt: "Время истечения (RFC 3339): после него объект недействителен."
+  facetIdentity: "identity фасета."
+  fields: "Поля фильтра."
+  fileFormat: "Формат файла сборки: gzip или json."
+  folderIdentity: "identity папки коллекции, в которой лежит документ; пусто — корень коллекции."
+  from: "Поле-источник сопоставления."
+  generation: "Параметры генерации данных."
+  hasCredential: "Сохранён ли секрет (сам секрет не возвращается)."
+  headSequence: "Счётчик изменений workspace: увеличивается на 1 при каждой ревизии документа. Используется как expectedHeadSequence в коммитах, восстановлении и импорте."
+  icon: "Иконка: PascalCase-токен из набора иконок Configurator (например, MapPin)."
+  id: "Серверный UUID записи. В путях документов используется identity, а не id."
+  identity: "Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании."
+  idleTimeoutMs: "Через сколько миллисекунд без keepalive поток останавливается."
+  imported: "Сколько объектов импортировано."
+  includeAst: "Включать ли AST в сборку."
+  includePublicAI: "Включать ли в экспорт публичные AI-подключения."
+  incoming: "Сколько объектов содержит импортируемый или восстанавливаемый снимок."
+  installedIntegrations: "Интеграции, установленные в workspace: identity, версия и конфигурация."
+  integrations: "Количество интеграций."
+  interactionId: "Идентификатор взаимодействия AI Workbench, к которому относится уточнение."
+  intervalMs: "Интервал между сообщениями потока в миллисекундах."
+  isDefault: "Модель по умолчанию."
+  isPrimitive: "Примитивный тип (без полей), например string или number."
+  issuer: "Издатель (issuer) токена провайдера OIDC."
+  items: "Элементы страницы списка."
+  itemsPerMessage: "Сколько записей в одном сообщении потока."
+  jsonrpc: "Версия протокола JSON-RPC, всегда 2.0."
+  kind: "Вид объекта."
+  kindIdentity: "identity связанного документа для выбранного kind."
+  lastCommittedDomainVersion: "domainVersion последнего коммита."
+  lastSeenAt: "Время последнего запроса пользователя."
+  lastSynchronizedAt: "Время последней синхронизации прав пользователя с внешним провайдером."
+  lastUsedAt: "Время последнего использования токена."
+  limit: "Размер страницы, который применил сервер."
+  locales: "Переводы по локалям: объект {локаль: {ключ: строка}}."
+  managedBy: "Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user."
+  managedById: "Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core)."
+  mappings: "Сопоставления полей связи."
+  maxTtlSeconds: "Максимальный срок жизни токена в секундах."
+  message: "Сообщение для человека."
+  messageCount: "Количество сообщений в диалоге."
+  meta: "Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует."
+  method: "Метод JSON-RPC (например, initialize, tools/list, tools/call)."
+  missingIntegrations: "Интеграции, которых нет в целевом workspace, но которые нужны снимку."
+  mode: "Режим работы."
+  model: "Профиль AI-модели."
+  modelCount: "Количество профилей моделей у подключения."
+  modelProfileId: "UUID профиля AI-модели."
+  modelVersion: "Версия модели компонента; положительное целое."
+  models: "Профили AI-моделей."
+  moved: "Сколько документов перемещено."
+  mutationBatchId: "UUID пакета изменений: ревизии, созданные одним запросом, имеют общий mutationBatchId."
+  name: "Имя объекта для людей."
+  nextCursor: "Курсор следующей страницы; передайте его в cursor без изменений. Пусто — страниц больше нет."
+  node: "Узел топологии сборки."
+  offset: "Смещение страницы, которое применил сервер."
+  openClarification: "Открытый уточняющий вопрос AI, на который ждут ответа."
+  operation: "Операция над документом: create, update, delete или restore."
+  optionalPropertyProbability: "Вероятность заполнения необязательных свойств (0–1)."
+  ownedByMe: "Принадлежит ли объект текущему пользователю."
+  owner: "Владелец."
+  ownerLogin: "Логин владельца приватного объекта."
+  parameters: "Параметры генерации потока."
+  parametersVersion: "Версия параметров потока: растёт при каждом изменении параметров."
+  params: "Параметры вызова JSON-RPC."
+  parentCommitId: "UUID предыдущего коммита workspace."
+  parentIdentity: "identity родительской папки; пусто — папка верхнего уровня."
+  parentRevisionId: "UUID предыдущей ревизии документа."
+  password: "Пароль зашифрованного артефакта workspace (до 1024 символов). Не сохраняется."
+  path: "Путь к полю в генерируемых данных."
+  paused: "Поставлен ли поток на паузу."
+  pendingRevisionCount: "Количество незакоммиченных ревизий workspace."
+  persistRefreshToken: "Сохранять ли refresh token между сессиями приложения."
+  placement: "Проекция папок: frontend — типизированные папки коллекций, workspace — свободные папки workspace."
+  planId: "Идентификатор сохранённого плана; передайте его при применении. План действует до expiresAt."
+  planVersion: "Версия плана AI, к которой относится уточнение."
+  platformAdmin: "Есть ли у пользователя роль Platform Admin."
+  position: "Позиция в порядке отображения (с нуля)."
+  privateAIConnections: "Перенос приватных AI-подключений при экспорте: none, own (только свои) или all."
+  privateBuildProfiles: "Перенос приватных профилей сборки при экспорте: none, own или all."
+  profile: "Профиль генерации или сборки."
+  profileId: "UUID профиля AI-модели."
+  programId: "Идентификатор программы, для которой собран бандл."
+  prompt: "Запрос пользователя к AI-ассистенту."
+  providerId: "Идентификатор провайдера идентификации пользователя."
+  providerModelId: "Идентификатор модели у провайдера (например, имя модели в API провайдера)."
+  question: "Текст уточняющего вопроса AI."
+  reason: "Причина недоступности."
+  relations: "Связи между генерируемыми коллекциями."
+  replyToClarificationId: "Идентификатор уточнения, на которое отвечает запуск."
+  requestId: "Идентификатор запроса клиента для идемпотентности запуска AI."
+  restoredFromRevisionId: "UUID ревизии, из которой восстановлен документ."
+  restores: "Сколько документов будет восстановлено (или восстановлено) при применении плана."
+  result: "Результат JSON-RPC."
+  revision: "Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict."
+  revisionCount: "Количество ревизий."
+  revisionNumber: "Порядковый номер ревизии документа (совпадает с revision документа после изменения)."
+  revisionPolicy: "Как сохранить ревизии в коммите: preserve — все ревизии, squash — схлопнуть промежуточные (чужие ревизии схлопывает только Admin)."
+  revokedAt: "Время отзыва токена; пусто, если токен не отозван."
+  revokedBy: "Кто отозвал токен."
+  role: "Роль: viewer — чтение, editor — изменение документов, admin — управление workspace, участниками и коммитами."
+  runtime: "Среда выполнения (runtime) сборки."
+  schema: "JSON Schema генерируемых данных."
+  schemaVersion: "Версия схемы переносимого снимка workspace (WORKSPACE_SCHEMA_VERSION backend)."
+  scope: "Область действия."
+  scopeType: "Область назначения доступа: platform или workspace."
+  seed: "Seed генератора: одинаковый seed даёт одинаковые данные."
+  selectedCandidateId: "Выбранный вариант ответа на уточнение AI."
+  selection: "Выборка целей."
+  sequence: "Порядковый номер."
+  service: "Имя сервиса."
+  services: "Подключённые backend-сервисы и их состояние."
+  session: "Политика хранения сессии профиля аутентификации (для адаптеров, выдающих токен)."
+  settings: "Настройки профиля сборки."
+  settingsVersion: "Версия формата настроек профиля сборки."
+  shared: "Включать ли в коммит ревизии других пользователей workspace."
+  sizeBytes: "Размер в байтах."
+  skippedAIConnections: "Сколько AI-подключений пропущено при импорте."
+  skippedBuildProfiles: "Сколько профилей сборки пропущено при импорте."
+  slot: "Слот плана AI, для которого нужно уточнение."
+  snapshot: "Полный снимок документа на момент ревизии (только при snapshot=true)."
+  snapshotChecksum: "Контрольная сумма снимка, по которому построен план."
+  snapshotVersion: "Версия формата снимка ревизии."
+  source: "Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции."
+  sourceCommitId: "UUID коммита, из которого создан релиз."
+  sourceName: "Отображаемое имя внешней системы, управляющей правами."
+  sourceVersion: "Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1)."
+  startupCompositionIdentity: "identity активной композиции, с которой стартует приложение workspace; null — не задана."
+  state: "Состояние."
+  status: "Состояние."
+  storage: "Где приложение хранит сессию: memory, sessionStorage или localStorage."
+  storeIdentity: "identity хранилища (коллекция stores), состояние которого обновляет документ."
+  stream: "Параметры потока."
+  subject: "Идентификатор пользователя у провайдера (claim sub)."
+  supportedTargets: "Платформы, для которых доступен компонент (например, vue, web-component)."
+  tag: "Тег компонента для использования в разметке."
+  target: "Цель."
+  targetETag: "ETag (revision) целевого workspace, на котором построен план; при изменении workspace план не применится."
+  targetWorkspace: "identity целевого workspace плана."
+  taskId: "Идентификатор задачи AI Workbench."
+  to: "Поле-приёмник сопоставления."
+  token: "Секрет персонального токена endge_pat_…; возвращается один раз при создании — сохраните его, повторно получить нельзя."
+  tokenPrefix: "Начало секрета токена для узнавания в списке (сам секрет не хранится в открытом виде)."
+  topology: "Топология сборки: узлы и их runtime."
+  total: "Общее количество элементов."
+  tree: "Дерево навигации."
+  type: "Тип."
+  unsupportedCollections: "Коллекции снимка, которые этот backend не поддерживает; при их наличии план не применяется."
+  uniqueBy: "Поле, по которому значения должны быть уникальными."
+  updated: "Сколько назначений изменено массовой операцией."
+  updatedAt: "Время последнего изменения (RFC 3339, UTC). Заполняет сервер."
+  updatedBy: "Кто последним изменил объект. Заполняет сервер."
+  updates: "Сколько документов будет изменено (или изменено) при применении плана."
+  user: "Пользователь."
+  userId: "UUID пользователя Endge."
+  username: "Логин пользователя."
+  valid: "Можно ли применить план: false, если есть validationErrors, conflicts или неподдерживаемые коллекции."
+  validationErrors: "Ошибки проверки снимка; при их наличии план не применяется."
+  version: "Версия."
+  visibility: "Видимость: public/shared — доступно всем пользователям с доступом, private — только владельцу."
+  warnings: "Предупреждения: план можно применить, но стоит проверить."
+  workspace: "Данные workspace."
+  workspaceDisplayName: "Отображаемое имя workspace."
+  workspaceFolderIdentity: "identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции."
+  workspaceId: "UUID workspace."
+  workspaceIdentities: "identity выбранных workspace."
+  workspaceIdentity: "identity workspace."
+  workspaceSchemaVersion: "Поддерживаемая версия схемы переносимого снимка workspace."
+  workspaceSequence: "headSequence workspace после этой ревизии."
+  workspaces: "Workspace, доступные пользователю, с его ролью."
+
+schemas:
+  # --- Ошибки ---
+  respond.ErrorResponse:
+    "": "Ошибка HTTP API. Действие по code — в каталоге ошибок docs/error-codes.yaml."
+    code: "Машиночитаемый код ошибки. Список кодов с HTTP-статусом, смыслом и действием агента — в каталоге docs/error-codes.yaml (github.com/endge-lab/service-backend) и на странице ошибок документации Endge."
+    message: "Безопасное сообщение для человека; может меняться, поэтому решения принимайте по code."
+  shared.ErrorResponse:
+    "": "Ошибка HTTP API. Действие по code — в каталоге ошибок docs/error-codes.yaml."
+    code: "Машиночитаемый код ошибки. Список кодов с HTTP-статусом, смыслом и действием агента — в каталоге docs/error-codes.yaml (github.com/endge-lab/service-backend) и на странице ошибок документации Endge."
+    message: "Безопасное сообщение для человека; может меняться, поэтому решения принимайте по code."
+  mcp.JSONRPCError:
+    code: "Код ошибки JSON-RPC (например, -32602 — неверные параметры). Ошибки инструментов приходят не здесь, а в result с isError и полем error, равным code HTTP API."
+    message: "Сообщение об ошибке протокола."
+  mcp.JSONRPCRequest:
+    id: "Идентификатор запроса JSON-RPC; ответ приходит с тем же id. Для уведомлений не передаётся."
+  mcp.JSONRPCResponse:
+    id: "Идентификатор запроса JSON-RPC, на который это ответ."
+
+  # --- Коммиты и релизы ---
+  commit.CreateRequest:
+    message: "Сообщение коммита (до 1000 символов)."
+  commit.Response:
+    message: "Сообщение коммита."
+  release.RestoreResponse:
+    message: "Сообщение коммита, созданного восстановлением."
+  "*.ReorderRequest":
+    items: "Полный упорядоченный список identity фасетов; должен совпадать с текущим набором."
+
+  # --- Сессия и пользователи ---
+  session.AccessManagementResponse:
+    mode: "local — права назначаются в Endge; external — права приходят из групп провайдера OIDC и в Endge не меняются."
+  session.UserResponse:
+    id: "UUID пользователя Endge."
+  entities.Actor:
+    id: "UUID пользователя Endge."
+  session.WorkspaceResponse:
+    identity: "identity workspace; передавайте его в заголовке X-Endge-Workspace."
+  "workspace.*":
+    identity: "identity workspace (уникален в платформе); передавайте его в заголовке X-Endge-Workspace."
+    version: "Версия установленной интеграции."
+  workspace.ArchiveItemResponse:
+    deletedAt: "Время удаления workspace (RFC 3339)."
+  "access_control.*":
+    user: "Пользователь, которому назначен доступ."
+  entities.AIMessage:
+    role: "Автор сообщения AI-диалога: user или assistant."
+    sequence: "Порядковый номер сообщения в диалоге."
+    content: "Текст сообщения."
+
+  # --- Персональные токены ---
+  "access_token.*":
+    name: "Имя токена для людей (1–120 символов), например имя агента и задачи."
+    scope: "read — только чтение; write — чтение и изменение документов (нужна роль Editor)."
+    status: "Состояние токена: active, expired или revoked."
+    owner: "Пользователь, выпустивший токен; права токена не шире его прав в workspace."
+    workspaceIdentity: "identity workspace, в котором действует токен."
+    expiresAt: "Время истечения токена (RFC 3339); обязателен при выпуске, не больше максимального срока."
+    description: "Описание назначения токена (до 1000 символов)."
+
+  # --- Документы и папки ---
+  "build_profile.*":
+    identity: "UUID профиля сборки."
+  entities.BuildProfile:
+    identity: "UUID профиля сборки."
+  entities.PortableBuildProfile:
+    identity: "UUID профиля сборки."
+  "folder.*":
+    scope: "Область папки: collection — папка коллекции (задан entityType), workspace — свободная папка workspace."
+  "composition.*":
+    kind: "Вид композиции: library, query или workspace."
+  "vocab.*":
+    mode: "Режим справочника: internal — данные в source, external_payload — данные из внешнего API (baseApiUrl, collectionSlug)."
+  "action.*":
+    target: "Цель действия (JSON-объект)."
+    owner: "Владелец действия (JSON-объект)."
+  "document_move.*":
+    documents: "Перемещаемые документы: коллекция и identity (от 1 до 500)."
+  "facet.*":
+    configuration: "Вклад в конфигурацию: mode inherit (объектный patch поверх родителя) или replace (полная замена)."
+  "integration.*":
+    version: "Версия интеграции."
+  entities.ArchivedDocument:
+    type: "Коллекция удалённого документа."
+  access_control.BulkSelectionRequest:
+    type: "Способ выбора workspace: all-active — все активные, selected — перечисленные в workspaceIdentities."
+  access_control.BulkRequest:
+    selection: "Какие workspace затрагивает массовое назначение."
+
+  # --- Экспорт, импорт, резервные копии ---
+  "backup.*":
+    kind: "Вид резервной копии: manual — вручную, pre_import — автоматически перед импортом."
+  "*.ExportResponse":
+    kind: "Вид переносимого снимка (экспорт workspace)."
+    workspace: "Настройки workspace в снимке."
+    documents: "Документы снимка по коллекциям."
+  domain.ImportResponse:
+    workspace: "Состояние workspace после импорта."
+  entities.DomainStatus:
+    workspace: "identity workspace."
+    state: "clean — нет незакоммиченных ревизий (domainVersion совпадает с последним коммитом); dirty — есть изменения после последнего коммита."
+    domainVersion: "domainVersion текущего состояния; заполняется только при state=clean."
+  entities.SnapshotCounts:
+    documents: "Количество документов."
+
+  # --- Сборки и релизы ---
+  entities.ReleaseBuildMetadata:
+    profile: "Профиль сборки, которым собран бандл."
+    scope: "Область сборки."
+    version: "Версия формата метаданных сборки."
+    runtime: "Среда выполнения сборки."
+  entities.BuildProfileTopologyNode:
+    runtime: "Среда выполнения узла."
+
+  # --- Mock Generator ---
+  "mock_data.*":
+    profile: "Профиль генерации данных."
+    count: "Сколько записей сгенерировать."
+    selection: "Выборка записей источника связи."
+  mock_data.Relation:
+    id: "Идентификатор связи."
+    source: "Источник связи: коллекция и путь поля."
+    target: "Цель связи: коллекция и путь поля."
+  entities.MockStream:
+    id: "Идентификатор потока."
+    status: "Состояние потока."
+    sequence: "Номер последнего отправленного сообщения."
+    profile: "Профиль генерации данных."
+
+  # --- AI ---
+  "ai_catalog.*":
+    name: "Имя AI-подключения."
+    model: "Профиль AI-модели."
+  entities.AIProviderConnection:
+    name: "Имя AI-подключения."
+  entities.PortableAIConnection:
+    name: "Имя AI-подключения."
+    models: "Профили моделей подключения."
+  "ai_assistant.*":
+    model: "Профиль AI-модели диалога."
+    adapters: "Адаптеры AI-провайдеров, доступные на установке."
+  entities.AIConversation:
+    model: "Профиль AI-модели диалога."
+
+  # --- Сервис ---
+  "health.*":
+    status: "Состояние сервиса: ok или unavailable."
+    version: "Версия сервиса (APP_VERSION)."

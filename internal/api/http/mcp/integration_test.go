@@ -57,22 +57,22 @@ func (t headerTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 }
 
 type harness struct {
-	server    *httptest.Server
-	documents *fakeDocuments
-	commits   *fakeCommits
-	revisions *fakeRevisions
+	server *httptest.Server
+	docs   *httptest.Server
+	fakes
 }
 
 // newHarness поднимает Fiber с маршрутом /endge/mcp (HTTP_BASE_PATH) за httptest-сервером.
 func newHarness(t *testing.T) *harness {
 	t.Helper()
-	useCases, documents, commits, revisions := newFakeUseCases()
-	handler := NewHandler(Config{Service: "endge-backend", Version: "0.16.0", Env: "test", AgentDocsURL: "https://docs.endge.test"}, useCases, BindContracts(validator.NewValidator()), zap.NewNop())
+	useCases, fakes := newFakeUseCases()
+	docs := newDocsServer(t)
+	handler := NewHandler(Config{Service: "endge-backend", Version: "0.16.0", Env: "test", AgentDocsURL: docs.URL + "/endge-docs"}, useCases, BindContracts(validator.NewValidator()), zap.NewNop())
 	app := fiber.New()
 	RegisterRoutes(app.Group("/endge"), handler, fakeAuth, func(c *fiber.Ctx) error { return c.Next() })
 	server := httptest.NewServer(adaptor.FiberApp(app))
 	t.Cleanup(server.Close)
-	return &harness{server: server, documents: documents, commits: commits, revisions: revisions}
+	return &harness{server: server, docs: docs, fakes: fakes}
 }
 
 func (h *harness) connect(t *testing.T, token string) *mcp.ClientSession {
@@ -151,15 +151,15 @@ func TestMCPIsStatelessAndRejectsGet(t *testing.T) {
 	if session.ID() != "" {
 		t.Fatalf("stateless server must not issue Mcp-Session-Id, got %q", session.ID())
 	}
-	if !strings.Contains(session.InitializeResult().Instructions, "https://docs.endge.test/llms-full/agents.txt") {
-		t.Fatalf("instructions must link agent docs")
+	if !strings.Contains(session.InitializeResult().Instructions, "ресурс llms-agent ("+h.docs.URL+"/endge-docs/llms-agent.txt)") {
+		t.Fatalf("instructions must point to the agent core first: %s", session.InitializeResult().Instructions)
 	}
 }
 
 func TestMCPReadTokenSeesOnlyReadTools(t *testing.T) {
 	h := newHarness(t)
 	session := h.connect(t, "read")
-	want := []string{"endge_commit_plan", "endge_document_revisions", "endge_get_document", "endge_get_workspace", "endge_list_documents", "endge_list_workspaces", "endge_status"}
+	want := []string{"endge_commit_plan", "endge_document_revisions", "endge_get_commit", "endge_get_document", "endge_get_revision", "endge_get_workspace", "endge_list_commits", "endge_list_documents", "endge_list_workspaces", "endge_status"}
 	if names := toolNames(t, session); !slices.Equal(names, want) {
 		t.Fatalf("read token tools = %v, want %v", names, want)
 	}
@@ -193,13 +193,8 @@ func TestMCPReadTokenSeesOnlyReadTools(t *testing.T) {
 	if _, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "endge_create_document", Arguments: map[string]any{"collection": "queries", "document": map[string]any{}}}); err == nil {
 		t.Fatalf("read token must not call write tools")
 	}
-	resources, err := session.ListResources(context.Background(), nil)
-	if err != nil || len(resources.Resources) != 4 {
-		t.Fatalf("docs resources: %v %v", resources, err)
-	}
-	read, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{URI: "https://docs.endge.test/llms-full/api.txt"})
-	if err != nil || !strings.Contains(read.Contents[0].Text, "https://docs.endge.test/llms-full/api.txt") {
-		t.Fatalf("read docs resource: %v %v", read, err)
+	if _, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "endge_restore_revision", Arguments: map[string]any{"collection": "queries", "identity": "flights", "revisionId": "r-1", "revision": 1}}); err == nil {
+		t.Fatalf("read token must not restore revisions")
 	}
 }
 
@@ -327,7 +322,7 @@ func TestMCPUserSessionRequiresWorkspace(t *testing.T) {
 	h := newHarness(t)
 	session := h.connect(t, "jwt")
 	// Пользователь без роли Admin ни в одном workspace не видит endge_commit.
-	if names := toolNames(t, session); len(names) != 11 || slices.Contains(names, "endge_commit") {
+	if names := toolNames(t, session); len(names) != 15 || slices.Contains(names, "endge_commit") {
 		t.Fatalf("user session without Admin must see all tools except endge_commit, got %v", names)
 	}
 	missing, isError := call(t, session, "endge_list_documents", map[string]any{"collection": "queries"})
@@ -342,7 +337,7 @@ func TestMCPUserSessionRequiresWorkspace(t *testing.T) {
 	if isError || updated["revision"] != float64(2) || h.documents.marks[0] != "user" {
 		t.Fatalf("user update: %v %v", updated, h.documents.marks)
 	}
-	unsupported, isError := call(t, session, "endge_get_document", map[string]any{"collection": "facets", "identity": "x", "workspace": "afl"})
+	unsupported, isError := call(t, session, "endge_get_document", map[string]any{"collection": "pages", "identity": "x", "workspace": "afl"})
 	if !isError || !strings.Contains(unsupported["text"].(string), "enum") {
 		t.Fatalf("collection outside the enum must be rejected: %v", unsupported)
 	}
@@ -358,7 +353,7 @@ func TestMCPUserSessionSeesCommitOnlyWithAdminRole(t *testing.T) {
 		t.Fatalf("commit must not reach the use case: %v", h.commits.created)
 	}
 	for _, principal := range []string{"jwt-admin", "jwt-platform"} {
-		if names := toolNames(t, h.connect(t, principal)); len(names) != 12 || !slices.Contains(names, "endge_commit") {
+		if names := toolNames(t, h.connect(t, principal)); len(names) != 16 || !slices.Contains(names, "endge_commit") {
 			t.Fatalf("%s must see endge_commit: %v", principal, names)
 		}
 	}

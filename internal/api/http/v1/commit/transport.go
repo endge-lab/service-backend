@@ -20,7 +20,7 @@ type RestoreRequest struct {
 type Response struct {
 	ID             string                  `json:"id" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
 	WorkspaceID    string                  `json:"workspaceId" example:"550e8400-e29b-41d4-a716-446655440001" format:"uuid"`
-	ParentCommitID *string                 `json:"parentCommitId,omitempty" example:"example" format:"uuid"`
+	ParentCommitID *string                 `json:"parentCommitId,omitempty" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
 	BaseSequence   int64                   `json:"baseSequence" example:"21"`
 	HeadSequence   int64                   `json:"headSequence" example:"42"`
 	Message        string                  `json:"message" example:"Сохранена конфигурация проекта"`

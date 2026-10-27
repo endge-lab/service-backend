@@ -40,42 +40,21 @@ func permissionsFrom(ctx context.Context) permissions {
 	return permissions{write: write, commit: write && token.CanCommit, delete: write && token.CanDelete}
 }
 
-// agentDoc — раздел llms-документации для агентов, публикуемый как ресурс MCP.
-type agentDoc struct {
-	path, name, title, description string
-}
-
-var agentDocs = []agentDoc{
-	{"/llms.txt", "llms", "Обзор и оглавление", "Краткий обзор Endge и оглавление разделов для агентов."},
-	{"/llms-full/agents.txt", "agents", "Работа агента с Endge", "Порядок работы агента, правила изменения документов и коммитов."},
-	{"/llms-full/reference.txt", "reference", "Справочник Source", "DSL документов: defineQuery, defineComponent, defineType и другие."},
-	{"/llms-full/api.txt", "api", "HTTP API backend", "Справочник HTTP API Service Backend."},
-}
-
-// docLinks возвращает абсолютные ссылки на разделы документации или nil, если адрес не настроен.
-func docLinks(base string) []map[string]string {
-	base = strings.TrimRight(strings.TrimSpace(base), "/")
-	if base == "" {
-		return nil
-	}
-	links := make([]map[string]string, 0, len(agentDocs))
-	for _, doc := range agentDocs {
-		links = append(links, map[string]string{"title": doc.title, "url": base + doc.path})
-	}
-	return links
-}
-
 // instructions — порядок работы и правила для агента; передаются клиенту в initialize.
-func instructions(cfg Config) string {
+func instructions(docs *docsSource) string {
 	var text strings.Builder
+	if docs != nil {
+		fmt.Fprintf(&text, "Сначала прочитайте ресурс llms-agent (%s): ядро документации для агента — правила, коды ошибок, авторинг Source и все операции. Схемы тел — шаблон ресурса llms-full/api/{group}.txt, Source каждого типа — llms-full/reference/{type}.txt, любая страница — {path}.md.\n", docs.uri("llms-agent.txt"))
+	}
 	text.WriteString(`Инструменты работают с Endge Service Backend от имени владельца токена (или пользователя JWT) через те же use case, что REST API.
 Порядок: endge_status → endge_list_workspaces → чтение (endge_get_workspace, endge_list_documents, endge_get_document) → изменение → endge_commit_plan.
 Персональный токен выпущен на один workspace: параметр workspace можно не передавать. С JWT передавайте workspace в каждый инструмент.
-Документы описываются полем source на DSL Endge (defineQuery, defineComponent и т. д.). Перед созданием прочитайте похожий документ той же коллекции.
-Изменение, удаление и восстановление требуют текущей revision; при revision_conflict перечитайте документ.
-Изменения агента помечаются токеном в истории ревизий. Удаление и коммит выполняйте только по явной просьбе пользователя; перед коммитом покажите план.
+Документы описываются полем source на DSL Endge (defineQuery, defineComponent и т. д.). Перед созданием прочитайте похожий документ той же коллекции; поле версии формата коллекции (sourceVersion или modelVersion) указано в описании endge_create_document.
+Фасеты и их документы (тенанты, регионы) — коллекции facets и facet-documents тех же инструментов; для facet-documents передавайте facetIdentity.
+Изменение, удаление и восстановление требуют текущей revision; при revision_conflict перечитайте документ. Откат к прошлой версии: endge_document_revisions → endge_get_revision → endge_restore_revision.
+Изменения агента помечаются токеном в истории ревизий. Удаление и коммит выполняйте только по явной просьбе пользователя; перед коммитом покажите план (endge_commit_plan перечисляет документы). История коммитов — endge_list_commits, изменения коммита — endge_get_commit.
 Ошибка инструмента содержит code backend, HTTP-статус и подсказку hint.`)
-	if links := docLinks(cfg.AgentDocsURL); links != nil {
+	if links := docs.links(); links != nil {
 		text.WriteString("\nДокументация для агентов (ресурсы MCP):")
 		for _, link := range links {
 			fmt.Fprintf(&text, "\n- %s: %s", link["title"], link["url"])
@@ -86,9 +65,9 @@ func instructions(cfg Config) string {
 
 // newServer собирает MCP-сервер с инструментами, разрешёнными набором permissions.
 // Сервер не хранит состояния запроса и переиспользуется всеми запросами с тем же набором.
-func newServer(cfg Config, useCases UseCases, contracts Contracts, logger *zap.Logger, allowed permissions) *mcp.Server {
-	server := mcp.NewServer(&mcp.Implementation{Name: ServerName, Title: "Endge Service Backend", Version: cfg.Version}, &mcp.ServerOptions{Instructions: instructions(cfg)})
-	t := &tools{cfg: cfg, useCases: useCases, contracts: contracts, logger: logger}
+func newServer(cfg Config, useCases UseCases, contracts Contracts, logger *zap.Logger, allowed permissions, docs *docsSource) *mcp.Server {
+	server := mcp.NewServer(&mcp.Implementation{Name: ServerName, Title: "Endge Service Backend", Version: cfg.Version}, &mcp.ServerOptions{Instructions: instructions(docs)})
+	t := &tools{cfg: cfg, useCases: useCases, contracts: contracts, logger: logger, docs: docs}
 	t.registerReadTools(server)
 	if allowed.write {
 		t.registerWriteTools(server)
@@ -99,25 +78,8 @@ func newServer(cfg Config, useCases UseCases, contracts Contracts, logger *zap.L
 	if allowed.commit {
 		t.registerCommitTool(server)
 	}
-	registerDocResources(server, cfg.AgentDocsURL)
+	docs.register(server)
 	return server
-}
-
-// registerDocResources публикует ссылки на llms-документацию; содержимое агент читает по URL.
-func registerDocResources(server *mcp.Server, base string) {
-	base = strings.TrimRight(strings.TrimSpace(base), "/")
-	if base == "" {
-		return
-	}
-	for _, doc := range agentDocs {
-		uri := base + doc.path
-		description := doc.description
-		server.AddResource(&mcp.Resource{URI: uri, Name: doc.name, Title: doc.title, Description: description, MIMEType: "text/plain"},
-			func(context.Context, *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-				text := fmt.Sprintf("%s\n%s\nПолный текст: %s", doc.title, description, uri)
-				return &mcp.ReadResourceResult{Contents: []*mcp.ResourceContents{{URI: uri, MIMEType: "text/plain", Text: text}}}, nil
-			})
-	}
 }
 
 // inputSchema выводит JSON Schema из структуры входа и уточняет её (enum, пределы, значения по умолчанию).
