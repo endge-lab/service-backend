@@ -30,11 +30,13 @@ type Handler struct {
 // NewHandler собирает MCP-серверы для всех наборов прав и net/http-адаптер.
 func NewHandler(cfg Config, useCases UseCases, contracts Contracts, logger *zap.Logger) *Handler {
 	h := &Handler{servers: map[permissions]*mcp.Server{}, workspaces: useCases.Workspaces}
+	// Один источник документации на все наборы прав: общий кеш файлов.
+	docs := newDocsSource(cfg.AgentDocsURL, cfg.Version)
 	for _, write := range []bool{false, true} {
 		for _, commit := range []bool{false, true} {
 			for _, remove := range []bool{false, true} {
 				set := permissions{write: write, commit: commit, delete: remove}
-				h.servers[set] = newServer(cfg, useCases, contracts, logger, set)
+				h.servers[set] = newServer(cfg, useCases, contracts, logger, set, docs)
 			}
 		}
 	}
@@ -85,7 +87,7 @@ func (h *Handler) commitAvailable(ctx context.Context) bool {
 
 // Serve обрабатывает сообщение MCP.
 // @Summary MCP: сообщение клиента
-// @Description MCP-сервер Endge (Streamable HTTP, stateless, ответы application/json). Принимает JSON-RPC сообщения MCP: initialize, tools/list, tools/call, resources/list, resources/read. Инструменты вызывают те же use case, что REST; персональный токен ограничивает workspace, набор инструментов (scope, флаги commit и delete) и помечает изменения в истории ревизий. Accept должен содержать application/json и text/event-stream.
+// @Description MCP-сервер Endge (Streamable HTTP, stateless, ответы application/json). Принимает JSON-RPC сообщения MCP: initialize, tools/list, tools/call, resources/list, resources/templates/list, resources/read. Инструменты вызывают те же use case, что REST; персональный токен ограничивает workspace, набор инструментов (scope, флаги commit и delete) и помечает изменения в истории ревизий. Accept должен содержать application/json и text/event-stream.
 // @ID postMCP
 // @Tags MCP
 // @Accept json

@@ -9,10 +9,10 @@ type CreateRequest struct {
 	shared.CreateDocumentRequest
 	Source              string  `json:"source,omitempty" validate:"omitempty,max=8388608" example:"defineVocab({ outputs: { items: output().from(response()) } })"`
 	SourceVersion       *int    `json:"sourceVersion,omitempty" validate:"omitempty,eq=1" example:"1"`
-	Mode                string  `json:"mode,omitempty" validate:"omitempty,oneof=external_payload internal" example:"example"`
-	BaseAPIURL          *string `json:"baseApiUrl,omitempty" example:"example"`
-	CollectionSlug      *string `json:"collectionSlug,omitempty" example:"example"`
-	AuthMode            string  `json:"authMode,omitempty" validate:"omitempty,oneof=inherit profile none" example:"example"`
+	Mode                string  `json:"mode,omitempty" validate:"omitempty,oneof=external_payload internal" example:"internal"`
+	BaseAPIURL          *string `json:"baseApiUrl,omitempty" example:"https://api.example.com"`
+	CollectionSlug      *string `json:"collectionSlug,omitempty" example:"orders"`
+	AuthMode            string  `json:"authMode,omitempty" validate:"omitempty,oneof=inherit profile none" example:"inherit"`
 	AuthProfileIdentity *string `json:"authProfileIdentity,omitempty" example:"default-auth"`
 }
 
@@ -20,10 +20,10 @@ type PatchRequest struct {
 	shared.PatchDocumentRequest
 	Source              *string `json:"source,omitempty" validate:"omitempty,max=8388608" example:"defineVocab({ outputs: { items: output().from(response()) } })"`
 	SourceVersion       *int    `json:"sourceVersion,omitempty" validate:"omitempty,eq=1" example:"1"`
-	Mode                *string `json:"mode,omitempty" validate:"omitempty,oneof=external_payload internal" example:"example"`
-	BaseAPIURL          *string `json:"baseApiUrl,omitempty" example:"example"`
-	CollectionSlug      *string `json:"collectionSlug,omitempty" example:"example"`
-	AuthMode            *string `json:"authMode,omitempty" validate:"omitempty,oneof=inherit profile none" example:"example"`
+	Mode                *string `json:"mode,omitempty" validate:"omitempty,oneof=external_payload internal" example:"internal"`
+	BaseAPIURL          *string `json:"baseApiUrl,omitempty" example:"https://api.example.com"`
+	CollectionSlug      *string `json:"collectionSlug,omitempty" example:"orders"`
+	AuthMode            *string `json:"authMode,omitempty" validate:"omitempty,oneof=inherit profile none" example:"inherit"`
 	AuthProfileIdentity *string `json:"authProfileIdentity,omitempty" example:"default-auth"`
 }
 
@@ -31,10 +31,10 @@ type Response struct {
 	shared.DocumentMetadata
 	Source              *string `json:"source,omitempty" example:"defineVocab({ outputs: { items: output().from(response()) } })"`
 	SourceVersion       *int    `json:"sourceVersion,omitempty" example:"1"`
-	Mode                string  `json:"mode" example:"example"`
-	BaseAPIURL          *string `json:"baseApiUrl,omitempty" example:"example"`
-	CollectionSlug      *string `json:"collectionSlug,omitempty" example:"example"`
-	AuthMode            string  `json:"authMode" example:"example"`
+	Mode                string  `json:"mode" example:"internal"`
+	BaseAPIURL          *string `json:"baseApiUrl,omitempty" example:"https://api.example.com"`
+	CollectionSlug      *string `json:"collectionSlug,omitempty" example:"orders"`
+	AuthMode            string  `json:"authMode" example:"inherit"`
 	AuthProfileIdentity *string `json:"authProfileIdentity,omitempty" example:"default-auth"`
 }
 

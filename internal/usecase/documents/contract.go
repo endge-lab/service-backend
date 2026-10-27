@@ -18,6 +18,12 @@ var Collections = append([]string(nil), entities.DocumentCollections...)
 
 var sourceVersionCollections = []string{entities.CollectionTypes, entities.CollectionQueries, entities.CollectionDataViews, entities.CollectionCompositions, entities.CollectionStores, entities.CollectionStreams, entities.CollectionSimulations, entities.CollectionUpdates, entities.CollectionFilters, entities.CollectionComputations, entities.CollectionVocabs, entities.CollectionStyles, entities.CollectionConfigurations}
 
+// RequiresSourceVersion сообщает, требует ли коллекция положительный sourceVersion
+// вместе с source (source_version_invalid), даже если DTO помечает поле необязательным.
+func RequiresSourceVersion(collection string) bool {
+	return slices.Contains(sourceVersionCollections, collection)
+}
+
 var readOnlyFields = []string{"id", "type", "revision", "author", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", "created_by", "updated_by"}
 
 var (

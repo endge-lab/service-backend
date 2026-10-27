@@ -5,18 +5,26 @@ package openapi
 var openAPI3YAML = []byte(
 	"openapi: 3.0.0\n" +
 		"info:\n" +
-		"  description: Source-first API для рабочих пространств Endge, доменных\n" +
-		"    документов, истории, коммитов и релизов.\n" +
+		"  description: |-\n" +
+		"    Source-first API для рабочих пространств Endge, доменных документов, истории, коммитов и релизов.\n" +
+		"\n" +
+		"    Версия документа совпадает с APP_VERSION backend (файл VERSION).\n" +
+		"\n" +
+		"    Для агентов: аутентификация — заголовок Authorization: Bearer с JWT access token провайдера OIDC\n" +
+		"    или персональным токеном endge_pat_… (раздел «Агенты» → «Токены» документации Endge).\n" +
+		"    Операции с документами workspace требуют заголовок X-Endge-Workspace; изменение, удаление и восстановление —\n" +
+		"    If-Match с текущей revision. Ошибки приходят как {code, message, details}; смысл каждого code и следующий шаг\n" +
+		"    описаны в каталоге docs/error-codes.yaml репозитория github.com/endge-lab/service-backend и в разделе\n" +
+		"    «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).\n" +
 		"  title: Endge Service Backend API\n" +
 		"  contact: {}\n" +
-		"  version: 1.0.20\n" +
+		"  version: 0.17.0\n" +
 		"paths:\n" +
 		"  /api/session/me:\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает локальную проекцию пользователя, признак администратору\n" +
-		"        платформы и доступные рабочие пространства.\n" +
+		"      description: Возвращает локальную проекцию пользователя, признак администратору платформы и доступные рабочие пространства.\n" +
 		"      tags:\n" +
 		"        - Сессия\n" +
 		"      summary: Получить текущую сессию\n" +
@@ -28,6 +36,37 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/session.Response\"\n" +
+		"              example:\n" +
+		"                accessManagement:\n" +
+		"                  lastSynchronizedAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                  mode: external\n" +
+		"                  sourceName: Корпоративный Keycloak\n" +
+		"                platformAdmin: true\n" +
+		"                user:\n" +
+		"                  active: true\n" +
+		"                  createdAt: 2026-08-04T10:00:00Z\n" +
+		"                  displayName: Основной объект\n" +
+		"                  id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                  issuer: https://id.example.com/realms/endge\n" +
+		"                  lastSeenAt: 2026-08-04T10:05:00Z\n" +
+		"                  providerId: keycloak\n" +
+		"                  role: admin\n" +
+		"                  subject: user-subject\n" +
+		"                  updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                  username: egor\n" +
+		"                workspaces:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    dataMode: development\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    documentStructure: frontend\n" +
+		"                    headSequence: 42\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    revision: 3\n" +
+		"                    role: editor\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -44,8 +83,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает страницу прямых назначений ролей платформы или\n" +
-		"        выбранного рабочего пространства.\n" +
+		"      description: Возвращает страницу прямых назначений ролей платформы или выбранного рабочего пространства.\n" +
 		"      tags:\n" +
 		"        - Управление доступом\n" +
 		"      summary: Получить назначения доступа\n" +
@@ -92,6 +130,7 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/access_control.GrantListResponse\"\n" +
+		"              example: null\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
@@ -113,8 +152,7 @@ var openAPI3YAML = []byte(
 		"    put:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Создаёт прямое назначение роли или заменяет существующую роль\n" +
-		"        пользователя в выбранном scope.\n" +
+		"      description: Создаёт прямое назначение роли или заменяет существующую роль пользователя в выбранном scope.\n" +
 		"      tags:\n" +
 		"        - Управление доступом\n" +
 		"      summary: Назначить роль\n" +
@@ -124,6 +162,10 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/access_control.PutRequest\"\n" +
+		"            example:\n" +
+		"              role: viewer\n" +
+		"              scopeType: platform\n" +
+		"              userId: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        description: Назначение роли\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -161,8 +203,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Массово создаёт или обновляет назначения Workspace-роли для\n" +
-		"        выбранных рабочих пространств.\n" +
+		"      description: Массово создаёт или обновляет назначения Workspace-роли для выбранных рабочих пространств.\n" +
 		"      tags:\n" +
 		"        - Управление доступом\n" +
 		"      summary: Массово назначить роли Workspace\n" +
@@ -172,6 +213,12 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/access_control.BulkRequest\"\n" +
+		"            example:\n" +
+		"              role: viewer\n" +
+		"              selection:\n" +
+		"                type: all-active\n" +
+		"                workspaceIdentities: []\n" +
+		"              userId: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        description: Массовое назначение\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -247,9 +294,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает токены текущего пользователя без секретов, включая\n" +
-		"        истёкшие и отозванные. Platform Admin с `owner=all` получает токены всех\n" +
-		"        пользователей.\n" +
+		"      description: Возвращает токены текущего пользователя без секретов, включая истёкшие и отозванные. Platform Admin с `owner=all` получает токены всех пользователей.\n" +
 		"      tags:\n" +
 		"        - Персональные токены\n" +
 		"      summary: Получить персональные токены\n" +
@@ -270,6 +315,21 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/access_token.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - commit: false\n" +
+		"                    createdAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                    delete: false\n" +
+		"                    expiresAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    lastUsedAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                    name: \"Codex: правка запросов\"\n" +
+		"                    scope: read\n" +
+		"                    status: active\n" +
+		"                    tokenPrefix: endge_pat_Ab3dE6gH\n" +
+		"                    workspaceDisplayName: Основное пространство\n" +
+		"                    workspaceIdentity: main\n" +
+		"                maxTtlSeconds: 2592000\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
@@ -291,13 +351,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: \"Выпускает токен `endge_pat_…` от имени текущего пользователя для\n" +
-		"        одного workspace. Секрет возвращается только в этом ответе; в БД\n" +
-		"        хранится SHA-256. Срок обязателен и ограничен ACCESS_TOKEN_MAX_TTL (по\n" +
-		"        умолчанию 30 дней). Scope по умолчанию `read`; флаги `commit` и `delete`\n" +
-		"        требуют `write`, а `write` — роли Editor или выше. Токеном нельзя\n" +
-		"        выпускать, просматривать и отзывать токены: нужна cookie- или\n" +
-		"        JWT-сессия.\"\n" +
+		"      description: \"Выпускает токен `endge_pat_…` от имени текущего пользователя для одного workspace. Секрет возвращается только в этом ответе; в БД хранится SHA-256. Срок обязателен и ограничен ACCESS_TOKEN_MAX_TTL (по умолчанию 30 дней). Scope по умолчанию `read`; флаги `commit` и `delete` требуют `write`, а `write` — роли Editor или выше. Токеном нельзя выпускать, просматривать и отзывать токены: нужна cookie- или JWT-сессия.\"\n" +
 		"      tags:\n" +
 		"        - Персональные токены\n" +
 		"      summary: Выпустить персональный токен доступа\n" +
@@ -307,6 +361,14 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/access_token.CreateRequest\"\n" +
+		"            example:\n" +
+		"              commit: false\n" +
+		"              delete: false\n" +
+		"              description: Правка запросов и представлений данных\n" +
+		"              expiresAt: 2026-11-02T10:00:00Z\n" +
+		"              name: \"Codex: правка запросов\"\n" +
+		"              scope: read\n" +
+		"              workspaceIdentity: main\n" +
 		"        description: Параметры токена\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -316,6 +378,21 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/access_token.CreateResponse\"\n" +
+		"              example:\n" +
+		"                accessToken:\n" +
+		"                  commit: false\n" +
+		"                  createdAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                  delete: false\n" +
+		"                  expiresAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                  id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                  lastUsedAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                  name: \"Codex: правка запросов\"\n" +
+		"                  scope: read\n" +
+		"                  status: active\n" +
+		"                  tokenPrefix: endge_pat_Ab3dE6gH\n" +
+		"                  workspaceDisplayName: Основное пространство\n" +
+		"                  workspaceIdentity: main\n" +
+		"                token: endge_pat_Ab3dE6gH...\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
@@ -344,9 +421,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Отзывает свой токен; Platform Admin может отозвать любой. Повторный\n" +
-		"        отзыв успешен и сохраняет первое время отзыва. Отозванный токен получает\n" +
-		"        401 `access_token_revoked`.\n" +
+		"      description: Отзывает свой токен; Platform Admin может отозвать любой. Повторный отзыв успешен и сохраняет первое время отзыва. Отозванный токен получает 401 `access_token_revoked`.\n" +
 		"      tags:\n" +
 		"        - Персональные токены\n" +
 		"      summary: Отозвать персональный токен\n" +
@@ -384,8 +459,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список действий текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список действий текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Действия\n" +
 		"      summary: Получить список действий\n" +
@@ -437,6 +511,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/action.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -482,6 +570,14 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/action.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
+		"              source: string\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -496,6 +592,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/action.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -568,6 +674,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/action.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -595,8 +711,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Действия\n" +
 		"      summary: Удалить действие\n" +
@@ -635,6 +750,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/action.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -712,6 +837,9 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/action.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -726,6 +854,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/action.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -772,8 +910,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Действия\n" +
 		"      summary: Восстановить действие\n" +
@@ -812,6 +949,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/action.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -858,8 +1005,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает доступность Workbench, права пользователя, adapters,\n" +
-		"        модели и причину запрета отправки.\n" +
+		"      description: Возвращает доступность Workbench, права пользователя, adapters, модели и причину запрета отправки.\n" +
 		"      tags:\n" +
 		"        - AI assistant\n" +
 		"      summary: Получить AI capabilities\n" +
@@ -900,8 +1046,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает cursor-страницу диалогов текущего пользователя в\n" +
-		"        выбранном Workspace.\n" +
+		"      description: Возвращает cursor-страницу диалогов текущего пользователя в выбранном Workspace.\n" +
 		"      tags:\n" +
 		"        - AI assistant\n" +
 		"      summary: Получить AI conversations\n" +
@@ -958,8 +1103,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Создаёт единственный активный диалог пользователя в Workspace с\n" +
-		"        выбранной enabled-моделью.\n" +
+		"      description: Создаёт единственный активный диалог пользователя в Workspace с выбранной enabled-моделью.\n" +
 		"      tags:\n" +
 		"        - AI assistant\n" +
 		"      summary: Создать AI conversation\n" +
@@ -976,6 +1120,8 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/ai_assistant.CreateConversationRequest\"\n" +
+		"            example:\n" +
+		"              modelProfileId: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        description: Conversation\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -1036,6 +1182,8 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/ai_assistant.ResetConversationRequest\"\n" +
+		"            example:\n" +
+		"              modelProfileId: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        description: Reset\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -1102,6 +1250,8 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/ai_assistant.PatchConversationRequest\"\n" +
+		"            example:\n" +
+		"              modelProfileId: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        description: Новая модель\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -1222,8 +1372,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Формирует актуальный ExportLive snapshot и проксирует gRPC stream\n" +
-		"        Workbench как SSE.\n" +
+		"      description: Формирует актуальный ExportLive snapshot и проксирует gRPC stream Workbench как SSE.\n" +
 		"      tags:\n" +
 		"        - AI assistant\n" +
 		"      summary: Запустить AI run\n" +
@@ -1246,12 +1395,15 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/ai_assistant.RunRequest\"\n" +
+		"            example:\n" +
+		"              modelProfileId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"              prompt: string\n" +
+		"              requestId: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        description: Prompt и request ID\n" +
 		"        required: true\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
-		"          description: \"SSE events: started, content_delta, clarification_required,\n" +
-		"            completed или failed\"\n" +
+		"          description: \"SSE events: started, content_delta, clarification_required, completed или failed\"\n" +
 		"          content:\n" +
 		"            text/event-stream:\n" +
 		"              schema:\n" +
@@ -1308,8 +1460,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает публичные profiles и приватные profiles текущего\n" +
-		"        пользователя без soft-delete фильтрации.\n" +
+		"      description: Возвращает публичные profiles и приватные profiles текущего пользователя без soft-delete фильтрации.\n" +
 		"      tags:\n" +
 		"        - AI catalog\n" +
 		"      summary: Получить AI model profiles\n" +
@@ -1336,8 +1487,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Создаёт model profile в доступном пользователю connection; private\n" +
-		"        profile не может быть platform default.\n" +
+		"      description: Создаёт model profile в доступном пользователю connection; private profile не может быть platform default.\n" +
 		"      tags:\n" +
 		"        - AI catalog\n" +
 		"      summary: Создать AI model profile\n" +
@@ -1347,6 +1497,10 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/ai_catalog.CreateModelRequest\"\n" +
+		"            example:\n" +
+		"              connectionId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"              displayName: string\n" +
+		"              providerModelId: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        description: Model profile\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -1508,9 +1662,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Пользователь получает публичные и свои приватные connections.\n" +
-		"        Изменять публичные connections может только Platform Admin. Credential\n" +
-		"        не возвращается.\n" +
+		"      description: Пользователь получает публичные и свои приватные connections. Изменять публичные connections может только Platform Admin. Credential не возвращается.\n" +
 		"      tags:\n" +
 		"        - AI catalog\n" +
 		"      summary: Получить AI connections\n" +
@@ -1537,8 +1689,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Создаёт public connection для Platform Admin или private connection\n" +
-		"        для текущего пользователя; credential сохраняется зашифрованным.\n" +
+		"      description: Создаёт public connection для Platform Admin или private connection для текущего пользователя; credential сохраняется зашифрованным.\n" +
 		"      tags:\n" +
 		"        - AI catalog\n" +
 		"      summary: Создать AI connection\n" +
@@ -1548,6 +1699,10 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/ai_catalog.CreateConnectionRequest\"\n" +
+		"            example:\n" +
+		"              adapter: anthropic\n" +
+		"              name: string\n" +
+		"              visibility: public\n" +
 		"        description: Connection\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -1579,8 +1734,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Создаёт connection и первый model profile в одной транзакции; при\n" +
-		"        ошибке ни одна запись не сохраняется.\n" +
+		"      description: Создаёт connection и первый model profile в одной транзакции; при ошибке ни одна запись не сохраняется.\n" +
 		"      tags:\n" +
 		"        - AI catalog\n" +
 		"      summary: Создать AI connection с моделью\n" +
@@ -1590,6 +1744,13 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/ai_catalog.CreateConnectionWithModelRequest\"\n" +
+		"            example:\n" +
+		"              adapter: anthropic\n" +
+		"              model:\n" +
+		"                displayName: string\n" +
+		"                providerModelId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"              name: string\n" +
+		"              visibility: public\n" +
 		"        description: Connection и первая модель\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -1734,6 +1895,8 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/ai_catalog.ReplaceCredentialRequest\"\n" +
+		"            example:\n" +
+		"              credential: string\n" +
 		"        description: Новый credential\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -1771,8 +1934,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список профилей аутентификации текущего рабочего\n" +
-		"        пространства с фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список профилей аутентификации текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Профили аутентификации\n" +
 		"      summary: Получить список профилей аутентификации\n" +
@@ -1824,6 +1986,23 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/auth_profile.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    adapterId: oidc\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    session:\n" +
+		"                      storage: string\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -1869,6 +2048,16 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/auth_profile.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              adapterId: oidc\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
+		"              session:\n" +
+		"                persistRefreshToken: false\n" +
+		"                storage: memory\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -1883,6 +2072,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/auth_profile.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                adapterId: oidc\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                session:\n" +
+		"                  persistRefreshToken: false\n" +
+		"                  storage: memory\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -1955,6 +2158,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/auth_profile.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                adapterId: oidc\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                session:\n" +
+		"                  persistRefreshToken: false\n" +
+		"                  storage: memory\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -1982,8 +2199,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Профили аутентификации\n" +
 		"      summary: Удалить профиль аутентификации\n" +
@@ -2022,6 +2238,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/auth_profile.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                adapterId: oidc\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                session:\n" +
+		"                  persistRefreshToken: false\n" +
+		"                  storage: memory\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -2067,8 +2297,7 @@ var openAPI3YAML = []byte(
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Частично изменяет профиль аутентификации; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Частично изменяет профиль аутентификации; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Профили аутентификации\n" +
 		"      summary: Изменить профиль аутентификации\n" +
@@ -2100,6 +2329,9 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/auth_profile.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -2114,6 +2346,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/auth_profile.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                adapterId: oidc\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                session:\n" +
+		"                  persistRefreshToken: false\n" +
+		"                  storage: memory\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -2160,8 +2406,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Профили аутентификации\n" +
 		"      summary: Восстановить профиль аутентификации\n" +
@@ -2200,6 +2445,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/auth_profile.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                adapterId: oidc\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                session:\n" +
+		"                  persistRefreshToken: false\n" +
+		"                  storage: memory\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -2258,6 +2517,15 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/backend_connection.ListResponse\"\n" +
+		"              example:\n" +
+		"                canManage: true\n" +
+		"                items:\n" +
+		"                  - baseUrl: https://backend.example.com\n" +
+		"                    createdAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                    createdBy: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    name: Production\n" +
+		"                total: 1\n" +
 		"        \"401\":\n" +
 		"          description: Unauthorized\n" +
 		"          content:\n" +
@@ -2267,8 +2535,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Нормализует и добавляет адрес в глобальный каталог основного\n" +
-		"        backend. Доступно только Platform Admin.\n" +
+		"      description: Нормализует и добавляет адрес в глобальный каталог основного backend. Доступно только Platform Admin.\n" +
 		"      tags:\n" +
 		"        - Backend-подключения\n" +
 		"      summary: Добавить backend-подключение\n" +
@@ -2278,6 +2545,9 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/backend_connection.CreateRequest\"\n" +
+		"            example:\n" +
+		"              baseUrl: https://backend.example.com\n" +
+		"              name: Production\n" +
 		"        description: Название и адрес backend\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -2287,6 +2557,12 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/backend_connection.Response\"\n" +
+		"              example:\n" +
+		"                baseUrl: https://backend.example.com\n" +
+		"                createdAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                createdBy: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                name: Production\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
@@ -2315,8 +2591,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Физически удаляет адрес из глобального каталога. Доступно только\n" +
-		"        Platform Admin.\n" +
+		"      description: Физически удаляет адрес из глобального каталога. Доступно только Platform Admin.\n" +
 		"      tags:\n" +
 		"        - Backend-подключения\n" +
 		"      summary: Удалить backend-подключение\n" +
@@ -2389,8 +2664,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Сохраняет новый личный или общий профиль с автоматически\n" +
-		"        сформированными identity и именем.\n" +
+		"      description: Сохраняет новый личный или общий профиль с автоматически сформированными identity и именем.\n" +
 		"      tags:\n" +
 		"        - Профили сборки\n" +
 		"      summary: Создать профиль сборки\n" +
@@ -2408,6 +2682,10 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/build_profile.CreateRequest\"\n" +
+		"            example:\n" +
+		"              settings:\n" +
+		"                fileFormat: gzip\n" +
+		"              visibility: shared\n" +
 		"        description: Профиль\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -2439,8 +2717,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Физически удаляет профиль, которым текущий actor вправе управлять,\n" +
-		"        с проверкой revision.\n" +
+		"      description: Физически удаляет профиль, которым текущий actor вправе управлять, с проверкой revision.\n" +
 		"      tags:\n" +
 		"        - Профили сборки\n" +
 		"      summary: Удалить профиль сборки\n" +
@@ -2507,8 +2784,7 @@ var openAPI3YAML = []byte(
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Изменяет имя, видимость или настройки профиля с оптимистической\n" +
-		"        проверкой revision.\n" +
+		"      description: Изменяет имя, видимость или настройки профиля с оптимистической проверкой revision.\n" +
 		"      tags:\n" +
 		"        - Профили сборки\n" +
 		"      summary: Изменить профиль сборки\n" +
@@ -2538,6 +2814,9 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/build_profile.PatchRequest\"\n" +
+		"            example:\n" +
+		"              settings:\n" +
+		"                fileFormat: gzip\n" +
 		"        description: Изменения\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -2607,6 +2886,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/commit.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - baseSequence: 21\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    domainVersion: dv2:sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n" +
+		"                    headSequence: 42\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    message: Сохранена конфигурация проекта\n" +
+		"                    operation: update\n" +
+		"                    parentCommitId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    revisionPolicy: preserve\n" +
+		"                    workspaceId: 550e8400-e29b-41d4-a716-446655440001\n" +
+		"                total: 1\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -2628,8 +2920,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Фиксирует ревизии рабочего пространства, ожидающие фиксации с\n" +
-		"        политикой preserve или squash.\n" +
+		"      description: Фиксирует ревизии рабочего пространства, ожидающие фиксации с политикой preserve или squash.\n" +
 		"      tags:\n" +
 		"        - Коммиты\n" +
 		"      summary: Создать коммит\n" +
@@ -2647,6 +2938,10 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/commit.CreateRequest\"\n" +
+		"            example:\n" +
+		"              expectedHeadSequence: 42\n" +
+		"              message: Сохранена конфигурация проекта\n" +
+		"              revisionPolicy: preserve\n" +
 		"        description: Параметры commit\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -2656,6 +2951,17 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/commit.Response\"\n" +
+		"              example:\n" +
+		"                baseSequence: 21\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                domainVersion: dv2:sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n" +
+		"                headSequence: 42\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                message: Сохранена конфигурация проекта\n" +
+		"                operation: update\n" +
+		"                parentCommitId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                revisionPolicy: preserve\n" +
+		"                workspaceId: 550e8400-e29b-41d4-a716-446655440001\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -2690,8 +2996,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает ревизии, ожидающие фиксации, и их авторов без изменения\n" +
-		"        состояния.\n" +
+		"      description: Возвращает ревизии, ожидающие фиксации, и их авторов без изменения состояния.\n" +
 		"      tags:\n" +
 		"        - Коммиты\n" +
 		"      summary: Предварительно рассчитать коммит\n" +
@@ -2711,6 +3016,12 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/commit.PlanResponse\"\n" +
+		"              example:\n" +
+		"                baseSequence: 21\n" +
+		"                documentCount: 2\n" +
+		"                headSequence: 42\n" +
+		"                revisionCount: 3\n" +
+		"                shared: false\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -2760,6 +3071,17 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/commit.Response\"\n" +
+		"              example:\n" +
+		"                baseSequence: 21\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                domainVersion: dv2:sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n" +
+		"                headSequence: 42\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                message: Сохранена конфигурация проекта\n" +
+		"                operation: update\n" +
+		"                parentCommitId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                revisionPolicy: preserve\n" +
+		"                workspaceId: 550e8400-e29b-41d4-a716-446655440001\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -2815,6 +3137,17 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/commit.Response\"\n" +
+		"              example:\n" +
+		"                baseSequence: 21\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                domainVersion: dv2:sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n" +
+		"                headSequence: 42\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                message: Сохранена конфигурация проекта\n" +
+		"                operation: update\n" +
+		"                parentCommitId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                revisionPolicy: preserve\n" +
+		"                workspaceId: 550e8400-e29b-41d4-a716-446655440001\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -2843,8 +3176,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает состояние как новые ревизии и создаёт новый коммит,\n" +
-		"        не переписывая историю.\n" +
+		"      description: Восстанавливает состояние как новые ревизии и создаёт новый коммит, не переписывая историю.\n" +
 		"      tags:\n" +
 		"        - Коммиты\n" +
 		"      summary: Восстановить коммит\n" +
@@ -2869,6 +3201,8 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/commit.RestoreRequest\"\n" +
+		"            example:\n" +
+		"              expectedHeadSequence: 42\n" +
 		"        description: Ожидаемая head sequence\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -2878,6 +3212,17 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/commit.Response\"\n" +
+		"              example:\n" +
+		"                baseSequence: 21\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                domainVersion: dv2:sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n" +
+		"                headSequence: 42\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                message: Сохранена конфигурация проекта\n" +
+		"                operation: update\n" +
+		"                parentCommitId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                revisionPolicy: preserve\n" +
+		"                workspaceId: 550e8400-e29b-41d4-a716-446655440001\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -2918,8 +3263,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает план восстановления рабочего пространства до выбранного\n" +
-		"        коммита без записи изменений.\n" +
+		"      description: Возвращает план восстановления рабочего пространства до выбранного коммита без записи изменений.\n" +
 		"      tags:\n" +
 		"        - Коммиты\n" +
 		"      summary: Рассчитать восстановление коммита\n" +
@@ -2946,6 +3290,7 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/commit.RestorePlanResponse\"\n" +
+		"              example: null\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -2980,8 +3325,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список компонентов текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список компонентов текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Компоненты\n" +
 		"      summary: Получить список компонентов\n" +
@@ -3033,6 +3377,26 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/component.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    modelVersion: 1\n" +
+		"                    revision: 3\n" +
+		"                    source: export default {}\n" +
+		"                    supportedTargets:\n" +
+		"                      - vue\n" +
+		"                      - web-component\n" +
+		"                    tag: main-component\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -3078,6 +3442,18 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/component.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
+		"              modelVersion: 1\n" +
+		"              source: export default {}\n" +
+		"              supportedTargets:\n" +
+		"                - vue\n" +
+		"                - web-component\n" +
+		"              tag: main-component\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -3092,6 +3468,22 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/component.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                modelVersion: 1\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                supportedTargets:\n" +
+		"                  - vue\n" +
+		"                  - web-component\n" +
+		"                tag: main-component\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -3164,6 +3556,22 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/component.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                modelVersion: 1\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                supportedTargets:\n" +
+		"                  - vue\n" +
+		"                  - web-component\n" +
+		"                tag: main-component\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -3191,8 +3599,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Компоненты\n" +
 		"      summary: Удалить компонент\n" +
@@ -3231,6 +3638,22 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/component.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                modelVersion: 1\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                supportedTargets:\n" +
+		"                  - vue\n" +
+		"                  - web-component\n" +
+		"                tag: main-component\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -3308,6 +3731,10 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/component.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              source: export default {}\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -3322,6 +3749,22 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/component.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                modelVersion: 1\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                supportedTargets:\n" +
+		"                  - vue\n" +
+		"                  - web-component\n" +
+		"                tag: main-component\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -3368,8 +3811,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Компоненты\n" +
 		"      summary: Восстановить компонент\n" +
@@ -3408,6 +3850,22 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/component.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                modelVersion: 1\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                supportedTargets:\n" +
+		"                  - vue\n" +
+		"                  - web-component\n" +
+		"                tag: main-component\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -3454,8 +3912,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список композиций текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список композиций текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Композиции\n" +
 		"      summary: Получить список композиций\n" +
@@ -3507,6 +3964,24 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/composition.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    kind: workspace\n" +
+		"                    kindIdentity: main-component\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    source: export default {}\n" +
+		"                    sourceVersion: 2\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -3552,6 +4027,16 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/composition.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              kind: workspace\n" +
+		"              kindIdentity: main-component\n" +
+		"              managedBy: user\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -3566,6 +4051,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/composition.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                kind: workspace\n" +
+		"                kindIdentity: main-component\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -3638,6 +4137,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/composition.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                kind: workspace\n" +
+		"                kindIdentity: main-component\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -3665,8 +4178,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Композиции\n" +
 		"      summary: Удалить композицию\n" +
@@ -3705,6 +4217,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/composition.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                kind: workspace\n" +
+		"                kindIdentity: main-component\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -3782,6 +4308,11 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/composition.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -3796,6 +4327,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/composition.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                kind: workspace\n" +
+		"                kindIdentity: main-component\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -3842,8 +4387,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Композиции\n" +
 		"      summary: Восстановить композицию\n" +
@@ -3882,6 +4426,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/composition.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                kind: workspace\n" +
+		"                kindIdentity: main-component\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -3928,8 +4486,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список вычислений текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список вычислений текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Вычисления\n" +
 		"      summary: Получить список вычислений\n" +
@@ -3981,6 +4538,23 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/computation.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    contractVersion: 1\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    source: export default {}\n" +
+		"                    sourceVersion: 2\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -4026,6 +4600,15 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/computation.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              contractVersion: 1\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -4040,6 +4623,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/computation.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                contractVersion: 1\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -4112,6 +4708,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/computation.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                contractVersion: 1\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -4139,8 +4748,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Вычисления\n" +
 		"      summary: Удалить вычисление\n" +
@@ -4179,6 +4787,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/computation.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                contractVersion: 1\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -4256,6 +4877,11 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/computation.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -4270,6 +4896,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/computation.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                contractVersion: 1\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -4316,8 +4955,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Вычисления\n" +
 		"      summary: Восстановить вычисление\n" +
@@ -4356,6 +4994,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/computation.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                contractVersion: 1\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -4448,6 +5099,22 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/configuration.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    source: defineConfig({})\n" +
+		"                    sourceVersion: 1\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
@@ -4469,6 +5136,14 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/configuration.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
+		"              source: defineConfig({})\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Документ\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -4483,6 +5158,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/configuration.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: defineConfig({})\n" +
+		"                sourceVersion: 1\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"  \"/api/v1/configurations/{identity}\":\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -4524,6 +5211,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/configuration.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: defineConfig({})\n" +
+		"                sourceVersion: 1\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
@@ -4565,6 +5264,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/configuration.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: defineConfig({})\n" +
+		"                sourceVersion: 1\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"409\":\n" +
 		"          description: Конфликт identity или revision\n" +
 		"          content:\n" +
@@ -4611,6 +5322,11 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/configuration.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              source: defineConfig({})\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Изменения\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -4625,6 +5341,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/configuration.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: defineConfig({})\n" +
+		"                sourceVersion: 1\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"409\":\n" +
 		"          description: Конфликт identity или revision\n" +
 		"          content:\n" +
@@ -4679,6 +5407,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/configuration.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: defineConfig({})\n" +
+		"                sourceVersion: 1\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"409\":\n" +
 		"          description: Конфликт identity или revision\n" +
 		"          content:\n" +
@@ -4695,8 +5435,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список конвертеров текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список конвертеров текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Конвертеры\n" +
 		"      summary: Получить список конвертеров\n" +
@@ -4748,6 +5487,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/converter.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -4793,6 +5546,12 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/converter.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -4807,6 +5566,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/converter.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -4879,6 +5648,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/converter.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -4906,8 +5685,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Конвертеры\n" +
 		"      summary: Удалить конвертер\n" +
@@ -4946,6 +5724,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/converter.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -5023,6 +5811,9 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/converter.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -5037,6 +5828,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/converter.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -5083,8 +5884,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Конвертеры\n" +
 		"      summary: Восстановить конвертер\n" +
@@ -5123,6 +5923,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/converter.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -5169,8 +5979,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список представлений данных текущего рабочего\n" +
-		"        пространства с фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список представлений данных текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Представления данных\n" +
 		"      summary: Получить список представлений данных\n" +
@@ -5222,6 +6031,22 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/data_view.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    source: export default {}\n" +
+		"                    sourceVersion: 2\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -5267,6 +6092,14 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/data_view.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -5281,6 +6114,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/data_view.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -5353,6 +6198,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/data_view.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -5380,8 +6237,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Представления данных\n" +
 		"      summary: Удалить представление данных\n" +
@@ -5420,6 +6276,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/data_view.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -5465,8 +6333,7 @@ var openAPI3YAML = []byte(
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Частично изменяет представление данных; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Частично изменяет представление данных; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Представления данных\n" +
 		"      summary: Изменить представление данных\n" +
@@ -5498,6 +6365,11 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/data_view.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -5512,6 +6384,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/data_view.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -5558,8 +6442,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Представления данных\n" +
 		"      summary: Восстановить представление данных\n" +
@@ -5598,6 +6481,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/data_view.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -5644,8 +6539,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает текущий workspace и все его документы одним JSON с\n" +
-		"        локальными state-полями.\n" +
+		"      description: Возвращает текущий workspace и все его документы одним JSON с локальными state-полями.\n" +
 		"      tags:\n" +
 		"        - Домен\n" +
 		"      summary: Получить актуальное состояние workspace\n" +
@@ -5692,8 +6586,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает cursor-страницу удалённых документов текущего workspace\n" +
-		"        без facets и facet documents.\n" +
+		"      description: Возвращает cursor-страницу удалённых документов текущего workspace без facets и facet documents.\n" +
 		"      tags:\n" +
 		"        - Домен\n" +
 		"      summary: Получить архив документов\n" +
@@ -5790,6 +6683,14 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/backup.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - createdAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                    expiresAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    kind: manual\n" +
+		"                    schemaVersion: 1\n" +
+		"                    workspaceId: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный фильтр\n" +
 		"          content:\n" +
@@ -5811,8 +6712,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Сохраняет бессрочный переносимый snapshot текущего workspace с\n" +
-		"        опциональным описанием.\n" +
+		"      description: Сохраняет бессрочный переносимый snapshot текущего workspace с опциональным описанием.\n" +
 		"      tags:\n" +
 		"        - Backups\n" +
 		"      summary: Создать backup workspace\n" +
@@ -5830,6 +6730,8 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/backup.CreateRequest\"\n" +
+		"            example:\n" +
+		"              description: Перед обновлением production-конфигурации\n" +
 		"        description: Опциональное описание backup\n" +
 		"      responses:\n" +
 		"        \"201\":\n" +
@@ -5838,6 +6740,13 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/backup.Response\"\n" +
+		"              example:\n" +
+		"                createdAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                expiresAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                kind: manual\n" +
+		"                schemaVersion: 1\n" +
+		"                workspaceId: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -5917,8 +6826,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает metadata backup; id=last выбирает последний успешно\n" +
-		"        сохранённый backup.\n" +
+		"      description: Возвращает metadata backup; id=last выбирает последний успешно сохранённый backup.\n" +
 		"      tags:\n" +
 		"        - Backups\n" +
 		"      summary: Получить backup\n" +
@@ -5944,6 +6852,13 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/backup.Response\"\n" +
+		"              example:\n" +
+		"                createdAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                expiresAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                kind: manual\n" +
+		"                schemaVersion: 1\n" +
+		"                workspaceId: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -5966,8 +6881,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает backup по UUID или alias last в каноническом workspace\n" +
-		"        snapshot формате.\n" +
+		"      description: Возвращает backup по UUID или alias last в каноническом workspace snapshot формате.\n" +
 		"      tags:\n" +
 		"        - Backups\n" +
 		"      summary: Экспортировать backup\n" +
@@ -6026,8 +6940,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Атомарно переносит до 500 документов в одну папку с optimistic\n" +
-		"        locking и общей mutation batch.\n" +
+		"      description: Атомарно переносит до 500 документов в одну папку с optimistic locking и общей mutation batch.\n" +
 		"      tags:\n" +
 		"        - Домен\n" +
 		"      summary: Переместить документы в одну папку\n" +
@@ -6045,6 +6958,13 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/document_move.MoveRequest\"\n" +
+		"            example:\n" +
+		"              documents:\n" +
+		"                - collection: actions\n" +
+		"                  expectedRevision: 3\n" +
+		"                  identity: open-schedule\n" +
+		"              folderIdentity: schedule-actions\n" +
+		"              placement: workspace\n" +
 		"        description: Документы и папка назначения\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -6054,6 +6974,10 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/document_move.MoveResponse\"\n" +
+		"              example:\n" +
+		"                documents:\n" +
+		"                  - collection: actions\n" +
+		"                moved: 2\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -6094,10 +7018,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает неизменяемую историю ревизий выбранного документа от\n" +
-		"        новых к старым. Без limit возвращается вся история; snapshot=false не\n" +
-		"        включает снимки документа (поле snapshot равно null). total — общее\n" +
-		"        число ревизий документа.\n" +
+		"      description: Возвращает неизменяемую историю ревизий выбранного документа от новых к старым. Без limit возвращается вся история; snapshot=false не включает снимки документа (поле snapshot равно null). total — общее число ревизий документа.\n" +
 		"      tags:\n" +
 		"        - Ревизии\n" +
 		"      summary: Получить ревизии документа\n" +
@@ -6150,6 +7071,28 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/revision.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - accessTokenId: 550e8400-e29b-41d4-a716-446655440006\n" +
+		"                    accessTokenName: \"Codex: правка запросов\"\n" +
+		"                    checksum: sha256:0123456789abcdef\n" +
+		"                    committedInCommitId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    documentId: 550e8400-e29b-41d4-a716-446655440003\n" +
+		"                    documentIdentity: main\n" +
+		"                    documentType: types\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    mutationBatchId: 550e8400-e29b-41d4-a716-446655440005\n" +
+		"                    operation: update\n" +
+		"                    parentRevisionId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    restoredFromRevisionId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    revisionNumber: 3\n" +
+		"                    snapshotVersion: 1\n" +
+		"                    workspaceId: 550e8400-e29b-41d4-a716-446655440001\n" +
+		"                    workspaceSequence: 1\n" +
+		"                limit: 20\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -6224,6 +7167,24 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/revision.Response\"\n" +
+		"              example:\n" +
+		"                accessTokenId: 550e8400-e29b-41d4-a716-446655440006\n" +
+		"                accessTokenName: \"Codex: правка запросов\"\n" +
+		"                checksum: sha256:0123456789abcdef\n" +
+		"                committedInCommitId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                documentId: 550e8400-e29b-41d4-a716-446655440003\n" +
+		"                documentIdentity: main\n" +
+		"                documentType: types\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                mutationBatchId: 550e8400-e29b-41d4-a716-446655440005\n" +
+		"                operation: update\n" +
+		"                parentRevisionId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                restoredFromRevisionId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                revisionNumber: 3\n" +
+		"                snapshotVersion: 1\n" +
+		"                workspaceId: 550e8400-e29b-41d4-a716-446655440001\n" +
+		"                workspaceSequence: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -6258,8 +7219,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Применяет снимок выбранной ревизии поверх текущего документа и\n" +
-		"        добавляет новую ревизию.\n" +
+		"      description: Применяет снимок выбранной ревизии поверх текущего документа и добавляет новую ревизию.\n" +
 		"      tags:\n" +
 		"        - Ревизии\n" +
 		"      summary: Восстановить ревизию документа\n" +
@@ -6357,9 +7317,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: \"Возвращает переносимый пакет текущего сохранённого в базе\n" +
-		"        состояния без требования коммита: с общими профилями сборки, без private\n" +
-		"        records, AI-каталога, назначения ролей, истории и секретов.\"\n" +
+		"      description: \"Возвращает переносимый пакет текущего сохранённого в базе состояния без требования коммита: с общими профилями сборки, без private records, AI-каталога, назначения ролей, истории и секретов.\"\n" +
 		"      tags:\n" +
 		"        - Перенос домена\n" +
 		"      summary: Экспортировать рабочее пространство\n" +
@@ -6406,10 +7364,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Экспортирует текущее сохранённое в базе состояние без требования\n" +
-		"        коммита. Credentials включаются только по явному выбору; без password\n" +
-		"        они находятся в JSON открытым текстом, а password шифрует весь JSON\n" +
-		"        artifact.\n" +
+		"      description: Экспортирует текущее сохранённое в базе состояние без требования коммита. Credentials включаются только по явному выбору; без password они находятся в JSON открытым текстом, а password шифрует весь JSON artifact.\n" +
 		"      tags:\n" +
 		"        - Перенос домена\n" +
 		"      summary: Экспортировать workspace с параметрами\n" +
@@ -6426,6 +7381,9 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/domain.ExportRequest\"\n" +
+		"            example:\n" +
+		"              privateAIConnections: none\n" +
+		"              privateBuildProfiles: none\n" +
 		"        description: Параметры экспорта\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -6457,8 +7415,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Атомарно применяет snapshot как новые revisions и создаёт обратимый\n" +
-		"        import commit.\n" +
+		"      description: Атомарно применяет snapshot как новые revisions и создаёт обратимый import commit.\n" +
 		"      tags:\n" +
 		"        - Перенос домена\n" +
 		"      summary: Импортировать домен\n" +
@@ -6483,6 +7440,9 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/domain.ImportRequest\"\n" +
+		"            example:\n" +
+		"              confirmation: default\n" +
+		"              planId: 550e8400-e29b-41d4-a716-446655440006\n" +
 		"        description: Подтверждение импорта\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -6492,6 +7452,10 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/domain.ImportResponse\"\n" +
+		"              example:\n" +
+		"                commitId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                domainVersion: dv2:sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n" +
+		"                parentCommitId: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -6526,8 +7490,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Валидирует обычный bundle либо wrapper с encrypted artifact и\n" +
-		"        password, не изменяя данные.\n" +
+		"      description: Валидирует обычный bundle либо wrapper с encrypted artifact и password, не изменяя данные.\n" +
 		"      tags:\n" +
 		"        - Перенос домена\n" +
 		"      summary: Проверить импорт домена\n" +
@@ -6545,6 +7508,8 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/domain.ImportPlanArtifactRequest\"\n" +
+		"            example:\n" +
+		"              artifact: {}\n" +
 		"        description: Artifact и пароль; обычный bundle также принимается для совместимости\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -6588,8 +7553,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает domainVersion только когда текущее workspace не содержит\n" +
-		"        незакоммиченных revisions.\n" +
+		"      description: Возвращает domainVersion только когда текущее workspace не содержит незакоммиченных revisions.\n" +
 		"      tags:\n" +
 		"        - Перенос домена\n" +
 		"      summary: Получить состояние версии домена\n" +
@@ -6609,6 +7573,7 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/entities.DomainStatus\"\n" +
+		"              example: null\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -6649,6 +7614,11 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/facet.FacetListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - createdAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    updatedAt: \"2026-08-04T10:00:00Z\"\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
@@ -6669,6 +7639,11 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/facet.CreateRequest\"\n" +
+		"            example:\n" +
+		"              color: \"#2563eb\"\n" +
+		"              displayName: Регион\n" +
+		"              icon: MapPin\n" +
+		"              identity: region\n" +
 		"        description: Фасет\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -6678,6 +7653,10 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/facet.FacetResponse\"\n" +
+		"              example:\n" +
+		"                createdAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                updatedAt: \"2026-08-04T10:00:00Z\"\n" +
 		"  /api/v1/facets/reorder:\n" +
 		"    post:\n" +
 		"      security:\n" +
@@ -6699,6 +7678,10 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/facet.ReorderRequest\"\n" +
+		"            example:\n" +
+		"              items:\n" +
+		"                - expectedRevision: 1\n" +
+		"                  identity: string\n" +
 		"        description: Полный порядок активных фасетов\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -6708,6 +7691,11 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/facet.FacetListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - createdAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    updatedAt: \"2026-08-04T10:00:00Z\"\n" +
 		"  \"/api/v1/facets/{facetIdentity}\":\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -6742,6 +7730,10 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/facet.FacetResponse\"\n" +
+		"              example:\n" +
+		"                createdAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                updatedAt: \"2026-08-04T10:00:00Z\"\n" +
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
@@ -6776,6 +7768,10 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/facet.FacetResponse\"\n" +
+		"              example:\n" +
+		"                createdAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                updatedAt: \"2026-08-04T10:00:00Z\"\n" +
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
@@ -6817,6 +7813,10 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/facet.FacetResponse\"\n" +
+		"              example:\n" +
+		"                createdAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                updatedAt: \"2026-08-04T10:00:00Z\"\n" +
 		"  \"/api/v1/facets/{facetIdentity}/documents\":\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -6866,6 +7866,17 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/facet.FacetDocumentListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
@@ -6892,6 +7903,9 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/facet.DocumentCreateRequest\"\n" +
+		"            example:\n" +
+		"              displayName: string\n" +
+		"              identity: string\n" +
 		"        description: Документ фасета\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -6901,6 +7915,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/facet.FacetDocumentResponse\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"  \"/api/v1/facets/{facetIdentity}/documents/{documentIdentity}\":\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -6941,6 +7965,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/facet.FacetDocumentResponse\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
@@ -6981,6 +8015,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/facet.FacetDocumentResponse\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
@@ -7028,12 +8072,21 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/facet.FacetDocumentResponse\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"  \"/api/v1/facets/{facetIdentity}/documents/{documentIdentity}/restore\":\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ фасета с проверкой текущей\n" +
-		"        revision.\n" +
+		"      description: Восстанавливает мягко удалённый документ фасета с проверкой текущей revision.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Восстановить документ фасета\n" +
@@ -7070,6 +8123,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/facet.FacetDocumentResponse\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"  \"/api/v1/facets/{facetIdentity}/documents/{documentIdentity}/revisions\":\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -7105,6 +8168,28 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/revision.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - accessTokenId: 550e8400-e29b-41d4-a716-446655440006\n" +
+		"                    accessTokenName: \"Codex: правка запросов\"\n" +
+		"                    checksum: sha256:0123456789abcdef\n" +
+		"                    committedInCommitId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    documentId: 550e8400-e29b-41d4-a716-446655440003\n" +
+		"                    documentIdentity: main\n" +
+		"                    documentType: types\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    mutationBatchId: 550e8400-e29b-41d4-a716-446655440005\n" +
+		"                    operation: update\n" +
+		"                    parentRevisionId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    restoredFromRevisionId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    revisionNumber: 3\n" +
+		"                    snapshotVersion: 1\n" +
+		"                    workspaceId: 550e8400-e29b-41d4-a716-446655440001\n" +
+		"                    workspaceSequence: 1\n" +
+		"                limit: 20\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"  \"/api/v1/facets/{facetIdentity}/documents/{documentIdentity}/revisions/{revisionId}\":\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -7146,12 +8231,29 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/revision.Response\"\n" +
+		"              example:\n" +
+		"                accessTokenId: 550e8400-e29b-41d4-a716-446655440006\n" +
+		"                accessTokenName: \"Codex: правка запросов\"\n" +
+		"                checksum: sha256:0123456789abcdef\n" +
+		"                committedInCommitId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                documentId: 550e8400-e29b-41d4-a716-446655440003\n" +
+		"                documentIdentity: main\n" +
+		"                documentType: types\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                mutationBatchId: 550e8400-e29b-41d4-a716-446655440005\n" +
+		"                operation: update\n" +
+		"                parentRevisionId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                restoredFromRevisionId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                revisionNumber: 3\n" +
+		"                snapshotVersion: 1\n" +
+		"                workspaceId: 550e8400-e29b-41d4-a716-446655440001\n" +
+		"                workspaceSequence: 1\n" +
 		"  \"/api/v1/facets/{facetIdentity}/documents/{documentIdentity}/revisions/{revisionId}/restore\":\n" +
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает выбранную ревизию документа фасета с проверкой\n" +
-		"        текущей revision.\n" +
+		"      description: Восстанавливает выбранную ревизию документа фасета с проверкой текущей revision.\n" +
 		"      tags:\n" +
 		"        - Фасеты\n" +
 		"      summary: Восстановить ревизию документа фасета\n" +
@@ -7194,6 +8296,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/facet.FacetDocumentResponse\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"  \"/api/v1/facets/{facetIdentity}/restore\":\n" +
 		"    post:\n" +
 		"      security:\n" +
@@ -7229,6 +8341,10 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/facet.FacetResponse\"\n" +
+		"              example:\n" +
+		"                createdAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                updatedAt: \"2026-08-04T10:00:00Z\"\n" +
 		"  \"/api/v1/facets/{facetIdentity}/revisions\":\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -7258,6 +8374,28 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/revision.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - accessTokenId: 550e8400-e29b-41d4-a716-446655440006\n" +
+		"                    accessTokenName: \"Codex: правка запросов\"\n" +
+		"                    checksum: sha256:0123456789abcdef\n" +
+		"                    committedInCommitId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    documentId: 550e8400-e29b-41d4-a716-446655440003\n" +
+		"                    documentIdentity: main\n" +
+		"                    documentType: types\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    mutationBatchId: 550e8400-e29b-41d4-a716-446655440005\n" +
+		"                    operation: update\n" +
+		"                    parentRevisionId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    restoredFromRevisionId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    revisionNumber: 3\n" +
+		"                    snapshotVersion: 1\n" +
+		"                    workspaceId: 550e8400-e29b-41d4-a716-446655440001\n" +
+		"                    workspaceSequence: 1\n" +
+		"                limit: 20\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"  \"/api/v1/facets/{facetIdentity}/revisions/{revisionId}\":\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -7293,6 +8431,24 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/revision.Response\"\n" +
+		"              example:\n" +
+		"                accessTokenId: 550e8400-e29b-41d4-a716-446655440006\n" +
+		"                accessTokenName: \"Codex: правка запросов\"\n" +
+		"                checksum: sha256:0123456789abcdef\n" +
+		"                committedInCommitId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                documentId: 550e8400-e29b-41d4-a716-446655440003\n" +
+		"                documentIdentity: main\n" +
+		"                documentType: types\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                mutationBatchId: 550e8400-e29b-41d4-a716-446655440005\n" +
+		"                operation: update\n" +
+		"                parentRevisionId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                restoredFromRevisionId: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                revisionNumber: 3\n" +
+		"                snapshotVersion: 1\n" +
+		"                workspaceId: 550e8400-e29b-41d4-a716-446655440001\n" +
+		"                workspaceSequence: 1\n" +
 		"  \"/api/v1/facets/{facetIdentity}/revisions/{revisionId}/restore\":\n" +
 		"    post:\n" +
 		"      security:\n" +
@@ -7334,12 +8490,15 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/facet.FacetResponse\"\n" +
+		"              example:\n" +
+		"                createdAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                updatedAt: \"2026-08-04T10:00:00Z\"\n" +
 		"  /api/v1/filters:\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список фильтров текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список фильтров текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Фильтры\n" +
 		"      summary: Получить список фильтров\n" +
@@ -7391,6 +8550,22 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/filter.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    source: export default {}\n" +
+		"                    sourceVersion: 2\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -7436,6 +8611,14 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/filter.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -7450,6 +8633,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/filter.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -7522,6 +8717,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/filter.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -7549,8 +8756,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Фильтры\n" +
 		"      summary: Удалить фильтр\n" +
@@ -7589,6 +8795,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/filter.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -7666,6 +8884,11 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/filter.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -7680,6 +8903,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/filter.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -7726,8 +8961,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Фильтры\n" +
 		"      summary: Восстановить фильтр\n" +
@@ -7766,6 +9000,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/filter.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -7812,8 +9058,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список папок текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список папок текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Папки\n" +
 		"      summary: Получить список папок\n" +
@@ -7865,6 +9110,23 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/folder.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    entityType: compositions\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    parentIdentity: root-compositions\n" +
+		"                    revision: 3\n" +
+		"                    scope: collection\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -7910,6 +9172,17 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/folder.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              color: \"#64748b\"\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              entityType: compositions\n" +
+		"              icon: FolderKanban\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
+		"              parentIdentity: root-compositions\n" +
+		"              scope: collection\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -7924,6 +9197,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/folder.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                entityType: compositions\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                parentIdentity: root-compositions\n" +
+		"                revision: 3\n" +
+		"                scope: collection\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -7996,6 +9282,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/folder.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                entityType: compositions\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                parentIdentity: root-compositions\n" +
+		"                revision: 3\n" +
+		"                scope: collection\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -8023,8 +9322,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Папки\n" +
 		"      summary: Удалить папку\n" +
@@ -8063,6 +9361,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/folder.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                entityType: compositions\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                parentIdentity: root-compositions\n" +
+		"                revision: 3\n" +
+		"                scope: collection\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -8140,6 +9451,9 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/folder.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -8154,6 +9468,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/folder.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                entityType: compositions\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                parentIdentity: root-compositions\n" +
+		"                revision: 3\n" +
+		"                scope: collection\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -8200,8 +9527,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Папки\n" +
 		"      summary: Восстановить папку\n" +
@@ -8240,6 +9566,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/folder.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                entityType: compositions\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                parentIdentity: root-compositions\n" +
+		"                revision: 3\n" +
+		"                scope: collection\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -8286,8 +9625,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список пакетов локализации текущего рабочего\n" +
-		"        пространства с фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список пакетов локализации текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Пакеты локализации\n" +
 		"      summary: Получить список пакетов локализации\n" +
@@ -8339,6 +9677,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/i18n_bundle.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -8384,6 +9736,12 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/i18n_bundle.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -8398,6 +9756,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/i18n_bundle.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -8470,6 +9838,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/i18n_bundle.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -8497,8 +9875,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Пакеты локализации\n" +
 		"      summary: Удалить пакет локализации\n" +
@@ -8537,6 +9914,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/i18n_bundle.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -8582,8 +9969,7 @@ var openAPI3YAML = []byte(
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Частично изменяет пакет локализации; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Частично изменяет пакет локализации; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Пакеты локализации\n" +
 		"      summary: Изменить пакет локализации\n" +
@@ -8615,6 +10001,9 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/i18n_bundle.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -8629,6 +10018,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/i18n_bundle.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -8675,8 +10074,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Пакеты локализации\n" +
 		"      summary: Восстановить пакет локализации\n" +
@@ -8715,6 +10113,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/i18n_bundle.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -8780,6 +10188,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/integration.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                    version: 1.0.0\n" +
+		"                total: 1\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -8801,8 +10222,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Добавляет интеграцию в глобальный каталог. Операция доступна\n" +
-		"        администратору платформы.\n" +
+		"      description: Добавляет интеграцию в глобальный каталог. Операция доступна администратору платформы.\n" +
 		"      tags:\n" +
 		"        - Интеграции\n" +
 		"      summary: Создать интеграцию\n" +
@@ -8812,6 +10232,13 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/integration.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
+		"              version: 1.0.0\n" +
 		"        description: Данные интеграции\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -8826,6 +10253,17 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/integration.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                version: 1.0.0\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -8891,6 +10329,17 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/integration.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                version: 1.0.0\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -8950,6 +10399,17 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/integration.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                version: 1.0.0\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -9020,6 +10480,9 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/integration.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
 		"        description: Изменяемые поля\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -9034,6 +10497,17 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/integration.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                version: 1.0.0\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -9112,6 +10586,17 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/integration.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                version: 1.0.0\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -9158,9 +10643,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace\n" +
-		"        проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны\n" +
-		"        только создателю.\n" +
+		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны только создателю.\n" +
 		"      tags:\n" +
 		"        - Mock Generator\n" +
 		"      summary: Получить возможности Mock Generator\n" +
@@ -9196,9 +10679,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace\n" +
-		"        проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны\n" +
-		"        только создателю.\n" +
+		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны только создателю.\n" +
 		"      tags:\n" +
 		"        - Mock Generator\n" +
 		"      summary: Сгенерировать JSON по JSON Schema Draft 2020-12\n" +
@@ -9276,9 +10757,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace\n" +
-		"        проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны\n" +
-		"        только создателю.\n" +
+		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны только создателю.\n" +
 		"      tags:\n" +
 		"        - Mock Generator\n" +
 		"      summary: Создать сессию генерации\n" +
@@ -9356,9 +10835,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace\n" +
-		"        проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны\n" +
-		"        только создателю.\n" +
+		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны только создателю.\n" +
 		"      tags:\n" +
 		"        - Mock Generator\n" +
 		"      summary: Получить состояние сессии\n" +
@@ -9410,9 +10887,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace\n" +
-		"        проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны\n" +
-		"        только создателю.\n" +
+		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны только создателю.\n" +
 		"      tags:\n" +
 		"        - Mock Generator\n" +
 		"      summary: Остановить сессию\n" +
@@ -9454,9 +10929,7 @@ var openAPI3YAML = []byte(
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace\n" +
-		"        проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны\n" +
-		"        только создателю.\n" +
+		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны только создателю.\n" +
 		"      tags:\n" +
 		"        - Mock Generator\n" +
 		"      summary: Изменить параметры или приостановить поток\n" +
@@ -9528,9 +11001,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: \"Единственная подписка. Message envelope:\n" +
-		"        started/data/completed/failed. Нет replay. KeepAlive обязателен даже при\n" +
-		"        поступлении данных.\"\n" +
+		"      description: \"Единственная подписка. Message envelope: started/data/completed/failed. Нет replay. KeepAlive обязателен даже при поступлении данных.\"\n" +
 		"      tags:\n" +
 		"        - Mock Generator\n" +
 		"      summary: Подключиться к SSE генерации\n" +
@@ -9595,9 +11066,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace\n" +
-		"        проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны\n" +
-		"        только создателю.\n" +
+		"      description: Доступно Workspace Viewer. Контекст пользователя и workspace проверяется backend; генератор вызывается по OIDC gRPC. Сессии доступны только создателю.\n" +
 		"      tags:\n" +
 		"        - Mock Generator\n" +
 		"      summary: Продлить сессию на 180 секунд\n" +
@@ -9656,8 +11125,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список моков текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список моков текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Моки\n" +
 		"      summary: Получить список моков\n" +
@@ -9709,6 +11177,24 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/mock.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    codeRef: fixtures/example.json\n" +
+		"                    contentSource: inline\n" +
+		"                    contentType: application/json\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    source: export default {}\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -9754,6 +11240,16 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/mock.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              codeRef: fixtures/example.json\n" +
+		"              contentSource: inline\n" +
+		"              contentType: application/json\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
+		"              source: export default {}\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -9768,6 +11264,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/mock.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                codeRef: fixtures/example.json\n" +
+		"                contentSource: inline\n" +
+		"                contentType: application/json\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -9840,6 +11350,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/mock.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                codeRef: fixtures/example.json\n" +
+		"                contentSource: inline\n" +
+		"                contentType: application/json\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -9867,8 +11391,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Моки\n" +
 		"      summary: Удалить мок\n" +
@@ -9907,6 +11430,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/mock.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                codeRef: fixtures/example.json\n" +
+		"                contentSource: inline\n" +
+		"                contentType: application/json\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -9984,6 +11521,10 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/mock.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              source: export default {}\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -9998,6 +11539,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/mock.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                codeRef: fixtures/example.json\n" +
+		"                contentSource: inline\n" +
+		"                contentType: application/json\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -10044,8 +11599,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Моки\n" +
 		"      summary: Восстановить мок\n" +
@@ -10084,6 +11638,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/mock.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                codeRef: fixtures/example.json\n" +
+		"                contentSource: inline\n" +
+		"                contentType: application/json\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -10130,8 +11698,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список навигаций текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список навигаций текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Навигации\n" +
 		"      summary: Получить список навигаций\n" +
@@ -10183,6 +11750,20 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/navigation.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -10228,6 +11809,12 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/navigation.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -10242,6 +11829,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/navigation.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -10314,6 +11911,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/navigation.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -10341,8 +11948,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Навигации\n" +
 		"      summary: Удалить навигацию\n" +
@@ -10381,6 +11987,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/navigation.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -10458,6 +12074,9 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/navigation.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -10472,6 +12091,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/navigation.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -10518,8 +12147,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Навигации\n" +
 		"      summary: Восстановить навигацию\n" +
@@ -10558,6 +12186,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/navigation.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -10604,8 +12242,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список запросов текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список запросов текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Запросы\n" +
 		"      summary: Получить список запросов\n" +
@@ -10657,6 +12294,22 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/query.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    source: export default {}\n" +
+		"                    sourceVersion: 2\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -10702,6 +12355,14 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/query.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -10716,6 +12377,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/query.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -10788,6 +12461,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/query.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -10815,8 +12500,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Запросы\n" +
 		"      summary: Удалить запрос\n" +
@@ -10855,6 +12539,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/query.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -10932,6 +12628,11 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/query.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -10946,6 +12647,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/query.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -10992,8 +12705,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Запросы\n" +
 		"      summary: Восстановить запрос\n" +
@@ -11032,6 +12744,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/query.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -11098,6 +12822,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/release.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - checksum: sha256:0123456789abcdef\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    headSequence: 42\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    schemaVersion: 1\n" +
+		"                    sourceCommitId: 550e8400-e29b-41d4-a716-446655440006\n" +
+		"                    workspaceId: 550e8400-e29b-41d4-a716-446655440001\n" +
+		"                total: 1\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -11137,6 +12874,11 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/release.CreateRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              sourceCommitId: 550e8400-e29b-41d4-a716-446655440006\n" +
 		"        description: Данные release\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -11146,6 +12888,17 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/release.Response\"\n" +
+		"              example:\n" +
+		"                checksum: sha256:0123456789abcdef\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                headSequence: 42\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                schemaVersion: 1\n" +
+		"                sourceCommitId: 550e8400-e29b-41d4-a716-446655440006\n" +
+		"                workspaceId: 550e8400-e29b-41d4-a716-446655440001\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -11186,8 +12939,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Сохраняет релиз, snapshot выбранной ревизии и проверенный Gzip\n" +
-		"        Bundle в одной транзакции.\n" +
+		"      description: Сохраняет релиз, snapshot выбранной ревизии и проверенный Gzip Bundle в одной транзакции.\n" +
 		"      tags:\n" +
 		"        - Релизы\n" +
 		"      summary: Создать релиз из сборки\n" +
@@ -11206,9 +12958,7 @@ var openAPI3YAML = []byte(
 		"              type: object\n" +
 		"              properties:\n" +
 		"                metadata:\n" +
-		"                  description: \"JSON: identity, displayName, description, sourceCommitId,\n" +
-		"                    workspaceId, generation, headSequence, commitMessage,\n" +
-		"                    buildMetadata\"\n" +
+		"                  description: \"JSON: identity, displayName, description, sourceCommitId, workspaceId, generation, headSequence, commitMessage, buildMetadata\"\n" +
 		"                  type: string\n" +
 		"                bundle:\n" +
 		"                  description: Gzip Endge Bundle, максимум 15 MiB\n" +
@@ -11225,6 +12975,17 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/release.Response\"\n" +
+		"              example:\n" +
+		"                checksum: sha256:0123456789abcdef\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                headSequence: 42\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                schemaVersion: 1\n" +
+		"                sourceCommitId: 550e8400-e29b-41d4-a716-446655440006\n" +
+		"                workspaceId: 550e8400-e29b-41d4-a716-446655440001\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
@@ -11274,6 +13035,17 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/release.Response\"\n" +
+		"              example:\n" +
+		"                checksum: sha256:0123456789abcdef\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                headSequence: 42\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                schemaVersion: 1\n" +
+		"                sourceCommitId: 550e8400-e29b-41d4-a716-446655440006\n" +
+		"                workspaceId: 550e8400-e29b-41d4-a716-446655440001\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -11338,8 +13110,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает сохранённый переносимый JSON релиза без replay истории;\n" +
-		"        identity=last выбирает последний релиз.\n" +
+		"      description: Возвращает сохранённый переносимый JSON релиза без replay истории; identity=last выбирает последний релиз.\n" +
 		"      tags:\n" +
 		"        - Релизы\n" +
 		"      summary: Экспортировать релиз\n" +
@@ -11434,8 +13205,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Применяет переносимый снимок как новые ревизии и создаёт коммит\n" +
-		"        восстановления.\n" +
+		"      description: Применяет переносимый снимок как новые ревизии и создаёт коммит восстановления.\n" +
 		"      tags:\n" +
 		"        - Релизы\n" +
 		"      summary: Восстановить релиз\n" +
@@ -11460,6 +13230,8 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/release.RestoreRequest\"\n" +
+		"            example:\n" +
+		"              expectedHeadSequence: 42\n" +
 		"        description: Ожидаемая head sequence\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -11536,6 +13308,7 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/release.RestorePlanResponse\"\n" +
+		"              example: null\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -11570,8 +13343,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает страницу активных пользователей, доступных текущему\n" +
-		"        администратору для назначения ролей.\n" +
+		"      description: Возвращает страницу активных пользователей, доступных текущему администратору для назначения ролей.\n" +
 		"      tags:\n" +
 		"        - Управление доступом\n" +
 		"      summary: Найти пользователей для назначения доступа\n" +
@@ -11608,6 +13380,7 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/access_control.UserListResponse\"\n" +
+		"              example: null\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
@@ -11630,8 +13403,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список симуляций текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список симуляций текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Симуляции\n" +
 		"      summary: Получить список симуляций\n" +
@@ -11683,6 +13455,22 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/simulation.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    source: \"defineSimulation({ target: composition(''), overrides: { runtimes: {} } })\"\n" +
+		"                    sourceVersion: 1\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -11728,6 +13516,14 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/simulation.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
+		"              source: \"defineSimulation({ target: composition(''), overrides: { runtimes: {} } })\"\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -11742,6 +13538,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/simulation.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: \"defineSimulation({ target: composition(''), overrides: { runtimes: {} } })\"\n" +
+		"                sourceVersion: 1\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -11814,6 +13622,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/simulation.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: \"defineSimulation({ target: composition(''), overrides: { runtimes: {} } })\"\n" +
+		"                sourceVersion: 1\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -11841,8 +13661,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Симуляции\n" +
 		"      summary: Удалить симуляцию\n" +
@@ -11881,6 +13700,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/simulation.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: \"defineSimulation({ target: composition(''), overrides: { runtimes: {} } })\"\n" +
+		"                sourceVersion: 1\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -11958,6 +13789,11 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/simulation.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              source: \"defineSimulation({ target: composition(''), overrides: { runtimes: {} } })\"\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -11972,6 +13808,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/simulation.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: \"defineSimulation({ target: composition(''), overrides: { runtimes: {} } })\"\n" +
+		"                sourceVersion: 1\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -12018,8 +13866,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Симуляции\n" +
 		"      summary: Восстановить симуляцию\n" +
@@ -12058,6 +13905,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/simulation.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: \"defineSimulation({ target: composition(''), overrides: { runtimes: {} } })\"\n" +
+		"                sourceVersion: 1\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -12104,8 +13963,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список хранилищ текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список хранилищ текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Хранилища\n" +
 		"      summary: Получить список хранилищ\n" +
@@ -12157,6 +14015,22 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/store.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    source: export default {}\n" +
+		"                    sourceVersion: 2\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -12202,6 +14076,14 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/store.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -12216,6 +14098,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/store.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -12288,6 +14182,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/store.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -12315,8 +14221,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Хранилища\n" +
 		"      summary: Удалить хранилище\n" +
@@ -12355,6 +14260,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/store.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -12432,6 +14349,11 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/store.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -12446,6 +14368,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/store.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -12492,8 +14426,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Хранилища\n" +
 		"      summary: Восстановить хранилище\n" +
@@ -12532,6 +14465,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/store.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -12578,8 +14523,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список потоков текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список потоков текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Потоки\n" +
 		"      summary: Получить список потоков\n" +
@@ -12631,6 +14575,22 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/stream.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    source: export default {}\n" +
+		"                    sourceVersion: 2\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -12676,6 +14636,14 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/stream.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -12690,6 +14658,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/stream.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -12762,6 +14742,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/stream.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -12789,8 +14781,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Потоки\n" +
 		"      summary: Удалить поток\n" +
@@ -12829,6 +14820,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/stream.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -12906,6 +14909,11 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/stream.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -12920,6 +14928,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/stream.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -12966,8 +14986,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Потоки\n" +
 		"      summary: Восстановить поток\n" +
@@ -13006,6 +15025,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/stream.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -13052,8 +15083,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список стилей текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список стилей текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Стили\n" +
 		"      summary: Получить список стилей\n" +
@@ -13105,6 +15135,22 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/style.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    source: export default {}\n" +
+		"                    sourceVersion: 2\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -13150,6 +15196,14 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/style.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -13164,6 +15218,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/style.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -13236,6 +15302,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/style.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -13263,8 +15341,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Стили\n" +
 		"      summary: Удалить стиль\n" +
@@ -13303,6 +15380,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/style.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -13380,6 +15469,11 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/style.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -13394,6 +15488,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/style.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -13440,8 +15546,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Стили\n" +
 		"      summary: Восстановить стиль\n" +
@@ -13480,6 +15585,18 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/style.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -13526,8 +15643,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список типов текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список типов текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Типы\n" +
 		"      summary: Получить список типов\n" +
@@ -13579,6 +15695,23 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/domain_type.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    isPrimitive: true\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    source: export default {}\n" +
+		"                    sourceVersion: 2\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -13624,6 +15757,15 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/domain_type.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              isPrimitive: true\n" +
+		"              managedBy: user\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -13638,6 +15780,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/domain_type.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                isPrimitive: true\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -13710,6 +15865,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/domain_type.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                isPrimitive: true\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -13737,8 +15905,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Типы\n" +
 		"      summary: Удалить тип\n" +
@@ -13777,6 +15944,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/domain_type.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                isPrimitive: true\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -13854,6 +16034,11 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/domain_type.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -13868,6 +16053,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/domain_type.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                isPrimitive: true\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -13914,8 +16112,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Типы\n" +
 		"      summary: Восстановить тип\n" +
@@ -13954,6 +16151,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/domain_type.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                isPrimitive: true\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -14000,8 +16210,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список обновлений состояния текущего рабочего\n" +
-		"        пространства с фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список обновлений состояния текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Обновления состояния\n" +
 		"      summary: Получить список обновлений состояния\n" +
@@ -14053,6 +16262,23 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/update.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    revision: 3\n" +
+		"                    source: export default {}\n" +
+		"                    sourceVersion: 2\n" +
+		"                    storeIdentity: application-store\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -14098,6 +16324,15 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/update.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
+		"              storeIdentity: application-store\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -14112,6 +16347,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/update.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                storeIdentity: application-store\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -14184,6 +16432,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/update.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                storeIdentity: application-store\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -14211,8 +16472,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Обновления состояния\n" +
 		"      summary: Удалить обновление состояния\n" +
@@ -14251,6 +16511,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/update.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                storeIdentity: application-store\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -14296,8 +16569,7 @@ var openAPI3YAML = []byte(
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Частично изменяет обновление состояния; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Частично изменяет обновление состояния; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Обновления состояния\n" +
 		"      summary: Изменить обновление состояния\n" +
@@ -14329,6 +16601,11 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/update.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              source: export default {}\n" +
+		"              sourceVersion: 2\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -14343,6 +16620,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/update.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                storeIdentity: application-store\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -14389,8 +16679,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Обновления состояния\n" +
 		"      summary: Восстановить обновление состояния\n" +
@@ -14429,6 +16718,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/update.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                revision: 3\n" +
+		"                source: export default {}\n" +
+		"                sourceVersion: 2\n" +
+		"                storeIdentity: application-store\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -14475,8 +16777,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает список справочников текущего рабочего пространства с\n" +
-		"        фильтрацией и пагинацией.\n" +
+		"      description: Возвращает список справочников текущего рабочего пространства с фильтрацией и пагинацией.\n" +
 		"      tags:\n" +
 		"        - Справочники\n" +
 		"      summary: Получить список справочников\n" +
@@ -14528,6 +16829,27 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/vocab.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    authMode: inherit\n" +
+		"                    authProfileIdentity: default-auth\n" +
+		"                    baseApiUrl: https://api.example.com\n" +
+		"                    collectionSlug: orders\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    managedBy: user\n" +
+		"                    mode: internal\n" +
+		"                    revision: 3\n" +
+		"                    source: \"defineVocab({ outputs: { items: output().from(response()) } })\"\n" +
+		"                    sourceVersion: 1\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                limit: 100\n" +
+		"                offset: 0\n" +
+		"                total: 1\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -14555,8 +16877,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Создаёт legacy-совместимый справочник или Vocab sourceVersion 1 в\n" +
-		"        текущем рабочем пространстве.\n" +
+		"      description: Создаёт legacy-совместимый справочник или Vocab sourceVersion 1 в текущем рабочем пространстве.\n" +
 		"      tags:\n" +
 		"        - Справочники\n" +
 		"      summary: Создать справочник\n" +
@@ -14574,6 +16895,19 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/vocab.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              authMode: inherit\n" +
+		"              authProfileIdentity: default-auth\n" +
+		"              baseApiUrl: https://api.example.com\n" +
+		"              collectionSlug: orders\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              identity: main\n" +
+		"              managedBy: user\n" +
+		"              mode: internal\n" +
+		"              source: \"defineVocab({ outputs: { items: output().from(response()) } })\"\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -14588,6 +16922,23 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/vocab.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                authMode: inherit\n" +
+		"                authProfileIdentity: default-auth\n" +
+		"                baseApiUrl: https://api.example.com\n" +
+		"                collectionSlug: orders\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                mode: internal\n" +
+		"                revision: 3\n" +
+		"                source: \"defineVocab({ outputs: { items: output().from(response()) } })\"\n" +
+		"                sourceVersion: 1\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -14660,6 +17011,23 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/vocab.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                authMode: inherit\n" +
+		"                authProfileIdentity: default-auth\n" +
+		"                baseApiUrl: https://api.example.com\n" +
+		"                collectionSlug: orders\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                mode: internal\n" +
+		"                revision: 3\n" +
+		"                source: \"defineVocab({ outputs: { items: output().from(response()) } })\"\n" +
+		"                sourceVersion: 1\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -14687,8 +17055,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся\n" +
-		"        в If-Match.\n" +
+		"      description: Выполняет мягкое удаление документа; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Справочники\n" +
 		"      summary: Удалить справочник\n" +
@@ -14727,6 +17094,23 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/vocab.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                authMode: inherit\n" +
+		"                authProfileIdentity: default-auth\n" +
+		"                baseApiUrl: https://api.example.com\n" +
+		"                collectionSlug: orders\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                mode: internal\n" +
+		"                revision: 3\n" +
+		"                source: \"defineVocab({ outputs: { items: output().from(response()) } })\"\n" +
+		"                sourceVersion: 1\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -14804,6 +17188,11 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/vocab.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              source: \"defineVocab({ outputs: { items: output().from(response()) } })\"\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -14818,6 +17207,23 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/vocab.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                authMode: inherit\n" +
+		"                authProfileIdentity: default-auth\n" +
+		"                baseApiUrl: https://api.example.com\n" +
+		"                collectionSlug: orders\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                mode: internal\n" +
+		"                revision: 3\n" +
+		"                source: \"defineVocab({ outputs: { items: output().from(response()) } })\"\n" +
+		"                sourceVersion: 1\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -14864,8 +17270,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Восстанавливает мягко удалённый документ; актуальная revision\n" +
-		"        передаётся в If-Match.\n" +
+		"      description: Восстанавливает мягко удалённый документ; актуальная revision передаётся в If-Match.\n" +
 		"      tags:\n" +
 		"        - Справочники\n" +
 		"      summary: Восстановить справочник\n" +
@@ -14904,6 +17309,23 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/vocab.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                authMode: inherit\n" +
+		"                authProfileIdentity: default-auth\n" +
+		"                baseApiUrl: https://api.example.com\n" +
+		"                collectionSlug: orders\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                managedBy: user\n" +
+		"                mode: internal\n" +
+		"                revision: 3\n" +
+		"                source: \"defineVocab({ outputs: { items: output().from(response()) } })\"\n" +
+		"                sourceVersion: 1\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -14950,8 +17372,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает рабочие пространства, в которых текущий пользователь\n" +
-		"        имеет назначение роли.\n" +
+		"      description: Возвращает рабочие пространства, в которых текущий пользователь имеет назначение роли.\n" +
 		"      tags:\n" +
 		"        - Рабочие пространства\n" +
 		"      summary: Получить доступные рабочие пространства\n" +
@@ -14963,6 +17384,21 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/workspace.ListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    dataMode: development\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    documentStructure: frontend\n" +
+		"                    headSequence: 42\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    revision: 3\n" +
+		"                    startupCompositionIdentity: workspace-startup\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                total: 1\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -14988,6 +17424,16 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/workspace.CreateRequest\"\n" +
+		"            example:\n" +
+		"              active: true\n" +
+		"              dataMode: development\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
+		"              documentStructure: frontend\n" +
+		"              identity: main\n" +
+		"              installedIntegrations:\n" +
+		"                - identity: main\n" +
+		"                  version: 1.0.0\n" +
 		"        description: Данные рабочего пространства\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -15002,6 +17448,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/workspace.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                dataMode: development\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                documentStructure: frontend\n" +
+		"                headSequence: 42\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                revision: 3\n" +
+		"                startupCompositionIdentity: workspace-startup\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -15036,8 +17495,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает удалённые рабочие пространства, к которым у пользователя\n" +
-		"        сохранилось назначение роли. Platform Admin видит все.\n" +
+		"      description: Возвращает удалённые рабочие пространства, к которым у пользователя сохранилось назначение роли. Platform Admin видит все.\n" +
 		"      tags:\n" +
 		"        - Рабочие пространства\n" +
 		"      summary: Получить архив рабочих пространств\n" +
@@ -15049,6 +17507,22 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/workspace.ArchiveListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    dataMode: development\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    documentStructure: frontend\n" +
+		"                    headSequence: 42\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    revision: 3\n" +
+		"                    role: admin\n" +
+		"                    startupCompositionIdentity: workspace-startup\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                total: 1\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -15065,8 +17539,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает доступное текущему пользователю рабочее пространство по\n" +
-		"        identity.\n" +
+		"      description: Возвращает доступное текущему пользователю рабочее пространство по identity.\n" +
 		"      tags:\n" +
 		"        - Рабочие пространства\n" +
 		"      summary: Получить рабочее пространство\n" +
@@ -15091,6 +17564,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/workspace.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                dataMode: development\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                documentStructure: frontend\n" +
+		"                headSequence: 42\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                revision: 3\n" +
+		"                startupCompositionIdentity: workspace-startup\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -15118,8 +17604,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Помечает рабочее пространство удалённым без физического удаления\n" +
-		"        данных. Операция доступна Workspace Admin и Platform Admin.\n" +
+		"      description: Помечает рабочее пространство удалённым без физического удаления данных. Операция доступна Workspace Admin и Platform Admin.\n" +
 		"      tags:\n" +
 		"        - Рабочие пространства\n" +
 		"      summary: Мягко удалить рабочее пространство\n" +
@@ -15151,6 +17636,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/workspace.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                dataMode: development\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                documentStructure: frontend\n" +
+		"                headSequence: 42\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                revision: 3\n" +
+		"                startupCompositionIdentity: workspace-startup\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -15215,6 +17713,9 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/workspace.PatchRequest\"\n" +
+		"            example:\n" +
+		"              description: Описание объекта\n" +
+		"              displayName: Основной объект\n" +
 		"        description: Изменяемые поля\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -15229,6 +17730,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/workspace.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                dataMode: development\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                documentStructure: frontend\n" +
+		"                headSequence: 42\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                revision: 3\n" +
+		"                startupCompositionIdentity: workspace-startup\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -15295,6 +17809,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/workspace.MembershipListResponse\"\n" +
+		"              example:\n" +
+		"                items:\n" +
+		"                  - createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    displayName: Основной объект\n" +
+		"                    role: admin\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                    userId: 550e8400-e29b-41d4-a716-446655440002\n" +
+		"                    username: egor\n" +
+		"                    workspaceId: 550e8400-e29b-41d4-a716-446655440001\n" +
+		"                total: 1\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -15323,8 +17847,7 @@ var openAPI3YAML = []byte(
 		"    put:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Создаёт назначение роли или полностью заменяет роль указанного\n" +
-		"        пользователя.\n" +
+		"      description: Создаёт назначение роли или полностью заменяет роль указанного пользователя.\n" +
 		"      tags:\n" +
 		"        - Участники рабочего пространства\n" +
 		"      summary: Назначить роль пользователю\n" +
@@ -15349,6 +17872,8 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/workspace.MembershipRequest\"\n" +
+		"            example:\n" +
+		"              role: admin\n" +
 		"        description: Назначаемая роль\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -15358,6 +17883,14 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/workspace.MembershipResponse\"\n" +
+		"              example:\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                displayName: Основной объект\n" +
+		"                role: admin\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                userId: 550e8400-e29b-41d4-a716-446655440002\n" +
+		"                username: egor\n" +
+		"                workspaceId: 550e8400-e29b-41d4-a716-446655440001\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
 		"          content:\n" +
@@ -15442,8 +17975,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Снимает tombstone рабочего пространства, сохраняя документы и\n" +
-		"        назначения ролей.\n" +
+		"      description: Снимает tombstone рабочего пространства, сохраняя документы и назначения ролей.\n" +
 		"      tags:\n" +
 		"        - Рабочие пространства\n" +
 		"      summary: Восстановить рабочее пространство\n" +
@@ -15475,6 +18007,19 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/workspace.Response\"\n" +
+		"              example:\n" +
+		"                active: true\n" +
+		"                createdAt: 2026-08-04T10:00:00Z\n" +
+		"                dataMode: development\n" +
+		"                description: Описание объекта\n" +
+		"                displayName: Основной объект\n" +
+		"                documentStructure: frontend\n" +
+		"                headSequence: 42\n" +
+		"                id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                identity: main\n" +
+		"                revision: 3\n" +
+		"                startupCompositionIdentity: workspace-startup\n" +
+		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
 		"          content:\n" +
@@ -15507,8 +18052,7 @@ var openAPI3YAML = []byte(
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /auth/callback:\n" +
 		"    get:\n" +
-		"      description: Обменивает authorization code, сохраняет серверную сессию и\n" +
-		"        устанавливает HttpOnly cookie.\n" +
+		"      description: Обменивает authorization code, сохраняет серверную сессию и устанавливает HttpOnly cookie.\n" +
 		"      tags:\n" +
 		"        - Авторизация\n" +
 		"      summary: Завершить вход в Configurator\n" +
@@ -15581,10 +18125,79 @@ var openAPI3YAML = []byte(
 		"      responses:\n" +
 		"        \"204\":\n" +
 		"          description: Сессия завершена\n" +
+		"  /auth/session:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: >-\n" +
+		"        Тот же ответ, что у GET /api/session/me, по пути браузерного потока /auth/*.\n" +
+		"\n" +
+		"        Принимает HttpOnly cookie сессии после /auth/login или заголовок Authorization: Bearer.\n" +
+		"\n" +
+		"        При отсутствии аутентификации ответ 401 содержит code=unauthorized и loginUrl для повторного входа.\n" +
+		"      tags:\n" +
+		"        - Авторизация\n" +
+		"      summary: Получить текущую сессию (браузерный вход)\n" +
+		"      operationId: getAuthSession\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Текущая сессия\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/session.Response\"\n" +
+		"              example:\n" +
+		"                accessManagement:\n" +
+		"                  lastSynchronizedAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                  mode: external\n" +
+		"                  sourceName: Корпоративный Keycloak\n" +
+		"                platformAdmin: true\n" +
+		"                user:\n" +
+		"                  active: true\n" +
+		"                  createdAt: 2026-08-04T10:00:00Z\n" +
+		"                  displayName: Основной объект\n" +
+		"                  id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                  issuer: https://id.example.com/realms/endge\n" +
+		"                  lastSeenAt: 2026-08-04T10:05:00Z\n" +
+		"                  providerId: keycloak\n" +
+		"                  role: admin\n" +
+		"                  subject: user-subject\n" +
+		"                  updatedAt: 2026-08-04T10:05:00Z\n" +
+		"                  username: egor\n" +
+		"                workspaces:\n" +
+		"                  - active: true\n" +
+		"                    createdAt: 2026-08-04T10:00:00Z\n" +
+		"                    dataMode: development\n" +
+		"                    description: Описание объекта\n" +
+		"                    displayName: Основной объект\n" +
+		"                    documentStructure: frontend\n" +
+		"                    headSequence: 42\n" +
+		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"                    identity: main\n" +
+		"                    revision: 3\n" +
+		"                    role: editor\n" +
+		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация (code=unauthorized, loginUrl)\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Пользователь деактивирован или запрос отклонён политикой доступа\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"        \"500\":\n" +
+		"          description: Внутренняя ошибка сервера\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  /health:\n" +
 		"    get:\n" +
-		"      description: Публичный liveness endpoint с именем сервиса, версией и окружением\n" +
-		"        запуска.\n" +
+		"      description: Публичный liveness endpoint с именем сервиса, версией и окружением запуска.\n" +
 		"      tags:\n" +
 		"        - Сервис\n" +
 		"      summary: Проверить работоспособность сервиса\n" +
@@ -15596,12 +18209,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/health.HealthResponse\"\n" +
+		"              example:\n" +
+		"                env: development\n" +
+		"                service: service-backend\n" +
+		"                status: ok\n" +
+		"                version: 1.0.0\n" +
 		"  /mcp:\n" +
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: \"Stateless MCP-сервер не открывает SSE-поток и отвечает 405 с\n" +
-		"        Allow: POST, как разрешает спецификация Streamable HTTP.\"\n" +
+		"      description: \"Stateless MCP-сервер не открывает SSE-поток и отвечает 405 с Allow: POST, как разрешает спецификация Streamable HTTP.\"\n" +
 		"      tags:\n" +
 		"        - MCP\n" +
 		"      summary: \"MCP: поток уведомлений сервера\"\n" +
@@ -15622,13 +18239,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: \"MCP-сервер Endge (Streamable HTTP, stateless, ответы\n" +
-		"        application/json). Принимает JSON-RPC сообщения MCP: initialize,\n" +
-		"        tools/list, tools/call, resources/list, resources/read. Инструменты\n" +
-		"        вызывают те же use case, что REST; персональный токен ограничивает\n" +
-		"        workspace, набор инструментов (scope, флаги commit и delete) и помечает\n" +
-		"        изменения в истории ревизий. Accept должен содержать application/json и\n" +
-		"        text/event-stream.\"\n" +
+		"      description: \"MCP-сервер Endge (Streamable HTTP, stateless, ответы application/json). Принимает JSON-RPC сообщения MCP: initialize, tools/list, tools/call, resources/list, resources/templates/list, resources/read. Инструменты вызывают те же use case, что REST; персональный токен ограничивает workspace, набор инструментов (scope, флаги commit и delete) и помечает изменения в истории ревизий. Accept должен содержать application/json и text/event-stream.\"\n" +
 		"      tags:\n" +
 		"        - MCP\n" +
 		"      summary: \"MCP: сообщение клиента\"\n" +
@@ -15638,6 +18249,10 @@ var openAPI3YAML = []byte(
 		"          application/json:\n" +
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/mcp.JSONRPCRequest\"\n" +
+		"            example:\n" +
+		"              id: 1\n" +
+		"              jsonrpc: \"2.0\"\n" +
+		"              method: tools/call\n" +
 		"        description: Сообщение JSON-RPC 2.0\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -15647,6 +18262,12 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/mcp.JSONRPCResponse\"\n" +
+		"              example:\n" +
+		"                error:\n" +
+		"                  code: -32602\n" +
+		"                  message: unknown tool\n" +
+		"                id: 1\n" +
+		"                jsonrpc: \"2.0\"\n" +
 		"        \"202\":\n" +
 		"          description: Уведомление принято\n" +
 		"        \"400\":\n" +
@@ -15656,8 +18277,7 @@ var openAPI3YAML = []byte(
 		"              schema:\n" +
 		"                type: string\n" +
 		"        \"401\":\n" +
-		"          description: \"Требуется персональный токен или JWT; заголовок WWW-Authenticate:\n" +
-		"            Bearer\"\n" +
+		"          description: \"Требуется персональный токен или JWT; заголовок WWW-Authenticate: Bearer\"\n" +
 		"          content:\n" +
 		"            application/json:\n" +
 		"              schema:\n" +
@@ -15677,8 +18297,7 @@ var openAPI3YAML = []byte(
 		"    delete:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: \"Stateless MCP-сервер не выдаёт Mcp-Session-Id и отвечает 405 с\n" +
-		"        Allow: POST.\"\n" +
+		"      description: \"Stateless MCP-сервер не выдаёт Mcp-Session-Id и отвечает 405 с Allow: POST.\"\n" +
 		"      tags:\n" +
 		"        - MCP\n" +
 		"      summary: \"MCP: завершение сессии\"\n" +
@@ -15698,8 +18317,7 @@ var openAPI3YAML = []byte(
 		"                type: string\n" +
 		"  /version:\n" +
 		"    get:\n" +
-		"      description: Публичный endpoint с версией backend и доступностью подключённых\n" +
-		"        backend-сервисов.\n" +
+		"      description: Публичный endpoint с версией backend и доступностью подключённых backend-сервисов.\n" +
 		"      tags:\n" +
 		"        - Сервис\n" +
 		"      summary: Получить версию сервиса\n" +
@@ -15711,6 +18329,16 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/health.VersionResponse\"\n" +
+		"              example:\n" +
+		"                env: development\n" +
+		"                service: service-backend\n" +
+		"                services:\n" +
+		"                  - env: development\n" +
+		"                    service: service_ai_workbench\n" +
+		"                    status: available\n" +
+		"                    version: 0.4.0\n" +
+		"                version: 1.0.0\n" +
+		"                workspaceSchemaVersion: 1\n" +
 		"servers:\n" +
 		"  - url: /\n" +
 		"components:\n" +
@@ -15719,6 +18347,12 @@ var openAPI3YAML = []byte(
 		"      type: apiKey\n" +
 		"      name: Authorization\n" +
 		"      in: header\n" +
+		"      description: |-\n" +
+		"        Authorization: Bearer <JWT access token провайдера OIDC | персональный токен endge_pat_…>.\n" +
+		"        JWT выдаёт провайдер OIDC (например, Keycloak) при входе пользователя; права берутся из назначений Endge\n" +
+		"        и групп токена. Персональный токен выпускает пользователь в Configurator («Для агента») или через\n" +
+		"        POST /api/v1/access-tokens: он действует в одном workspace, имеет scope read или write, флаги commit и delete\n" +
+		"        и срок действия; секрет показывается один раз. Без заголовка браузер использует HttpOnly cookie сессии после /auth/login.\n" +
 		"  schemas:\n" +
 		"    access_control.BulkRequest:\n" +
 		"      type: object\n" +
@@ -15728,23 +18362,30 @@ var openAPI3YAML = []byte(
 		"        - userId\n" +
 		"      properties:\n" +
 		"        role:\n" +
+		"          description: 'Роль: viewer — чтение, editor — изменение документов, admin — управление workspace, участниками и коммитами.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - viewer\n" +
 		"            - editor\n" +
 		"            - admin\n" +
 		"        selection:\n" +
-		"          $ref: \"#/components/schemas/access_control.BulkSelectionRequest\"\n" +
+		"          description: Какие workspace затрагивает массовое назначение.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/access_control.BulkSelectionRequest\"\n" +
 		"        userId:\n" +
+		"          description: UUID пользователя Endge.\n" +
 		"          type: string\n" +
 		"    access_control.BulkResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        affected:\n" +
+		"          description: Сколько назначений затронуто массовой операцией.\n" +
 		"          type: integer\n" +
 		"        created:\n" +
+		"          description: Сколько назначений создано массовой операцией.\n" +
 		"          type: integer\n" +
 		"        updated:\n" +
+		"          description: Сколько назначений изменено массовой операцией.\n" +
 		"          type: integer\n" +
 		"    access_control.BulkSelectionRequest:\n" +
 		"      type: object\n" +
@@ -15753,11 +18394,13 @@ var openAPI3YAML = []byte(
 		"        - workspaceIdentities\n" +
 		"      properties:\n" +
 		"        type:\n" +
+		"          description: 'Способ выбора workspace: all-active — все активные, selected — перечисленные в workspaceIdentities.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - all-active\n" +
 		"            - selected\n" +
 		"        workspaceIdentities:\n" +
+		"          description: identity выбранных workspace.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
@@ -15765,33 +18408,48 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/access_control.GrantResponse\"\n" +
 		"        nextCursor:\n" +
+		"          description: Курсор следующей страницы; передайте его в cursor без изменений. Пусто — страниц больше нет.\n" +
 		"          type: string\n" +
 		"    access_control.GrantResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"        role:\n" +
+		"          description: 'Роль: viewer — чтение, editor — изменение документов, admin — управление workspace, участниками и коммитами.'\n" +
 		"          type: string\n" +
 		"        scopeType:\n" +
+		"          description: 'Область назначения доступа: platform или workspace.'\n" +
 		"          type: string\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        user:\n" +
-		"          $ref: \"#/components/schemas/access_control.UserResponse\"\n" +
+		"          description: Пользователь, которому назначен доступ.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/access_control.UserResponse\"\n" +
 		"        workspaceDisplayName:\n" +
+		"          description: Отображаемое имя workspace.\n" +
 		"          type: string\n" +
 		"        workspaceIdentity:\n" +
+		"          description: identity workspace.\n" +
 		"          type: string\n" +
 		"    access_control.PutRequest:\n" +
 		"      type: object\n" +
@@ -15801,42 +18459,53 @@ var openAPI3YAML = []byte(
 		"        - userId\n" +
 		"      properties:\n" +
 		"        role:\n" +
+		"          description: 'Роль: viewer — чтение, editor — изменение документов, admin — управление workspace, участниками и коммитами.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - viewer\n" +
 		"            - editor\n" +
 		"            - admin\n" +
 		"        scopeType:\n" +
+		"          description: 'Область назначения доступа: platform или workspace.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - platform\n" +
 		"            - workspace\n" +
 		"        userId:\n" +
+		"          description: UUID пользователя Endge.\n" +
 		"          type: string\n" +
 		"        workspaceIdentity:\n" +
+		"          description: identity workspace.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"    access_control.UserListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/access_control.UserResponse\"\n" +
 		"        nextCursor:\n" +
+		"          description: Курсор следующей страницы; передайте его в cursor без изменений. Пусто — страниц больше нет.\n" +
 		"          type: string\n" +
 		"    access_control.UserResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"        providerId:\n" +
+		"          description: Идентификатор провайдера идентификации пользователя.\n" +
 		"          type: string\n" +
 		"        username:\n" +
+		"          description: Логин пользователя.\n" +
 		"          type: string\n" +
 		"    access_token.CreateRequest:\n" +
 		"      type: object\n" +
@@ -15846,24 +18515,30 @@ var openAPI3YAML = []byte(
 		"        - workspaceIdentity\n" +
 		"      properties:\n" +
 		"        commit:\n" +
+		"          description: 'Флаг персонального токена: разрешены коммиты и релизы. Требует scope=write и роли Admin у владельца.'\n" +
 		"          type: boolean\n" +
 		"          example: false\n" +
 		"        delete:\n" +
+		"          description: 'Флаг персонального токена: разрешено удаление документов. Требует scope=write.'\n" +
 		"          type: boolean\n" +
 		"          example: false\n" +
 		"        description:\n" +
+		"          description: Описание назначения токена (до 1000 символов).\n" +
 		"          type: string\n" +
 		"          maxLength: 1000\n" +
-		"          example: Правка Query и DataView инспектора\n" +
+		"          example: Правка запросов и представлений данных\n" +
 		"        expiresAt:\n" +
+		"          description: Время истечения токена (RFC 3339); обязателен при выпуске, не больше максимального срока.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-11-02T10:00:00Z\n" +
 		"        name:\n" +
+		"          description: Имя токена для людей (1–120 символов), например имя агента и задачи.\n" +
 		"          type: string\n" +
 		"          maxLength: 120\n" +
-		"          example: \"Codex: инспектор рейса\"\n" +
+		"          example: \"Codex: правка запросов\"\n" +
 		"        scope:\n" +
+		"          description: read — только чтение; write — чтение и изменение документов (нужна роль Editor).\n" +
 		"          type: string\n" +
 		"          default: read\n" +
 		"          enum:\n" +
@@ -15871,68 +18546,89 @@ var openAPI3YAML = []byte(
 		"            - write\n" +
 		"          example: read\n" +
 		"        workspaceIdentity:\n" +
+		"          description: identity workspace, в котором действует токен.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
-		"          example: afl\n" +
+		"          example: main\n" +
 		"    access_token.CreateResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        accessToken:\n" +
-		"          $ref: \"#/components/schemas/access_token.TokenResponse\"\n" +
+		"          description: 'Выпущенный персональный токен: метаданные и, только в ответе на создание, секрет token.'\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/access_token.TokenResponse\"\n" +
 		"        token:\n" +
+		"          description: Секрет персонального токена endge_pat_…; возвращается один раз при создании — сохраните его, повторно получить нельзя.\n" +
 		"          type: string\n" +
 		"          example: endge_pat_Ab3dE6gH...\n" +
 		"    access_token.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/access_token.TokenResponse\"\n" +
 		"        maxTtlSeconds:\n" +
+		"          description: Максимальный срок жизни токена в секундах.\n" +
 		"          type: integer\n" +
 		"          example: 2592000\n" +
 		"    access_token.TokenResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        commit:\n" +
+		"          description: 'Флаг персонального токена: разрешены коммиты и релизы. Требует scope=write и роли Admin у владельца.'\n" +
 		"          type: boolean\n" +
 		"          example: false\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"        delete:\n" +
+		"          description: 'Флаг персонального токена: разрешено удаление документов. Требует scope=write.'\n" +
 		"          type: boolean\n" +
 		"          example: false\n" +
 		"        description:\n" +
+		"          description: Описание назначения токена (до 1000 символов).\n" +
 		"          type: string\n" +
 		"        expiresAt:\n" +
+		"          description: Время истечения токена (RFC 3339); обязателен при выпуске, не больше максимального срока.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        lastUsedAt:\n" +
+		"          description: Время последнего использования токена.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"        name:\n" +
+		"          description: Имя токена для людей (1–120 символов), например имя агента и задачи.\n" +
 		"          type: string\n" +
-		"          example: \"Codex: инспектор рейса\"\n" +
+		"          example: \"Codex: правка запросов\"\n" +
 		"        owner:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Пользователь, выпустивший токен; права токена не шире его прав в workspace.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        revokedAt:\n" +
+		"          description: Время отзыва токена; пусто, если токен не отозван.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"        revokedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто отозвал токен.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        scope:\n" +
+		"          description: read — только чтение; write — чтение и изменение документов (нужна роль Editor).\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - read\n" +
 		"            - write\n" +
 		"          example: read\n" +
 		"        status:\n" +
+		"          description: 'Состояние токена: active, expired или revoked.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - active\n" +
@@ -15940,14 +18636,17 @@ var openAPI3YAML = []byte(
 		"            - revoked\n" +
 		"          example: active\n" +
 		"        tokenPrefix:\n" +
+		"          description: Начало секрета токена для узнавания в списке (сам секрет не хранится в открытом виде).\n" +
 		"          type: string\n" +
 		"          example: endge_pat_Ab3dE6gH\n" +
 		"        workspaceDisplayName:\n" +
+		"          description: Отображаемое имя workspace.\n" +
 		"          type: string\n" +
-		"          example: АФЛ\n" +
+		"          example: Основное пространство\n" +
 		"        workspaceIdentity:\n" +
+		"          description: identity workspace, в котором действует токен.\n" +
 		"          type: string\n" +
-		"          example: afl\n" +
+		"          example: main\n" +
 		"    action.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -15957,25 +18656,32 @@ var openAPI3YAML = []byte(
 		"        - sourceVersion\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        defaultImplementation:\n" +
+		"          description: Реализация действия по умолчанию (JSON-объект).\n" +
 		"          type: object\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -15983,62 +18689,80 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        owner:\n" +
+		"          description: Владелец действия (JSON-объект).\n" +
 		"          type: object\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          minimum: 1\n" +
 		"        target:\n" +
+		"          description: Цель действия (JSON-объект).\n" +
 		"          type: object\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    action.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/action.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    action.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        defaultImplementation:\n" +
+		"          description: Реализация действия по умолчанию (JSON-объект).\n" +
 		"          type: object\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -16046,58 +18770,77 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        owner:\n" +
+		"          description: Владелец действия (JSON-объект).\n" +
 		"          type: object\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          minimum: 1\n" +
 		"        target:\n" +
+		"          description: Цель действия (JSON-объект).\n" +
 		"          type: object\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    action.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        defaultImplementation:\n" +
+		"          description: Реализация действия по умолчанию (JSON-объект).\n" +
 		"          type: object\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -16105,74 +18848,101 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        owner:\n" +
+		"          description: Владелец действия (JSON-объект).\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"        target:\n" +
+		"          description: Цель действия (JSON-объект).\n" +
 		"          type: object\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    ai_assistant.CapabilitiesResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        adapters:\n" +
+		"          description: Адаптеры AI-провайдеров, доступные на установке.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
 		"        available:\n" +
+		"          description: Доступна ли функция на установке (подключён ли сервис).\n" +
 		"          type: boolean\n" +
 		"        canRun:\n" +
+		"          description: Может ли текущий пользователь запускать AI-ассистента в этом workspace.\n" +
 		"          type: boolean\n" +
 		"        canView:\n" +
+		"          description: Может ли текущий пользователь просматривать AI-ассистента в этом workspace.\n" +
 		"          type: boolean\n" +
 		"        models:\n" +
+		"          description: Профили AI-моделей.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.AIModelProfile\"\n" +
 		"        reason:\n" +
+		"          description: Причина недоступности.\n" +
 		"          type: string\n" +
 		"    ai_assistant.ConversationListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.AIConversation\"\n" +
 		"        nextCursor:\n" +
+		"          description: Курсор следующей страницы; передайте его в cursor без изменений. Пусто — страниц больше нет.\n" +
 		"          type: string\n" +
 		"    ai_assistant.ConversationResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        archived:\n" +
+		"          description: Признак архивного (скрытого из активного списка) объекта.\n" +
 		"          type: boolean\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"        messageCount:\n" +
+		"          description: Количество сообщений в диалоге.\n" +
 		"          type: integer\n" +
 		"        model:\n" +
-		"          $ref: \"#/components/schemas/entities.AIModelSnapshot\"\n" +
+		"          description: Профиль AI-модели диалога.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.AIModelSnapshot\"\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        workspaceId:\n" +
+		"          description: UUID workspace.\n" +
 		"          type: string\n" +
 		"    ai_assistant.CreateConversationRequest:\n" +
 		"      type: object\n" +
@@ -16180,24 +18950,30 @@ var openAPI3YAML = []byte(
 		"        - modelProfileId\n" +
 		"      properties:\n" +
 		"        modelProfileId:\n" +
+		"          description: UUID профиля AI-модели.\n" +
 		"          type: string\n" +
 		"    ai_assistant.MessageListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.AIMessage\"\n" +
 		"        nextCursor:\n" +
+		"          description: Курсор следующей страницы; передайте его в cursor без изменений. Пусто — страниц больше нет.\n" +
 		"          type: string\n" +
 		"        openClarification:\n" +
-		"          $ref: \"#/components/schemas/entities.AIClarification\"\n" +
+		"          description: Открытый уточняющий вопрос AI, на который ждут ответа.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.AIClarification\"\n" +
 		"    ai_assistant.PatchConversationRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
 		"        - modelProfileId\n" +
 		"      properties:\n" +
 		"        modelProfileId:\n" +
+		"          description: UUID профиля AI-модели.\n" +
 		"          type: string\n" +
 		"    ai_assistant.ResetConversationRequest:\n" +
 		"      type: object\n" +
@@ -16205,8 +18981,10 @@ var openAPI3YAML = []byte(
 		"        - modelProfileId\n" +
 		"      properties:\n" +
 		"        currentConversationId:\n" +
+		"          description: UUID текущего AI-диалога пользователя.\n" +
 		"          type: string\n" +
 		"        modelProfileId:\n" +
+		"          description: UUID профиля AI-модели.\n" +
 		"          type: string\n" +
 		"    ai_assistant.RunRequest:\n" +
 		"      type: object\n" +
@@ -16216,23 +18994,30 @@ var openAPI3YAML = []byte(
 		"        - requestId\n" +
 		"      properties:\n" +
 		"        interactionId:\n" +
+		"          description: Идентификатор взаимодействия AI Workbench, к которому относится уточнение.\n" +
 		"          type: string\n" +
 		"        modelProfileId:\n" +
+		"          description: UUID профиля AI-модели.\n" +
 		"          type: string\n" +
 		"        prompt:\n" +
+		"          description: Запрос пользователя к AI-ассистенту.\n" +
 		"          type: string\n" +
 		"          maxLength: 20000\n" +
 		"        replyToClarificationId:\n" +
+		"          description: Идентификатор уточнения, на которое отвечает запуск.\n" +
 		"          type: string\n" +
 		"        requestId:\n" +
+		"          description: Идентификатор запроса клиента для идемпотентности запуска AI.\n" +
 		"          type: string\n" +
 		"        selectedCandidateId:\n" +
+		"          description: Выбранный вариант ответа на уточнение AI.\n" +
 		"          type: string\n" +
 		"          maxLength: 128\n" +
 		"    ai_catalog.AdaptersResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
@@ -16240,48 +19025,68 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        adapter:\n" +
+		"          description: 'Адаптер провайдера AI: anthropic или ollama.'\n" +
 		"          type: string\n" +
 		"        baseUrl:\n" +
+		"          description: Абсолютный http/https URL сервиса без userinfo, query и fragment.\n" +
 		"          type: string\n" +
 		"        canManage:\n" +
+		"          description: Может ли текущий пользователь изменять или удалять этот объект.\n" +
 		"          type: boolean\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        createdBy:\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
 		"          type: string\n" +
 		"        enabled:\n" +
+		"          description: Включён ли объект; выключенный не используется для запусков.\n" +
 		"          type: boolean\n" +
 		"        hasCredential:\n" +
+		"          description: Сохранён ли секрет (сам секрет не возвращается).\n" +
 		"          type: boolean\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"        modelCount:\n" +
+		"          description: Количество профилей моделей у подключения.\n" +
 		"          type: integer\n" +
 		"        name:\n" +
+		"          description: Имя AI-подключения.\n" +
 		"          type: string\n" +
 		"        ownedByMe:\n" +
+		"          description: Принадлежит ли объект текущему пользователю.\n" +
 		"          type: boolean\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        updatedBy:\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        visibility:\n" +
+		"          description: 'Видимость: public/shared — доступно всем пользователям с доступом, private — только владельцу.'\n" +
 		"          type: string\n" +
 		"    ai_catalog.ConnectionWithModelResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        connection:\n" +
-		"          $ref: \"#/components/schemas/entities.AIProviderConnection\"\n" +
+		"          description: AI-подключение к провайдеру.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.AIProviderConnection\"\n" +
 		"        model:\n" +
-		"          $ref: \"#/components/schemas/entities.AIModelProfile\"\n" +
+		"          description: Профиль AI-модели.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.AIModelProfile\"\n" +
 		"    ai_catalog.ConnectionsResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.AIProviderConnection\"\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"    ai_catalog.CreateConnectionRequest:\n" +
 		"      type: object\n" +
@@ -16290,20 +19095,26 @@ var openAPI3YAML = []byte(
 		"        - name\n" +
 		"      properties:\n" +
 		"        adapter:\n" +
+		"          description: 'Адаптер провайдера AI: anthropic или ollama.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - anthropic\n" +
 		"            - ollama\n" +
 		"        baseUrl:\n" +
+		"          description: Абсолютный http/https URL сервиса без userinfo, query и fragment.\n" +
 		"          type: string\n" +
 		"        credential:\n" +
+		"          description: Секрет AI-подключения (API-ключ). Только в запросах; в ответах не возвращается — см. hasCredential.\n" +
 		"          type: string\n" +
 		"        enabled:\n" +
+		"          description: Включён ли объект; выключенный не используется для запусков.\n" +
 		"          type: boolean\n" +
 		"        name:\n" +
+		"          description: Имя AI-подключения.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"        visibility:\n" +
+		"          description: 'Видимость: public/shared — доступно всем пользователям с доступом, private — только владельцу.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - public\n" +
@@ -16316,22 +19127,30 @@ var openAPI3YAML = []byte(
 		"        - name\n" +
 		"      properties:\n" +
 		"        adapter:\n" +
+		"          description: 'Адаптер провайдера AI: anthropic или ollama.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - anthropic\n" +
 		"            - ollama\n" +
 		"        baseUrl:\n" +
+		"          description: Абсолютный http/https URL сервиса без userinfo, query и fragment.\n" +
 		"          type: string\n" +
 		"        credential:\n" +
+		"          description: Секрет AI-подключения (API-ключ). Только в запросах; в ответах не возвращается — см. hasCredential.\n" +
 		"          type: string\n" +
 		"        enabled:\n" +
+		"          description: Включён ли объект; выключенный не используется для запусков.\n" +
 		"          type: boolean\n" +
 		"        model:\n" +
-		"          $ref: \"#/components/schemas/ai_catalog.InitialModelRequest\"\n" +
+		"          description: Профиль AI-модели.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/ai_catalog.InitialModelRequest\"\n" +
 		"        name:\n" +
+		"          description: Имя AI-подключения.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"        visibility:\n" +
+		"          description: 'Видимость: public/shared — доступно всем пользователям с доступом, private — только владельцу.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - public\n" +
@@ -16344,15 +19163,20 @@ var openAPI3YAML = []byte(
 		"        - providerModelId\n" +
 		"      properties:\n" +
 		"        connectionId:\n" +
+		"          description: UUID AI-подключения к провайдеру.\n" +
 		"          type: string\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"        enabled:\n" +
+		"          description: Включён ли объект; выключенный не используется для запусков.\n" +
 		"          type: boolean\n" +
 		"        isDefault:\n" +
+		"          description: Модель по умолчанию.\n" +
 		"          type: boolean\n" +
 		"        providerModelId:\n" +
+		"          description: Идентификатор модели у провайдера (например, имя модели в API провайдера).\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"    ai_catalog.InitialModelRequest:\n" +
@@ -16362,78 +19186,106 @@ var openAPI3YAML = []byte(
 		"        - providerModelId\n" +
 		"      properties:\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"        enabled:\n" +
+		"          description: Включён ли объект; выключенный не используется для запусков.\n" +
 		"          type: boolean\n" +
 		"        isDefault:\n" +
+		"          description: Модель по умолчанию.\n" +
 		"          type: boolean\n" +
 		"        providerModelId:\n" +
+		"          description: Идентификатор модели у провайдера (например, имя модели в API провайдера).\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"    ai_catalog.ModelResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        adapter:\n" +
+		"          description: 'Адаптер провайдера AI: anthropic или ollama.'\n" +
 		"          type: string\n" +
 		"        canManage:\n" +
+		"          description: Может ли текущий пользователь изменять или удалять этот объект.\n" +
 		"          type: boolean\n" +
 		"        connectionId:\n" +
+		"          description: UUID AI-подключения к провайдеру.\n" +
 		"          type: string\n" +
 		"        connectionName:\n" +
+		"          description: Имя AI-подключения.\n" +
 		"          type: string\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        createdBy:\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
 		"          type: string\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"        enabled:\n" +
+		"          description: Включён ли объект; выключенный не используется для запусков.\n" +
 		"          type: boolean\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"        isDefault:\n" +
+		"          description: Модель по умолчанию.\n" +
 		"          type: boolean\n" +
 		"        ownedByMe:\n" +
+		"          description: Принадлежит ли объект текущему пользователю.\n" +
 		"          type: boolean\n" +
 		"        providerModelId:\n" +
+		"          description: Идентификатор модели у провайдера (например, имя модели в API провайдера).\n" +
 		"          type: string\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        updatedBy:\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        visibility:\n" +
+		"          description: 'Видимость: public/shared — доступно всем пользователям с доступом, private — только владельцу.'\n" +
 		"          type: string\n" +
 		"    ai_catalog.ModelsResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.AIModelProfile\"\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"    ai_catalog.PatchConnectionRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        baseUrl:\n" +
+		"          description: Абсолютный http/https URL сервиса без userinfo, query и fragment.\n" +
 		"          type: string\n" +
 		"        enabled:\n" +
+		"          description: Включён ли объект; выключенный не используется для запусков.\n" +
 		"          type: boolean\n" +
 		"        name:\n" +
+		"          description: Имя AI-подключения.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"    ai_catalog.PatchModelRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"        enabled:\n" +
+		"          description: Включён ли объект; выключенный не используется для запусков.\n" +
 		"          type: boolean\n" +
 		"        isDefault:\n" +
+		"          description: Модель по умолчанию.\n" +
 		"          type: boolean\n" +
 		"        providerModelId:\n" +
+		"          description: Идентификатор модели у провайдера (например, имя модели в API провайдера).\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"    ai_catalog.ReplaceCredentialRequest:\n" +
@@ -16442,6 +19294,7 @@ var openAPI3YAML = []byte(
 		"        - credential\n" +
 		"      properties:\n" +
 		"        credential:\n" +
+		"          description: Секрет AI-подключения (API-ключ). Только в запросах; в ответах не возвращается — см. hasCredential.\n" +
 		"          type: string\n" +
 		"    auth_profile.CreateRequest:\n" +
 		"      type: object\n" +
@@ -16451,34 +19304,43 @@ var openAPI3YAML = []byte(
 		"        - identity\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        adapterId:\n" +
+		"          description: Адаптер профиля аутентификации (например, oidc, bearer, basic, oauth2-client-credentials, oauth2-password); определяет допустимые config, credentials и session.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: oidc\n" +
 		"        config:\n" +
+		"          description: Несекретная конфигурация адаптера профиля аутентификации (например, issuer, clientId, tokenEndpoint); секреты — только в credentials.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        credentials:\n" +
+		"          description: 'Секреты профиля аутентификации (именованные строки: token, username, password, clientSecret). Только запись; в ответах не возвращаются.'\n" +
 		"          type: object\n" +
 		"          additionalProperties:\n" +
 		"            type: string\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -16486,64 +19348,82 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        session:\n" +
-		"          $ref: \"#/components/schemas/auth_profile.SessionPolicy\"\n" +
+		"          description: Политика хранения сессии профиля аутентификации (для адаптеров, выдающих токен).\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/auth_profile.SessionPolicy\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    auth_profile.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/auth_profile.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    auth_profile.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        adapterId:\n" +
+		"          description: Адаптер профиля аутентификации (например, oidc, bearer, basic, oauth2-client-credentials, oauth2-password); определяет допустимые config, credentials и session.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: oidc\n" +
 		"        config:\n" +
+		"          description: Несекретная конфигурация адаптера профиля аутентификации (например, issuer, clientId, tokenEndpoint); секреты — только в credentials.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        credentials:\n" +
+		"          description: 'Секреты профиля аутентификации (именованные строки: token, username, password, clientSecret). Только запись; в ответах не возвращаются.'\n" +
 		"          type: object\n" +
 		"          additionalProperties:\n" +
 		"            type: string\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -16551,59 +19431,78 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        session:\n" +
-		"          $ref: \"#/components/schemas/auth_profile.SessionPolicy\"\n" +
+		"          description: Политика хранения сессии профиля аутентификации (для адаптеров, выдающих токен).\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/auth_profile.SessionPolicy\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    auth_profile.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        adapterId:\n" +
+		"          description: Адаптер профиля аутентификации (например, oidc, bearer, basic, oauth2-client-credentials, oauth2-password); определяет допустимые config, credentials и session.\n" +
 		"          type: string\n" +
 		"          example: oidc\n" +
 		"        config:\n" +
+		"          description: Несекретная конфигурация адаптера профиля аутентификации (например, issuer, clientId, tokenEndpoint); секреты — только в credentials.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        credentials:\n" +
+		"          description: 'Секреты профиля аутентификации (именованные строки: token, username, password, clientSecret). Только запись; в ответах не возвращаются.'\n" +
 		"          type: object\n" +
 		"          additionalProperties:\n" +
 		"            type: string\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -16611,22 +19510,31 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        session:\n" +
-		"          $ref: \"#/components/schemas/auth_profile.SessionPolicy\"\n" +
+		"          description: Политика хранения сессии профиля аутентификации (для адаптеров, выдающих токен).\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/auth_profile.SessionPolicy\"\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    auth_profile.SessionPolicy:\n" +
@@ -16635,9 +19543,11 @@ var openAPI3YAML = []byte(
 		"        - storage\n" +
 		"      properties:\n" +
 		"        persistRefreshToken:\n" +
+		"          description: Сохранять ли refresh token между сессиями приложения.\n" +
 		"          type: boolean\n" +
 		"          example: false\n" +
 		"        storage:\n" +
+		"          description: 'Где приложение хранит сессию: memory, sessionStorage или localStorage.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - localStorage\n" +
@@ -16651,9 +19561,11 @@ var openAPI3YAML = []byte(
 		"        - name\n" +
 		"      properties:\n" +
 		"        baseUrl:\n" +
+		"          description: Абсолютный http/https URL сервиса без userinfo, query и fragment.\n" +
 		"          type: string\n" +
 		"          example: https://backend.example.com\n" +
 		"        name:\n" +
+		"          description: Имя объекта для людей.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: Production\n" +
@@ -16661,38 +19573,47 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        canManage:\n" +
+		"          description: Может ли текущий пользователь изменять или удалять этот объект.\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/backend_connection.Response\"\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    backend_connection.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        baseUrl:\n" +
+		"          description: Абсолютный http/https URL сервиса без userinfo, query и fragment.\n" +
 		"          type: string\n" +
 		"          example: https://backend.example.com\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"        createdBy:\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        name:\n" +
+		"          description: Имя объекта для людей.\n" +
 		"          type: string\n" +
 		"          example: Production\n" +
 		"    backup.CreateRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          maxLength: 1000\n" +
 		"          example: Перед обновлением production-конфигурации\n" +
@@ -16700,12 +19621,16 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        aiCatalog:\n" +
-		"          $ref: \"#/components/schemas/entities.PortableAICatalog\"\n" +
+		"          description: 'AI-каталог workspace в переносимом виде: подключения к провайдерам и профили моделей (без секретов, если они не переносятся).'\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.PortableAICatalog\"\n" +
 		"        buildProfiles:\n" +
+		"          description: Профили сборки workspace (в экспорте — переносимые профили с настройками).\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.PortableBuildProfile\"\n" +
 		"        documents:\n" +
+		"          description: Документы снимка по коллекциям.\n" +
 		"          type: object\n" +
 		"          additionalProperties:\n" +
 		"            type: array\n" +
@@ -16713,57 +19638,75 @@ var openAPI3YAML = []byte(
 		"              type: object\n" +
 		"              additionalProperties: {}\n" +
 		"        domainVersion:\n" +
+		"          description: 'Версия домена: детерминированный отпечаток содержимого документов workspace (формат dv2). Совпадает у одинакового содержимого; используется для сверки экспорта, импорта, коммитов и релизов.'\n" +
 		"          type: string\n" +
 		"        installedIntegrations:\n" +
+		"          description: 'Интеграции, установленные в workspace: identity, версия и конфигурация.'\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: object\n" +
 		"            additionalProperties: {}\n" +
 		"        kind:\n" +
+		"          description: Вид переносимого снимка (экспорт workspace).\n" +
 		"          type: string\n" +
 		"        schemaVersion:\n" +
+		"          description: Версия схемы переносимого снимка workspace (WORKSPACE_SCHEMA_VERSION backend).\n" +
 		"          type: integer\n" +
 		"        workspace:\n" +
+		"          description: Настройки workspace в снимке.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"    backup.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/backup.Response\"\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"    backup.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        checksum:\n" +
+		"          description: Контрольная сумма содержимого (снимка, резервной копии или ревизии) для проверки целостности.\n" +
 		"          type: string\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"        expiresAt:\n" +
+		"          description: 'Время истечения (RFC 3339): после него объект недействителен.'\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"        kind:\n" +
+		"          description: 'Вид резервной копии: manual — вручную, pre_import — автоматически перед импортом.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - manual\n" +
 		"            - pre_import\n" +
 		"        schemaVersion:\n" +
+		"          description: Версия схемы переносимого снимка workspace (WORKSPACE_SCHEMA_VERSION backend).\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        sizeBytes:\n" +
+		"          description: Размер в байтах.\n" +
 		"          type: integer\n" +
 		"        workspaceId:\n" +
+		"          description: UUID workspace.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"    build_profile.CreateRequest:\n" +
@@ -16773,8 +19716,11 @@ var openAPI3YAML = []byte(
 		"        - visibility\n" +
 		"      properties:\n" +
 		"        settings:\n" +
-		"          $ref: \"#/components/schemas/entities.BuildProfileSettings\"\n" +
+		"          description: Настройки профиля сборки.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.BuildProfileSettings\"\n" +
 		"        visibility:\n" +
+		"          description: 'Видимость: public/shared — доступно всем пользователям с доступом, private — только владельцу.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - shared\n" +
@@ -16783,20 +19729,26 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.BuildProfile\"\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"    build_profile.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"        settings:\n" +
-		"          $ref: \"#/components/schemas/entities.BuildProfileSettings\"\n" +
+		"          description: Настройки профиля сборки.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.BuildProfileSettings\"\n" +
 		"        visibility:\n" +
+		"          description: 'Видимость: public/shared — доступно всем пользователям с доступом, private — только владельцу.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - shared\n" +
@@ -16805,34 +19757,51 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        canChangeVisibility:\n" +
+		"          description: Может ли текущий пользователь менять видимость профиля (только владелец).\n" +
 		"          type: boolean\n" +
 		"        canManage:\n" +
+		"          description: Может ли текущий пользователь изменять или удалять этот объект.\n" +
 		"          type: boolean\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"        identity:\n" +
+		"          description: UUID профиля сборки.\n" +
 		"          type: string\n" +
 		"        ownedByMe:\n" +
+		"          description: Принадлежит ли объект текущему пользователю.\n" +
 		"          type: boolean\n" +
 		"        ownerLogin:\n" +
+		"          description: Логин владельца приватного объекта.\n" +
 		"          type: string\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"        settings:\n" +
+		"          description: Настройки профиля сборки.\n" +
 		"          type: object\n" +
 		"        settingsVersion:\n" +
+		"          description: Версия формата настроек профиля сборки.\n" +
 		"          type: integer\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        visibility:\n" +
+		"          description: 'Видимость: public/shared — доступно всем пользователям с доступом, private — только владельцу.'\n" +
 		"          type: string\n" +
 		"    commit.CreateRequest:\n" +
 		"      type: object\n" +
@@ -16841,14 +19810,17 @@ var openAPI3YAML = []byte(
 		"        - message\n" +
 		"      properties:\n" +
 		"        expectedHeadSequence:\n" +
+		"          description: headSequence workspace из плана (POST /api/v1/commits/plan или план восстановления/импорта). Сервер применит операцию, только если с тех пор не появилось новых ревизий; иначе 409 head_sequence_conflict.\n" +
 		"          type: integer\n" +
 		"          minimum: 0\n" +
 		"          example: 42\n" +
 		"        message:\n" +
+		"          description: Сообщение коммита (до 1000 символов).\n" +
 		"          type: string\n" +
 		"          maxLength: 1000\n" +
 		"          example: Сохранена конфигурация проекта\n" +
 		"        revisionPolicy:\n" +
+		"          description: 'Как сохранить ревизии в коммите: preserve — все ревизии, squash — схлопнуть промежуточные (чужие ревизии схлопывает только Admin).'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - preserve\n" +
@@ -16858,77 +19830,98 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/commit.Response\"\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    commit.PlanResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        baseSequence:\n" +
+		"          description: 'headSequence workspace, с которого начинается диапазон коммита: в коммит входят ревизии после baseSequence до headSequence.'\n" +
 		"          type: integer\n" +
 		"          example: 21\n" +
 		"        contributors:\n" +
+		"          description: Авторы ревизий, вошедших в коммит.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        documentCount:\n" +
+		"          description: Количество документов.\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        headSequence:\n" +
+		"          description: 'Счётчик изменений workspace: увеличивается на 1 при каждой ревизии документа. Используется как expectedHeadSequence в коммитах, восстановлении и импорте.'\n" +
 		"          type: integer\n" +
 		"          example: 42\n" +
 		"        revisionCount:\n" +
+		"          description: Количество ревизий.\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        shared:\n" +
+		"          description: Включать ли в коммит ревизии других пользователей workspace.\n" +
 		"          type: boolean\n" +
 		"          example: false\n" +
 		"    commit.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        baseSequence:\n" +
+		"          description: 'headSequence workspace, с которого начинается диапазон коммита: в коммит входят ревизии после baseSequence до headSequence.'\n" +
 		"          type: integer\n" +
 		"          example: 21\n" +
 		"        changes:\n" +
+		"          description: 'Изменения документов, вошедшие в коммит или восстановление: документ, операция, ревизии до и после.'\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.CommitChange\"\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        domainVersion:\n" +
+		"          description: 'Версия домена: детерминированный отпечаток содержимого документов workspace (формат dv2). Совпадает у одинакового содержимого; используется для сверки экспорта, импорта, коммитов и релизов.'\n" +
 		"          type: string\n" +
 		"          example: dv2:sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n" +
 		"        headSequence:\n" +
+		"          description: 'Счётчик изменений workspace: увеличивается на 1 при каждой ревизии документа. Используется как expectedHeadSequence в коммитах, восстановлении и импорте.'\n" +
 		"          type: integer\n" +
 		"          example: 42\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        message:\n" +
+		"          description: Сообщение коммита.\n" +
 		"          type: string\n" +
 		"          example: Сохранена конфигурация проекта\n" +
 		"        operation:\n" +
+		"          description: 'Операция над документом: create, update, delete или restore.'\n" +
 		"          type: string\n" +
 		"          example: update\n" +
 		"        parentCommitId:\n" +
+		"          description: UUID предыдущего коммита workspace.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
-		"          example: example\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        revisionPolicy:\n" +
+		"          description: 'Как сохранить ревизии в коммите: preserve — все ревизии, squash — схлопнуть промежуточные (чужие ревизии схлопывает только Admin).'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - preserve\n" +
 		"            - squash\n" +
 		"          example: preserve\n" +
 		"        workspaceId:\n" +
+		"          description: UUID workspace.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440001\n" +
@@ -16936,46 +19929,64 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        conflicts:\n" +
+		"          description: Конфликты, из-за которых план нельзя применить без изменений.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
 		"        creates:\n" +
+		"          description: Сколько документов будет создано (или создано) при применении плана.\n" +
 		"          type: integer\n" +
 		"        deletes:\n" +
+		"          description: Сколько документов будет удалено (или удалено) при применении плана.\n" +
 		"          type: integer\n" +
 		"        expectedHeadSequence:\n" +
+		"          description: headSequence workspace из плана (POST /api/v1/commits/plan или план восстановления/импорта). Сервер применит операцию, только если с тех пор не появилось новых ревизий; иначе 409 head_sequence_conflict.\n" +
 		"          type: integer\n" +
 		"        expiresAt:\n" +
+		"          description: 'Время истечения (RFC 3339): после него объект недействителен.'\n" +
 		"          type: string\n" +
 		"        incoming:\n" +
-		"          $ref: \"#/components/schemas/entities.SnapshotCounts\"\n" +
+		"          description: Сколько объектов содержит импортируемый или восстанавливаемый снимок.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.SnapshotCounts\"\n" +
 		"        missingIntegrations:\n" +
+		"          description: Интеграции, которых нет в целевом workspace, но которые нужны снимку.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
 		"        planId:\n" +
+		"          description: Идентификатор сохранённого плана; передайте его при применении. План действует до expiresAt.\n" +
 		"          type: string\n" +
 		"        restores:\n" +
+		"          description: Сколько документов будет восстановлено (или восстановлено) при применении плана.\n" +
 		"          type: integer\n" +
 		"        snapshotChecksum:\n" +
+		"          description: Контрольная сумма снимка, по которому построен план.\n" +
 		"          type: string\n" +
 		"        targetETag:\n" +
+		"          description: ETag (revision) целевого workspace, на котором построен план; при изменении workspace план не применится.\n" +
 		"          type: string\n" +
 		"        targetWorkspace:\n" +
+		"          description: identity целевого workspace плана.\n" +
 		"          type: string\n" +
 		"        unsupportedCollections:\n" +
+		"          description: Коллекции снимка, которые этот backend не поддерживает; при их наличии план не применяется.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
 		"        updates:\n" +
+		"          description: Сколько документов будет изменено (или изменено) при применении плана.\n" +
 		"          type: integer\n" +
 		"        valid:\n" +
+		"          description: 'Можно ли применить план: false, если есть validationErrors, conflicts или неподдерживаемые коллекции.'\n" +
 		"          type: boolean\n" +
 		"        validationErrors:\n" +
+		"          description: Ошибки проверки снимка; при их наличии план не применяется.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
 		"        warnings:\n" +
+		"          description: 'Предупреждения: план можно применить, но стоит проверить.'\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
@@ -16985,6 +19996,7 @@ var openAPI3YAML = []byte(
 		"        - expectedHeadSequence\n" +
 		"      properties:\n" +
 		"        expectedHeadSequence:\n" +
+		"          description: headSequence workspace из плана (POST /api/v1/commits/plan или план восстановления/импорта). Сервер применит операцию, только если с тех пор не появилось новых ревизий; иначе 409 head_sequence_conflict.\n" +
 		"          type: integer\n" +
 		"          minimum: 0\n" +
 		"          example: 42\n" +
@@ -16997,23 +20009,29 @@ var openAPI3YAML = []byte(
 		"        - source\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -17021,19 +20039,24 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        modelVersion:\n" +
+		"          description: Версия модели компонента; положительное целое.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        supportedTargets:\n" +
+		"          description: Платформы, для которых доступен компонент (например, vue, web-component).\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
@@ -17041,48 +20064,60 @@ var openAPI3YAML = []byte(
 		"            - vue\n" +
 		"            - web-component\n" +
 		"        tag:\n" +
+		"          description: Тег компонента для использования в разметке.\n" +
 		"          type: string\n" +
 		"          example: main-component\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    component.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/component.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    component.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -17090,61 +20125,79 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        modelVersion:\n" +
+		"          description: Версия модели компонента; положительное целое.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        supportedTargets:\n" +
+		"          description: Платформы, для которых доступен компонент (например, vue, web-component).\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
 		"        tag:\n" +
+		"          description: Тег компонента для использования в разметке.\n" +
 		"          type: string\n" +
 		"          example: main-component\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    component.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -17152,20 +20205,26 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        modelVersion:\n" +
+		"          description: Версия модели компонента; положительное целое.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        supportedTargets:\n" +
+		"          description: Платформы, для которых доступен компонент (например, vue, web-component).\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
@@ -17173,15 +20232,20 @@ var openAPI3YAML = []byte(
 		"            - vue\n" +
 		"            - web-component\n" +
 		"        tag:\n" +
+		"          description: Тег компонента для использования в разметке.\n" +
 		"          type: string\n" +
 		"          example: main-component\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    composition.CreateRequest:\n" +
@@ -17193,29 +20257,37 @@ var openAPI3YAML = []byte(
 		"        - sourceVersion\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        kind:\n" +
+		"          description: 'Вид композиции: library, query или workspace.'\n" +
 		"          type: string\n" +
-		"          example: component\n" +
+		"          example: workspace\n" +
 		"        kindIdentity:\n" +
+		"          description: identity связанного документа для выбранного kind.\n" +
 		"          type: string\n" +
 		"          example: main-component\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -17223,64 +20295,81 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    composition.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/composition.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    composition.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        kind:\n" +
+		"          description: 'Вид композиции: library, query или workspace.'\n" +
 		"          type: string\n" +
-		"          example: component\n" +
+		"          example: workspace\n" +
 		"        kindIdentity:\n" +
+		"          description: identity связанного документа для выбранного kind.\n" +
 		"          type: string\n" +
 		"          example: main-component\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -17288,60 +20377,78 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    composition.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        kind:\n" +
+		"          description: 'Вид композиции: library, query или workspace.'\n" +
 		"          type: string\n" +
-		"          example: component\n" +
+		"          example: workspace\n" +
 		"        kindIdentity:\n" +
+		"          description: identity связанного документа для выбранного kind.\n" +
 		"          type: string\n" +
 		"          example: main-component\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -17349,26 +20456,35 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    computation.CreateRequest:\n" +
@@ -17381,26 +20497,33 @@ var openAPI3YAML = []byte(
 		"        - sourceVersion\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        contractVersion:\n" +
+		"          description: Версия контракта входа/выхода вычисления; положительное целое.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -17408,61 +20531,77 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    computation.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/computation.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    computation.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        contractVersion:\n" +
+		"          description: Версия контракта входа/выхода вычисления; положительное целое.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -17470,57 +20609,74 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    computation.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        contractVersion:\n" +
+		"          description: Версия контракта входа/выхода вычисления; положительное целое.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -17528,26 +20684,35 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    configuration.CreateRequest:\n" +
@@ -17559,23 +20724,29 @@ var openAPI3YAML = []byte(
 		"        - sourceVersion\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -17583,58 +20754,73 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: defineConfig({})\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    configuration.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/configuration.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    configuration.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -17642,54 +20828,70 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: defineConfig({})\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    configuration.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -17697,26 +20899,35 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          example: defineConfig({})\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    converter.CreateRequest:\n" +
@@ -17726,23 +20937,29 @@ var openAPI3YAML = []byte(
 		"        - identity\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -17750,51 +20967,64 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    converter.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/converter.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    converter.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -17802,47 +21032,61 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    converter.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -17850,20 +21094,27 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    data_view.CreateRequest:\n" +
@@ -17875,23 +21126,29 @@ var openAPI3YAML = []byte(
 		"        - sourceVersion\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -17899,58 +21156,73 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    data_view.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/data_view.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    data_view.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -17958,54 +21230,70 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    data_view.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -18013,26 +21301,35 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    document_move.MoveDocumentRequest:\n" +
@@ -18043,14 +21340,17 @@ var openAPI3YAML = []byte(
 		"        - identity\n" +
 		"      properties:\n" +
 		"        collection:\n" +
+		"          description: Коллекция документов workspace (путь коллекции в API, например types, queries, compositions).\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: actions\n" +
 		"        expectedRevision:\n" +
+		"          description: Текущая revision документа, ожидаемая сервером (аналог If-Match в теле запроса).\n" +
 		"          type: integer\n" +
 		"          minimum: 1\n" +
 		"          example: 3\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: open-schedule\n" +
@@ -18062,16 +21362,19 @@ var openAPI3YAML = []byte(
 		"        - placement\n" +
 		"      properties:\n" +
 		"        documents:\n" +
+		"          description: 'Перемещаемые документы: коллекция и identity (от 1 до 500).'\n" +
 		"          type: array\n" +
 		"          maxItems: 500\n" +
 		"          minItems: 1\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/document_move.MoveDocumentRequest\"\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: schedule-actions\n" +
 		"        placement:\n" +
+		"          description: 'Проекция папок: frontend — типизированные папки коллекций, workspace — свободные папки workspace.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - frontend\n" +
@@ -18081,45 +21384,55 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        documents:\n" +
+		"          description: 'Перемещаемые документы: коллекция и identity (от 1 до 500).'\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/document_move.MovedDocumentResponse\"\n" +
 		"        moved:\n" +
+		"          description: Сколько документов перемещено.\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"    document_move.MovedDocumentResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        collection:\n" +
+		"          description: Коллекция документов workspace (путь коллекции в API, например types, queries, compositions).\n" +
 		"          type: string\n" +
 		"          example: actions\n" +
 		"        document:\n" +
+		"          description: Документ (JSON-объект).\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"    domain.ArchiveResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.ArchivedDocument\"\n" +
 		"        nextCursor:\n" +
+		"          description: Курсор следующей страницы; передайте его в cursor без изменений. Пусто — страниц больше нет.\n" +
 		"          type: string\n" +
 		"    domain.ExportRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        includePublicAI:\n" +
+		"          description: Включать ли в экспорт публичные AI-подключения.\n" +
 		"          type: boolean\n" +
 		"        password:\n" +
+		"          description: Пароль зашифрованного артефакта workspace (до 1024 символов). Не сохраняется.\n" +
 		"          type: string\n" +
 		"          maxLength: 1024\n" +
 		"        privateAIConnections:\n" +
+		"          description: 'Перенос приватных AI-подключений при экспорте: none, own (только свои) или all.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - none\n" +
 		"            - own\n" +
 		"            - all\n" +
 		"        privateBuildProfiles:\n" +
+		"          description: 'Перенос приватных профилей сборки при экспорте: none, own или all.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - none\n" +
@@ -18129,12 +21442,16 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        aiCatalog:\n" +
-		"          $ref: \"#/components/schemas/entities.PortableAICatalog\"\n" +
+		"          description: 'AI-каталог workspace в переносимом виде: подключения к провайдерам и профили моделей (без секретов, если они не переносятся).'\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.PortableAICatalog\"\n" +
 		"        buildProfiles:\n" +
+		"          description: Профили сборки workspace (в экспорте — переносимые профили с настройками).\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.PortableBuildProfile\"\n" +
 		"        documents:\n" +
+		"          description: Документы снимка по коллекциям.\n" +
 		"          type: object\n" +
 		"          additionalProperties:\n" +
 		"            type: array\n" +
@@ -18142,17 +21459,22 @@ var openAPI3YAML = []byte(
 		"              type: object\n" +
 		"              additionalProperties: {}\n" +
 		"        domainVersion:\n" +
+		"          description: 'Версия домена: детерминированный отпечаток содержимого документов workspace (формат dv2). Совпадает у одинакового содержимого; используется для сверки экспорта, импорта, коммитов и релизов.'\n" +
 		"          type: string\n" +
 		"        installedIntegrations:\n" +
+		"          description: 'Интеграции, установленные в workspace: identity, версия и конфигурация.'\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: object\n" +
 		"            additionalProperties: {}\n" +
 		"        kind:\n" +
+		"          description: Вид переносимого снимка (экспорт workspace).\n" +
 		"          type: string\n" +
 		"        schemaVersion:\n" +
+		"          description: Версия схемы переносимого снимка workspace (WORKSPACE_SCHEMA_VERSION backend).\n" +
 		"          type: integer\n" +
 		"        workspace:\n" +
+		"          description: Настройки workspace в снимке.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"    domain.ImportPlanArtifactRequest:\n" +
@@ -18161,54 +21483,74 @@ var openAPI3YAML = []byte(
 		"        - artifact\n" +
 		"      properties:\n" +
 		"        artifact:\n" +
+		"          description: Переносимый артефакт workspace (JSON экспорта или зашифрованный конверт) для построения плана импорта.\n" +
 		"          type: object\n" +
 		"        password:\n" +
+		"          description: Пароль зашифрованного артефакта workspace (до 1024 символов). Не сохраняется.\n" +
 		"          type: string\n" +
 		"          maxLength: 1024\n" +
 		"    domain.ImportPlanResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        conflicts:\n" +
+		"          description: Конфликты, из-за которых план нельзя применить без изменений.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
 		"        creates:\n" +
+		"          description: Сколько документов будет создано (или создано) при применении плана.\n" +
 		"          type: integer\n" +
 		"        deletes:\n" +
+		"          description: Сколько документов будет удалено (или удалено) при применении плана.\n" +
 		"          type: integer\n" +
 		"        expectedHeadSequence:\n" +
+		"          description: headSequence workspace из плана (POST /api/v1/commits/plan или план восстановления/импорта). Сервер применит операцию, только если с тех пор не появилось новых ревизий; иначе 409 head_sequence_conflict.\n" +
 		"          type: integer\n" +
 		"        expiresAt:\n" +
+		"          description: 'Время истечения (RFC 3339): после него объект недействителен.'\n" +
 		"          type: string\n" +
 		"        incoming:\n" +
-		"          $ref: \"#/components/schemas/entities.SnapshotCounts\"\n" +
+		"          description: Сколько объектов содержит импортируемый или восстанавливаемый снимок.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.SnapshotCounts\"\n" +
 		"        missingIntegrations:\n" +
+		"          description: Интеграции, которых нет в целевом workspace, но которые нужны снимку.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
 		"        planId:\n" +
+		"          description: Идентификатор сохранённого плана; передайте его при применении. План действует до expiresAt.\n" +
 		"          type: string\n" +
 		"        restores:\n" +
+		"          description: Сколько документов будет восстановлено (или восстановлено) при применении плана.\n" +
 		"          type: integer\n" +
 		"        snapshotChecksum:\n" +
+		"          description: Контрольная сумма снимка, по которому построен план.\n" +
 		"          type: string\n" +
 		"        targetETag:\n" +
+		"          description: ETag (revision) целевого workspace, на котором построен план; при изменении workspace план не применится.\n" +
 		"          type: string\n" +
 		"        targetWorkspace:\n" +
+		"          description: identity целевого workspace плана.\n" +
 		"          type: string\n" +
 		"        unsupportedCollections:\n" +
+		"          description: Коллекции снимка, которые этот backend не поддерживает; при их наличии план не применяется.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
 		"        updates:\n" +
+		"          description: Сколько документов будет изменено (или изменено) при применении плана.\n" +
 		"          type: integer\n" +
 		"        valid:\n" +
+		"          description: 'Можно ли применить план: false, если есть validationErrors, conflicts или неподдерживаемые коллекции.'\n" +
 		"          type: boolean\n" +
 		"        validationErrors:\n" +
+		"          description: Ошибки проверки снимка; при их наличии план не применяется.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
 		"        warnings:\n" +
+		"          description: 'Предупреждения: план можно применить, но стоит проверить.'\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
@@ -18219,10 +21561,12 @@ var openAPI3YAML = []byte(
 		"        - planId\n" +
 		"      properties:\n" +
 		"        confirmation:\n" +
+		"          description: 'Подтверждение необратимой операции: точный identity целевого workspace.'\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: default\n" +
 		"        planId:\n" +
+		"          description: Идентификатор сохранённого плана; передайте его при применении. План действует до expiresAt.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440006\n" +
@@ -18230,25 +21574,35 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        commitId:\n" +
+		"          description: UUID коммита.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"        creates:\n" +
+		"          description: Сколько документов будет создано (или создано) при применении плана.\n" +
 		"          type: integer\n" +
 		"        deletes:\n" +
+		"          description: Сколько документов будет удалено (или удалено) при применении плана.\n" +
 		"          type: integer\n" +
 		"        domainVersion:\n" +
+		"          description: 'Версия домена: детерминированный отпечаток содержимого документов workspace (формат dv2). Совпадает у одинакового содержимого; используется для сверки экспорта, импорта, коммитов и релизов.'\n" +
 		"          type: string\n" +
 		"          example: dv2:sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n" +
 		"        imported:\n" +
-		"          $ref: \"#/components/schemas/entities.SnapshotCounts\"\n" +
+		"          description: Сколько объектов импортировано.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.SnapshotCounts\"\n" +
 		"        parentCommitId:\n" +
+		"          description: UUID предыдущего коммита workspace.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"        restores:\n" +
+		"          description: Сколько документов будет восстановлено (или восстановлено) при применении плана.\n" +
 		"          type: integer\n" +
 		"        updates:\n" +
+		"          description: Сколько документов будет изменено (или изменено) при применении плана.\n" +
 		"          type: integer\n" +
 		"        workspace:\n" +
+		"          description: Состояние workspace после импорта.\n" +
 		"          type: string\n" +
 		"    domain_type.CreateRequest:\n" +
 		"      type: object\n" +
@@ -18259,26 +21613,33 @@ var openAPI3YAML = []byte(
 		"        - sourceVersion\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        isPrimitive:\n" +
+		"          description: Примитивный тип (без полей), например string или number.\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -18286,61 +21647,77 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    domain_type.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/domain_type.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    domain_type.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        isPrimitive:\n" +
+		"          description: Примитивный тип (без полей), например string или number.\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -18348,57 +21725,74 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    domain_type.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        isPrimitive:\n" +
+		"          description: Примитивный тип (без полей), например string или number.\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -18406,245 +21800,346 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    entities.AIClarification:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        candidates:\n" +
+		"          description: Варианты ответа на уточняющий вопрос AI.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.AIClarificationCandidate\"\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"        interactionId:\n" +
+		"          description: Идентификатор взаимодействия AI Workbench, к которому относится уточнение.\n" +
 		"          type: string\n" +
 		"        planVersion:\n" +
+		"          description: Версия плана AI, к которой относится уточнение.\n" +
 		"          type: integer\n" +
 		"        question:\n" +
+		"          description: Текст уточняющего вопроса AI.\n" +
 		"          type: string\n" +
 		"        slot:\n" +
+		"          description: Слот плана AI, для которого нужно уточнение.\n" +
 		"          type: string\n" +
 		"        taskId:\n" +
+		"          description: Идентификатор задачи AI Workbench.\n" +
 		"          type: string\n" +
 		"    entities.AIClarificationCandidate:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        candidateId:\n" +
+		"          description: Идентификатор варианта ответа на уточнение AI.\n" +
 		"          type: string\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"        documentType:\n" +
+		"          description: Коллекция документа (например, types, queries).\n" +
 		"          type: string\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"    entities.AIConversation:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        archived:\n" +
+		"          description: Признак архивного (скрытого из активного списка) объекта.\n" +
 		"          type: boolean\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"        messageCount:\n" +
+		"          description: Количество сообщений в диалоге.\n" +
 		"          type: integer\n" +
 		"        model:\n" +
-		"          $ref: \"#/components/schemas/entities.AIModelSnapshot\"\n" +
+		"          description: Профиль AI-модели диалога.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.AIModelSnapshot\"\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        workspaceId:\n" +
+		"          description: UUID workspace.\n" +
 		"          type: string\n" +
 		"    entities.AIMessage:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        content:\n" +
+		"          description: Текст сообщения.\n" +
 		"          type: string\n" +
 		"        conversationId:\n" +
+		"          description: UUID AI-диалога.\n" +
 		"          type: string\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"        role:\n" +
+		"          description: 'Автор сообщения AI-диалога: user или assistant.'\n" +
 		"          type: string\n" +
 		"        sequence:\n" +
+		"          description: Порядковый номер сообщения в диалоге.\n" +
 		"          type: integer\n" +
 		"    entities.AIModelProfile:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        adapter:\n" +
+		"          description: 'Адаптер провайдера AI: anthropic или ollama.'\n" +
 		"          type: string\n" +
 		"        canManage:\n" +
+		"          description: Может ли текущий пользователь изменять или удалять этот объект.\n" +
 		"          type: boolean\n" +
 		"        connectionId:\n" +
+		"          description: UUID AI-подключения к провайдеру.\n" +
 		"          type: string\n" +
 		"        connectionName:\n" +
+		"          description: Имя AI-подключения.\n" +
 		"          type: string\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        createdBy:\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
 		"          type: string\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"        enabled:\n" +
+		"          description: Включён ли объект; выключенный не используется для запусков.\n" +
 		"          type: boolean\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"        isDefault:\n" +
+		"          description: Модель по умолчанию.\n" +
 		"          type: boolean\n" +
 		"        ownedByMe:\n" +
+		"          description: Принадлежит ли объект текущему пользователю.\n" +
 		"          type: boolean\n" +
 		"        providerModelId:\n" +
+		"          description: Идентификатор модели у провайдера (например, имя модели в API провайдера).\n" +
 		"          type: string\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        updatedBy:\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        visibility:\n" +
+		"          description: 'Видимость: public/shared — доступно всем пользователям с доступом, private — только владельцу.'\n" +
 		"          type: string\n" +
 		"    entities.AIModelSnapshot:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        adapter:\n" +
+		"          description: 'Адаптер провайдера AI: anthropic или ollama.'\n" +
 		"          type: string\n" +
 		"        connectionId:\n" +
+		"          description: UUID AI-подключения к провайдеру.\n" +
 		"          type: string\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"        profileId:\n" +
+		"          description: UUID профиля AI-модели.\n" +
 		"          type: string\n" +
 		"        providerModelId:\n" +
+		"          description: Идентификатор модели у провайдера (например, имя модели в API провайдера).\n" +
 		"          type: string\n" +
 		"    entities.AIProviderConnection:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        adapter:\n" +
+		"          description: 'Адаптер провайдера AI: anthropic или ollama.'\n" +
 		"          type: string\n" +
 		"        baseUrl:\n" +
+		"          description: Абсолютный http/https URL сервиса без userinfo, query и fragment.\n" +
 		"          type: string\n" +
 		"        canManage:\n" +
+		"          description: Может ли текущий пользователь изменять или удалять этот объект.\n" +
 		"          type: boolean\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        createdBy:\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
 		"          type: string\n" +
 		"        enabled:\n" +
+		"          description: Включён ли объект; выключенный не используется для запусков.\n" +
 		"          type: boolean\n" +
 		"        hasCredential:\n" +
+		"          description: Сохранён ли секрет (сам секрет не возвращается).\n" +
 		"          type: boolean\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"        modelCount:\n" +
+		"          description: Количество профилей моделей у подключения.\n" +
 		"          type: integer\n" +
 		"        name:\n" +
+		"          description: Имя AI-подключения.\n" +
 		"          type: string\n" +
 		"        ownedByMe:\n" +
+		"          description: Принадлежит ли объект текущему пользователю.\n" +
 		"          type: boolean\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        updatedBy:\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        visibility:\n" +
+		"          description: 'Видимость: public/shared — доступно всем пользователям с доступом, private — только владельцу.'\n" +
 		"          type: string\n" +
 		"    entities.Actor:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"        id:\n" +
+		"          description: UUID пользователя Endge.\n" +
 		"          type: string\n" +
 		"        username:\n" +
+		"          description: Логин пользователя.\n" +
 		"          type: string\n" +
 		"    entities.ArchivedDocument:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"        type:\n" +
+		"          description: Коллекция удалённого документа.\n" +
 		"          type: string\n" +
 		"    entities.BuildProfile:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        canChangeVisibility:\n" +
+		"          description: Может ли текущий пользователь менять видимость профиля (только владелец).\n" +
 		"          type: boolean\n" +
 		"        canManage:\n" +
+		"          description: Может ли текущий пользователь изменять или удалять этот объект.\n" +
 		"          type: boolean\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"        identity:\n" +
+		"          description: UUID профиля сборки.\n" +
 		"          type: string\n" +
 		"        ownedByMe:\n" +
+		"          description: Принадлежит ли объект текущему пользователю.\n" +
 		"          type: boolean\n" +
 		"        ownerLogin:\n" +
+		"          description: Логин владельца приватного объекта.\n" +
 		"          type: string\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"        settings:\n" +
+		"          description: Настройки профиля сборки.\n" +
 		"          type: object\n" +
 		"        settingsVersion:\n" +
+		"          description: Версия формата настроек профиля сборки.\n" +
 		"          type: integer\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        visibility:\n" +
+		"          description: 'Видимость: public/shared — доступно всем пользователям с доступом, private — только владельцу.'\n" +
 		"          type: string\n" +
 		"    entities.BuildProfileSettings:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        buildScope:\n" +
+		"          description: Область сборки профиля.\n" +
 		"          type: string\n" +
 		"        contexts:\n" +
+		"          description: Какие контексты включаются в сборку.\n" +
 		"          type: string\n" +
 		"        debuggerStructure:\n" +
+		"          description: Включать ли в сборку структуру для отладчика.\n" +
 		"          type: string\n" +
 		"        diagnostics:\n" +
+		"          description: Уровень диагностических сведений в сборке.\n" +
 		"          type: string\n" +
 		"        fileFormat:\n" +
+		"          description: 'Формат файла сборки: gzip или json.'\n" +
 		"          type: string\n" +
 		"          default: gzip\n" +
 		"          enum:\n" +
 		"            - gzip\n" +
 		"            - json\n" +
 		"        includeAst:\n" +
+		"          description: Включать ли AST в сборку.\n" +
 		"          type: boolean\n" +
 		"          default: false\n" +
 		"        topology:\n" +
+		"          description: 'Топология сборки: узлы и их runtime.'\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.BuildProfileTopologyNode\"\n" +
@@ -18652,79 +22147,110 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        node:\n" +
+		"          description: Узел топологии сборки.\n" +
 		"          type: string\n" +
 		"        runtime:\n" +
+		"          description: Среда выполнения узла.\n" +
 		"          type: string\n" +
 		"    entities.CommitChange:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        afterRevisionId:\n" +
+		"          description: UUID ревизии документа после изменения, входящего в коммит.\n" +
 		"          type: string\n" +
 		"        beforeRevisionId:\n" +
+		"          description: UUID ревизии документа до изменения, входящего в коммит; пусто для создания.\n" +
 		"          type: string\n" +
 		"        documentId:\n" +
+		"          description: UUID документа.\n" +
 		"          type: string\n" +
 		"        documentIdentity:\n" +
+		"          description: identity документа в его коллекции.\n" +
 		"          type: string\n" +
 		"        documentType:\n" +
+		"          description: Коллекция документа (например, types, queries).\n" +
 		"          type: string\n" +
 		"        operation:\n" +
+		"          description: 'Операция над документом: create, update, delete или restore.'\n" +
 		"          type: string\n" +
 		"    entities.DomainStatus:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        commitId:\n" +
+		"          description: UUID коммита.\n" +
 		"          type: string\n" +
 		"        commitMessage:\n" +
+		"          description: Сообщение коммита.\n" +
 		"          type: string\n" +
 		"        committedAt:\n" +
+		"          description: Время коммита (RFC 3339).\n" +
 		"          type: string\n" +
 		"        domainVersion:\n" +
+		"          description: domainVersion текущего состояния; заполняется только при state=clean.\n" +
 		"          type: string\n" +
 		"        lastCommittedDomainVersion:\n" +
+		"          description: domainVersion последнего коммита.\n" +
 		"          type: string\n" +
 		"        pendingRevisionCount:\n" +
+		"          description: Количество незакоммиченных ревизий workspace.\n" +
 		"          type: integer\n" +
 		"        state:\n" +
+		"          description: clean — нет незакоммиченных ревизий (domainVersion совпадает с последним коммитом); dirty — есть изменения после последнего коммита.\n" +
 		"          type: string\n" +
 		"        workspace:\n" +
+		"          description: identity workspace.\n" +
 		"          type: string\n" +
 		"    entities.MockParameters:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        emitImmediately:\n" +
+		"          description: Отправить первое сообщение потока сразу, не дожидаясь интервала.\n" +
 		"          type: boolean\n" +
 		"        intervalMs:\n" +
+		"          description: Интервал между сообщениями потока в миллисекундах.\n" +
 		"          type: integer\n" +
 		"        itemsPerMessage:\n" +
+		"          description: Сколько записей в одном сообщении потока.\n" +
 		"          type: integer\n" +
 		"    entities.MockStream:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        eventsUrl:\n" +
+		"          description: URL подписки на события потока (Server-Sent Events).\n" +
 		"          type: string\n" +
 		"        expiresAt:\n" +
+		"          description: 'Время истечения (RFC 3339): после него объект недействителен.'\n" +
 		"          type: string\n" +
 		"        id:\n" +
+		"          description: Идентификатор потока.\n" +
 		"          type: string\n" +
 		"        idleTimeoutMs:\n" +
+		"          description: Через сколько миллисекунд без keepalive поток останавливается.\n" +
 		"          type: integer\n" +
 		"        parameters:\n" +
-		"          $ref: \"#/components/schemas/entities.MockParameters\"\n" +
+		"          description: Параметры генерации потока.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.MockParameters\"\n" +
 		"        parametersVersion:\n" +
+		"          description: 'Версия параметров потока: растёт при каждом изменении параметров.'\n" +
 		"          type: integer\n" +
 		"        profile:\n" +
+		"          description: Профиль генерации данных.\n" +
 		"          type: string\n" +
 		"        seed:\n" +
+		"          description: 'Seed генератора: одинаковый seed даёт одинаковые данные.'\n" +
 		"          type: string\n" +
 		"        sequence:\n" +
+		"          description: Номер последнего отправленного сообщения.\n" +
 		"          type: integer\n" +
 		"        status:\n" +
+		"          description: Состояние потока.\n" +
 		"          type: string\n" +
 		"    entities.PortableAICatalog:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        connections:\n" +
+		"          description: AI-подключения к провайдерам.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.PortableAIConnection\"\n" +
@@ -18732,101 +22258,142 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        adapter:\n" +
+		"          description: 'Адаптер провайдера AI: anthropic или ollama.'\n" +
 		"          type: string\n" +
 		"        baseUrl:\n" +
+		"          description: Абсолютный http/https URL сервиса без userinfo, query и fragment.\n" +
 		"          type: string\n" +
 		"        credential:\n" +
+		"          description: Секрет AI-подключения (API-ключ). Только в запросах; в ответах не возвращается — см. hasCredential.\n" +
 		"          type: string\n" +
 		"        enabled:\n" +
+		"          description: Включён ли объект; выключенный не используется для запусков.\n" +
 		"          type: boolean\n" +
 		"        models:\n" +
+		"          description: Профили моделей подключения.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.PortableAIModel\"\n" +
 		"        name:\n" +
+		"          description: Имя AI-подключения.\n" +
 		"          type: string\n" +
 		"        ownerLogin:\n" +
+		"          description: Логин владельца приватного объекта.\n" +
 		"          type: string\n" +
 		"        visibility:\n" +
+		"          description: 'Видимость: public/shared — доступно всем пользователям с доступом, private — только владельцу.'\n" +
 		"          type: string\n" +
 		"    entities.PortableAIModel:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"        enabled:\n" +
+		"          description: Включён ли объект; выключенный не используется для запусков.\n" +
 		"          type: boolean\n" +
 		"        isDefault:\n" +
+		"          description: Модель по умолчанию.\n" +
 		"          type: boolean\n" +
 		"        providerModelId:\n" +
+		"          description: Идентификатор модели у провайдера (например, имя модели в API провайдера).\n" +
 		"          type: string\n" +
 		"    entities.PortableBuildProfile:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"        identity:\n" +
+		"          description: UUID профиля сборки.\n" +
 		"          type: string\n" +
 		"        ownerLogin:\n" +
+		"          description: Логин владельца приватного объекта.\n" +
 		"          type: string\n" +
 		"        settings:\n" +
+		"          description: Настройки профиля сборки.\n" +
 		"          type: object\n" +
 		"        settingsVersion:\n" +
+		"          description: Версия формата настроек профиля сборки.\n" +
 		"          type: integer\n" +
 		"        visibility:\n" +
+		"          description: 'Видимость: public/shared — доступно всем пользователям с доступом, private — только владельцу.'\n" +
 		"          type: string\n" +
 		"    entities.ReleaseBuildMetadata:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        checksum:\n" +
+		"          description: Контрольная сумма содержимого (снимка, резервной копии или ревизии) для проверки целостности.\n" +
 		"          type: string\n" +
 		"        compilerVersion:\n" +
+		"          description: Версия компилятора, которым собран бандл.\n" +
 		"          type: string\n" +
 		"        context:\n" +
+		"          description: Контекст сборки (значения structural context, для которых собран бандл).\n" +
 		"          type: object\n" +
 		"        contextMode:\n" +
+		"          description: Режим выбора контекста запуска AI.\n" +
 		"          type: string\n" +
 		"        fileFormat:\n" +
+		"          description: 'Формат файла сборки: gzip или json.'\n" +
 		"          type: string\n" +
 		"        includeAst:\n" +
+		"          description: Включать ли AST в сборку.\n" +
 		"          type: boolean\n" +
 		"        profile:\n" +
-		"          $ref: \"#/components/schemas/entities.ReleaseBuildProfile\"\n" +
+		"          description: Профиль сборки, которым собран бандл.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.ReleaseBuildProfile\"\n" +
 		"        programId:\n" +
+		"          description: Идентификатор программы, для которой собран бандл.\n" +
 		"          type: string\n" +
 		"        runtime:\n" +
+		"          description: Среда выполнения сборки.\n" +
 		"          type: string\n" +
 		"        scope:\n" +
+		"          description: Область сборки.\n" +
 		"          type: string\n" +
 		"        sizeBytes:\n" +
+		"          description: Размер в байтах.\n" +
 		"          type: integer\n" +
 		"        version:\n" +
+		"          description: Версия формата метаданных сборки.\n" +
 		"          type: integer\n" +
 		"    entities.ReleaseBuildProfile:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"    entities.SnapshotCounts:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        aiConnections:\n" +
+		"          description: Количество AI-подключений.\n" +
 		"          type: integer\n" +
 		"        aiModels:\n" +
+		"          description: Количество профилей AI-моделей.\n" +
 		"          type: integer\n" +
 		"        buildProfiles:\n" +
+		"          description: Профили сборки workspace (в экспорте — переносимые профили с настройками).\n" +
 		"          type: integer\n" +
 		"        documents:\n" +
+		"          description: Количество документов.\n" +
 		"          type: integer\n" +
 		"        integrations:\n" +
+		"          description: Количество интеграций.\n" +
 		"          type: integer\n" +
 		"        skippedAIConnections:\n" +
+		"          description: Сколько AI-подключений пропущено при импорте.\n" +
 		"          type: integer\n" +
 		"        skippedBuildProfiles:\n" +
+		"          description: Сколько профилей сборки пропущено при импорте.\n" +
 		"          type: integer\n" +
 		"    facet.CreateRequest:\n" +
 		"      type: object\n" +
@@ -18837,21 +22404,26 @@ var openAPI3YAML = []byte(
 		"        - identity\n" +
 		"      properties:\n" +
 		"        color:\n" +
+		"          description: 'Цвет в формате #rrggbb (строчные буквы).'\n" +
 		"          type: string\n" +
 		"          example: \"#2563eb\"\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Регион\n" +
 		"        icon:\n" +
+		"          description: 'Иконка: PascalCase-токен из набора иконок Configurator (например, MapPin).'\n" +
 		"          type: string\n" +
 		"          maxLength: 80\n" +
 		"          example: MapPin\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: region\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"    facet.DocumentCreateRequest:\n" +
@@ -18861,91 +22433,120 @@ var openAPI3YAML = []byte(
 		"        - identity\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"        configuration:\n" +
+		"          description: 'Вклад в конфигурацию: mode inherit (объектный patch поверх родителя) или replace (полная замена).'\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"    facet.DocumentPatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"        configuration:\n" +
+		"          description: 'Вклад в конфигурацию: mode inherit (объектный patch поверх родителя) или replace (полная замена).'\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"    facet.FacetDocumentListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/facet.FacetDocumentResponse\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"    facet.FacetDocumentResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        configuration:\n" +
+		"          description: 'Вклад в конфигурацию: mode inherit (объектный patch поверх родителя) или replace (полная замена).'\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        facetIdentity:\n" +
+		"          description: identity фасета.\n" +
 		"          type: string\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -18953,83 +22554,114 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    facet.FacetListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/facet.FacetResponse\"\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"    facet.FacetResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"        color:\n" +
+		"          description: 'Цвет в формате #rrggbb (строчные буквы).'\n" +
 		"          type: string\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"        documentCount:\n" +
+		"          description: Количество документов.\n" +
 		"          type: integer\n" +
 		"        icon:\n" +
+		"          description: 'Иконка: PascalCase-токен из набора иконок Configurator (например, MapPin).'\n" +
 		"          type: string\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        position:\n" +
+		"          description: Позиция в порядке отображения (с нуля).\n" +
 		"          type: integer\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"    facet.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        color:\n" +
+		"          description: 'Цвет в формате #rrggbb (строчные буквы).'\n" +
 		"          type: string\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"        icon:\n" +
+		"          description: 'Иконка: PascalCase-токен из набора иконок Configurator (например, MapPin).'\n" +
 		"          type: string\n" +
 		"          maxLength: 80\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"    facet.ReorderItem:\n" +
@@ -19039,9 +22671,11 @@ var openAPI3YAML = []byte(
 		"        - identity\n" +
 		"      properties:\n" +
 		"        expectedRevision:\n" +
+		"          description: Текущая revision документа, ожидаемая сервером (аналог If-Match в теле запроса).\n" +
 		"          type: integer\n" +
 		"          minimum: 1\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"    facet.ReorderRequest:\n" +
@@ -19050,6 +22684,7 @@ var openAPI3YAML = []byte(
 		"        - items\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Полный упорядоченный список identity фасетов; должен совпадать с текущим набором.\n" +
 		"          type: array\n" +
 		"          maxItems: 1000\n" +
 		"          items:\n" +
@@ -19061,27 +22696,34 @@ var openAPI3YAML = []byte(
 		"        - identity\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        fields:\n" +
+		"          description: Поля фильтра.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: object\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -19089,62 +22731,78 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    filter.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/filter.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    filter.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        fields:\n" +
+		"          description: Поля фильтра.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: object\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -19152,58 +22810,75 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    filter.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        fields:\n" +
+		"          description: Поля фильтра.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: object\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -19211,26 +22886,35 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    folder.CreateRequest:\n" +
@@ -19240,33 +22924,42 @@ var openAPI3YAML = []byte(
 		"        - identity\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        color:\n" +
+		"          description: 'Цвет в формате #rrggbb (строчные буквы).'\n" +
 		"          type: string\n" +
 		"          example: \"#64748b\"\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        entityType:\n" +
+		"          description: Коллекция, документы которой хранит папка (для scope=collection); не задаётся для папок workspace.\n" +
 		"          type: string\n" +
 		"          example: compositions\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        icon:\n" +
+		"          description: 'Иконка: PascalCase-токен из набора иконок Configurator (например, MapPin).'\n" +
 		"          type: string\n" +
 		"          maxLength: 80\n" +
 		"          example: FolderKanban\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -19274,68 +22967,86 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        parentIdentity:\n" +
+		"          description: identity родительской папки; пусто — папка верхнего уровня.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        scope:\n" +
+		"          description: 'Область папки: collection — папка коллекции (задан entityType), workspace — свободная папка workspace.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - collection\n" +
 		"            - workspace\n" +
 		"          example: collection\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    folder.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/folder.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    folder.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        color:\n" +
+		"          description: 'Цвет в формате #rrggbb (строчные буквы).'\n" +
 		"          type: string\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        entityType:\n" +
+		"          description: Коллекция, документы которой хранит папка (для scope=collection); не задаётся для папок workspace.\n" +
 		"          type: string\n" +
 		"          example: compositions\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        icon:\n" +
+		"          description: 'Иконка: PascalCase-токен из набора иконок Configurator (например, MapPin).'\n" +
 		"          type: string\n" +
 		"          maxLength: 80\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -19343,62 +23054,81 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        parentIdentity:\n" +
+		"          description: identity родительской папки; пусто — папка верхнего уровня.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        scope:\n" +
+		"          description: 'Область папки: collection — папка коллекции (задан entityType), workspace — свободная папка workspace.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - collection\n" +
 		"            - workspace\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    folder.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        color:\n" +
+		"          description: 'Цвет в формате #rrggbb (строчные буквы).'\n" +
 		"          type: string\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        entityType:\n" +
+		"          description: Коллекция, документы которой хранит папка (для scope=collection); не задаётся для папок workspace.\n" +
 		"          type: string\n" +
 		"          example: compositions\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        icon:\n" +
+		"          description: 'Иконка: PascalCase-токен из набора иконок Configurator (например, MapPin).'\n" +
 		"          type: string\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -19406,80 +23136,102 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        parentIdentity:\n" +
+		"          description: identity родительской папки; пусто — папка верхнего уровня.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        scope:\n" +
+		"          description: 'Область папки: collection — папка коллекции (задан entityType), workspace — свободная папка workspace.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - collection\n" +
 		"            - workspace\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    health.ConnectedServiceResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        env:\n" +
+		"          description: Окружение сервиса (development, production и т. п.).\n" +
 		"          type: string\n" +
 		"          example: development\n" +
 		"        service:\n" +
+		"          description: Имя сервиса.\n" +
 		"          type: string\n" +
 		"          example: service_ai_workbench\n" +
 		"        status:\n" +
+		"          description: 'Состояние сервиса: ok или unavailable.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - available\n" +
 		"            - unavailable\n" +
 		"          example: available\n" +
 		"        version:\n" +
+		"          description: Версия сервиса (APP_VERSION).\n" +
 		"          type: string\n" +
 		"          example: 0.4.0\n" +
 		"    health.HealthResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        env:\n" +
+		"          description: Окружение сервиса (development, production и т. п.).\n" +
 		"          type: string\n" +
 		"          example: development\n" +
 		"        service:\n" +
+		"          description: Имя сервиса.\n" +
 		"          type: string\n" +
 		"          example: service-backend\n" +
 		"        status:\n" +
+		"          description: 'Состояние сервиса: ok или unavailable.'\n" +
 		"          type: string\n" +
 		"          example: ok\n" +
 		"        version:\n" +
+		"          description: Версия сервиса (APP_VERSION).\n" +
 		"          type: string\n" +
 		"          example: 1.0.0\n" +
 		"    health.VersionResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        env:\n" +
+		"          description: Окружение сервиса (development, production и т. п.).\n" +
 		"          type: string\n" +
 		"          example: development\n" +
 		"        service:\n" +
+		"          description: Имя сервиса.\n" +
 		"          type: string\n" +
 		"          example: service-backend\n" +
 		"        services:\n" +
+		"          description: Подключённые backend-сервисы и их состояние.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/health.ConnectedServiceResponse\"\n" +
 		"        version:\n" +
+		"          description: Версия сервиса (APP_VERSION).\n" +
 		"          type: string\n" +
 		"          example: 1.0.0\n" +
 		"        workspaceSchemaVersion:\n" +
+		"          description: Поддерживаемая версия схемы переносимого снимка workspace.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    i18n_bundle.CreateRequest:\n" +
@@ -19489,26 +23241,33 @@ var openAPI3YAML = []byte(
 		"        - identity\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        locales:\n" +
+		"          description: 'Переводы по локалям: объект {локаль: {ключ: строка}}.'\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -19516,54 +23275,68 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    i18n_bundle.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/i18n_bundle.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    i18n_bundle.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        locales:\n" +
+		"          description: 'Переводы по локалям: объект {локаль: {ключ: строка}}.'\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -19571,50 +23344,65 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    i18n_bundle.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        locales:\n" +
+		"          description: 'Переводы по локалям: объект {локаль: {ключ: строка}}.'\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -19622,20 +23410,27 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    integration.CreateRequest:\n" +
@@ -19646,20 +23441,25 @@ var openAPI3YAML = []byte(
 		"        - version\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -19667,12 +23467,15 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        version:\n" +
+		"          description: Версия интеграции.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: 1.0.0\n" +
@@ -19680,30 +23483,37 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/integration.Response\"\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    integration.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -19711,12 +23521,15 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        version:\n" +
+		"          description: Версия интеграции.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: 1.0.0\n" +
@@ -19724,32 +23537,42 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -19757,57 +23580,75 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        version:\n" +
+		"          description: Версия интеграции.\n" +
 		"          type: string\n" +
 		"          example: 1.0.0\n" +
 		"    mcp.JSONRPCError:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        code:\n" +
+		"          description: Код ошибки JSON-RPC (например, -32602 — неверные параметры). Ошибки инструментов приходят не здесь, а в result с isError и полем error, равным code HTTP API.\n" +
 		"          type: integer\n" +
 		"          example: -32602\n" +
 		"        message:\n" +
+		"          description: Сообщение об ошибке протокола.\n" +
 		"          type: string\n" +
 		"          example: unknown tool\n" +
 		"    mcp.JSONRPCRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        id:\n" +
+		"          description: Идентификатор запроса JSON-RPC; ответ приходит с тем же id. Для уведомлений не передаётся.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        jsonrpc:\n" +
+		"          description: Версия протокола JSON-RPC, всегда 2.0.\n" +
 		"          type: string\n" +
 		"          example: \"2.0\"\n" +
 		"        method:\n" +
+		"          description: Метод JSON-RPC (например, initialize, tools/list, tools/call).\n" +
 		"          type: string\n" +
 		"          example: tools/call\n" +
 		"        params:\n" +
+		"          description: Параметры вызова JSON-RPC.\n" +
 		"          type: object\n" +
 		"    mcp.JSONRPCResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        error:\n" +
-		"          $ref: \"#/components/schemas/mcp.JSONRPCError\"\n" +
+		"          description: Ошибка JSON-RPC.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/mcp.JSONRPCError\"\n" +
 		"        id:\n" +
+		"          description: Идентификатор запроса JSON-RPC, на который это ответ.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        jsonrpc:\n" +
+		"          description: Версия протокола JSON-RPC, всегда 2.0.\n" +
 		"          type: string\n" +
 		"          example: \"2.0\"\n" +
 		"        result:\n" +
+		"          description: Результат JSON-RPC.\n" +
 		"          type: object\n" +
 		"    mock.CreateRequest:\n" +
 		"      type: object\n" +
@@ -19816,32 +23657,41 @@ var openAPI3YAML = []byte(
 		"        - identity\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        codeRef:\n" +
+		"          description: Ссылка на внешний файл с данными мока (для contentSource, отличного от inline).\n" +
 		"          type: string\n" +
 		"          example: fixtures/example.json\n" +
 		"        contentSource:\n" +
+		"          description: 'Источник данных мока: inline — данные в source, иначе внешний файл codeRef.'\n" +
 		"          type: string\n" +
 		"          example: inline\n" +
 		"        contentType:\n" +
+		"          description: MIME-тип данных мока (например, application/json).\n" +
 		"          type: string\n" +
 		"          example: application/json\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -19849,64 +23699,81 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    mock.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/mock.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    mock.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        codeRef:\n" +
+		"          description: Ссылка на внешний файл с данными мока (для contentSource, отличного от inline).\n" +
 		"          type: string\n" +
 		"          example: fixtures/example.json\n" +
 		"        contentSource:\n" +
+		"          description: 'Источник данных мока: inline — данные в source, иначе внешний файл codeRef.'\n" +
 		"          type: string\n" +
 		"          example: inline\n" +
 		"        contentType:\n" +
+		"          description: MIME-тип данных мока (например, application/json).\n" +
 		"          type: string\n" +
 		"          example: application/json\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -19914,60 +23781,78 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    mock.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        codeRef:\n" +
+		"          description: Ссылка на внешний файл с данными мока (для contentSource, отличного от inline).\n" +
 		"          type: string\n" +
 		"          example: fixtures/example.json\n" +
 		"        contentSource:\n" +
+		"          description: 'Источник данных мока: inline — данные в source, иначе внешний файл codeRef.'\n" +
 		"          type: string\n" +
 		"          example: inline\n" +
 		"        contentType:\n" +
+		"          description: MIME-тип данных мока (например, application/json).\n" +
 		"          type: string\n" +
 		"          example: application/json\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -19975,132 +23860,175 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    mock_data.GenerationMetadata:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        count:\n" +
+		"          description: Сколько записей сгенерировать.\n" +
 		"          type: integer\n" +
 		"        profile:\n" +
+		"          description: Профиль генерации данных.\n" +
 		"          type: string\n" +
 		"        seed:\n" +
+		"          description: 'Seed генератора: одинаковый seed даёт одинаковые данные.'\n" +
 		"          type: string\n" +
 		"    mock_data.GenerationOptions:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        count:\n" +
+		"          description: Сколько записей сгенерировать.\n" +
 		"          type: integer\n" +
 		"          maximum: 1000\n" +
 		"          minimum: 1\n" +
 		"        defaultArrayLength:\n" +
+		"          description: Длина генерируемых массивов по умолчанию.\n" +
 		"          type: integer\n" +
 		"        optionalPropertyProbability:\n" +
+		"          description: Вероятность заполнения необязательных свойств (0–1).\n" +
 		"          type: number\n" +
 		"        profile:\n" +
+		"          description: Профиль генерации данных.\n" +
 		"          type: string\n" +
 		"        relations:\n" +
+		"          description: Связи между генерируемыми коллекциями.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/mock_data.Relation\"\n" +
 		"        seed:\n" +
+		"          description: 'Seed генератора: одинаковый seed даёт одинаковые данные.'\n" +
 		"          type: string\n" +
 		"    mock_data.GenerationRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        generation:\n" +
-		"          $ref: \"#/components/schemas/mock_data.GenerationOptions\"\n" +
+		"          description: Параметры генерации данных.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/mock_data.GenerationOptions\"\n" +
 		"        schema:\n" +
+		"          description: JSON Schema генерируемых данных.\n" +
 		"          type: object\n" +
 		"    mock_data.GenerationResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: object\n" +
 		"        meta:\n" +
-		"          $ref: \"#/components/schemas/mock_data.GenerationMetadata\"\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/mock_data.GenerationMetadata\"\n" +
 		"    mock_data.Relation:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        id:\n" +
+		"          description: Идентификатор связи.\n" +
 		"          type: string\n" +
 		"        mappings:\n" +
+		"          description: Сопоставления полей связи.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/mock_data.RelationMapping\"\n" +
 		"        selection:\n" +
+		"          description: Выборка записей источника связи.\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - single\n" +
 		"            - random\n" +
 		"            - round-robin\n" +
 		"        source:\n" +
-		"          $ref: \"#/components/schemas/mock_data.RelationSource\"\n" +
+		"          description: 'Источник связи: коллекция и путь поля.'\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/mock_data.RelationSource\"\n" +
 		"        target:\n" +
-		"          $ref: \"#/components/schemas/mock_data.RelationTarget\"\n" +
+		"          description: 'Цель связи: коллекция и путь поля.'\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/mock_data.RelationTarget\"\n" +
 		"    mock_data.RelationMapping:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        from:\n" +
+		"          description: Поле-источник сопоставления.\n" +
 		"          type: string\n" +
 		"        to:\n" +
+		"          description: Поле-приёмник сопоставления.\n" +
 		"          type: string\n" +
 		"    mock_data.RelationSource:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        path:\n" +
+		"          description: Путь к полю в генерируемых данных.\n" +
 		"          type: string\n" +
 		"        uniqueBy:\n" +
+		"          description: Поле, по которому значения должны быть уникальными.\n" +
 		"          type: string\n" +
 		"    mock_data.RelationTarget:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        path:\n" +
+		"          description: Путь к полю в генерируемых данных.\n" +
 		"          type: string\n" +
 		"    mock_data.StreamGenerationOptions:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        defaultArrayLength:\n" +
+		"          description: Длина генерируемых массивов по умолчанию.\n" +
 		"          type: integer\n" +
 		"        optionalPropertyProbability:\n" +
+		"          description: Вероятность заполнения необязательных свойств (0–1).\n" +
 		"          type: number\n" +
 		"        profile:\n" +
+		"          description: Профиль генерации данных.\n" +
 		"          type: string\n" +
 		"        relations:\n" +
+		"          description: Связи между генерируемыми коллекциями.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/mock_data.Relation\"\n" +
 		"        seed:\n" +
+		"          description: 'Seed генератора: одинаковый seed даёт одинаковые данные.'\n" +
 		"          type: string\n" +
 		"    mock_data.StreamParameters:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        emitImmediately:\n" +
+		"          description: Отправить первое сообщение потока сразу, не дожидаясь интервала.\n" +
 		"          type: boolean\n" +
 		"        intervalMs:\n" +
+		"          description: Интервал между сообщениями потока в миллисекундах.\n" +
 		"          type: integer\n" +
 		"          maximum: 60000\n" +
 		"          minimum: 100\n" +
 		"        itemsPerMessage:\n" +
+		"          description: Сколько записей в одном сообщении потока.\n" +
 		"          type: integer\n" +
 		"          maximum: 100\n" +
 		"          minimum: 1\n" +
@@ -20108,20 +24036,28 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        intervalMs:\n" +
+		"          description: Интервал между сообщениями потока в миллисекундах.\n" +
 		"          type: integer\n" +
 		"        itemsPerMessage:\n" +
+		"          description: Сколько записей в одном сообщении потока.\n" +
 		"          type: integer\n" +
 		"        paused:\n" +
+		"          description: Поставлен ли поток на паузу.\n" +
 		"          type: boolean\n" +
 		"    mock_data.StreamRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        generation:\n" +
-		"          $ref: \"#/components/schemas/mock_data.StreamGenerationOptions\"\n" +
+		"          description: Параметры генерации данных.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/mock_data.StreamGenerationOptions\"\n" +
 		"        schema:\n" +
+		"          description: JSON Schema генерируемых данных.\n" +
 		"          type: object\n" +
 		"        stream:\n" +
-		"          $ref: \"#/components/schemas/mock_data.StreamParameters\"\n" +
+		"          description: Параметры потока.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/mock_data.StreamParameters\"\n" +
 		"    navigation.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -20129,23 +24065,29 @@ var openAPI3YAML = []byte(
 		"        - identity\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -20153,55 +24095,69 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        tree:\n" +
+		"          description: Дерево навигации.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: object\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    navigation.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/navigation.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    navigation.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -20209,51 +24165,66 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        tree:\n" +
+		"          description: Дерево навигации.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: object\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    navigation.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -20261,24 +24232,32 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        tree:\n" +
+		"          description: Дерево навигации.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: object\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    query.CreateRequest:\n" +
@@ -20290,23 +24269,29 @@ var openAPI3YAML = []byte(
 		"        - sourceVersion\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -20314,58 +24299,73 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    query.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/query.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    query.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -20373,54 +24373,70 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    query.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -20428,26 +24444,35 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    release.CreateRequest:\n" +
@@ -20458,17 +24483,21 @@ var openAPI3YAML = []byte(
 		"        - sourceCommitId\n" +
 		"      properties:\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        sourceCommitId:\n" +
+		"          description: UUID коммита, из которого создан релиз.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440006\n" +
@@ -20476,12 +24505,16 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        aiCatalog:\n" +
-		"          $ref: \"#/components/schemas/entities.PortableAICatalog\"\n" +
+		"          description: 'AI-каталог workspace в переносимом виде: подключения к провайдерам и профили моделей (без секретов, если они не переносятся).'\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.PortableAICatalog\"\n" +
 		"        buildProfiles:\n" +
+		"          description: Профили сборки workspace (в экспорте — переносимые профили с настройками).\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.PortableBuildProfile\"\n" +
 		"        documents:\n" +
+		"          description: Документы снимка по коллекциям.\n" +
 		"          type: object\n" +
 		"          additionalProperties:\n" +
 		"            type: array\n" +
@@ -20489,67 +24522,88 @@ var openAPI3YAML = []byte(
 		"              type: object\n" +
 		"              additionalProperties: {}\n" +
 		"        domainVersion:\n" +
+		"          description: 'Версия домена: детерминированный отпечаток содержимого документов workspace (формат dv2). Совпадает у одинакового содержимого; используется для сверки экспорта, импорта, коммитов и релизов.'\n" +
 		"          type: string\n" +
 		"        installedIntegrations:\n" +
+		"          description: 'Интеграции, установленные в workspace: identity, версия и конфигурация.'\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: object\n" +
 		"            additionalProperties: {}\n" +
 		"        kind:\n" +
+		"          description: Вид переносимого снимка (экспорт workspace).\n" +
 		"          type: string\n" +
 		"        schemaVersion:\n" +
+		"          description: Версия схемы переносимого снимка workspace (WORKSPACE_SCHEMA_VERSION backend).\n" +
 		"          type: integer\n" +
 		"        workspace:\n" +
+		"          description: Настройки workspace в снимке.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"    release.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/release.Response\"\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    release.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        buildMetadata:\n" +
-		"          $ref: \"#/components/schemas/entities.ReleaseBuildMetadata\"\n" +
+		"          description: 'Метаданные сборки, из которой создан релиз: программа, версия компилятора, профиль и контексты.'\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.ReleaseBuildMetadata\"\n" +
 		"        checksum:\n" +
+		"          description: Контрольная сумма содержимого (снимка, резервной копии или ревизии) для проверки целостности.\n" +
 		"          type: string\n" +
 		"          example: sha256:0123456789abcdef\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        headSequence:\n" +
+		"          description: 'Счётчик изменений workspace: увеличивается на 1 при каждой ревизии документа. Используется как expectedHeadSequence в коммитах, восстановлении и импорте.'\n" +
 		"          type: integer\n" +
 		"          example: 42\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        schemaVersion:\n" +
+		"          description: Версия схемы переносимого снимка workspace (WORKSPACE_SCHEMA_VERSION backend).\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        sourceCommitId:\n" +
+		"          description: UUID коммита, из которого создан релиз.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440006\n" +
 		"        workspaceId:\n" +
+		"          description: UUID workspace.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440001\n" +
@@ -20557,46 +24611,64 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        conflicts:\n" +
+		"          description: Конфликты, из-за которых план нельзя применить без изменений.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
 		"        creates:\n" +
+		"          description: Сколько документов будет создано (или создано) при применении плана.\n" +
 		"          type: integer\n" +
 		"        deletes:\n" +
+		"          description: Сколько документов будет удалено (или удалено) при применении плана.\n" +
 		"          type: integer\n" +
 		"        expectedHeadSequence:\n" +
+		"          description: headSequence workspace из плана (POST /api/v1/commits/plan или план восстановления/импорта). Сервер применит операцию, только если с тех пор не появилось новых ревизий; иначе 409 head_sequence_conflict.\n" +
 		"          type: integer\n" +
 		"        expiresAt:\n" +
+		"          description: 'Время истечения (RFC 3339): после него объект недействителен.'\n" +
 		"          type: string\n" +
 		"        incoming:\n" +
-		"          $ref: \"#/components/schemas/entities.SnapshotCounts\"\n" +
+		"          description: Сколько объектов содержит импортируемый или восстанавливаемый снимок.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.SnapshotCounts\"\n" +
 		"        missingIntegrations:\n" +
+		"          description: Интеграции, которых нет в целевом workspace, но которые нужны снимку.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
 		"        planId:\n" +
+		"          description: Идентификатор сохранённого плана; передайте его при применении. План действует до expiresAt.\n" +
 		"          type: string\n" +
 		"        restores:\n" +
+		"          description: Сколько документов будет восстановлено (или восстановлено) при применении плана.\n" +
 		"          type: integer\n" +
 		"        snapshotChecksum:\n" +
+		"          description: Контрольная сумма снимка, по которому построен план.\n" +
 		"          type: string\n" +
 		"        targetETag:\n" +
+		"          description: ETag (revision) целевого workspace, на котором построен план; при изменении workspace план не применится.\n" +
 		"          type: string\n" +
 		"        targetWorkspace:\n" +
+		"          description: identity целевого workspace плана.\n" +
 		"          type: string\n" +
 		"        unsupportedCollections:\n" +
+		"          description: Коллекции снимка, которые этот backend не поддерживает; при их наличии план не применяется.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
 		"        updates:\n" +
+		"          description: Сколько документов будет изменено (или изменено) при применении плана.\n" +
 		"          type: integer\n" +
 		"        valid:\n" +
+		"          description: 'Можно ли применить план: false, если есть validationErrors, conflicts или неподдерживаемые коллекции.'\n" +
 		"          type: boolean\n" +
 		"        validationErrors:\n" +
+		"          description: Ошибки проверки снимка; при их наличии план не применяется.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
 		"        warnings:\n" +
+		"          description: 'Предупреждения: план можно применить, но стоит проверить.'\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            type: string\n" +
@@ -20606,6 +24678,7 @@ var openAPI3YAML = []byte(
 		"        - expectedHeadSequence\n" +
 		"      properties:\n" +
 		"        expectedHeadSequence:\n" +
+		"          description: headSequence workspace из плана (POST /api/v1/commits/plan или план восстановления/импорта). Сервер применит операцию, только если с тех пор не появилось новых ревизий; иначе 409 head_sequence_conflict.\n" +
 		"          type: integer\n" +
 		"          minimum: 0\n" +
 		"          example: 42\n" +
@@ -20613,54 +24686,74 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        baseSequence:\n" +
+		"          description: 'headSequence workspace, с которого начинается диапазон коммита: в коммит входят ревизии после baseSequence до headSequence.'\n" +
 		"          type: integer\n" +
 		"        changes:\n" +
+		"          description: 'Изменения документов, вошедшие в коммит или восстановление: документ, операция, ревизии до и после.'\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.CommitChange\"\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        domainVersion:\n" +
+		"          description: 'Версия домена: детерминированный отпечаток содержимого документов workspace (формат dv2). Совпадает у одинакового содержимого; используется для сверки экспорта, импорта, коммитов и релизов.'\n" +
 		"          type: string\n" +
 		"        headSequence:\n" +
+		"          description: 'Счётчик изменений workspace: увеличивается на 1 при каждой ревизии документа. Используется как expectedHeadSequence в коммитах, восстановлении и импорте.'\n" +
 		"          type: integer\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"        message:\n" +
+		"          description: Сообщение коммита, созданного восстановлением.\n" +
 		"          type: string\n" +
 		"        operation:\n" +
+		"          description: 'Операция над документом: create, update, delete или restore.'\n" +
 		"          type: string\n" +
 		"        parentCommitId:\n" +
+		"          description: UUID предыдущего коммита workspace.\n" +
 		"          type: string\n" +
 		"        revisionPolicy:\n" +
+		"          description: 'Как сохранить ревизии в коммите: preserve — все ревизии, squash — схлопнуть промежуточные (чужие ревизии схлопывает только Admin).'\n" +
 		"          type: string\n" +
 		"        workspaceId:\n" +
+		"          description: UUID workspace.\n" +
 		"          type: string\n" +
 		"    respond.ErrorResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        code:\n" +
+		"          description: Машиночитаемый код ошибки. Список кодов с HTTP-статусом, смыслом и действием агента — в каталоге docs/error-codes.yaml (github.com/endge-lab/service-backend) и на странице ошибок документации Endge.\n" +
 		"          type: string\n" +
 		"          example: validation_error\n" +
 		"        details:\n" +
+		"          description: 'Дополнительные сведения об ошибке: field — поле запроса, fields — ошибки валидации полей, reason — причина разбора тела.'\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        message:\n" +
+		"          description: Безопасное сообщение для человека; может меняться, поэтому решения принимайте по code.\n" +
 		"          type: string\n" +
 		"          example: Запрос не прошёл валидацию\n" +
+		"      description: Ошибка HTTP API. Действие по code — в каталоге ошибок docs/error-codes.yaml.\n" +
 		"    revision.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/revision.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 20\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
@@ -20671,71 +24764,92 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        accessTokenId:\n" +
+		"          description: UUID персонального токена, которым выполнено изменение; пусто, если изменение сделано в пользовательской сессии.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440006\n" +
 		"        accessTokenName:\n" +
+		"          description: Имя персонального токена, которым выполнено изменение (для аудита).\n" +
 		"          type: string\n" +
-		"          example: \"Codex: инспектор рейса\"\n" +
+		"          example: \"Codex: правка запросов\"\n" +
 		"        checksum:\n" +
+		"          description: Контрольная сумма содержимого (снимка, резервной копии или ревизии) для проверки целостности.\n" +
 		"          type: string\n" +
 		"          example: sha256:0123456789abcdef\n" +
 		"        committedInCommitId:\n" +
+		"          description: UUID коммита, в который вошла ревизия; пусто, пока ревизия не закоммичена.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
-		"          example: example\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        contributors:\n" +
+		"          description: Авторы ревизий, вошедших в коммит.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        documentId:\n" +
+		"          description: UUID документа.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440003\n" +
 		"        documentIdentity:\n" +
+		"          description: identity документа в его коллекции.\n" +
 		"          type: string\n" +
-		"          example: example\n" +
+		"          example: main\n" +
 		"        documentType:\n" +
+		"          description: Коллекция документа (например, types, queries).\n" +
 		"          type: string\n" +
-		"          example: example\n" +
+		"          example: types\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        mutationBatchId:\n" +
+		"          description: 'UUID пакета изменений: ревизии, созданные одним запросом, имеют общий mutationBatchId.'\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440005\n" +
 		"        operation:\n" +
+		"          description: 'Операция над документом: create, update, delete или restore.'\n" +
 		"          type: string\n" +
 		"          example: update\n" +
 		"        parentRevisionId:\n" +
+		"          description: UUID предыдущей ревизии документа.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
-		"          example: example\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        restoredFromRevisionId:\n" +
+		"          description: UUID ревизии, из которой восстановлен документ.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
-		"          example: example\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        revisionNumber:\n" +
+		"          description: Порядковый номер ревизии документа (совпадает с revision документа после изменения).\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        snapshot:\n" +
+		"          description: Полный снимок документа на момент ревизии (только при snapshot=true).\n" +
 		"          type: object\n" +
 		"        snapshotVersion:\n" +
+		"          description: Версия формата снимка ревизии.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        workspaceId:\n" +
+		"          description: UUID workspace.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440001\n" +
 		"        workspaceSequence:\n" +
+		"          description: headSequence workspace после этой ревизии.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    revision.RestoreResponse:\n" +
@@ -20745,28 +24859,37 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        lastSynchronizedAt:\n" +
+		"          description: Время последней синхронизации прав пользователя с внешним провайдером.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"        mode:\n" +
+		"          description: local — права назначаются в Endge; external — права приходят из групп провайдера OIDC и в Endge не меняются.\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - local\n" +
 		"            - external\n" +
 		"          example: external\n" +
 		"        sourceName:\n" +
+		"          description: Отображаемое имя внешней системы, управляющей правами.\n" +
 		"          type: string\n" +
 		"          example: Корпоративный Keycloak\n" +
 		"    session.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        accessManagement:\n" +
-		"          $ref: \"#/components/schemas/session.AccessManagementResponse\"\n" +
+		"          description: 'Как управляются права на этой установке: локально в Endge или внешней системой (группы провайдера OIDC).'\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/session.AccessManagementResponse\"\n" +
 		"        platformAdmin:\n" +
+		"          description: Есть ли у пользователя роль Platform Admin.\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        user:\n" +
-		"          $ref: \"#/components/schemas/session.UserResponse\"\n" +
+		"          description: Пользователь.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/session.UserResponse\"\n" +
 		"        workspaces:\n" +
+		"          description: Workspace, доступные пользователю, с его ролью.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/session.WorkspaceResponse\"\n" +
@@ -20774,30 +24897,38 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        id:\n" +
+		"          description: UUID пользователя Endge.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        issuer:\n" +
+		"          description: Издатель (issuer) токена провайдера OIDC.\n" +
 		"          type: string\n" +
 		"          example: https://id.example.com/realms/endge\n" +
 		"        lastSeenAt:\n" +
+		"          description: Время последнего запроса пользователя.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        providerId:\n" +
+		"          description: Идентификатор провайдера идентификации пользователя.\n" +
 		"          type: string\n" +
 		"          example: keycloak\n" +
 		"        role:\n" +
+		"          description: 'Роль: viewer — чтение, editor — изменение документов, admin — управление workspace, участниками и коммитами.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - viewer\n" +
@@ -20805,63 +24936,81 @@ var openAPI3YAML = []byte(
 		"            - admin\n" +
 		"          example: admin\n" +
 		"        subject:\n" +
+		"          description: Идентификатор пользователя у провайдера (claim sub).\n" +
 		"          type: string\n" +
 		"          example: user-subject\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        username:\n" +
+		"          description: Логин пользователя.\n" +
 		"          type: string\n" +
 		"          example: egor\n" +
 		"    session.WorkspaceResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        configuration:\n" +
+		"          description: 'Конфигурация (JSON-объект): переменные, локали, темы, адаптеры и другие настройки.'\n" +
 		"          type: object\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        dataMode:\n" +
+		"          description: 'Режим данных workspace: development (моки и симуляции) или production.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - development\n" +
 		"            - production\n" +
 		"          example: development\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        documentStructure:\n" +
+		"          description: 'Структура документов workspace: frontend (стандартные коллекции фронтенда) или custom.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - frontend\n" +
 		"            - custom\n" +
 		"          example: frontend\n" +
 		"        headSequence:\n" +
+		"          description: 'Счётчик изменений workspace: увеличивается на 1 при каждой ревизии документа. Используется как expectedHeadSequence в коммитах, восстановлении и импорте.'\n" +
 		"          type: integer\n" +
 		"          example: 42\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: identity workspace; передавайте его в заголовке X-Endge-Workspace.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        role:\n" +
+		"          description: 'Роль: viewer — чтение, editor — изменение документов, admin — управление workspace, участниками и коммитами.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - viewer\n" +
@@ -20869,23 +25018,30 @@ var openAPI3YAML = []byte(
 		"            - admin\n" +
 		"          example: editor\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"    shared.ErrorResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        code:\n" +
+		"          description: Машиночитаемый код ошибки. Список кодов с HTTP-статусом, смыслом и действием агента — в каталоге docs/error-codes.yaml (github.com/endge-lab/service-backend) и на странице ошибок документации Endge.\n" +
 		"          type: string\n" +
 		"          example: validation_error\n" +
 		"        details:\n" +
+		"          description: 'Дополнительные сведения об ошибке: field — поле запроса, fields — ошибки валидации полей, reason — причина разбора тела.'\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        message:\n" +
+		"          description: Безопасное сообщение для человека; может меняться, поэтому решения принимайте по code.\n" +
 		"          type: string\n" +
 		"          example: Запрос не прошёл валидацию\n" +
+		"      description: Ошибка HTTP API. Действие по code — в каталоге ошибок docs/error-codes.yaml.\n" +
 		"    simulation.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -20895,23 +25051,29 @@ var openAPI3YAML = []byte(
 		"        - sourceVersion\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -20919,59 +25081,73 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
-		"          example: \"defineSimulation({ target: composition(''), overrides: { runtimes: {}\n" +
-		"            } })\"\n" +
+		"          example: \"defineSimulation({ target: composition(''), overrides: { runtimes: {} } })\"\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    simulation.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/simulation.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    simulation.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -20979,55 +25155,70 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
-		"          example: \"defineSimulation({ target: composition(''), overrides: { runtimes: {}\n" +
-		"            } })\"\n" +
+		"          example: \"defineSimulation({ target: composition(''), overrides: { runtimes: {} } })\"\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    simulation.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -21035,27 +25226,35 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
-		"          example: \"defineSimulation({ target: composition(''), overrides: { runtimes: {}\n" +
-		"            } })\"\n" +
+		"          example: \"defineSimulation({ target: composition(''), overrides: { runtimes: {} } })\"\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    store.CreateRequest:\n" +
@@ -21067,23 +25266,29 @@ var openAPI3YAML = []byte(
 		"        - sourceVersion\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -21091,58 +25296,73 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    store.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/store.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    store.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -21150,54 +25370,70 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    store.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -21205,26 +25441,35 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    stream.CreateRequest:\n" +
@@ -21236,23 +25481,29 @@ var openAPI3YAML = []byte(
 		"        - sourceVersion\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -21260,58 +25511,73 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    stream.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/stream.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    stream.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -21319,54 +25585,70 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    stream.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -21374,26 +25656,35 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    style.CreateRequest:\n" +
@@ -21405,23 +25696,29 @@ var openAPI3YAML = []byte(
 		"        - sourceVersion\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -21429,58 +25726,73 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    style.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/style.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    style.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -21488,54 +25800,70 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    style.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -21543,26 +25871,35 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    update.CreateRequest:\n" +
@@ -21575,23 +25912,29 @@ var openAPI3YAML = []byte(
 		"        - storeIdentity\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -21599,62 +25942,78 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        storeIdentity:\n" +
+		"          description: identity хранилища (коллекция stores), состояние которого обновляет документ.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: application-store\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    update.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/update.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    update.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -21662,58 +26021,75 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        storeIdentity:\n" +
+		"          description: identity хранилища (коллекция stores), состояние которого обновляет документ.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: application-store\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    update.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -21721,29 +26097,39 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        storeIdentity:\n" +
+		"          description: identity хранилища (коллекция stores), состояние которого обновляет документ.\n" +
 		"          type: string\n" +
 		"          example: application-store\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    vocab.CreateRequest:\n" +
@@ -21753,39 +26139,49 @@ var openAPI3YAML = []byte(
 		"        - identity\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        authMode:\n" +
+		"          description: 'Как справочник аутентифицируется при запросах: inherit — профиль workspace по умолчанию, profile — профиль из authProfileIdentity, none — без аутентификации.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - inherit\n" +
 		"            - profile\n" +
 		"            - none\n" +
-		"          example: example\n" +
+		"          example: inherit\n" +
 		"        authProfileIdentity:\n" +
+		"          description: identity профиля аутентификации (коллекция auth-profiles) для authMode=profile.\n" +
 		"          type: string\n" +
 		"          example: default-auth\n" +
 		"        baseApiUrl:\n" +
+		"          description: Базовый URL внешнего API, из которого справочник получает данные.\n" +
 		"          type: string\n" +
-		"          example: example\n" +
+		"          example: https://api.example.com\n" +
 		"        collectionSlug:\n" +
+		"          description: Имя коллекции во внешнем API справочника.\n" +
 		"          type: string\n" +
-		"          example: example\n" +
+		"          example: orders\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -21793,80 +26189,100 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        mode:\n" +
+		"          description: 'Режим справочника: internal — данные в source, external_payload — данные из внешнего API (baseApiUrl, collectionSlug).'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - external_payload\n" +
 		"            - internal\n" +
-		"          example: example\n" +
+		"          example: internal\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: \"defineVocab({ outputs: { items: output().from(response()) } })\"\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    vocab.ListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/vocab.Response\"\n" +
 		"        limit:\n" +
+		"          description: Размер страницы, который применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 100\n" +
 		"        offset:\n" +
+		"          description: Смещение страницы, которое применил сервер.\n" +
 		"          type: integer\n" +
 		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    vocab.PatchRequest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        authMode:\n" +
+		"          description: 'Как справочник аутентифицируется при запросах: inherit — профиль workspace по умолчанию, profile — профиль из authProfileIdentity, none — без аутентификации.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - inherit\n" +
 		"            - profile\n" +
 		"            - none\n" +
-		"          example: example\n" +
+		"          example: inherit\n" +
 		"        authProfileIdentity:\n" +
+		"          description: identity профиля аутентификации (коллекция auth-profiles) для authMode=profile.\n" +
 		"          type: string\n" +
 		"          example: default-auth\n" +
 		"        baseApiUrl:\n" +
+		"          description: Базовый URL внешнего API, из которого справочник получает данные.\n" +
 		"          type: string\n" +
-		"          example: example\n" +
+		"          example: https://api.example.com\n" +
 		"        collectionSlug:\n" +
+		"          description: Имя коллекции во внешнем API справочника.\n" +
 		"          type: string\n" +
-		"          example: example\n" +
+		"          example: orders\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -21874,72 +26290,93 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        mode:\n" +
+		"          description: 'Режим справочника: internal — данные в source, external_payload — данные из внешнего API (baseApiUrl, collectionSlug).'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - external_payload\n" +
 		"            - internal\n" +
-		"          example: example\n" +
+		"          example: internal\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          maxLength: 8388608\n" +
 		"          example: \"defineVocab({ outputs: { items: output().from(response()) } })\"\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    vocab.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        authMode:\n" +
+		"          description: 'Как справочник аутентифицируется при запросах: inherit — профиль workspace по умолчанию, profile — профиль из authProfileIdentity, none — без аутентификации.'\n" +
 		"          type: string\n" +
-		"          example: example\n" +
+		"          example: inherit\n" +
 		"        authProfileIdentity:\n" +
+		"          description: identity профиля аутентификации (коллекция auth-profiles) для authMode=profile.\n" +
 		"          type: string\n" +
 		"          example: default-auth\n" +
 		"        baseApiUrl:\n" +
+		"          description: Базовый URL внешнего API, из которого справочник получает данные.\n" +
 		"          type: string\n" +
-		"          example: example\n" +
+		"          example: https://api.example.com\n" +
 		"        collectionSlug:\n" +
+		"          description: Имя коллекции во внешнем API справочника.\n" +
 		"          type: string\n" +
-		"          example: example\n" +
+		"          example: orders\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T11:00:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        folderIdentity:\n" +
+		"          description: identity папки коллекции, в которой лежит документ; пусто — корень коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-compositions\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        managedBy:\n" +
+		"          description: 'Кто управляет документом: user — пользователь, system — сервер (корневые и системные папки, их нельзя менять), integration — интеграция из managedById. Агенту создавать документы с managedBy=user.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - user\n" +
@@ -21947,83 +26384,109 @@ var openAPI3YAML = []byte(
 		"            - integration\n" +
 		"          example: user\n" +
 		"        managedById:\n" +
+		"          description: Идентификатор управляющей системы или интеграции при managedBy=system/integration (например, endge-core).\n" +
 		"          type: string\n" +
 		"          example: endge-core\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        mode:\n" +
+		"          description: 'Режим справочника: internal — данные в source, external_payload — данные из внешнего API (baseApiUrl, collectionSlug).'\n" +
 		"          type: string\n" +
-		"          example: example\n" +
+		"          example: internal\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        source:\n" +
+		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"          example: \"defineVocab({ outputs: { items: output().from(response()) } })\"\n" +
 		"        sourceVersion:\n" +
+		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        workspaceFolderIdentity:\n" +
+		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
 		"    workspace.ArchiveItemResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        configuration:\n" +
+		"          description: 'Конфигурация (JSON-объект): переменные, локали, темы, адаптеры и другие настройки.'\n" +
 		"          type: object\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        dataMode:\n" +
+		"          description: 'Режим данных workspace: development (моки и симуляции) или production.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - development\n" +
 		"            - production\n" +
 		"          example: development\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления workspace (RFC 3339).\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        documentStructure:\n" +
+		"          description: 'Структура документов workspace: frontend (стандартные коллекции фронтенда) или custom.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - frontend\n" +
 		"            - custom\n" +
 		"          example: frontend\n" +
 		"        headSequence:\n" +
+		"          description: 'Счётчик изменений workspace: увеличивается на 1 при каждой ревизии документа. Используется как expectedHeadSequence в коммитах, восстановлении и импорте.'\n" +
 		"          type: integer\n" +
 		"          example: 42\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: identity workspace (уникален в платформе); передавайте его в заголовке X-Endge-Workspace.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        role:\n" +
+		"          description: 'Роль: viewer — чтение, editor — изменение документов, admin — управление workspace, участниками и коммитами.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - viewer\n" +
@@ -22031,23 +26494,29 @@ var openAPI3YAML = []byte(
 		"            - admin\n" +
 		"          example: admin\n" +
 		"        startupCompositionIdentity:\n" +
+		"          description: identity активной композиции, с которой стартует приложение workspace; null — не задана.\n" +
 		"          type: string\n" +
 		"          example: workspace-startup\n" +
 		"          nullable: true\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"    workspace.ArchiveListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/workspace.ArchiveItemResponse\"\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    workspace.CreateRequest:\n" +
@@ -22057,39 +26526,48 @@ var openAPI3YAML = []byte(
 		"        - identity\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        configuration:\n" +
+		"          description: 'Конфигурация (JSON-объект): переменные, локали, темы, адаптеры и другие настройки.'\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        dataMode:\n" +
+		"          description: 'Режим данных workspace: development (моки и симуляции) или production.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - development\n" +
 		"            - production\n" +
 		"          example: development\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        documentStructure:\n" +
+		"          description: 'Структура документов workspace: frontend (стандартные коллекции фронтенда) или custom.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - frontend\n" +
 		"            - custom\n" +
 		"          example: frontend\n" +
 		"        identity:\n" +
+		"          description: identity workspace (уникален в платформе); передавайте его в заголовке X-Endge-Workspace.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        installedIntegrations:\n" +
+		"          description: 'Интеграции, установленные в workspace: identity, версия и конфигурация.'\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/workspace.InstalledIntegration\"\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"    workspace.InstalledIntegration:\n" +
@@ -22099,13 +26577,16 @@ var openAPI3YAML = []byte(
 		"        - version\n" +
 		"      properties:\n" +
 		"        configuration:\n" +
+		"          description: 'Конфигурация (JSON-объект): переменные, локали, темы, адаптеры и другие настройки.'\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        identity:\n" +
+		"          description: identity workspace (уникален в платформе); передавайте его в заголовке X-Endge-Workspace.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        version:\n" +
+		"          description: Версия установленной интеграции.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: 1.0.0\n" +
@@ -22113,20 +26594,24 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/workspace.Response\"\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    workspace.MembershipListResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
 		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/workspace.MembershipResponse\"\n" +
 		"        total:\n" +
+		"          description: Общее количество элементов.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    workspace.MembershipRequest:\n" +
@@ -22135,6 +26620,7 @@ var openAPI3YAML = []byte(
 		"        - role\n" +
 		"      properties:\n" +
 		"        role:\n" +
+		"          description: 'Роль: viewer — чтение, editor — изменение документов, admin — управление workspace, участниками и коммитами.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - viewer\n" +
@@ -22145,13 +26631,16 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        role:\n" +
+		"          description: 'Роль: viewer — чтение, editor — изменение документов, admin — управление workspace, участниками и коммитами.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - viewer\n" +
@@ -22159,17 +26648,21 @@ var openAPI3YAML = []byte(
 		"            - admin\n" +
 		"          example: admin\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        userId:\n" +
+		"          description: UUID пользователя Endge.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440002\n" +
 		"        username:\n" +
+		"          description: Логин пользователя.\n" +
 		"          type: string\n" +
 		"          example: egor\n" +
 		"        workspaceId:\n" +
+		"          description: UUID workspace.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440001\n" +
@@ -22177,42 +26670,52 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        configuration:\n" +
+		"          description: 'Конфигурация (JSON-объект): переменные, локали, темы, адаптеры и другие настройки.'\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        dataMode:\n" +
+		"          description: 'Режим данных workspace: development (моки и симуляции) или production.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - development\n" +
 		"            - production\n" +
 		"          example: development\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          maxLength: 255\n" +
 		"          example: Основной объект\n" +
 		"        documentStructure:\n" +
+		"          description: 'Структура документов workspace: frontend (стандартные коллекции фронтенда) или custom.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - frontend\n" +
 		"            - custom\n" +
 		"          example: frontend\n" +
 		"        identity:\n" +
+		"          description: identity workspace (уникален в платформе); передавайте его в заголовке X-Endge-Workspace.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: main\n" +
 		"        installedIntegrations:\n" +
+		"          description: 'Интеграции, установленные в workspace: identity, версия и конфигурация.'\n" +
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/workspace.InstalledIntegration\"\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        startupCompositionIdentity:\n" +
+		"          description: identity активной композиции, с которой стартует приложение workspace; null — не задана.\n" +
 		"          type: string\n" +
 		"          maxLength: 160\n" +
 		"          example: workspace-startup\n" +
@@ -22221,61 +26724,80 @@ var openAPI3YAML = []byte(
 		"      type: object\n" +
 		"      properties:\n" +
 		"        active:\n" +
+		"          description: 'Признак активности: неактивный объект сохраняется, но не используется приложением. Это не удаление — удаление выполняется DELETE (soft delete с deletedAt).'\n" +
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        configuration:\n" +
+		"          description: 'Конфигурация (JSON-объект): переменные, локали, темы, адаптеры и другие настройки.'\n" +
 		"          type: object\n" +
 		"        createdAt:\n" +
+		"          description: Время создания (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:00:00Z\n" +
 		"        createdBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"          description: Кто создал объект. Заполняет сервер; в запросах не передаётся.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n" +
 		"        dataMode:\n" +
+		"          description: 'Режим данных workspace: development (моки и симуляции) или production.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - development\n" +
 		"            - production\n" +
 		"          example: development\n" +
 		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
 		"          example: Описание объекта\n" +
 		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
 		"          type: string\n" +
 		"          example: Основной объект\n" +
 		"        documentStructure:\n" +
+		"          description: 'Структура документов workspace: frontend (стандартные коллекции фронтенда) или custom.'\n" +
 		"          type: string\n" +
 		"          enum:\n" +
 		"            - frontend\n" +
 		"            - custom\n" +
 		"          example: frontend\n" +
 		"        headSequence:\n" +
+		"          description: 'Счётчик изменений workspace: увеличивается на 1 при каждой ревизии документа. Используется как expectedHeadSequence в коммитах, восстановлении и импорте.'\n" +
 		"          type: integer\n" +
 		"          example: 42\n" +
 		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
 		"          type: string\n" +
 		"          format: uuid\n" +
 		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"        identity:\n" +
+		"          description: identity workspace (уникален в платформе); передавайте его в заголовке X-Endge-Workspace.\n" +
 		"          type: string\n" +
 		"          example: main\n" +
 		"        meta:\n" +
+		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
 		"          type: integer\n" +
 		"          example: 3\n" +
 		"        startupCompositionIdentity:\n" +
+		"          description: identity активной композиции, с которой стартует приложение workspace; null — не задана.\n" +
 		"          type: string\n" +
 		"          example: workspace-startup\n" +
 		"          nullable: true\n" +
 		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-08-04T10:05:00Z\n" +
 		"        updatedBy:\n" +
-		"          $ref: \"#/components/schemas/entities.Actor\"\n",
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.Actor\"\n",
 )

@@ -15,6 +15,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/converters"
 	"github.com/endge-lab/service-backend/internal/usecase/data_views"
 	"github.com/endge-lab/service-backend/internal/usecase/documents"
+	"github.com/endge-lab/service-backend/internal/usecase/facets"
 	"github.com/endge-lab/service-backend/internal/usecase/filters"
 	"github.com/endge-lab/service-backend/internal/usecase/folders"
 	"github.com/endge-lab/service-backend/internal/usecase/i18n_bundles"
@@ -63,15 +64,42 @@ type DomainUseCase interface {
 	Live(context.Context) (json.RawMessage, error)
 }
 
-// RevisionUseCase читает историю ревизий документа.
+// RevisionUseCase читает историю ревизий документа и восстанавливает документ к ревизии
+// (REST /api/v1/domain/documents/{type}/{identity}/revisions).
 type RevisionUseCase interface {
 	List(context.Context, string, string, ports.RevisionListOptions) (ports.RevisionPage, error)
+	Get(context.Context, string, string, string) (*entities.Revision, error)
+	Restore(context.Context, string, string, string, int) (*entities.Document, error)
 }
 
-// CommitUseCase строит план и фиксирует ожидающие ревизии.
+// CommitUseCase строит план с документами, фиксирует ожидающие ревизии и читает историю коммитов.
 type CommitUseCase interface {
-	Plan(context.Context) (*commits.Plan, error)
+	PlanWithDocuments(context.Context) (*commits.Plan, error)
 	Create(context.Context, string, string, int64) (*entities.Commit, error)
+	List(context.Context) ([]entities.Commit, error)
+	Get(context.Context, string) (*entities.Commit, error)
+}
+
+// FacetUseCase — фасеты и документы фасетов; тот же use case обслуживает REST /api/v1/facets.
+type FacetUseCase interface {
+	List(context.Context, bool) ([]entities.Document, error)
+	Get(context.Context, string, bool) (*entities.Document, error)
+	Create(context.Context, facets.FacetCreateInput) (*entities.Document, error)
+	Patch(context.Context, string, facets.FacetPatchInput, int) (*entities.Document, error)
+	Delete(context.Context, string, int) (*entities.Document, error)
+	Restore(context.Context, string, int) (*entities.Document, error)
+	ListRevisions(context.Context, string) ([]entities.Revision, error)
+	GetRevision(context.Context, string, string) (*entities.Revision, error)
+	RestoreRevision(context.Context, string, string, int) (*entities.Document, error)
+	ListDocuments(context.Context, string, ports.DocumentFilter) ([]entities.Document, error)
+	GetDocument(context.Context, string, string, bool) (*entities.Document, error)
+	CreateDocument(context.Context, string, facets.FacetDocumentCreateInput) (*entities.Document, error)
+	PatchDocument(context.Context, string, string, facets.FacetDocumentPatchInput, int) (*entities.Document, error)
+	DeleteDocument(context.Context, string, string, int) (*entities.Document, error)
+	RestoreDocument(context.Context, string, string, int) (*entities.Document, error)
+	ListDocumentRevisions(context.Context, string, string) ([]entities.Revision, error)
+	GetDocumentRevision(context.Context, string, string, string) (*entities.Revision, error)
+	RestoreDocumentRevision(context.Context, string, string, string, int) (*entities.Document, error)
 }
 
 // UseCases — входные порты MCP-инструментов. Documents индексирован именем коллекции.
@@ -81,6 +109,7 @@ type UseCases struct {
 	Domain     DomainUseCase
 	Revisions  RevisionUseCase
 	Commits    CommitUseCase
+	Facets     FacetUseCase
 	Documents  map[string]DocumentUseCase
 }
 
@@ -93,6 +122,7 @@ type ConcreteUseCases struct {
 	Portable       *portable.UseCase
 	Revisions      *revisions.UseCase
 	Commits        *commits.UseCase
+	Facets         *facets.UseCase
 	Folders        *folders.UseCase
 	Types          *types.UseCase
 	Queries        *queries.UseCase
@@ -124,6 +154,7 @@ func BindUseCases(in ConcreteUseCases) UseCases {
 		Domain:     in.Portable,
 		Revisions:  in.Revisions,
 		Commits:    in.Commits,
+		Facets:     in.Facets,
 		Documents: map[string]DocumentUseCase{
 			entities.CollectionFolders:        in.Folders,
 			entities.CollectionTypes:          in.Types,

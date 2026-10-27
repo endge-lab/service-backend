@@ -7,7 +7,7 @@ import (
 
 type CreateRequest struct {
 	shared.CreateDocumentRequest
-	Kind          string  `json:"kind,omitempty" example:"component"`
+	Kind          string  `json:"kind,omitempty" example:"workspace"`
 	KindIdentity  *string `json:"kindIdentity,omitempty" example:"main-component"`
 	Source        string  `json:"source" validate:"required,max=8388608" example:"export default {}"`
 	SourceVersion int     `json:"sourceVersion" validate:"required,gt=0" example:"2"`
@@ -15,7 +15,7 @@ type CreateRequest struct {
 
 type PatchRequest struct {
 	shared.PatchDocumentRequest
-	Kind          *string `json:"kind,omitempty" example:"component"`
+	Kind          *string `json:"kind,omitempty" example:"workspace"`
 	KindIdentity  *string `json:"kindIdentity,omitempty" example:"main-component"`
 	Source        *string `json:"source,omitempty" validate:"omitempty,max=8388608" example:"export default {}"`
 	SourceVersion *int    `json:"sourceVersion,omitempty" validate:"omitempty,gt=0" example:"2"`
@@ -23,7 +23,7 @@ type PatchRequest struct {
 
 type Response struct {
 	shared.DocumentMetadata
-	Kind          string  `json:"kind" example:"component"`
+	Kind          string  `json:"kind" example:"workspace"`
 	KindIdentity  *string `json:"kindIdentity,omitempty" example:"main-component"`
 	Source        string  `json:"source" example:"export default {}"`
 	SourceVersion int     `json:"sourceVersion" example:"2"`

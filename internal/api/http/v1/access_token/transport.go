@@ -9,9 +9,9 @@ import (
 // CreateRequest — выпуск токена для себя. expiresAt обязателен и не позже, чем через
 // ACCESS_TOKEN_MAX_TTL (по умолчанию 30 дней). commit и delete требуют scope write.
 type CreateRequest struct {
-	WorkspaceIdentity string    `json:"workspaceIdentity" validate:"required,max=160" example:"afl"`
-	Name              string    `json:"name" validate:"required,max=120" example:"Codex: инспектор рейса"`
-	Description       string    `json:"description,omitempty" validate:"omitempty,max=1000" example:"Правка Query и DataView инспектора"`
+	WorkspaceIdentity string    `json:"workspaceIdentity" validate:"required,max=160" example:"main"`
+	Name              string    `json:"name" validate:"required,max=120" example:"Codex: правка запросов"`
+	Description       string    `json:"description,omitempty" validate:"omitempty,max=1000" example:"Правка запросов и представлений данных"`
 	Scope             string    `json:"scope,omitempty" validate:"omitempty,oneof=read write" enums:"read,write" default:"read" example:"read"`
 	Commit            bool      `json:"commit,omitempty" example:"false"`
 	Delete            bool      `json:"delete,omitempty" example:"false"`
@@ -22,9 +22,9 @@ type CreateRequest struct {
 type TokenResponse struct {
 	ID                   string          `json:"id" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
 	Owner                entities.Actor  `json:"owner"`
-	WorkspaceIdentity    string          `json:"workspaceIdentity" example:"afl"`
-	WorkspaceDisplayName string          `json:"workspaceDisplayName" example:"АФЛ"`
-	Name                 string          `json:"name" example:"Codex: инспектор рейса"`
+	WorkspaceIdentity    string          `json:"workspaceIdentity" example:"main"`
+	WorkspaceDisplayName string          `json:"workspaceDisplayName" example:"Основное пространство"`
+	Name                 string          `json:"name" example:"Codex: правка запросов"`
 	Description          string          `json:"description,omitempty"`
 	Scope                string          `json:"scope" enums:"read,write" example:"read"`
 	Commit               bool            `json:"commit" example:"false"`

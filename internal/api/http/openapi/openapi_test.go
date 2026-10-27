@@ -197,3 +197,53 @@ func assertGeneratedOperationMetadata(t *testing.T, paths map[string]map[string]
 		}
 	}
 }
+
+// TestEverySchemaPropertyIsDescribed проверяет, что словарь docs/openapi-glossary.yaml покрывает все свойства.
+func TestEverySchemaPropertyIsDescribed(t *testing.T) {
+	var document struct {
+		Components struct {
+			Schemas map[string]struct {
+				Properties map[string]map[string]any `yaml:"properties"`
+			} `yaml:"schemas"`
+		} `yaml:"components"`
+	}
+	if err := yaml.Unmarshal(openAPI3YAML, &document); err != nil {
+		t.Fatalf("parse embedded OpenAPI document: %v", err)
+	}
+	var missing []string
+	for schemaName, schema := range document.Components.Schemas {
+		for propertyName, property := range schema.Properties {
+			if description, _ := property["description"].(string); strings.TrimSpace(description) == "" {
+				missing = append(missing, schemaName+"."+propertyName)
+			}
+		}
+	}
+	if len(missing) > 0 {
+		t.Fatalf("properties without description (run make docs after updating docs/openapi-glossary.yaml): %v", missing)
+	}
+}
+
+// TestInfoVersionMatchesApplicationVersion проверяет, что info.version берётся из APP_VERSION.
+func TestInfoVersionMatchesApplicationVersion(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "VERSION"))
+	if err != nil {
+		t.Fatalf("read VERSION: %v", err)
+	}
+	appVersion := ""
+	for _, line := range strings.Split(string(raw), "\n") {
+		if value, ok := strings.CutPrefix(strings.TrimSpace(line), "APP_VERSION="); ok {
+			appVersion = value
+		}
+	}
+	var document struct {
+		Info struct {
+			Version string `yaml:"version"`
+		} `yaml:"info"`
+	}
+	if err := yaml.Unmarshal(openAPI3YAML, &document); err != nil {
+		t.Fatalf("parse embedded OpenAPI document: %v", err)
+	}
+	if appVersion == "" || document.Info.Version != appVersion {
+		t.Fatalf("info.version = %q, APP_VERSION = %q; run make docs", document.Info.Version, appVersion)
+	}
+}

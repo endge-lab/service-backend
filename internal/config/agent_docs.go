@@ -8,7 +8,8 @@ import (
 )
 
 // loadAgentDocsURL читает AGENT_DOCS_URL — корень сайта документации с llms-разделами
-// (llms.txt, llms-full/*.txt). Пустое значение отключает ресурсы документации в MCP.
+// (llms-agent.txt, llms.txt, llms-full/*.txt). MCP читает файлы по этому адресу и отдаёт
+// их текст в resources/read. Пустое значение отключает ресурсы документации в MCP.
 func loadAgentDocsURL() (string, error) {
 	return normalizeAgentDocsURL(os.Getenv("AGENT_DOCS_URL"))
 }

@@ -24,7 +24,7 @@ type Config struct {
 	MockGenerator          MockGeneratorConfig
 	Bridge                 BridgeConfig
 	AccessTokens           AccessTokenConfig
-	// AgentDocsURL — корень llms-документации для агентов (ресурсы MCP); пусто — не публикуется.
+	// AgentDocsURL — корень llms-документации для агентов: MCP читает её файлы и отдаёт как ресурсы; пусто — не публикуется.
 	AgentDocsURL string
 }
 
