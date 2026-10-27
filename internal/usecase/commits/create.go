@@ -12,7 +12,7 @@ import (
 
 // Create создаёт коммит из ожидающих ревизий рабочего пространства.
 func (s *UseCase) Create(ctx context.Context, message, policy string, expected int64) (result *entities.Commit, err error) {
-	current, scope, err := shared.AdminContext(ctx)
+	current, scope, err := shared.CommitContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,8 @@ func (s *UseCase) Create(ctx context.Context, message, policy string, expected i
 	if len(pending) == 0 {
 		return nil, domainerrors.Conflict("nothing_to_commit", "There are no pending revisions")
 	}
-	if policy == entities.RevisionPolicySquash && !shared.CanAdmin(scope.Role) {
+	// Для токена scope.Role сужена до editor; CommitContext уже проверил, что владелец — Admin.
+	if policy == entities.RevisionPolicySquash && !shared.CanAdmin(scope.Role) && !shared.CanAdmin(scope.OwnerRole) {
 		for _, revision := range pending {
 			if revision.CreatedBy.ID != current.User.ID {
 				return nil, domainerrors.Forbidden("shared_squash_requires_admin", "Shared squash requires Workspace Admin")

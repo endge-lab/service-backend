@@ -2,8 +2,10 @@ package bootstrap
 
 import (
 	configuratorauth "github.com/endge-lab/service-backend/internal/api/http/configurator_auth"
+	"github.com/endge-lab/service-backend/internal/api/http/mcp"
 	httpmiddleware "github.com/endge-lab/service-backend/internal/api/http/middleware"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/access_control"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/access_token"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/action"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/ai_assistant"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/ai_catalog"
@@ -42,7 +44,9 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/vocab"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/workspace"
 	"github.com/endge-lab/service-backend/internal/auth"
+	"github.com/endge-lab/service-backend/internal/config"
 	"go.uber.org/fx"
+	"go.uber.org/zap"
 )
 
 func HandlerModules() fx.Option {
@@ -62,6 +66,7 @@ func HandlerModules() fx.Option {
 			bridge.NewHandler,
 			build_profile.NewHandler,
 			access_control.BindUseCase,
+			access_token.BindUseCase,
 			ai_catalog.BindUseCase,
 			ai_assistant.BindUseCase,
 			mock_data.BindUseCase,
@@ -99,6 +104,7 @@ func HandlerModules() fx.Option {
 			release.BindUseCase,
 			workspace.NewHandler,
 			access_control.NewHandler,
+			access_token.NewHandler,
 			ai_catalog.NewHandler,
 			ai_assistant.NewHandler,
 			mock_data.NewHandler,
@@ -133,6 +139,14 @@ func HandlerModules() fx.Option {
 			domain.NewHandler,
 			document_move.NewHandler,
 			release.NewHandler,
+			mcp.BindUseCases,
+			mcp.BindContracts,
+			newMCPHandler,
 		),
 	)
+}
+
+// newMCPHandler передаёт MCP только сведения для агента, а не всю конфигурацию.
+func newMCPHandler(cfg *config.Config, useCases mcp.UseCases, contracts mcp.Contracts, logger *zap.Logger) *mcp.Handler {
+	return mcp.NewHandler(mcp.Config{Service: cfg.App.Name, Version: cfg.App.Version, Env: cfg.App.Env, AgentDocsURL: cfg.AgentDocsURL}, useCases, contracts, logger)
 }

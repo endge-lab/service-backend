@@ -121,8 +121,16 @@ type ErrorResponse = respond.ErrorResponse
 // DecodeAndValidate декодирует JSON в транспортную модель, запрещает неизвестные поля
 // и применяет декларативные validate-теги.
 func DecodeAndValidate[T any](c *fiber.Ctx, validator appvalidator.Validator) (T, error) {
+	return DecodeAndValidateJSON[T](c.Body(), validator)
+}
+
+// DecodeAndValidateJSON — единственная реализация проверки transport DTO: строгий
+// JSON без неизвестных полей и validate-теги. Ей пользуются REST-обработчики
+// (через DecodeAndValidate) и MCP-инструменты (через RequestContract), поэтому
+// правила длин, обязательных полей и форматов не дублируются.
+func DecodeAndValidateJSON[T any](body []byte, validator appvalidator.Validator) (T, error) {
 	var contract T
-	decoder := json.NewDecoder(bytes.NewReader(c.Body()))
+	decoder := json.NewDecoder(bytes.NewReader(body))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&contract); err != nil {
 		return contract, domainerrors.WithDetails(respond.ErrInvalidBody, map[string]any{"reason": err.Error()})

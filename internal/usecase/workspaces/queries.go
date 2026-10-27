@@ -24,14 +24,28 @@ func (s *UseCase) Authorize(ctx context.Context, identity string) (entities.Work
 	if err != nil {
 		return entities.WorkspaceAccess{}, err
 	}
-	role, err := s.workspaces.WorkspaceRole(ctx, workspace.ID, current.User.ID, current.PlatformAdmin)
+	platformAdmin := current.PlatformAdmin
+	token, viaToken := entities.AccessTokenFromContext(ctx)
+	if viaToken {
+		// Токен привязан к одному workspace; роль владельца сужается scope токена.
+		if workspace.ID != token.WorkspaceID {
+			return entities.WorkspaceAccess{}, domainerrors.Forbidden("access_token_workspace_forbidden", "Access token is not valid for this workspace")
+		}
+		platformAdmin = token.OwnerPlatformAdmin
+	}
+	role, err := s.workspaces.WorkspaceRole(ctx, workspace.ID, current.User.ID, platformAdmin)
 	if err != nil {
 		return entities.WorkspaceAccess{}, err
+	}
+	ownerRole := ""
+	if viaToken {
+		ownerRole = role
+		role = token.CapWorkspaceRole(role)
 	}
 	if role == "" {
 		return entities.WorkspaceAccess{}, domainerrors.Forbidden("workspace_forbidden", "Workspace access is forbidden")
 	}
-	return entities.WorkspaceAccess{Workspace: *workspace, Role: role}, nil
+	return entities.WorkspaceAccess{Workspace: *workspace, Role: role, OwnerRole: ownerRole}, nil
 }
 
 // List возвращает рабочие пространства, доступные текущему пользователю.
@@ -49,6 +63,9 @@ func (s *UseCase) ListAccess(ctx context.Context) ([]entities.WorkspaceAccess, e
 	if err != nil {
 		return nil, err
 	}
+	if _, viaToken := entities.AccessTokenFromContext(ctx); viaToken {
+		return s.listTokenAccess(ctx)
+	}
 	items, err := s.workspaces.ListWorkspaces(ctx, current.User.ID, current.PlatformAdmin)
 	if err != nil {
 		return nil, err
@@ -65,6 +82,19 @@ func (s *UseCase) ListAccess(ctx context.Context) ([]entities.WorkspaceAccess, e
 		result = append(result, entities.WorkspaceAccess{Workspace: workspace, Role: role})
 	}
 	return result, nil
+}
+
+// listTokenAccess показывает агенту только workspace токена с уже суженной ролью.
+func (s *UseCase) listTokenAccess(ctx context.Context) ([]entities.WorkspaceAccess, error) {
+	token, _ := entities.AccessTokenFromContext(ctx)
+	access, err := s.Authorize(ctx, token.WorkspaceIdentity)
+	if code := domainerrors.CodeOf(err); code == "workspace_forbidden" || code == "workspace_not_found" {
+		return []entities.WorkspaceAccess{}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return []entities.WorkspaceAccess{access}, nil
 }
 
 // ListArchive returns Workspace tombstones visible to the current actor.

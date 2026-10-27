@@ -115,9 +115,13 @@ func TestEveryDocumentRepositoryLifecycle(t *testing.T) {
 			if err != nil || restored.DeletedAt != nil || restored.Revision != 4 {
 				t.Fatalf("restore %s: value=%#v err=%v", testCase.collection, restored, err)
 			}
-			historyItems, err := fixture.revisions.List(fixture.ctx, testCase.collection, initial.Identity)
-			if err != nil || len(historyItems) != 4 {
-				t.Fatalf("history %s: revisions=%d err=%v", testCase.collection, len(historyItems), err)
+			history, err := fixture.revisions.List(fixture.ctx, testCase.collection, initial.Identity, ports.RevisionListOptions{IncludeSnapshot: true})
+			if err != nil || len(history.Items) != 4 || history.Total != 4 {
+				t.Fatalf("history %s: revisions=%d total=%d err=%v", testCase.collection, len(history.Items), history.Total, err)
+			}
+			page, err := fixture.revisions.List(fixture.ctx, testCase.collection, initial.Identity, ports.RevisionListOptions{Limit: 2, Offset: 1})
+			if err != nil || len(page.Items) != 2 || page.Total != 4 || page.Items[0].RevisionNumber != 3 || string(page.Items[0].Snapshot) != "null" {
+				t.Fatalf("history page %s: %#v err=%v", testCase.collection, page, err)
 			}
 		})
 	}
@@ -259,7 +263,8 @@ func TestCommitSquashReleaseAndRestore(t *testing.T) {
 	if err != nil || last.ID != secondRelease.ID {
 		t.Fatalf("last не указывает на новый release: value=%#v err=%v", last, err)
 	}
-	revisionItems, err := fixture.revisions.List(fixture.ctx, "queries", created.Identity)
+	revisionPage, err := fixture.revisions.List(fixture.ctx, "queries", created.Identity, ports.RevisionListOptions{IncludeSnapshot: true})
+	revisionItems := revisionPage.Items
 	if err != nil {
 		t.Fatalf("получить revisions после squash: %v", err)
 	}

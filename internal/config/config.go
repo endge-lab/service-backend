@@ -23,6 +23,9 @@ type Config struct {
 	AIWorkbench            AIWorkbenchConfig
 	MockGenerator          MockGeneratorConfig
 	Bridge                 BridgeConfig
+	AccessTokens           AccessTokenConfig
+	// AgentDocsURL — корень llms-документации для агентов (ресурсы MCP); пусто — не публикуется.
+	AgentDocsURL string
 }
 
 // Load загружает базовую конфигурацию service-kit и дополняет её настройками
@@ -75,8 +78,18 @@ func Load() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	accessTokens, err := loadAccessTokenConfig()
+	if err != nil {
+		return nil, err
+	}
+	agentDocsURL, err := loadAgentDocsURL()
+	if err != nil {
+		return nil, err
+	}
 	return &Config{
+		AgentDocsURL:           agentDocsURL,
 		Bridge:                 bridge,
+		AccessTokens:           accessTokens,
 		ServiceConfig:          base,
 		WorkspaceSchemaVersion: buildMetadata.WorkspaceSchemaVersion,
 		HTTPBasePath:           httpBasePath,

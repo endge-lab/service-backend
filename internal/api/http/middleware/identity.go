@@ -33,6 +33,8 @@ type RequestIdentity struct {
 	PlatformAdmin  bool
 	ExpiresAt      string
 	ExternalAccess *entities.ExternalAccessSnapshot
+	// AccessTokenID заполнен, если запрос аутентифицирован персональным токеном.
+	AccessTokenID string
 }
 
 func IdentityFromContext(ctx context.Context) (RequestIdentity, bool) {

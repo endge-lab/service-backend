@@ -238,6 +238,143 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/access-tokens:
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает токены текущего пользователя без секретов, включая
+        истёкшие и отозванные. Platform Admin с `owner=all` получает токены всех
+        пользователей.
+      tags:
+        - Персональные токены
+      summary: Получить персональные токены
+      operationId: listAccessTokens
+      parameters:
+        - description: me (по умолчанию) или all для Platform Admin
+          name: owner
+          in: query
+          schema:
+            type: string
+            enum:
+              - me
+              - all
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/access_token.ListResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+    post:
+      security:
+        - BearerAuth: []
+      description: "Выпускает токен `endge_pat_…` от имени текущего пользователя для
+        одного workspace. Секрет возвращается только в этом ответе; в БД
+        хранится SHA-256. Срок обязателен и ограничен ACCESS_TOKEN_MAX_TTL (по
+        умолчанию 30 дней). Scope по умолчанию `read`; флаги `commit` и `delete`
+        требуют `write`, а `write` — роли Editor или выше. Токеном нельзя
+        выпускать, просматривать и отзывать токены: нужна cookie- или
+        JWT-сессия."
+      tags:
+        - Персональные токены
+      summary: Выпустить персональный токен доступа
+      operationId: createAccessToken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/access_token.CreateRequest"
+        description: Параметры токена
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/access_token.CreateResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/access-tokens/{id}":
+    delete:
+      security:
+        - BearerAuth: []
+      description: Отзывает свой токен; Platform Admin может отозвать любой. Повторный
+        отзыв успешен и сохраняет первое время отзыва. Отозванный токен получает
+        401 `access_token_revoked`.
+      tags:
+        - Персональные токены
+      summary: Отозвать персональный токен
+      operationId: revokeAccessToken
+      parameters:
+        - description: ID токена
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
   /api/v1/actions:
     get:
       security:
@@ -5952,7 +6089,10 @@ paths:
     get:
       security:
         - BearerAuth: []
-      description: Возвращает неизменяемую историю ревизий выбранного документа.
+      description: Возвращает неизменяемую историю ревизий выбранного документа от
+        новых к старым. Без limit возвращается вся история; snapshot=false не
+        включает снимки документа (поле snapshot равно null). total — общее
+        число ревизий документа.
       tags:
         - Ревизии
       summary: Получить ревизии документа
@@ -5978,6 +6118,26 @@ paths:
           schema:
             type: string
             maxLength: 160
+        - description: Включить снимки документа
+          name: snapshot
+          in: query
+          schema:
+            type: boolean
+            default: true
+        - description: Размер страницы; без параметра — вся история
+          name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+        - description: Смещение от последней ревизии
+          name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
       responses:
         "200":
           description: История ревизий
@@ -15431,6 +15591,106 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/health.HealthResponse"
+  /mcp:
+    get:
+      security:
+        - BearerAuth: []
+      description: "Stateless MCP-сервер не открывает SSE-поток и отвечает 405 с
+        Allow: POST, как разрешает спецификация Streamable HTTP."
+      tags:
+        - MCP
+      summary: "MCP: поток уведомлений сервера"
+      operationId: getMCP
+      responses:
+        "401":
+          description: Требуется персональный токен или JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "405":
+          description: Поток не поддерживается
+          content:
+            application/json:
+              schema:
+                type: string
+    post:
+      security:
+        - BearerAuth: []
+      description: "MCP-сервер Endge (Streamable HTTP, stateless, ответы
+        application/json). Принимает JSON-RPC сообщения MCP: initialize,
+        tools/list, tools/call, resources/list, resources/read. Инструменты
+        вызывают те же use case, что REST; персональный токен ограничивает
+        workspace, набор инструментов (scope, флаги commit и delete) и помечает
+        изменения в истории ревизий. Accept должен содержать application/json и
+        text/event-stream."
+      tags:
+        - MCP
+      summary: "MCP: сообщение клиента"
+      operationId: postMCP
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/mcp.JSONRPCRequest"
+        description: Сообщение JSON-RPC 2.0
+        required: true
+      responses:
+        "200":
+          description: Ответ JSON-RPC
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/mcp.JSONRPCResponse"
+        "202":
+          description: Уведомление принято
+        "400":
+          description: Некорректное сообщение или заголовок Accept
+          content:
+            application/json:
+              schema:
+                type: string
+        "401":
+          description: "Требуется персональный токен или JWT; заголовок WWW-Authenticate:
+            Bearer"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Пользователь неактивен
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "415":
+          description: Content-Type должен быть application/json
+          content:
+            application/json:
+              schema:
+                type: string
+    delete:
+      security:
+        - BearerAuth: []
+      description: "Stateless MCP-сервер не выдаёт Mcp-Session-Id и отвечает 405 с
+        Allow: POST."
+      tags:
+        - MCP
+      summary: "MCP: завершение сессии"
+      operationId: deleteMCP
+      responses:
+        "401":
+          description: Требуется персональный токен или JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "405":
+          description: Сессии не поддерживаются
+          content:
+            application/json:
+              schema:
+                type: string
   /version:
     get:
       description: Публичный endpoint с версией backend и доступностью подключённых
@@ -15573,6 +15833,116 @@ components:
           type: string
         username:
           type: string
+    access_token.CreateRequest:
+      type: object
+      required:
+        - expiresAt
+        - name
+        - workspaceIdentity
+      properties:
+        commit:
+          type: boolean
+          example: false
+        delete:
+          type: boolean
+          example: false
+        description:
+          type: string
+          maxLength: 1000
+          example: Правка Query и DataView инспектора
+        expiresAt:
+          type: string
+          format: date-time
+          example: 2026-11-02T10:00:00Z
+        name:
+          type: string
+          maxLength: 120
+          example: "Codex: инспектор рейса"
+        scope:
+          type: string
+          default: read
+          enum:
+            - read
+            - write
+          example: read
+        workspaceIdentity:
+          type: string
+          maxLength: 160
+          example: afl
+    access_token.CreateResponse:
+      type: object
+      properties:
+        accessToken:
+          $ref: "#/components/schemas/access_token.TokenResponse"
+        token:
+          type: string
+          example: endge_pat_Ab3dE6gH...
+    access_token.ListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/access_token.TokenResponse"
+        maxTtlSeconds:
+          type: integer
+          example: 2592000
+    access_token.TokenResponse:
+      type: object
+      properties:
+        commit:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+        delete:
+          type: boolean
+          example: false
+        description:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        id:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        lastUsedAt:
+          type: string
+          format: date-time
+        name:
+          type: string
+          example: "Codex: инспектор рейса"
+        owner:
+          $ref: "#/components/schemas/entities.Actor"
+        revokedAt:
+          type: string
+          format: date-time
+        revokedBy:
+          $ref: "#/components/schemas/entities.Actor"
+        scope:
+          type: string
+          enum:
+            - read
+            - write
+          example: read
+        status:
+          type: string
+          enum:
+            - active
+            - expired
+            - revoked
+          example: active
+        tokenPrefix:
+          type: string
+          example: endge_pat_Ab3dE6gH
+        workspaceDisplayName:
+          type: string
+          example: АФЛ
+        workspaceIdentity:
+          type: string
+          example: afl
     action.CreateRequest:
       type: object
       required:
@@ -19398,6 +19768,42 @@ components:
         version:
           type: string
           example: 1.0.0
+    mcp.JSONRPCError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: -32602
+        message:
+          type: string
+          example: unknown tool
+    mcp.JSONRPCRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        jsonrpc:
+          type: string
+          example: "2.0"
+        method:
+          type: string
+          example: tools/call
+        params:
+          type: object
+    mcp.JSONRPCResponse:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/mcp.JSONRPCError"
+        id:
+          type: integer
+          example: 1
+        jsonrpc:
+          type: string
+          example: "2.0"
+        result:
+          type: object
     mock.CreateRequest:
       type: object
       required:
@@ -20246,12 +20652,26 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/revision.Response"
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
         total:
+          description: Total — общее число ревизий документа, а не размер страницы.
           type: integer
           example: 1
     revision.Response:
       type: object
       properties:
+        accessTokenId:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440006
+        accessTokenName:
+          type: string
+          example: "Codex: инспектор рейса"
         checksum:
           type: string
           example: sha256:0123456789abcdef

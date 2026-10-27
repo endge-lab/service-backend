@@ -243,6 +243,143 @@ var openAPI3YAML = []byte(
 		"            \"*/*\":\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/access-tokens:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает токены текущего пользователя без секретов, включая\n" +
+		"        истёкшие и отозванные. Platform Admin с `owner=all` получает токены всех\n" +
+		"        пользователей.\n" +
+		"      tags:\n" +
+		"        - Персональные токены\n" +
+		"      summary: Получить персональные токены\n" +
+		"      operationId: listAccessTokens\n" +
+		"      parameters:\n" +
+		"        - description: me (по умолчанию) или all для Platform Admin\n" +
+		"          name: owner\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            enum:\n" +
+		"              - me\n" +
+		"              - all\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/access_token.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: \"Выпускает токен `endge_pat_…` от имени текущего пользователя для\n" +
+		"        одного workspace. Секрет возвращается только в этом ответе; в БД\n" +
+		"        хранится SHA-256. Срок обязателен и ограничен ACCESS_TOKEN_MAX_TTL (по\n" +
+		"        умолчанию 30 дней). Scope по умолчанию `read`; флаги `commit` и `delete`\n" +
+		"        требуют `write`, а `write` — роли Editor или выше. Токеном нельзя\n" +
+		"        выпускать, просматривать и отзывать токены: нужна cookie- или\n" +
+		"        JWT-сессия.\"\n" +
+		"      tags:\n" +
+		"        - Персональные токены\n" +
+		"      summary: Выпустить персональный токен доступа\n" +
+		"      operationId: createAccessToken\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/access_token.CreateRequest\"\n" +
+		"        description: Параметры токена\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"201\":\n" +
+		"          description: Created\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/access_token.CreateResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Bad Request\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/access-tokens/{id}\":\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Отзывает свой токен; Platform Admin может отозвать любой. Повторный\n" +
+		"        отзыв успешен и сохраняет первое время отзыва. Отозванный токен получает\n" +
+		"        401 `access_token_revoked`.\n" +
+		"      tags:\n" +
+		"        - Персональные токены\n" +
+		"      summary: Отозвать персональный токен\n" +
+		"      operationId: revokeAccessToken\n" +
+		"      parameters:\n" +
+		"        - description: ID токена\n" +
+		"          name: id\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"            format: uuid\n" +
+		"      responses:\n" +
+		"        \"204\":\n" +
+		"          description: No Content\n" +
+		"        \"401\":\n" +
+		"          description: Unauthorized\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Not Found\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"  /api/v1/actions:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -5957,7 +6094,10 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Возвращает неизменяемую историю ревизий выбранного документа.\n" +
+		"      description: Возвращает неизменяемую историю ревизий выбранного документа от\n" +
+		"        новых к старым. Без limit возвращается вся история; snapshot=false не\n" +
+		"        включает снимки документа (поле snapshot равно null). total — общее\n" +
+		"        число ревизий документа.\n" +
 		"      tags:\n" +
 		"        - Ревизии\n" +
 		"      summary: Получить ревизии документа\n" +
@@ -5983,6 +6123,26 @@ var openAPI3YAML = []byte(
 		"          schema:\n" +
 		"            type: string\n" +
 		"            maxLength: 160\n" +
+		"        - description: Включить снимки документа\n" +
+		"          name: snapshot\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
+		"            default: true\n" +
+		"        - description: Размер страницы; без параметра — вся история\n" +
+		"          name: limit\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 1\n" +
+		"            maximum: 500\n" +
+		"        - description: Смещение от последней ревизии\n" +
+		"          name: offset\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: integer\n" +
+		"            minimum: 0\n" +
+		"            default: 0\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
 		"          description: История ревизий\n" +
@@ -15436,6 +15596,106 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/health.HealthResponse\"\n" +
+		"  /mcp:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: \"Stateless MCP-сервер не открывает SSE-поток и отвечает 405 с\n" +
+		"        Allow: POST, как разрешает спецификация Streamable HTTP.\"\n" +
+		"      tags:\n" +
+		"        - MCP\n" +
+		"      summary: \"MCP: поток уведомлений сервера\"\n" +
+		"      operationId: getMCP\n" +
+		"      responses:\n" +
+		"        \"401\":\n" +
+		"          description: Требуется персональный токен или JWT\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"405\":\n" +
+		"          description: Поток не поддерживается\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: \"MCP-сервер Endge (Streamable HTTP, stateless, ответы\n" +
+		"        application/json). Принимает JSON-RPC сообщения MCP: initialize,\n" +
+		"        tools/list, tools/call, resources/list, resources/read. Инструменты\n" +
+		"        вызывают те же use case, что REST; персональный токен ограничивает\n" +
+		"        workspace, набор инструментов (scope, флаги commit и delete) и помечает\n" +
+		"        изменения в истории ревизий. Accept должен содержать application/json и\n" +
+		"        text/event-stream.\"\n" +
+		"      tags:\n" +
+		"        - MCP\n" +
+		"      summary: \"MCP: сообщение клиента\"\n" +
+		"      operationId: postMCP\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/mcp.JSONRPCRequest\"\n" +
+		"        description: Сообщение JSON-RPC 2.0\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Ответ JSON-RPC\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/mcp.JSONRPCResponse\"\n" +
+		"        \"202\":\n" +
+		"          description: Уведомление принято\n" +
+		"        \"400\":\n" +
+		"          description: Некорректное сообщение или заголовок Accept\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"        \"401\":\n" +
+		"          description: \"Требуется персональный токен или JWT; заголовок WWW-Authenticate:\n" +
+		"            Bearer\"\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Пользователь неактивен\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"415\":\n" +
+		"          description: Content-Type должен быть application/json\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                type: string\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: \"Stateless MCP-сервер не выдаёт Mcp-Session-Id и отвечает 405 с\n" +
+		"        Allow: POST.\"\n" +
+		"      tags:\n" +
+		"        - MCP\n" +
+		"      summary: \"MCP: завершение сессии\"\n" +
+		"      operationId: deleteMCP\n" +
+		"      responses:\n" +
+		"        \"401\":\n" +
+		"          description: Требуется персональный токен или JWT\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"405\":\n" +
+		"          description: Сессии не поддерживаются\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                type: string\n" +
 		"  /version:\n" +
 		"    get:\n" +
 		"      description: Публичный endpoint с версией backend и доступностью подключённых\n" +
@@ -15578,6 +15838,116 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        username:\n" +
 		"          type: string\n" +
+		"    access_token.CreateRequest:\n" +
+		"      type: object\n" +
+		"      required:\n" +
+		"        - expiresAt\n" +
+		"        - name\n" +
+		"        - workspaceIdentity\n" +
+		"      properties:\n" +
+		"        commit:\n" +
+		"          type: boolean\n" +
+		"          example: false\n" +
+		"        delete:\n" +
+		"          type: boolean\n" +
+		"          example: false\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"          maxLength: 1000\n" +
+		"          example: Правка Query и DataView инспектора\n" +
+		"        expiresAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"          example: 2026-11-02T10:00:00Z\n" +
+		"        name:\n" +
+		"          type: string\n" +
+		"          maxLength: 120\n" +
+		"          example: \"Codex: инспектор рейса\"\n" +
+		"        scope:\n" +
+		"          type: string\n" +
+		"          default: read\n" +
+		"          enum:\n" +
+		"            - read\n" +
+		"            - write\n" +
+		"          example: read\n" +
+		"        workspaceIdentity:\n" +
+		"          type: string\n" +
+		"          maxLength: 160\n" +
+		"          example: afl\n" +
+		"    access_token.CreateResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        accessToken:\n" +
+		"          $ref: \"#/components/schemas/access_token.TokenResponse\"\n" +
+		"        token:\n" +
+		"          type: string\n" +
+		"          example: endge_pat_Ab3dE6gH...\n" +
+		"    access_token.ListResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/access_token.TokenResponse\"\n" +
+		"        maxTtlSeconds:\n" +
+		"          type: integer\n" +
+		"          example: 2592000\n" +
+		"    access_token.TokenResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        commit:\n" +
+		"          type: boolean\n" +
+		"          example: false\n" +
+		"        createdAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"        delete:\n" +
+		"          type: boolean\n" +
+		"          example: false\n" +
+		"        description:\n" +
+		"          type: string\n" +
+		"        expiresAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"        id:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440000\n" +
+		"        lastUsedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"        name:\n" +
+		"          type: string\n" +
+		"          example: \"Codex: инспектор рейса\"\n" +
+		"        owner:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        revokedAt:\n" +
+		"          type: string\n" +
+		"          format: date-time\n" +
+		"        revokedBy:\n" +
+		"          $ref: \"#/components/schemas/entities.Actor\"\n" +
+		"        scope:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - read\n" +
+		"            - write\n" +
+		"          example: read\n" +
+		"        status:\n" +
+		"          type: string\n" +
+		"          enum:\n" +
+		"            - active\n" +
+		"            - expired\n" +
+		"            - revoked\n" +
+		"          example: active\n" +
+		"        tokenPrefix:\n" +
+		"          type: string\n" +
+		"          example: endge_pat_Ab3dE6gH\n" +
+		"        workspaceDisplayName:\n" +
+		"          type: string\n" +
+		"          example: АФЛ\n" +
+		"        workspaceIdentity:\n" +
+		"          type: string\n" +
+		"          example: afl\n" +
 		"    action.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -19403,6 +19773,42 @@ var openAPI3YAML = []byte(
 		"        version:\n" +
 		"          type: string\n" +
 		"          example: 1.0.0\n" +
+		"    mcp.JSONRPCError:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        code:\n" +
+		"          type: integer\n" +
+		"          example: -32602\n" +
+		"        message:\n" +
+		"          type: string\n" +
+		"          example: unknown tool\n" +
+		"    mcp.JSONRPCRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        id:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"        jsonrpc:\n" +
+		"          type: string\n" +
+		"          example: \"2.0\"\n" +
+		"        method:\n" +
+		"          type: string\n" +
+		"          example: tools/call\n" +
+		"        params:\n" +
+		"          type: object\n" +
+		"    mcp.JSONRPCResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        error:\n" +
+		"          $ref: \"#/components/schemas/mcp.JSONRPCError\"\n" +
+		"        id:\n" +
+		"          type: integer\n" +
+		"          example: 1\n" +
+		"        jsonrpc:\n" +
+		"          type: string\n" +
+		"          example: \"2.0\"\n" +
+		"        result:\n" +
+		"          type: object\n" +
 		"    mock.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -20251,12 +20657,26 @@ var openAPI3YAML = []byte(
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/revision.Response\"\n" +
+		"        limit:\n" +
+		"          type: integer\n" +
+		"          example: 20\n" +
+		"        offset:\n" +
+		"          type: integer\n" +
+		"          example: 0\n" +
 		"        total:\n" +
+		"          description: Total — общее число ревизий документа, а не размер страницы.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"    revision.Response:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
+		"        accessTokenId:\n" +
+		"          type: string\n" +
+		"          format: uuid\n" +
+		"          example: 550e8400-e29b-41d4-a716-446655440006\n" +
+		"        accessTokenName:\n" +
+		"          type: string\n" +
+		"          example: \"Codex: инспектор рейса\"\n" +
 		"        checksum:\n" +
 		"          type: string\n" +
 		"          example: sha256:0123456789abcdef\n" +

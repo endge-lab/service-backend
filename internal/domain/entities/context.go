@@ -15,6 +15,9 @@ type CurrentActor struct {
 type WorkspaceAccess struct {
 	Workspace Workspace
 	Role      string
+	// OwnerRole — роль владельца персонального токена до сужения scope токена.
+	// Заполняется только для запросов с токеном; для сессий пусто.
+	OwnerRole string
 }
 
 func WithCurrentActor(ctx context.Context, actor CurrentActor) context.Context {

@@ -7,6 +7,7 @@ import (
 	platformbridge "github.com/endge-lab/service-backend/internal/platform/bridge"
 	platformencryption "github.com/endge-lab/service-backend/internal/platform/encryption"
 	"github.com/endge-lab/service-backend/internal/usecase/access_control"
+	"github.com/endge-lab/service-backend/internal/usecase/access_tokens"
 	"github.com/endge-lab/service-backend/internal/usecase/actions"
 	"github.com/endge-lab/service-backend/internal/usecase/ai_assistant"
 	"github.com/endge-lab/service-backend/internal/usecase/ai_catalog"
@@ -61,6 +62,7 @@ func UseCaseModules() fx.Option {
 		documents.NewLifecycle,
 		func(cfg *config.Config) *access.Policy { return cfg.Access },
 		access_control.NewUseCase,
+		newAccessTokensUseCase,
 		ai_catalog.NewUseCase,
 		ai_assistant.NewUseCase,
 		newMockDataUseCase,
@@ -114,4 +116,9 @@ func newMockDataUseCase(lc fx.Lifecycle, g ports.MockGeneratorGateway, cfg *conf
 	u := mock_data.NewUseCase(g, mock_data.Config{Sessions: c.Sessions, PerOwner: c.PerOwner, RequestBytes: c.RequestBytes, BufferBytes: c.BufferBytes, ReadyTimeout: c.ReadyTimeout, IdleTimeout: c.IdleTimeout, WriteTimeout: c.WriteTimeout})
 	lc.Append(fx.Hook{OnStart: func(context.Context) error { u.Start(); return nil }, OnStop: func(context.Context) error { u.Close(); return nil }})
 	return u
+}
+
+// newAccessTokensUseCase передаёт use case только предел срока, а не всю конфигурацию.
+func newAccessTokensUseCase(tokens ports.AccessTokenRepository, workspaces ports.WorkspaceRepository, cfg *config.Config) *access_tokens.UseCase {
+	return access_tokens.NewUseCase(tokens, workspaces, cfg.AccessTokens.EffectiveMaxTTL())
 }
