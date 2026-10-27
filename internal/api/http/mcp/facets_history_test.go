@@ -2,16 +2,21 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 	"slices"
 	"strings"
 	"testing"
 
+	"github.com/endge-lab/service-backend/internal/api/http/v1/auth_profile"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/component"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/computation"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/folder"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/query"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/update"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/vocab"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
+	"github.com/endge-lab/service-backend/internal/usecase/documents"
 	validator "github.com/endge-lab/service-kit-go/pkg/validator"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -21,10 +26,13 @@ func TestFormatVersionComesFromCreateRequest(t *testing.T) {
 		request reflect.Type
 		want    string
 	}{
-		entities.CollectionComponents: {reflect.TypeFor[component.CreateRequest](), "modelVersion (обязательно, целое > 0, обычно 1)"},
-		entities.CollectionQueries:    {reflect.TypeFor[query.CreateRequest](), "sourceVersion (обязательно, ровно 2)"},
-		entities.CollectionVocabs:     {reflect.TypeFor[vocab.CreateRequest](), "sourceVersion (обязательно вместе с source, ровно 1)"},
-		entities.CollectionFolders:    {reflect.TypeFor[folder.CreateRequest](), "нет поля версии"},
+		entities.CollectionComponents:   {reflect.TypeFor[component.CreateRequest](), "modelVersion=1 (обязательно)"},
+		entities.CollectionQueries:      {reflect.TypeFor[query.CreateRequest](), "sourceVersion=2 (обязательно, другое значение — ошибка)"},
+		entities.CollectionVocabs:       {reflect.TypeFor[vocab.CreateRequest](), "sourceVersion=1 (обязательно вместе с source)"},
+		entities.CollectionComputations: {reflect.TypeFor[computation.CreateRequest](), "sourceVersion=1 (обязательно); ещё обязательно: contractVersion=1"},
+		entities.CollectionUpdates:      {reflect.TypeFor[update.CreateRequest](), "sourceVersion=1 (обязательно); ещё обязательно: storeIdentity"},
+		entities.CollectionAuthProfiles: {reflect.TypeFor[auth_profile.CreateRequest](), "нет поля версии; ещё обязательно: adapterId"},
+		entities.CollectionFolders:      {reflect.TypeFor[folder.CreateRequest](), "нет поля версии"},
 	}
 	for collection, tc := range cases {
 		if got := formatVersionOf(collection, tc.request).describe(); got != tc.want {
@@ -42,29 +50,95 @@ func TestFormatVersionComesFromCreateRequest(t *testing.T) {
 	}
 }
 
+// Текущие версии формата совпадают с тем, что пишет Configurator при создании документа
+// (CreateDocument_Modal) и что проверено компиляцией примеров agents/document-examples.md:
+// Query — 2, остальные коллекции с source — 1, Component — modelVersion 1.
+func TestFormatVersionCurrentValuesMatchConfigurator(t *testing.T) {
+	contracts := BindContracts(validator.NewValidator())
+	for collection, version := range contracts.FormatVersions {
+		want := "1"
+		if collection == entities.CollectionQueries {
+			want = "2"
+		}
+		if version.Field != "" && version.Current != want {
+			t.Fatalf("%s: current %s=%q, want %q", collection, version.Field, version.Current, want)
+		}
+		if version.Field == "" && documents.RequiresSourceVersion(collection) {
+			t.Fatalf("%s: sourceVersion is required by the use case but missing in the DTO", collection)
+		}
+	}
+	if got := contracts.FormatVersions[entities.CollectionComponents].Field; got != "modelVersion" {
+		t.Fatalf("components use modelVersion, got %q", got)
+	}
+	if got := contracts.FormatVersions[entities.CollectionComputations].Also; !slices.Contains(got, "contractVersion=1") {
+		t.Fatalf("computations require contractVersion=1: %v", got)
+	}
+}
+
 func TestMCPCreateDescriptionNamesFormatVersionField(t *testing.T) {
 	h := newHarness(t)
+	for _, tc := range []struct {
+		token     string
+		authEnum  bool
+		wantLines []string
+	}{
+		{"write", false, []string{"- components: modelVersion=1 (обязательно)", "- queries: sourceVersion=2 (обязательно, другое значение — ошибка)", "- types: sourceVersion=1 (обязательно)", "- computations: sourceVersion=1 (обязательно); ещё обязательно: contractVersion=1", "- Недоступно этому токену: auth-profiles", "auth: { mode: 'inherit' }"}},
+		{"jwt-admin", true, []string{"- auth-profiles: нет поля версии; ещё обязательно: adapterId", "Персональному токену: auth-profiles"}},
+	} {
+		session := h.connect(t, tc.token)
+		tools, err := session.ListTools(context.Background(), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		byName := map[string]*mcp.Tool{}
+		for _, tool := range tools.Tools {
+			byName[tool.Name] = tool
+		}
+		create := byName["endge_create_document"]
+		for _, want := range append(tc.wantLines, "- folders: нет поля версии", "- facet-documents (с facetIdentity)") {
+			if create == nil || !strings.Contains(create.Description, want) {
+				t.Fatalf("%s: create description must contain %q: %v", tc.token, want, create)
+			}
+		}
+		if strings.Contains(create.Description, "обычно") {
+			t.Fatalf("%s: create description must name the current version, not a usual one: %s", tc.token, create.Description)
+		}
+		for _, name := range []string{"endge_create_document", "endge_update_document", "endge_restore_document", "endge_restore_revision"} {
+			if got := schemaEnumHas(t, byName[name], "collection", entities.CollectionAuthProfiles); got != tc.authEnum {
+				t.Fatalf("%s: %s offers auth-profiles=%v, want %v", tc.token, name, got, tc.authEnum)
+			}
+		}
+		if !schemaEnumHas(t, byName["endge_get_document"], "collection", entities.CollectionAuthProfiles) {
+			t.Fatalf("%s: reading auth-profiles stays available", tc.token)
+		}
+	}
+	// Ошибка проверки тела называет текущее значение поля версии коллекции.
 	session := h.connect(t, "write")
-	tools, err := session.ListTools(context.Background(), nil)
+	invalid, isError := call(t, session, "endge_create_document", map[string]any{"collection": "queries", "document": map[string]any{"identity": "x", "displayName": "X", "source": "defineQuery({})", "modelVersion": 1}})
+	if !isError || invalid["error"] != "validation_error" || !strings.Contains(invalid["hint"].(string), "sourceVersion=2 (обязательно, другое значение — ошибка)") {
+		t.Fatalf("validation error must hint the format version field: %v", invalid)
+	}
+}
+
+// schemaEnumHas сообщает, перечислено ли value в enum свойства property входной схемы инструмента.
+func schemaEnumHas(t *testing.T, tool *mcp.Tool, property, value string) bool {
+	t.Helper()
+	if tool == nil {
+		t.Fatalf("tool is missing")
+	}
+	raw, err := json.Marshal(tool.InputSchema)
 	if err != nil {
 		t.Fatal(err)
 	}
-	var create *mcp.Tool
-	for _, tool := range tools.Tools {
-		if tool.Name == "endge_create_document" {
-			create = tool
-		}
+	var schema struct {
+		Properties map[string]struct {
+			Enum []string `json:"enum"`
+		} `json:"properties"`
 	}
-	for _, want := range []string{"- components: modelVersion (обязательно", "- queries: sourceVersion (обязательно, ровно 2)", "- folders: нет поля версии", "- facet-documents (с facetIdentity)"} {
-		if create == nil || !strings.Contains(create.Description, want) {
-			t.Fatalf("create description must contain %q: %v", want, create)
-		}
+	if err := json.Unmarshal(raw, &schema); err != nil {
+		t.Fatal(err)
 	}
-	// Ошибка проверки тела называет поле версии коллекции.
-	invalid, isError := call(t, session, "endge_create_document", map[string]any{"collection": "queries", "document": map[string]any{"identity": "x", "displayName": "X", "source": "defineQuery({})", "modelVersion": 1}})
-	if !isError || invalid["error"] != "validation_error" || !strings.Contains(invalid["hint"].(string), "sourceVersion (обязательно, ровно 2)") {
-		t.Fatalf("validation error must hint the format version field: %v", invalid)
-	}
+	return slices.Contains(schema.Properties[property].Enum, value)
 }
 
 func TestMCPFacetsUseFacetUseCase(t *testing.T) {

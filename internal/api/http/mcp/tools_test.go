@@ -34,9 +34,9 @@ func TestPermissionsFollowAccessToken(t *testing.T) {
 		want      permissions
 	}{
 		"user session": {nil, permissions{write: true, commit: true, delete: true}},
-		"read":         {&entities.AccessTokenPrincipal{Scope: entities.AccessTokenScopeRead, CanCommit: true, CanDelete: true}, permissions{}},
-		"write":        {&entities.AccessTokenPrincipal{Scope: entities.AccessTokenScopeWrite}, permissions{write: true}},
-		"write+delete": {&entities.AccessTokenPrincipal{Scope: entities.AccessTokenScopeWrite, CanDelete: true}, permissions{write: true, delete: true}},
+		"read":         {&entities.AccessTokenPrincipal{Scope: entities.AccessTokenScopeRead, CanCommit: true, CanDelete: true}, permissions{token: true}},
+		"write":        {&entities.AccessTokenPrincipal{Scope: entities.AccessTokenScopeWrite}, permissions{write: true, token: true}},
+		"write+delete": {&entities.AccessTokenPrincipal{Scope: entities.AccessTokenScopeWrite, CanDelete: true}, permissions{write: true, delete: true, token: true}},
 	}
 	for name, tc := range cases {
 		ctx := context.Background()
