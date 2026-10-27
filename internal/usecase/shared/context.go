@@ -37,6 +37,9 @@ func WriteContext(ctx context.Context) (entities.CurrentActor, entities.Workspac
 	if err != nil {
 		return current, scope, err
 	}
+	if token, viaToken := entities.AccessTokenFromContext(ctx); viaToken && !token.CanWrite() {
+		return current, scope, domainerrors.Forbidden("access_token_scope_insufficient", "Access token scope does not allow changes")
+	}
 	if !CanWrite(scope.Role) {
 		return current, scope, domainerrors.Forbidden("workspace_editor_required", "Workspace Editor role is required")
 	}
@@ -53,8 +56,33 @@ func AdminContext(ctx context.Context) (entities.CurrentActor, entities.Workspac
 	if err != nil {
 		return current, scope, err
 	}
+	if _, viaToken := entities.AccessTokenFromContext(ctx); viaToken {
+		return current, scope, domainerrors.Forbidden("access_token_admin_forbidden", "Administrative operations are not available to access tokens")
+	}
 	if !CanAdmin(scope.Role) {
 		return current, scope, domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
+	}
+	return current, scope, nil
+}
+
+// CommitContext возвращает контекст создания коммита.
+// Сессия пользователя требует роль Admin (как AdminContext). Персональный токен
+// коммитит только со scope write и флагом commit и только если его владелец —
+// Admin этого workspace или Platform Admin: права токена не выше прав человека.
+func CommitContext(ctx context.Context) (entities.CurrentActor, entities.WorkspaceAccess, error) {
+	token, viaToken := entities.AccessTokenFromContext(ctx)
+	if !viaToken {
+		return AdminContext(ctx)
+	}
+	current, scope, err := WriteContext(ctx)
+	if err != nil {
+		return current, scope, err
+	}
+	if !token.CanCommit {
+		return current, scope, domainerrors.Forbidden("access_token_commit_forbidden", "Access token does not allow commits and releases")
+	}
+	if !CanAdmin(scope.OwnerRole) {
+		return current, scope, domainerrors.Forbidden("access_token_owner_admin_required", "Access token owner must be Workspace Admin to commit")
 	}
 	return current, scope, nil
 }

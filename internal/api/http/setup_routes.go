@@ -3,10 +3,12 @@ package http
 import (
 	configuratorauth "github.com/endge-lab/service-backend/internal/api/http/configurator_auth"
 	"github.com/endge-lab/service-backend/internal/api/http/health"
+	"github.com/endge-lab/service-backend/internal/api/http/mcp"
 	httpmiddleware "github.com/endge-lab/service-backend/internal/api/http/middleware"
 	"github.com/endge-lab/service-backend/internal/api/http/openapi"
 	"github.com/endge-lab/service-backend/internal/api/http/respond"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/access_control"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/access_token"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/action"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/ai_assistant"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/ai_catalog"
@@ -59,6 +61,7 @@ type Handlers struct {
 	BuildProfile      *build_profile.Handler
 	CurrentUser       *httpmiddleware.CurrentUserMiddleware
 	AccessControl     *access_control.Handler
+	AccessToken       *access_token.Handler
 	AICatalog         *ai_catalog.Handler
 	AIAssistant       *ai_assistant.Handler
 	MockData          *mock_data.Handler
@@ -95,6 +98,7 @@ type Handlers struct {
 	DocumentMove      *document_move.Handler
 	Backup            *backup.Handler
 	Release           *release.Handler
+	MCP               *mcp.Handler
 }
 
 func SetupRoutes(app *fiber.App, cfg *config.Config, connectedServices *service_info.UseCase, handlers Handlers, authMiddleware httpmiddleware.AuthMiddleware, meter metric.Meter, logger *zap.Logger) {
@@ -115,15 +119,9 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, connectedServices *service_
 	configuratorauth.RegisterPublicRoutes(router, handlers.ConfiguratorAuth)
 	router.Get("/auth/session", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve(), handlers.Session.Current)
 	bridge.RegisterPublicRoutes(router, handlers.Bridge)
-	api := router.Group("/api", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve())
-	httpsession.RegisterRoutes(api, handlers.Session)
-	v1 := api.Group("/v1")
-	bridge.RegisterRoutes(v1, handlers.Bridge)
-	workspace.RegisterRoutes(v1, handlers.Workspace)
-	access_control.RegisterRoutes(v1, handlers.AccessControl)
-	ai_catalog.RegisterRoutes(v1, handlers.AICatalog)
-	backend_connection.RegisterRoutes(v1, handlers.BackendConnection)
-	integration.RegisterRoutes(v1, handlers.Integration)
+	mcp.RegisterRoutes(router, handlers.MCP, authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve())
+	api := router.Group("/api", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve(), httpmiddleware.AccessTokenPolicy(cfg.HTTPBasePath))
+	v1 := registerUnscopedAPIRoutes(api, handlers)
 	scoped := v1.Group("", handlers.Workspace.RequireWorkspace())
 	build_profile.RegisterRoutes(scoped, handlers.BuildProfile)
 	facet.RegisterRoutes(scoped, handlers.Facet)
@@ -157,4 +155,20 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, connectedServices *service_
 	ai_assistant.RegisterRoutes(scoped, handlers.AIAssistant)
 	mock_data.RegisterRoutes(scoped, handlers.MockData)
 	app.Use(func(c *fiber.Ctx) error { return respond.WriteErrorResponse(c, respond.ErrRouteNotFound) })
+}
+
+// registerUnscopedAPIRoutes регистрирует маршруты /api вне workspace scope и возвращает группу /v1.
+// Каждый такой маршрут должен быть явно учтён политикой персональных токенов
+// (см. TestAccessTokenPolicyCoversUnscopedRoutes).
+func registerUnscopedAPIRoutes(api fiber.Router, handlers Handlers) fiber.Router {
+	httpsession.RegisterRoutes(api, handlers.Session)
+	v1 := api.Group("/v1")
+	bridge.RegisterRoutes(v1, handlers.Bridge)
+	workspace.RegisterRoutes(v1, handlers.Workspace)
+	access_control.RegisterRoutes(v1, handlers.AccessControl)
+	access_token.RegisterRoutes(v1, handlers.AccessToken)
+	ai_catalog.RegisterRoutes(v1, handlers.AICatalog)
+	backend_connection.RegisterRoutes(v1, handlers.BackendConnection)
+	integration.RegisterRoutes(v1, handlers.Integration)
+	return v1
 }

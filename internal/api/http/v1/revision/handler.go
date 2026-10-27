@@ -14,13 +14,16 @@ func NewHandler(usecase UseCase) *Handler { return &Handler{usecase: usecase} }
 
 // List возвращает revisions выбранного документа.
 // @Summary Получить ревизии документа
-// @Description Возвращает неизменяемую историю ревизий выбранного документа.
+// @Description Возвращает неизменяемую историю ревизий выбранного документа от новых к старым. Без limit возвращается вся история; snapshot=false не включает снимки документа (поле snapshot равно null). total — общее число ревизий документа.
 // @ID listDocumentRevisions
 // @Tags Ревизии
 // @Produce json
 // @Param X-Endge-Workspace header string true "Identity рабочего пространства" example(default)
 // @Param type path string true "Тип документа"
 // @Param identity path string true "Identity документа" maxlength(160)
+// @Param snapshot query bool false "Включить снимки документа" default(true)
+// @Param limit query int false "Размер страницы; без параметра — вся история" minimum(1) maximum(500)
+// @Param offset query int false "Смещение от последней ревизии" default(0) minimum(0)
 // @Success 200 {object} ListResponse "История ревизий"
 // @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
 // @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
@@ -30,15 +33,19 @@ func NewHandler(usecase UseCase) *Handler { return &Handler{usecase: usecase} }
 // @Security BearerAuth
 // @Router /api/v1/domain/documents/{type}/{identity}/revisions [get]
 func (h *Handler) List(c *fiber.Ctx) error {
-	values, err := h.usecase.List(c.UserContext(), c.Params("type"), c.Params("identity"))
+	options, err := parseListOptions(c)
+	if err != nil {
+		return respond.WriteErrorResponse(c, err)
+	}
+	page, err := h.usecase.List(c.UserContext(), c.Params("type"), c.Params("identity"), options)
 	if err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}
-	items, err := shared.MapValues(values, NewResponse)
+	items, err := shared.MapValues(page.Items, NewResponse)
 	if err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}
-	return c.JSON(fiber.Map{"items": items, "total": len(items)})
+	return c.JSON(ListResponse{Items: items, Total: page.Total, Limit: options.Limit, Offset: options.Offset})
 }
 
 // Get возвращает конкретную revision документа.
