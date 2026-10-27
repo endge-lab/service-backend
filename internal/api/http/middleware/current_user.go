@@ -28,6 +28,9 @@ func (m *CurrentUserMiddleware) Resolve() fiber.Handler {
 		if !ok {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"code": "unauthorized", "message": "authentication required"})
 		}
+		if token, viaToken := entities.AccessTokenFromContext(c.UserContext()); viaToken {
+			return m.resolveAccessTokenActor(c, identity, token)
+		}
 		user, platformAdmin, err := m.access.ResolveCurrentActor(c.UserContext(), ports.UpsertCurrentUserInput{ProviderID: identity.ProviderID, Subject: identity.Subject, Issuer: identity.Issuer, Username: identity.Username, DisplayName: identity.DisplayName}, identity.PlatformAdmin, identity.ExternalAccess)
 		if err != nil && domainerrors.CodeOf(err) == "external_access_stale" && identity.SessionID != "" && identity.ExternalAccess != nil {
 			refreshed, refreshErr := m.sessions.ResolveAfterStale(c.UserContext(), c.Cookies(m.sessions.CookieName()), identity.ExternalAccess.TokenHash)
@@ -57,4 +60,31 @@ func (m *CurrentUserMiddleware) Resolve() fiber.Handler {
 		c.SetUserContext(ctx)
 		return c.Next()
 	}
+}
+
+// resolveAccessTokenActor не синхронизирует внешние назначения: у токена нет provider-claims,
+// поэтому права владельца берутся из последней сохранённой проекции access_grants.
+// Platform Admin владельца учитывается только при вычислении роли в workspace токена.
+func (m *CurrentUserMiddleware) resolveAccessTokenActor(c *fiber.Ctx, identity RequestIdentity, token entities.AccessTokenPrincipal) error {
+	user, ok := c.UserContext().Value(accessTokenOwnerKey).(*entities.User)
+	if !ok || user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"code": "unauthorized", "message": "authentication required"})
+	}
+	if !user.Active {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"code": "user_inactive", "message": "user is inactive"})
+	}
+	platformAdmin, err := m.access.IsPlatformAdmin(c.UserContext(), user.ID)
+	if err != nil {
+		return respond.RespondDomainError(c, nil, err)
+	}
+	token.OwnerPlatformAdmin = platformAdmin
+	identity.AuthUserID = user.ID
+	identity.PlatformAdmin = false
+	ctx := entities.WithAccessToken(c.UserContext(), token)
+	ctx = context.WithValue(ctx, currentUserKey, user)
+	ctx = context.WithValue(ctx, identityKey, identity)
+	ctx = context.WithValue(ctx, userIDKey, user.ID)
+	ctx = entities.WithCurrentActor(ctx, entities.CurrentActor{User: user, PlatformAdmin: false})
+	c.SetUserContext(ctx)
+	return c.Next()
 }

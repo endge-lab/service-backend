@@ -121,6 +121,32 @@ Bearer-клиент должен самостоятельно обновить �
 применяет изменённые права. Длительные Bridge-соединения сохраняют существующую
 проверку expiry и текущей роли перед операциями; heartbeat не продлевает доступ.
 
+## Персональные токены агентов
+
+Персональный токен (`Authorization: Bearer endge_pat_…`) не содержит claims
+провайдера и не запускает синхронизацию. Права владельца берутся из последней
+сохранённой проекции `access_grants`, сделанной при его входе или Bearer-запросе;
+токен только сужает их: один workspace, scope `read`/`write`, флаги `commit` и
+`delete`, без административных разделов. Если провайдер отозвал роль, она
+перестанет действовать для токена после следующей синхронизации владельца;
+для немедленного отключения отзовите токен (`DELETE /api/v1/access-tokens/{id}`)
+или деактивируйте пользователя. Срок токена ограничен `ACCESS_TOKEN_MAX_TTL`
+(по умолчанию 30 дней).
+
+Роль в workspace через токен не выше `editor`, поэтому коммит (`POST
+/api/v1/commits` и MCP `endge_commit`) проверяется отдельно: токен со scope
+`write` и флагом `commit` коммитит, только если его владелец сейчас Admin этого
+workspace или Platform Admin (права токена не выше прав человека). Без флага —
+`403 access_token_commit_forbidden`, владелец без роли Admin —
+`403 access_token_owner_admin_required`. Автором коммита остаётся владелец.
+Выпустить токен с флагом `commit` (`POST /api/v1/access-tokens`) может только
+Admin workspace или Platform Admin — иначе тот же `403
+access_token_owner_admin_required`. Если владелец позже потерял роль Admin, MCP
+не показывает такому токену инструмент `endge_commit`. Сессии пользователя (JWT)
+MCP показывает `endge_commit`, только если пользователь Platform Admin или Admin
+хотя бы одного workspace; роль в выбранном workspace по-прежнему проверяет use
+case (`403 workspace_admin_required`).
+
 ## API и переходы режима
 
 Режим отражается в `GET /api/session/me` (и существующих alias session endpoint):

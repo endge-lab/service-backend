@@ -22,7 +22,11 @@ type Revision struct {
 	Snapshot               json.RawMessage `json:"snapshot"`
 	Checksum               string          `json:"checksum"`
 	CreatedBy              Actor           `json:"createdBy"`
-	CreatedAt              time.Time       `json:"createdAt"`
-	ContributorUserIDs     []string        `json:"-"`
-	Contributors           []Actor         `json:"contributors,omitempty"`
+	// AccessTokenID отмечает изменение агента: CreatedBy остаётся владельцем токена.
+	AccessTokenID *string `json:"accessTokenId,omitempty"`
+	// AccessTokenName — подпись токена на момент чтения; пустая, если токена нет или он удалён.
+	AccessTokenName    *string   `json:"accessTokenName,omitempty"`
+	CreatedAt          time.Time `json:"createdAt"`
+	ContributorUserIDs []string  `json:"-"`
+	Contributors       []Actor   `json:"contributors,omitempty"`
 }

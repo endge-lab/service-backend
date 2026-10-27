@@ -88,3 +88,9 @@ func (s *UseCase) Management(ctx context.Context, userID string) (entities.Acces
 	}
 	return result, nil
 }
+
+// IsPlatformAdmin читает сохранённую роль платформы без синхронизации identity.
+// Используется для персональных токенов, у которых нет provider-claims.
+func (s *UseCase) IsPlatformAdmin(ctx context.Context, userID string) (bool, error) {
+	return s.repository.IsPlatformAdmin(ctx, userID)
+}

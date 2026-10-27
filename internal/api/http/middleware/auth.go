@@ -7,6 +7,7 @@ import (
 
 	"github.com/endge-lab/service-backend/internal/auth"
 	"github.com/endge-lab/service-backend/internal/config"
+	"github.com/endge-lab/service-backend/internal/usecase/access_tokens"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -16,14 +17,19 @@ type authMiddleware struct {
 	resolver auth.Resolver
 	sessions *auth.SessionManager
 	config   *config.Config
+	tokens   *access_tokens.UseCase
 }
 
-func NewAuthMiddleware(resolver auth.Resolver, sessions *auth.SessionManager, cfg *config.Config) AuthMiddleware {
-	return &authMiddleware{resolver: resolver, sessions: sessions, config: cfg}
+func NewAuthMiddleware(resolver auth.Resolver, sessions *auth.SessionManager, cfg *config.Config, tokens *access_tokens.UseCase) AuthMiddleware {
+	return &authMiddleware{resolver: resolver, sessions: sessions, config: cfg, tokens: tokens}
 }
 
 func (m *authMiddleware) AuthMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		// Персональный токен распознаётся по префиксу раньше JWT и cookie-сессии.
+		if secret, ok := bearerAccessToken(strings.TrimSpace(c.Get(fiber.HeaderAuthorization))); ok {
+			return m.authenticateAccessToken(c, secret)
+		}
 		claims, sessionID, cookieAuth, err := m.authenticate(c)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{

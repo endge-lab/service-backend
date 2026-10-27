@@ -6,19 +6,30 @@ import (
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/endge-lab/service-backend/internal/usecase/documents"
+	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/shared"
 )
 
-// List возвращает историю ревизий выбранного документа.
-func (s *UseCase) List(ctx context.Context, documentType, identity string) ([]entities.Revision, error) {
+// MaxListLimit — наибольший размер страницы истории ревизий.
+const MaxListLimit = 500
+
+// List возвращает страницу истории ревизий выбранного документа.
+// Limit 0 сохраняет прежний контракт — вся история целиком.
+func (s *UseCase) List(ctx context.Context, documentType, identity string, options ports.RevisionListOptions) (ports.RevisionPage, error) {
 	if err := revisionCollection(documentType); err != nil {
-		return nil, err
+		return ports.RevisionPage{}, err
+	}
+	if options.Limit < 0 || options.Limit > MaxListLimit {
+		return ports.RevisionPage{}, domainerrors.InvalidInput("limit_invalid", "limit must be between 1 and 500")
+	}
+	if options.Offset < 0 {
+		return ports.RevisionPage{}, domainerrors.InvalidInput("offset_invalid", "offset must be non-negative")
 	}
 	scope, err := shared.Access(ctx)
 	if err != nil {
-		return nil, err
+		return ports.RevisionPage{}, err
 	}
-	return s.repository.ListRevisions(ctx, scope.Workspace.ID, documentType, identity)
+	return s.repository.ListRevisions(ctx, scope.Workspace.ID, documentType, identity, options)
 }
 
 // Get возвращает ревизию документа по идентификатору.
