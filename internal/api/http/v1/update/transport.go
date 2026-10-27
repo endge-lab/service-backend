@@ -9,21 +9,21 @@ type CreateRequest struct {
 	shared.CreateDocumentRequest
 	StoreIdentity string `json:"storeIdentity" validate:"required,max=160" example:"application-store"`
 	Source        string `json:"source" validate:"required,max=8388608" example:"export default {}"`
-	SourceVersion int    `json:"sourceVersion" validate:"required,gt=0" example:"2"`
+	SourceVersion int    `json:"sourceVersion" validate:"required,gt=0" example:"1"`
 }
 
 type PatchRequest struct {
 	shared.PatchDocumentRequest
 	StoreIdentity *string `json:"storeIdentity,omitempty" validate:"omitempty,max=160" example:"application-store"`
 	Source        *string `json:"source,omitempty" validate:"omitempty,max=8388608" example:"export default {}"`
-	SourceVersion *int    `json:"sourceVersion,omitempty" validate:"omitempty,gt=0" example:"2"`
+	SourceVersion *int    `json:"sourceVersion,omitempty" validate:"omitempty,gt=0" example:"1"`
 }
 
 type Response struct {
 	shared.DocumentMetadata
 	StoreIdentity string `json:"storeIdentity" example:"application-store"`
 	Source        string `json:"source" example:"export default {}"`
-	SourceVersion int    `json:"sourceVersion" example:"2"`
+	SourceVersion int    `json:"sourceVersion" example:"1"`
 }
 
 type ListResponse struct {

@@ -41,8 +41,8 @@ codes:
   - code: access_token_admin_forbidden
     status: 403
     defaultMessage: Administrative operations are not available to access tokens
-    meaning: Операция требует роли Admin workspace и недоступна персональному токену.
-    action: Не повторяйте с этим токеном. Покажите пользователю, что нужно сделать, и попросите выполнить операцию в Configurator или выпустить токен с нужными флагами («Для агента» в Configurator).
+    meaning: Операция требует роли Admin workspace и недоступна персональному токену. Так защищены изменения профилей авторизации (auth-profiles).
+    action: 'Не повторяйте с этим токеном. Для профиля авторизации: укажите в Query и Stream auth: { mode: ''inherit'' } или попросите пользователя создать профиль в Configurator и сошлитесь на его identity (auth: { mode: ''profile'', profile: ''<identity>'' }). Другие операции попросите выполнить пользователя в Configurator.'
     sources:
       - internal/usecase/shared/context.go
   - code: access_token_commit_forbidden
