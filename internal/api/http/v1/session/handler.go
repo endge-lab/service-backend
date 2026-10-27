@@ -33,3 +33,20 @@ func (h *Handler) Current(c *fiber.Ctx) error {
 	}
 	return c.JSON(response)
 }
+
+// AuthSession — браузерная точка входа Configurator в тот же ответ, что и GET /api/session/me.
+// Маршрут находится вне /api: его вызывает Configurator после входа через /auth/login.
+// @Summary Получить текущую сессию (браузерный вход)
+// @Description Тот же ответ, что у GET /api/session/me, по пути браузерного потока /auth/*.
+// @Description Принимает HttpOnly cookie сессии после /auth/login или заголовок Authorization: Bearer.
+// @Description При отсутствии аутентификации ответ 401 содержит code=unauthorized и loginUrl для повторного входа.
+// @ID getAuthSession
+// @Tags Авторизация
+// @Produce json
+// @Success 200 {object} Response "Текущая сессия"
+// @Failure 401 {object} respond.ErrorResponse "Требуется аутентификация (code=unauthorized, loginUrl)"
+// @Failure 403 {object} respond.ErrorResponse "Пользователь деактивирован или запрос отклонён политикой доступа"
+// @Failure 500 {object} respond.ErrorResponse "Внутренняя ошибка сервера"
+// @Security BearerAuth
+// @Router /auth/session [get]
+func (h *Handler) AuthSession(c *fiber.Ctx) error { return h.Current(c) }

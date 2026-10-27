@@ -15,8 +15,8 @@ import (
 )
 
 func newTestTools() (*tools, *fakeDocuments) {
-	useCases, documents, _, _ := newFakeUseCases()
-	return &tools{cfg: Config{Version: "0.16.0"}, useCases: useCases, contracts: BindContracts(validator.NewValidator()), logger: zap.NewNop()}, documents
+	useCases, fakes := newFakeUseCases()
+	return &tools{cfg: Config{Version: "0.16.0"}, useCases: useCases, contracts: BindContracts(validator.NewValidator()), logger: zap.NewNop()}, fakes.documents
 }
 
 func decodeResult(t *testing.T, result *mcp.CallToolResult) map[string]any {
@@ -98,11 +98,18 @@ func TestSummarizeMergesSnapshotState(t *testing.T) {
 }
 
 func TestInstructionsWithoutDocsURL(t *testing.T) {
-	if text := instructions(Config{}); strings.Contains(text, "llms") || !strings.Contains(text, "endge_status") {
+	if text := instructions(nil); strings.Contains(text, "llms") || !strings.Contains(text, "endge_status") {
 		t.Fatalf("instructions without docs: %s", text)
 	}
-	if docLinks("") != nil || len(docLinks("https://d/")) != 4 || docLinks("https://d/")[0]["url"] != "https://d/llms.txt" {
-		t.Fatalf("doc links")
+	if newDocsSource(" ", "1").links() != nil {
+		t.Fatalf("empty AGENT_DOCS_URL must not publish docs")
+	}
+	links := newDocsSource("https://d/", "1").links()
+	if len(links) != len(agentDocs) || links[0]["url"] != "https://d/llms-agent.txt" {
+		t.Fatalf("doc links: %v", links)
+	}
+	if text := instructions(newDocsSource("https://d", "1")); !strings.HasPrefix(text, "Сначала прочитайте ресурс llms-agent (https://d/llms-agent.txt)") {
+		t.Fatalf("instructions must start with the agent core: %s", text)
 	}
 }
 

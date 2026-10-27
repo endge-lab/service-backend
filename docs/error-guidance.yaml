@@ -1,0 +1,983 @@
+# Словарь смыслов кодов ошибок backend (поддерживается вручную).
+#
+# Для каждого кода, который создаётся в исходниках, нужна запись в codes:
+#   meaning — что произошло (коротко, по коду);
+#   action  — что делать агенту: исправить запрос, перечитать и повторить, попросить пользователя, не повторять.
+# Похожие коды берут общий текст из templates через use; собственные meaning/action перекрывают шаблон.
+# status указывается только там, где HTTP-статус задаётся во время выполнения.
+#
+# `make docs` запускает internal/tools/errorcatalog: он падает, если код из исходников не описан здесь
+# или здесь описан код, которого больше нет. Результат — docs/error-codes.yaml.
+#
+# Общий формат ошибки: HTTP {code, message, details}; MCP-инструмент {error, status, message, details, hint}.
+# Повтор без изменений имеет смысл только там, где это сказано в action.
+
+templates:
+  fix-field:
+    meaning: "Значение поля запроса не прошло проверку."
+    action: >-
+      Не повторяйте запрос без изменений. Исправьте поле, названное в message (и в details.field, если оно есть),
+      по схеме операции в OpenAPI и отправьте запрос снова.
+  fix-query:
+    meaning: "Параметр строки запроса имеет недопустимое значение."
+    action: >-
+      Исправьте параметр запроса, названный в message, по описанию параметра в OpenAPI и повторите запрос.
+  fix-source:
+    meaning: "Исходный текст документа (source) или его sourceVersion не соответствуют контракту коллекции."
+    action: >-
+      Передайте непустой source и sourceVersion, которые поддерживает коллекция (см. схему CreateRequest/PatchRequest
+      и описание коллекции в документации), затем повторите запрос.
+  fix-auth-profile:
+    meaning: "Конфигурация или учётные данные профиля аутентификации не подходят выбранному адаптеру."
+    action: >-
+      Сверьте adapterId, config и credentials с описанием адаптера в документации профилей аутентификации,
+      исправьте названное в message поле и повторите. Секреты передавайте только в credentials.
+  fix-folder:
+    meaning: "Запрос нарушает правила папок (область, тип коллекции, родитель, системные поля)."
+    action: >-
+      Перечитайте папку и её родителя (GET /api/v1/folders), исправьте поле из message и повторите.
+      Системные и корневые папки менять нельзя — создайте свою папку.
+  fix-facet:
+    meaning: "Запрос нарушает правила фасетов."
+    action: >-
+      Исправьте поле из message по схеме фасета в OpenAPI и повторите; перед повтором при необходимости
+      перечитайте список фасетов (GET /api/v1/facets).
+  not-found:
+    meaning: "Запрошенная сущность не найдена в текущем workspace, удалена или недоступна этому пользователю."
+    action: >-
+      Не повторяйте с тем же значением. Проверьте identity/id по списку (для удалённых — includeDeleted=true)
+      и workspace в X-Endge-Workspace; затем повторите с правильным значением.
+  workspace-role:
+    meaning: "Роли пользователя (или токена) в workspace недостаточно для операции."
+    action: >-
+      Не повторяйте. Проверьте роль через GET /api/session/me (MCP: endge_status). Попросите пользователя
+      выдать нужную роль или выполнить операцию самому.
+  platform-role:
+    meaning: "Операция требует роли Platform Admin."
+    action: >-
+      Не повторяйте. Попросите пользователя с ролью Platform Admin выполнить операцию или выдать роль.
+  token-restricted:
+    meaning: "Персональный токен (endge_pat_…) не даёт права на эту операцию."
+    action: >-
+      Не повторяйте с этим токеном. Покажите пользователю, что нужно сделать, и попросите выполнить операцию
+      в Configurator или выпустить токен с нужными флагами («Для агента» в Configurator).
+  token-reissue:
+    meaning: "Персональный токен больше не принимается."
+    action: >-
+      Не повторяйте с этим токеном. Попросите пользователя выпустить новый персональный токен в Configurator
+      и передайте его в Authorization: Bearer endge_pat_….
+  token-field:
+    meaning: "Параметры выпуска персонального токена некорректны."
+    action: >-
+      Исправьте поле из message (name, description, scope, flags, expiresAt) по схеме access_token.CreateRequest
+      и повторите выпуск.
+  external-access:
+    meaning: "Права из токена внешнего провайдера (OIDC) не удалось применить к запросу."
+    action: >-
+      Не повторяйте с тем же access token. Получите у провайдера новый access token (повторный вход в браузере
+      или обновление токена) и повторите запрос; при повторе ошибки сообщите пользователю.
+  auth-required:
+    meaning: "Запрос не аутентифицирован или аутентификация недействительна."
+    action: >-
+      Передайте Authorization: Bearer <JWT access token провайдера OIDC | персональный токен endge_pat_…>.
+      Если токен уже передан — он просрочен или недействителен: получите новый (для браузера — loginUrl из ответа).
+  import-plan:
+    meaning: "План импорта workspace больше нельзя применить."
+    action: >-
+      Не повторяйте применение этого плана. Создайте новый план импорта, проверьте его и примените.
+  internal:
+    meaning: "Неожиданная ошибка сервера; причина записана в журнал backend и в ответ не передаётся."
+    action: >-
+      Не меняйте запрос ради исправления. Для чтения можно повторить один раз через несколько секунд;
+      перед повтором изменения сначала перечитайте состояние, чтобы не применить его дважды. Если ошибка
+      повторяется, сообщите пользователю code, операцию и время.
+  data-corrupted:
+    meaning: "Сохранённые данные (снимок, план или метаданные) не прошли внутреннюю проверку."
+    action: >-
+      Не повторяйте: результат не изменится. Сообщите пользователю code, операцию и identity объекта —
+      нужна диагностика на стороне сервера.
+  upstream-unavailable:
+    meaning: "Зависимый сервис временно недоступен или не ответил вовремя."
+    action: >-
+      Повторите позже с паузой (например, 2, 5, 15 секунд); не более 3 попыток. Если не помогло — сообщите пользователю.
+  upstream-invalid:
+    meaning: "Зависимый сервис вернул некорректный ответ."
+    action: >-
+      Повторите один раз; при повторе ошибки не продолжайте и сообщите пользователю code и операцию.
+  backend-connection-field:
+    meaning: "Параметры backend-подключения некорректны."
+    action: >-
+      Исправьте name или baseUrl (абсолютный http/https URL без userinfo, query и fragment) и повторите.
+
+dynamic:
+  - file: internal/adapter/mockgenerator/client.go
+    function: mapError
+    note: >-
+      Mock Generator передаёт собственный код в gRPC ErrorInfo (domain mockdata.v1, reason); backend отдаёт его как code
+      без изменений, статус выводится из gRPC-кода (400, 404, 409, 413, 429, 499, 502, 503, 504). Без ErrorInfo
+      используется mock.upstream_error. Смысл таких кодов описан в документации Mock Generator.
+
+codes:
+  # --- Управление доступом ---
+  access_grant_id_invalid:
+    use: fix-field
+    meaning: "Идентификатор назначения доступа не является UUID."
+  access_grant_not_found:
+    use: not-found
+    meaning: "Назначение доступа с таким id не найдено."
+  access_managed_externally:
+    meaning: "Права доступа этого пользователя или workspace назначаются внешней системой (группы провайдера OIDC)."
+    action: "Не повторяйте. Попросите администратора изменить группы пользователя в провайдере идентификации; после этого пользователь должен войти заново."
+  access_scope_invalid:
+    use: fix-field
+    meaning: "scopeType назначения должен быть platform или workspace."
+  access_target_not_found:
+    use: not-found
+    meaning: "Пользователь или workspace для назначения доступа не найден."
+  access_user_id_invalid:
+    use: fix-field
+    meaning: "userId должен быть UUID."
+  access_workspace_missing:
+    use: data-corrupted
+    meaning: "Назначение доступа ссылается на недоступный workspace."
+  last_platform_admin_required:
+    meaning: "Нельзя снять роль с последнего Platform Admin."
+    action: "Не повторяйте. Сначала назначьте Platform Admin другому пользователю, затем повторите изменение."
+  platform_admin_required:
+    use: platform-role
+  platform_role_invalid:
+    use: fix-field
+    meaning: "Для scopeType=platform допустима только роль admin."
+  membership_role_invalid:
+    use: fix-field
+    meaning: "Роль участника должна быть viewer, editor или admin."
+  workspace_role_invalid:
+    use: fix-field
+    meaning: "Роль в workspace должна быть viewer, editor или admin."
+  workspace_selection_invalid:
+    use: fix-field
+    meaning: "selection.type должен быть all-active или selected."
+  workspace_selection_required:
+    use: fix-field
+    meaning: "Для selection.type=selected нужен непустой workspaceIdentities."
+  user_query_too_short:
+    use: fix-query
+    meaning: "Строка поиска пользователей q короче 2 символов."
+
+  # --- Персональные токены ---
+  access_token_admin_forbidden:
+    use: token-restricted
+    meaning: "Операция требует роли Admin workspace и недоступна персональному токену."
+  access_token_commit_forbidden:
+    use: token-restricted
+    meaning: "Токен выпущен без флага commit; коммиты и релизы токеном запрещены."
+    action: "Не повторяйте. Покажите пользователю план коммита (POST /api/v1/commits/plan, MCP endge_commit_plan) и попросите закоммитить в Configurator или выпустить токен с флагом commit."
+  access_token_delete_forbidden:
+    use: token-restricted
+    meaning: "Токен выпущен без флага delete; удаление документов запрещено."
+  access_token_description_invalid:
+    use: token-field
+    meaning: "description токена длиннее 1000 символов."
+  access_token_expired:
+    use: token-reissue
+    meaning: "Срок действия персонального токена истёк."
+  access_token_expiry_invalid:
+    use: token-field
+    meaning: "expiresAt должен быть в будущем."
+  access_token_expiry_required:
+    use: token-field
+    meaning: "Не передан обязательный expiresAt."
+  access_token_expiry_too_long:
+    use: token-field
+    meaning: "expiresAt превышает максимальный срок жизни токена."
+  access_token_flags_require_write:
+    use: token-field
+    meaning: "Флаги commit и delete допустимы только при scope=write."
+  access_token_invalid:
+    use: token-reissue
+    meaning: "Персональный токен не найден или его секрет не совпадает."
+  access_token_management_forbidden:
+    meaning: "Персональными токенами можно управлять только из пользовательской сессии, не токеном."
+    action: "Не повторяйте. Попросите пользователя выпустить или отозвать токен в Configurator."
+  access_token_name_invalid:
+    use: token-field
+    meaning: "name токена должен содержать от 1 до 120 символов."
+  access_token_not_found:
+    use: not-found
+    meaning: "Персональный токен с таким id не найден или принадлежит другому пользователю."
+  access_token_owner_admin_required:
+    use: token-restricted
+    meaning: "Коммит токеном разрешён, только если владелец токена — Admin этого workspace; при выпуске токена флаг commit доступен только Admin."
+    action: "Не повторяйте. Покажите пользователю план коммита (endge_commit_plan) и попросите закоммитить в Configurator; либо Admin workspace выпускает токен с флагом commit."
+  access_token_revoked:
+    use: token-reissue
+    meaning: "Персональный токен отозван."
+  access_token_route_forbidden:
+    use: token-restricted
+    meaning: "Раздел API закрыт для персональных токенов (управление доступом и токенами, workspaces, AI, подключения, интеграции, Bridge, импорт, резервные копии, бандлы и выгрузки релизов)."
+    action: "Не повторяйте с токеном. Эту операцию выполняет пользователь в Configurator."
+  access_token_scope_exceeds_role:
+    use: token-field
+    meaning: "Токен с scope=write может выпустить только пользователь с ролью Editor или выше в workspace токена."
+    action: "Выпустите токен со scope=read или попросите пользователя получить роль Editor."
+  access_token_scope_insufficient:
+    use: token-restricted
+    meaning: "Токен выпущен со scope=read и не разрешает изменения."
+  access_token_scope_invalid:
+    use: token-field
+    meaning: "scope токена должен быть read или write."
+  access_token_workspace_forbidden:
+    meaning: "Токен выпущен для другого workspace."
+    action: "Не передавайте X-Endge-Workspace (или параметр workspace в MCP) либо укажите workspace токена (его видно в GET /api/session/me и endge_status)."
+
+  # --- Аутентификация и сессия ---
+  auth.access_token_required:
+    use: auth-required
+    meaning: "Не передан access token (объявлено в HTTP-слое для совместимости)."
+  auth.current_user_missing:
+    use: auth-required
+    meaning: "В контексте запроса нет текущего пользователя (запрос прошёл без аутентификации)."
+  auth.identity_missing:
+    use: auth-required
+    meaning: "В токене нет идентификатора пользователя (sub)."
+  auth.invalid_access_token:
+    use: auth-required
+    meaning: "Access token недействителен или просрочен (объявлено в HTTP-слое для совместимости)."
+  auth_access_failed:
+    meaning: "Вход в браузере завершился, но права пользователя не удалось подготовить."
+    action: "Это браузерный поток /auth/*. Попросите пользователя войти повторно; при повторе ошибки — проверить группы пользователя в провайдере."
+  auth_login_failed:
+    meaning: "Не удалось завершить вход (обмен кода на токены у провайдера OIDC не удался или транзакция входа устарела)."
+    action: "Браузерный поток /auth/*. Попросите пользователя начать вход заново (GET /auth/login)."
+  auth_login_rejected:
+    meaning: "Провайдер OIDC отклонил вход или вернул ошибку."
+    action: "Браузерный поток /auth/*. Попросите пользователя войти заново и проверить учётную запись в провайдере."
+  auth_login_unavailable:
+    meaning: "Вход через провайдера OIDC временно недоступен."
+    action: "Повторите вход позже; агенту с персональным токеном этот поток не нужен."
+  csrf_origin_rejected:
+    meaning: "Изменяющий запрос с cookie-сессией пришёл без Origin или с Origin, которого нет в списке разрешённых."
+    action: "Агенту не используйте cookie: передавайте Authorization: Bearer <токен>. Из браузера запрос должен идти с разрешённого origin."
+  session.auth_user_id_required:
+    use: auth-required
+    meaning: "В запросе нет идентификатора пользователя."
+  unauthorized:
+    use: auth-required
+    meaning: "Нет действительной аутентификации (токен не передан, недействителен, просрочен или сессия закончилась)."
+  user_inactive:
+    meaning: "Пользователь деактивирован в Endge."
+    action: "Не повторяйте. Попросите администратора платформы активировать пользователя."
+  external_access_ambiguous:
+    use: external-access
+    meaning: "Два access token с одинаковым iat дают разные права; backend не может выбрать."
+  external_access_expired:
+    use: external-access
+    meaning: "Access token истёк во время подготовки прав."
+  external_access_invalid:
+    use: external-access
+    meaning: "Нет проверенных актуальных прав из внешнего провайдера."
+  external_access_stale:
+    use: external-access
+    meaning: "Уже применён более новый access token этого пользователя; переданный токен устарел."
+    action: "Получите у провайдера свежий access token (или обновите браузерную сессию) и повторите запрос с ним."
+  external_access_workspace_inactive:
+    meaning: "Права из внешнего провайдера указывают на неактивный (архивный) workspace."
+    action: "Не повторяйте. Попросите администратора восстановить workspace или изменить правила доступа."
+
+  # --- Общие категории ---
+  common.conflict:
+    meaning: "Состояние на сервере конфликтует с запросом."
+    action: "Перечитайте затронутые сущности и повторите запрос с актуальными данными."
+  common.forbidden:
+    use: workspace-role
+    meaning: "Недостаточно прав для операции."
+  common.internal:
+    use: internal
+  common.invalid_input:
+    use: fix-field
+    meaning: "Запрос некорректен."
+  common.not_found:
+    use: not-found
+  common.unauthorized:
+    use: auth-required
+  internal_error:
+    use: internal
+    meaning: "Неожиданная ошибка MCP-инструмента (статус 5xx); причина записана в журнал backend."
+    status: 500
+  not_found:
+    use: not-found
+    meaning: "Сущность не найдена либо маршрут не существует (message «Маршрут не найден»)."
+    action: "Проверьте путь и метод по OpenAPI; для сущности — identity/id и workspace. Не повторяйте с теми же значениями."
+  request_contract_missing:
+    use: internal
+    meaning: "Для операции не настроен контракт проверки запроса (ошибка сборки сервера)."
+  snapshot_mapping_failed:
+    use: internal
+    meaning: "Не удалось разобрать снимок workspace в MCP-инструменте."
+  transport_mapping_failed:
+    use: internal
+    meaning: "Не удалось сформировать ответ из данных сервера."
+  validation_error:
+    meaning: "Тело запроса не разобрано как JSON (details.reason) или поля не прошли проверку контракта (details.fields)."
+    action: "Не повторяйте без изменений. Исправьте поля из details по схеме CreateRequest/PatchRequest операции в OpenAPI и отправьте снова."
+  invalid_json:
+    use: fix-field
+    meaning: "Аргумент MCP-инструмента (document или changes) должен быть JSON-объектом."
+  object_expected:
+    use: fix-field
+    meaning: "Поле из details.field должно быть JSON-объектом."
+  string_array_invalid:
+    use: fix-field
+    meaning: "Поле из details.field должно быть массивом строк."
+  read_only_field:
+    use: fix-field
+    meaning: "Поля автора и аудита (createdBy, updatedBy, createdAt, updatedAt и т. п.) заполняет сервер."
+    action: "Уберите эти поля из тела запроса и повторите."
+  managed_by_invalid:
+    use: fix-field
+    meaning: "managedBy должен быть user, system или integration."
+  active_invalid:
+    use: fix-field
+    meaning: "active должен быть boolean."
+  display_name_invalid:
+    use: fix-field
+    meaning: "displayName обязателен и не длиннее 255 символов."
+  display_name_required:
+    use: fix-field
+    meaning: "displayName обязателен."
+  identity_required:
+    use: fix-field
+    meaning: "identity обязателен."
+  identity_too_long:
+    use: fix-field
+    meaning: "identity длиннее 160 символов."
+  identity_conflict:
+    meaning: "Документ с таким identity уже существует в коллекции workspace."
+    action: "Выберите другой identity или измените существующий документ (PATCH с If-Match). Если документ удалён — восстановите его (POST …/restore)."
+  path_parameter_invalid:
+    use: fix-field
+    meaning: "Параметр пути (details.field) должен быть URL-кодирован."
+    action: "Закодируйте значение через encodeURIComponent и повторите."
+  query_boolean_invalid:
+    use: fix-query
+    meaning: "Параметр запроса (details.field) должен быть true или false."
+  snapshot_invalid:
+    use: fix-query
+    meaning: "Параметр snapshot должен быть boolean."
+  limit_invalid:
+    use: fix-query
+    meaning: "limit должен быть от 1 до 500."
+  pagination.limit_invalid:
+    use: fix-query
+    meaning: "limit вне допустимого диапазона."
+  offset_invalid:
+    use: fix-query
+    meaning: "offset должен быть неотрицательным."
+  cursor_invalid:
+    use: fix-query
+    meaning: "cursor повреждён или не от этого списка."
+    action: "Передавайте cursor из предыдущего ответа без изменений или начните список без cursor."
+  archive_cursor_invalid:
+    use: fix-query
+    meaning: "cursor архива workspaces повреждён."
+    action: "Передавайте cursor из предыдущего ответа без изменений или начните без cursor."
+  archive_limit_invalid:
+    use: fix-query
+    meaning: "limit архива должен быть от 1 до 200."
+  query_owner_invalid:
+    use: fix-query
+    meaning: "owner должен быть me или all."
+  collection_unsupported:
+    use: fix-field
+    meaning: "Коллекция не поддерживается этой операцией."
+    action: "Используйте одну из коллекций из описания параметра collection (MCP) или путь коллекции из OpenAPI."
+  credential_invalid:
+    use: fix-field
+    meaning: "Каждое значение credentials должно быть непустой строкой."
+  credentials_invalid:
+    use: fix-field
+    meaning: "credentials должен быть объектом с именованными строковыми значениями."
+  secret_field_forbidden:
+    use: fix-auth-profile
+    meaning: "Секрет передан вне credentials."
+    action: "Перенесите секретные значения в верхнеуровневое поле credentials и повторите."
+
+  # --- Ревизии, If-Match и коммиты ---
+  precondition_required:
+    meaning: "Для изменения документа нужен заголовок If-Match с текущей revision."
+    action: "Прочитайте документ (GET), возьмите revision (или ETag) и повторите запрос с If-Match."
+  if_match_invalid:
+    meaning: "If-Match не содержит положительную revision."
+    action: "Передайте в If-Match число revision из последнего чтения документа (например \"3\") и повторите."
+  revision_conflict:
+    meaning: "Документ изменился после вашего чтения — revision в If-Match устарела."
+    action: "Перечитайте документ, заново примените свои изменения к актуальной версии и повторите с новой revision в If-Match. Не перезаписывайте чужие изменения вслепую."
+  expected_revision_invalid:
+    use: fix-field
+    meaning: "expectedRevision (MCP) должен быть положительным числом."
+    action: "Передайте текущую revision документа из поля revision последнего чтения."
+  head_sequence_conflict:
+    meaning: "После построения плана в workspace появились новые ревизии или коммиты — expectedHeadSequence устарел."
+    action: "Заново запросите план (POST /api/v1/commits/plan или план восстановления; MCP endge_commit_plan), проверьте его и повторите с новым expectedHeadSequence."
+  nothing_to_commit:
+    meaning: "В workspace нет незакоммиченных ревизий."
+    action: "Повтор не нужен — коммитить нечего. Проверьте, что изменения сохранены в нужном workspace."
+  nothing_to_restore:
+    meaning: "Workspace уже совпадает с целевым состоянием восстановления."
+    action: "Повтор не нужен — восстанавливать нечего."
+  revision_policy_invalid:
+    use: fix-field
+    meaning: "revisionPolicy должен быть preserve или squash."
+  shared_squash_requires_admin:
+    use: workspace-role
+    meaning: "Схлопывание (squash) ревизий других пользователей требует роли Admin workspace."
+    action: "Используйте revisionPolicy=preserve или попросите Admin workspace выполнить коммит."
+  revision_snapshot_invalid:
+    use: data-corrupted
+    meaning: "Сохранённый снимок ревизии не прошёл проверку."
+
+  # --- Workspace ---
+  workspace_admin_required:
+    use: workspace-role
+    meaning: "Операция требует роли Admin workspace."
+  workspace_editor_required:
+    use: workspace-role
+    meaning: "Операция требует роли Editor workspace."
+  workspace_forbidden:
+    use: workspace-role
+    meaning: "У пользователя нет доступа к этому workspace."
+  workspace_not_found:
+    use: not-found
+    meaning: "Workspace не найден, удалён или неактивен."
+  workspace_required:
+    meaning: "Не указан workspace для операции."
+    action: "Передайте заголовок X-Endge-Workspace (REST) или параметр workspace (MCP) с identity из GET /api/v1/workspaces / endge_list_workspaces."
+  workspace_identity_required:
+    use: fix-field
+    meaning: "workspaceIdentity обязателен."
+  workspace_input_invalid:
+    use: fix-field
+    meaning: "Данные workspace некорректны."
+  workspace_bootstrap_invalid:
+    use: internal
+    meaning: "При создании workspace не создалась корневая папка композиций."
+  workspace_configuration_values_invalid:
+    use: fix-field
+    meaning: "Значения конфигурации workspace не прошли проверку (подробности в message)."
+  workspace_confirmation_invalid:
+    use: fix-field
+    meaning: "confirmation должен совпадать с identity целевого workspace."
+    action: "Попросите пользователя подтвердить операцию и передайте в confirmation точный identity workspace."
+  workspace_document_structure_invalid:
+    use: fix-field
+    meaning: "documentStructure должен быть frontend или custom."
+  installed_integrations_invalid:
+    use: fix-field
+    meaning: "installedIntegrations должен быть корректным массивом."
+  startup_composition_identity_invalid:
+    use: fix-field
+    meaning: "startupCompositionIdentity должен быть непустым identity или null."
+  startup_composition_not_found:
+    use: fix-field
+    meaning: "startupCompositionIdentity не указывает на активную композицию этого workspace."
+    action: "Укажите identity существующей активной композиции (GET /api/v1/compositions) или null."
+
+  # --- Документы ---
+  document_input_invalid:
+    use: fix-field
+    meaning: "Данные документа некорректны."
+  document_deleted_invalid:
+    use: fix-field
+    meaning: "deleted должен быть boolean."
+  document_deleted_unsupported:
+    use: fix-field
+    meaning: "Поле deleted поддерживается только для коллекций фасетов."
+  relation_target_not_found:
+    meaning: "Документ ссылается на сущность, которой нет в workspace (подробности в message)."
+    action: "Создайте целевую сущность или исправьте ссылку на существующую, затем повторите."
+  source_contract_invalid:
+    use: fix-source
+    meaning: "Нужны source и положительный sourceVersion."
+  source_invalid:
+    use: fix-source
+    meaning: "source должен быть строкой."
+  source_too_large:
+    use: fix-source
+    meaning: "source больше 8 МиБ."
+    action: "Уменьшите source (вынесите части в отдельные документы) и повторите."
+  source_version_invalid:
+    use: fix-source
+    meaning: "sourceVersion должен быть положительным."
+  action_source_invalid:
+    use: fix-source
+    meaning: "source действия не должен быть пустым."
+  component_model_version_invalid:
+    use: fix-field
+    meaning: "modelVersion компонента должен быть положительным."
+  component_source_required:
+    use: fix-source
+    meaning: "source компонента обязателен."
+  composition_kind_invalid:
+    use: fix-field
+    meaning: "kind композиции должен быть library, query или workspace."
+  computation_contract_version_invalid:
+    use: fix-field
+    meaning: "contractVersion вычисления должен быть положительным."
+  configuration_folder_unsupported:
+    use: fix-field
+    meaning: "Документы конфигураций не поддерживают папки."
+    action: "Уберите folderIdentity из запроса и повторите."
+  configuration_source_version_invalid:
+    use: fix-source
+    meaning: "Конфигурации нужны source и sourceVersion=1."
+  query_source_version_invalid:
+    use: fix-source
+    meaning: "Для запросов (queries) sourceVersion должен быть 2."
+  simulation_source_version_invalid:
+    use: fix-source
+    meaning: "Симуляции нужны source и sourceVersion=1."
+  update_store_required:
+    use: fix-field
+    meaning: "storeIdentity обновления состояния обязателен."
+  vocab_auth_mode_invalid:
+    use: fix-field
+    meaning: "authMode справочника некорректен."
+  vocab_mode_invalid:
+    use: fix-field
+    meaning: "mode справочника некорректен."
+  vocab_source_contract_invalid:
+    use: fix-source
+    meaning: "source и sourceVersion справочника передаются только вместе."
+  vocab_source_invalid:
+    use: fix-source
+    meaning: "source справочника не должен быть пустым."
+  vocab_source_version_invalid:
+    use: fix-source
+    meaning: "sourceVersion справочника должен быть 1."
+  move_document_deleted:
+    use: fix-field
+    meaning: "Удалённые документы нельзя перемещать."
+    action: "Восстановите документ или уберите его из списка перемещения."
+  move_document_duplicate:
+    use: fix-field
+    meaning: "Один документ указан в перемещении дважды."
+  move_documents_count_invalid:
+    use: fix-field
+    meaning: "documents должен содержать от 1 до 500 элементов."
+
+  # --- Папки ---
+  folder_color_invalid:
+    use: fix-folder
+    meaning: "color папки должен быть в виде #rrggbb строчными буквами."
+  folder_cycle:
+    use: fix-folder
+    meaning: "Новый родитель создаёт цикл папок (или цикл в импортируемом бандле)."
+  folder_entity_type_immutable:
+    use: fix-folder
+    meaning: "entityType папки нельзя изменить после создания."
+  folder_entity_type_invalid:
+    use: fix-folder
+    meaning: "entityType должен быть коллекцией с папками и совпадать с типом документа."
+  folder_icon_invalid:
+    use: fix-folder
+    meaning: "icon папки должен быть PascalCase-токеном."
+  folder_identity_required:
+    use: fix-folder
+    meaning: "folderIdentity обязателен."
+  folder_identity_too_long:
+    use: fix-folder
+    meaning: "folderIdentity длиннее 160 символов."
+  folder_is_system_unsupported:
+    use: fix-folder
+    meaning: "Поле isSystem заменено на managedBy."
+    action: "Уберите isSystem и используйте managedBy."
+  folder_move_unsupported:
+    use: fix-folder
+    meaning: "Папки нельзя переносить общим перемещением документов."
+    action: "Измените parentIdentity папки через PATCH /api/v1/folders/{identity}."
+  folder_placement_invalid:
+    use: fix-folder
+    meaning: "placement должен быть frontend или workspace."
+  folder_root_field_read_only:
+    use: fix-folder
+    meaning: "isRoot управляется сервером."
+    action: "Уберите isRoot из запроса."
+  folder_root_invalid:
+    use: data-corrupted
+    meaning: "Корневая папка коллекции или workspace имеет неверный identity, область или состояние."
+  folder_scope_immutable:
+    use: fix-folder
+    meaning: "scope папки нельзя изменить."
+  folder_scope_invalid:
+    use: fix-folder
+    meaning: "scope папки должен быть collection или workspace."
+  folder_self_parent:
+    use: fix-folder
+    meaning: "Папка не может быть своим родителем."
+  folder_workspace_entity_type_invalid:
+    use: fix-folder
+    meaning: "Папки области workspace не задают entityType."
+  system_folder_immutable:
+    use: fix-folder
+    meaning: "Корневые и системные папки нельзя изменять, удалять и восстанавливать из ревизии."
+
+  # --- Фасеты ---
+  facet_color_invalid:
+    use: fix-facet
+    meaning: "color фасета должен быть #rrggbb строчными буквами."
+  facet_configuration_invalid:
+    use: fix-facet
+    meaning: "Вклад фасета в конфигурацию задан неверно (mode inherit/replace и объект patch)."
+  facet_deleted:
+    use: fix-facet
+    meaning: "Документ фасета можно восстановить только внутри активного фасета."
+    action: "Сначала восстановите фасет (POST /api/v1/facets/{facetIdentity}/restore), затем документ."
+  facet_document_folder_unsupported:
+    use: fix-facet
+    meaning: "Документы фасетов не поддерживают папки."
+    action: "Уберите folderIdentity из запроса."
+  facet_folder_unsupported:
+    use: fix-facet
+    meaning: "Фасеты не поддерживают папки."
+    action: "Уберите folderIdentity из запроса."
+  facet_icon_invalid:
+    use: fix-facet
+    meaning: "icon фасета должен быть PascalCase-токеном."
+  facet_identity_required:
+    meaning: "Для документов фасета (collection=facet-documents) в MCP не передан facetIdentity."
+    action: "Передайте facetIdentity — identity фасета из endge_list_documents с collection=facets — и повторите вызов."
+  facet_identity_invalid:
+    use: fix-facet
+    meaning: "facetIdentity обязателен и не длиннее 160 символов."
+  facet_identity_locked:
+    use: fix-facet
+    meaning: "identity фасета нельзя менять, пока в нём есть активные документы."
+  facet_not_empty:
+    use: fix-facet
+    meaning: "Фасет нельзя удалить, пока в нём есть активные документы."
+    action: "Сначала удалите или перенесите документы фасета, затем повторите удаление."
+  facet_position_invalid:
+    use: fix-facet
+    meaning: "position должен быть неотрицательным целым."
+  facet_positions_invalid:
+    use: data-corrupted
+    meaning: "Позиции фасетов не образуют непрерывный ряд с нуля."
+  facet_reorder_duplicate:
+    use: fix-facet
+    meaning: "В списке перестановки фасетов повторяется identity."
+  facet_reorder_set_mismatch:
+    use: fix-facet
+    meaning: "Набор фасетов изменился — список перестановки не совпадает с текущим."
+    action: "Перечитайте фасеты (GET /api/v1/facets) и повторите перестановку с полным актуальным списком."
+  facet_reorder_too_large:
+    use: fix-facet
+    meaning: "В перестановке больше 1000 фасетов."
+
+  # --- Профили аутентификации и подключения ---
+  auth_profile_adapter_required:
+    use: fix-auth-profile
+    meaning: "adapterId обязателен."
+  auth_profile_field_unsupported:
+    use: fix-auth-profile
+    meaning: "Поле не поддерживается профилем аутентификации."
+  auth_profile_refresh_persistence_invalid:
+    use: fix-auth-profile
+    meaning: "persistRefreshToken должен быть boolean."
+  auth_profile_session_forbidden:
+    use: fix-auth-profile
+    meaning: "Адаптер не поддерживает блок session."
+  auth_profile_session_required:
+    use: fix-auth-profile
+    meaning: "Адаптерам, выдающим токен, нужен блок session."
+  auth_profile_storage_invalid:
+    use: fix-auth-profile
+    meaning: "session.storage должен быть memory, sessionStorage или localStorage."
+  basic_config_invalid:
+    use: fix-auth-profile
+    meaning: "config профиля Basic должен быть пустым."
+  basic_credentials_required:
+    use: fix-auth-profile
+    meaning: "Для Basic нужны username и password в credentials."
+  bearer_config_invalid:
+    use: fix-auth-profile
+    meaning: "config профиля Bearer должен быть пустым."
+  bearer_token_required:
+    use: fix-auth-profile
+    meaning: "Для Bearer нужен credentials.token."
+  oauth2_client_authentication_invalid:
+    use: fix-auth-profile
+    meaning: "clientAuthentication должен быть client_secret_basic или client_secret_post."
+  oauth2_client_credentials_config_invalid:
+    use: fix-auth-profile
+    meaning: "Для client credentials нужны tokenEndpoint и clientId."
+  oauth2_client_secret_required:
+    use: fix-auth-profile
+    meaning: "Нужен credentials.clientSecret."
+  oauth2_password_config_invalid:
+    use: fix-auth-profile
+    meaning: "Для password grant нужны tokenEndpoint и clientId."
+  oauth2_password_credentials_required:
+    use: fix-auth-profile
+    meaning: "Нужны credentials.username и credentials.password."
+  oidc_config_invalid:
+    use: fix-auth-profile
+    meaning: "Для OIDC нужны issuer и clientId."
+  oidc_credentials_forbidden:
+    use: fix-auth-profile
+    meaning: "Профиль OIDC не хранит credentials."
+  backend_connection_not_found:
+    use: not-found
+    meaning: "Backend-подключение не найдено."
+  backend_name_required:
+    use: backend-connection-field
+    meaning: "name подключения обязателен."
+  backend_name_too_long:
+    use: backend-connection-field
+    meaning: "name подключения длиннее 160 символов."
+  backend_url_components_forbidden:
+    use: backend-connection-field
+    meaning: "baseUrl содержит userinfo, query или fragment."
+  backend_url_invalid:
+    use: backend-connection-field
+    meaning: "baseUrl не является абсолютным http/https URL."
+  backend_url_scheme_invalid:
+    use: backend-connection-field
+    meaning: "Схема baseUrl должна быть http или https."
+  integration_fields_required:
+    use: fix-field
+    meaning: "Интеграции нужны displayName и version."
+  integration_input_invalid:
+    use: fix-field
+    meaning: "Данные интеграции некорректны."
+
+  # --- Профили сборки, сборки и релизы ---
+  build_profile.display_name_invalid:
+    use: fix-field
+    meaning: "displayName профиля сборки обязателен и не длиннее 160 символов."
+  build_profile.identity_invalid:
+    use: fix-field
+    meaning: "identity профиля сборки должен быть UUID."
+  build_profile.patch_empty:
+    use: fix-field
+    meaning: "В PATCH профиля сборки нет ни одного поля."
+  build_profile.settings_invalid:
+    use: fix-field
+    meaning: "Настройки профиля сборки содержат неподдерживаемое поле (подробности в message)."
+  build_profile.visibility_invalid:
+    use: fix-field
+    meaning: "visibility должен быть shared или private."
+  build_profile_forbidden:
+    use: workspace-role
+    meaning: "Пользователь не может управлять этим профилем сборки."
+  build_profile_visibility_forbidden:
+    use: workspace-role
+    meaning: "Видимость профиля меняет только его владелец."
+  build_commit_mismatch:
+    meaning: "Коммит и бандл собраны из разных состояний workspace (headSequence не совпадает)."
+    action: "Пересоберите бандл из нужного коммита и повторите публикацию."
+  build_metadata_invalid:
+    use: fix-field
+    meaning: "Метаданные сборки некорректны."
+  build_source_changed:
+    meaning: "После сборки модель изменилась или workspace был заменён."
+    action: "Пересоберите проект из текущего состояния и повторите создание коммита или публикацию."
+  build_source_invalid:
+    use: fix-field
+    meaning: "Сборка относится к другому workspace или не имеет исходной ревизии."
+    action: "Соберите бандл в этом workspace и повторите."
+  commit_message_required:
+    use: fix-field
+    meaning: "Для собранной модели нужен message коммита."
+  release_artifact_inconsistent:
+    use: data-corrupted
+    meaning: "Метаданные артефакта релиза противоречивы."
+  release_build_invalid:
+    use: fix-field
+    meaning: "Загруженный бандл релиза некорректен (подробности в message)."
+  release_build_required:
+    use: fix-field
+    meaning: "К релизу нужно приложить ровно один Gzip-бандл не больше 15 МиБ."
+  release_identity_reserved:
+    use: fix-field
+    meaning: "identity last зарезервирован для чтения последнего релиза."
+    action: "Выберите другой identity релиза."
+  release_last_read_only:
+    use: fix-field
+    meaning: "Псевдоним last доступен только для чтения."
+    action: "Для изменения используйте точный identity релиза."
+  release_snapshot_invalid:
+    use: data-corrupted
+    meaning: "Снимок релиза не прошёл проверку."
+  release_text_too_long:
+    use: fix-field
+    meaning: "Текст релиза превышает лимит."
+
+  # --- Импорт, экспорт и резервные копии ---
+  backup_description_too_long:
+    use: fix-field
+    meaning: "description резервной копии длиннее 1000 символов."
+  backup_id_invalid:
+    use: fix-field
+    meaning: "id резервной копии должен быть UUID или last."
+  backup_kind_invalid:
+    use: fix-field
+    meaning: "kind резервной копии должен быть manual или pre_import."
+  domain_version_invalid:
+    use: fix-field
+    meaning: "Не удалось вычислить версию домена импортируемых данных."
+    action: "Сформируйте экспорт заново на исходном backend и повторите импорт."
+  domain_version_mismatch:
+    meaning: "Импортированный workspace не совпал с версией домена источника."
+    action: "Не повторяйте этот импорт. Сформируйте экспорт заново и создайте новый план импорта; при повторе сообщите пользователю."
+  encrypted_workspace_invalid:
+    use: fix-field
+    meaning: "Конверт зашифрованного workspace повреждён."
+    action: "Сформируйте экспорт заново и повторите импорт."
+  encrypted_workspace_unsupported:
+    use: fix-field
+    meaning: "Формат зашифрованного конверта не поддерживается этим backend."
+    action: "Сформируйте экспорт на совместимой версии backend."
+  export_option_invalid:
+    use: fix-field
+    meaning: "Режим переноса при экспорте должен быть none, own или all."
+  import_owner_changed:
+    use: import-plan
+    meaning: "После построения плана изменилось сопоставление владельцев приватных AI-подключений или профилей сборки."
+  import_plan_applied:
+    use: import-plan
+    meaning: "План импорта уже применён."
+    action: "Повтор не нужен — проверьте результат импорта. Для нового импорта создайте новый план."
+  import_plan_corrupted:
+    use: data-corrupted
+    meaning: "Сохранённый план импорта повреждён."
+  import_plan_expired:
+    use: import-plan
+    meaning: "Срок действия плана импорта истёк."
+  import_plan_not_found:
+    use: import-plan
+    meaning: "План импорта не найден (неверный id или план удалён)."
+  import_requires_clean_commit:
+    meaning: "В workspace есть незакоммиченные ревизии; импорт требует чистого состояния."
+    action: "Закоммитьте или отмените изменения (через пользователя), затем создайте план импорта заново."
+  precondition_failed:
+    use: import-plan
+    meaning: "Workspace изменился после построения плана импорта."
+  workspace_password_invalid:
+    use: fix-field
+    meaning: "Пароль неверен или зашифрованный артефакт повреждён."
+    action: "Попросите пользователя проверить пароль и повторите."
+  workspace_password_required:
+    use: fix-field
+    meaning: "Для импорта зашифрованного workspace нужен пароль."
+  workspace_password_too_long:
+    use: fix-field
+    meaning: "Пароль длиннее 1024 символов."
+  workspace_schema_unsupported:
+    meaning: "Версия схемы экспорта не поддерживается этим backend."
+    action: "Не повторяйте. Обновите исходный backend и сформируйте новый экспорт либо импортируйте в совместимую версию."
+
+  # --- AI ---
+  ai.adapter_invalid:
+    use: fix-field
+    meaning: "adapter должен быть anthropic или ollama."
+  ai.base_url_invalid:
+    use: fix-field
+    meaning: "baseUrl должен быть абсолютным http/https URL."
+  ai.clarification_linkage_invalid:
+    use: fix-field
+    meaning: "Связь с уточнением в запуске AI неполная или неверная."
+  ai.connection_forbidden:
+    use: workspace-role
+    meaning: "Пользователь не может управлять этим AI-подключением."
+  ai.connection_not_found:
+    use: not-found
+    meaning: "AI-подключение не найдено."
+  ai.conversation_conflict:
+    meaning: "Состояние AI-диалога не допускает операцию (например, идёт запуск)."
+    action: "Перечитайте диалог и повторите после завершения текущего запуска."
+  ai.conversation_not_found:
+    use: not-found
+    meaning: "AI-диалог не найден."
+  ai.credential_required:
+    use: fix-field
+    meaning: "Нужен credential AI-подключения."
+  ai.field_required:
+    use: fix-field
+    meaning: "Обязательное поле AI-каталога не заполнено (имя поля в message)."
+  ai.field_too_long:
+    use: fix-field
+    meaning: "Поле AI-каталога длиннее 160 символов (имя поля в message)."
+  ai.model_forbidden:
+    use: workspace-role
+    meaning: "Пользователь не может управлять этим профилем модели."
+  ai.model_not_found:
+    use: not-found
+    meaning: "Профиль AI-модели не найден."
+  ai.model_unavailable:
+    meaning: "Выбранная AI-модель больше недоступна."
+    action: "Выберите другую модель из GET /api/v1/ai/model-profiles и повторите."
+  ai.private_default_forbidden:
+    use: fix-field
+    meaning: "Приватная модель не может быть моделью платформы по умолчанию."
+  ai.run_invalid:
+    use: fix-field
+    meaning: "Для запуска AI нужны requestId и prompt."
+  ai.viewer_required:
+    use: workspace-role
+    meaning: "Для AI-ассистента нужна роль Viewer workspace."
+  ai.visibility_invalid:
+    use: fix-field
+    meaning: "visibility должен быть public или private."
+  ai.workbench_bad_gateway:
+    use: upstream-invalid
+    meaning: "AI Workbench вернул некорректный ответ."
+  ai.workbench_request_invalid:
+    use: fix-field
+    meaning: "AI Workbench отклонил запрос как некорректный."
+  ai.workbench_timeout:
+    use: upstream-unavailable
+    meaning: "AI Workbench не ответил вовремя."
+  ai.workbench_unavailable:
+    use: upstream-unavailable
+    meaning: "AI Workbench недоступен."
+
+  # --- Mock Generator ---
+  mock.invalid_response:
+    use: upstream-invalid
+    meaning: "Mock Generator вернул некорректный ответ или поток."
+  mock.timeout:
+    use: upstream-unavailable
+    meaning: "Mock Generator не подтвердил поток вовремя."
+  mock.unavailable:
+    use: upstream-unavailable
+    meaning: "Mock Generator недоступен или backend останавливается."
+  mock.upstream_error:
+    use: upstream-invalid
+    meaning: "Запрос к Mock Generator завершился ошибкой без собственного кода; статус выводится из gRPC-кода (обычно 502)."
+    status: 502
+  mock.viewer_required:
+    use: workspace-role
+    meaning: "Для Mock Generator нужна роль Viewer workspace."
+  request.invalid:
+    use: fix-field
+    meaning: "Тело запроса Mock Generator должно быть JSON-объектом."
+  request.too_large:
+    use: fix-field
+    meaning: "Тело запроса превышает лимит байтов."
+    action: "Уменьшите запрос (меньше схема или количество) и повторите."
+  stream.already_subscribed:
+    meaning: "У потока уже есть подписчик (допускается один)."
+    action: "Закройте другую подписку или создайте новый поток."
+  stream.backpressure:
+    meaning: "Клиент не успевает читать поток — буфер backend исчерпан."
+    action: "Читайте события быстрее или уменьшите скорость генерации; создайте поток заново."
+  stream.limit_exceeded:
+    meaning: "Исчерпан лимит одновременных потоков."
+    action: "Остановите ненужные потоки (DELETE /api/v1/mock-data/streams/{id}) и повторите позже."
+  stream.not_found:
+    use: not-found
+    meaning: "Поток не существует или истёк."
+    action: "Создайте новый поток."
+  stream.replay_unsupported:
+    meaning: "Повтор событий по Last-Event-ID не поддерживается."
+    action: "Не передавайте Last-Event-ID; для продолжения создайте новый поток."

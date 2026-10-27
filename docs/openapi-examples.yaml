@@ -1,0 +1,76 @@
+# Примеры тел запросов и ответов OpenAPI по operationId (поддерживается вручную).
+#
+# internal/tools/openapienrich применяет их в `make docs`, если в аннотациях кода нет примера.
+# Для операций без записи пример собирается из example/enum свойств схем; здесь — операции,
+# у схем которых примеров нет или собранный пример недостаточно показателен.
+# Значения абстрактные: без названий клиентов и прикладных систем.
+
+operations:
+  planCommitRestore:
+    response:
+      planId: 7f9c2a1e-4b3d-4c8e-9a51-2d6f0b8e1c34
+      valid: true
+      targetWorkspace: main
+      targetETag: "3"
+      expectedHeadSequence: 42
+      expiresAt: "2026-08-04T10:15:00Z"
+      snapshotChecksum: sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      incoming:
+        documents: 18
+        integrations: 1
+      creates: 1
+      updates: 3
+      restores: 0
+      deletes: 1
+      warnings: []
+      conflicts: []
+  planReleaseRestore:
+    response:
+      planId: 7f9c2a1e-4b3d-4c8e-9a51-2d6f0b8e1c35
+      valid: true
+      targetWorkspace: main
+      targetETag: "3"
+      expectedHeadSequence: 42
+      expiresAt: "2026-08-04T10:15:00Z"
+      incoming:
+        documents: 18
+        integrations: 1
+      creates: 0
+      updates: 2
+      restores: 1
+      deletes: 0
+  getDomainStatus:
+    response:
+      workspace: main
+      state: dirty
+      lastCommittedDomainVersion: dv2:sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      commitId: 550e8400-e29b-41d4-a716-446655440000
+      commitMessage: Сохранена конфигурация проекта
+      committedAt: "2026-08-04T10:00:00Z"
+      pendingRevisionCount: 2
+  listAccessGrants:
+    response:
+      items:
+        - id: 550e8400-e29b-41d4-a716-446655440010
+          scopeType: workspace
+          workspaceIdentity: main
+          workspaceDisplayName: Основное пространство
+          role: editor
+          user:
+            id: 550e8400-e29b-41d4-a716-446655440020
+            username: user
+            displayName: Пользователь
+            providerId: oidc
+            active: true
+          createdAt: "2026-08-04T10:00:00Z"
+          updatedAt: "2026-08-04T10:00:00Z"
+      nextCursor: ""
+  searchServiceUsers:
+    response:
+      items:
+        - id: 550e8400-e29b-41d4-a716-446655440020
+          username: user
+          displayName: Пользователь
+          providerId: oidc
+          active: true
+      nextCursor: ""

@@ -3,6 +3,7 @@ package mcp
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -35,6 +36,11 @@ func rawResult(raw json.RawMessage) (*mcp.CallToolResult, any, error) {
 // errorResult переводит ошибку use case в результат инструмента с isError.
 // Неожиданный сбой логируется, а агенту уходит безопасный internal_error без причины.
 func errorResult(logger *zap.Logger, tool string, err error) (*mcp.CallToolResult, any, error) {
+	return errorResultWithHint(logger, tool, err, "")
+}
+
+// errorResultWithHint — errorResult с дополнительной подсказкой инструмента (например, поле версии формата).
+func errorResultWithHint(logger *zap.Logger, tool string, err error, extra string) (*mcp.CallToolResult, any, error) {
 	status := domainerrors.HTTPStatusOf(err)
 	body := toolError{Error: domainerrors.CodeOf(err), Status: status, Message: domainerrors.SafeMessageOf(err), Details: domainerrors.DetailsOf(err)}
 	if status >= http.StatusInternalServerError {
@@ -42,6 +48,9 @@ func errorResult(logger *zap.Logger, tool string, err error) (*mcp.CallToolResul
 		body = toolError{Error: "internal_error", Status: status, Message: "Внутренняя ошибка сервера"}
 	}
 	body.Hint = hintFor(body.Error, status)
+	if extra != "" && status < http.StatusInternalServerError {
+		body.Hint = strings.TrimSpace(body.Hint + " " + extra)
+	}
 	raw, marshalErr := json.MarshalIndent(body, "", "  ")
 	if marshalErr != nil {
 		return nil, nil, marshalErr
@@ -72,10 +81,14 @@ func hintFor(code string, status int) string {
 		return "Коммит токеном доступен, только если его владелец — Admin этого workspace: покажите пользователю endge_commit_plan и попросите закоммитить в Configurator."
 	case "validation_error":
 		return "Входные данные не прошли проверку REST-контракта: исправьте поля из details (схема <коллекция>.CreateRequest/PatchRequest или commit.CreateRequest справочника API)."
+	case "facet_identity_required":
+		return "Для collection=facet-documents передайте facetIdentity: identity фасета из endge_list_documents с collection=facets."
 	case "access_token_admin_forbidden":
 		return "Операция требует роли Admin workspace и недоступна токену: покажите пользователю endge_commit_plan и попросите выполнить её в Configurator."
 	case "collection_unsupported":
 		return "Используйте одну из коллекций из описания параметра collection."
+	case "precondition_required":
+		return "Передайте текущую revision документа (поле revision из endge_get_document)."
 	}
 	switch status {
 	case http.StatusUnauthorized:
@@ -89,7 +102,7 @@ func hintFor(code string, status int) string {
 }
 
 // summaryFields — краткий вид документа без source и meta.
-var summaryFields = []string{"identity", "displayName", "description", "revision", "active", "folderIdentity", "sourceVersion", "managedBy", "updatedAt", "deletedAt"}
+var summaryFields = []string{"identity", "displayName", "description", "revision", "active", "folderIdentity", "facetIdentity", "sourceVersion", "modelVersion", "icon", "color", "position", "documentCount", "managedBy", "updatedAt", "deletedAt"}
 
 // summarize оставляет краткие поля документа; в snapshot workspace revision и время лежат в state.
 func summarize(item map[string]any) map[string]any {

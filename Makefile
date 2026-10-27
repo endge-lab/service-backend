@@ -30,6 +30,10 @@ FUZZ_TIME ?= 30s
 OPENAPI_TMP_DIR := ./tmp/openapi
 OPENAPI_SPEC := ./docs/openapi3.yaml
 OPENAPI_GENERATED_GO := ./internal/api/http/openapi/openapi.gen.go
+OPENAPI_GLOSSARY := ./docs/openapi-glossary.yaml
+OPENAPI_EXAMPLES := ./docs/openapi-examples.yaml
+ERROR_GUIDANCE := docs/error-guidance.yaml
+ERROR_CATALOG := docs/error-codes.yaml
 
 DOCKER_COMPOSE_BASE := docker-compose.yml
 DOCKER_COMPOSE_DEV := docker-compose.dev.yml
@@ -87,7 +91,9 @@ docs:
 	mkdir -p $(OPENAPI_TMP_DIR)
 	go run github.com/swaggo/swag/cmd/swag@$(SWAG_VERSION) init --dir ./cmd,./internal/api/http,./internal/domain/entities --generalInfo main.go --parseInternal --parseDepth 5 --outputTypes json --output $(OPENAPI_TMP_DIR)
 	npx --yes swagger2openapi@$(SWAGGER2OPENAPI_VERSION) $(OPENAPI_TMP_DIR)/swagger.json -o $(OPENAPI_SPEC)
+	go run ./internal/tools/openapienrich -input $(OPENAPI_SPEC) -glossary $(OPENAPI_GLOSSARY) -examples $(OPENAPI_EXAMPLES) -version-file VERSION
 	go run ./internal/tools/openapiembed -input $(OPENAPI_SPEC) -output $(OPENAPI_GENERATED_GO)
+	go run ./internal/tools/errorcatalog -guidance $(ERROR_GUIDANCE) -output $(ERROR_CATALOG)
 	rm -rf $(OPENAPI_TMP_DIR)
 
 .PHONY: docs-clean

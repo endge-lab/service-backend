@@ -117,7 +117,7 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, connectedServices *service_
 		Env:                    cfg.App.Env,
 	}, connectedServices)
 	configuratorauth.RegisterPublicRoutes(router, handlers.ConfiguratorAuth)
-	router.Get("/auth/session", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve(), handlers.Session.Current)
+	router.Get("/auth/session", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve(), handlers.Session.AuthSession)
 	bridge.RegisterPublicRoutes(router, handlers.Bridge)
 	mcp.RegisterRoutes(router, handlers.MCP, authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve())
 	api := router.Group("/api", authMiddleware.AuthMiddleware(), handlers.CurrentUser.Resolve(), httpmiddleware.AccessTokenPolicy(cfg.HTTPBasePath))

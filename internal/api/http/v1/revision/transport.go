@@ -16,22 +16,22 @@ import (
 type Response struct {
 	ID                     string           `json:"id" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
 	WorkspaceID            string           `json:"workspaceId,omitempty" example:"550e8400-e29b-41d4-a716-446655440001" format:"uuid"`
-	DocumentType           string           `json:"documentType" example:"example"`
+	DocumentType           string           `json:"documentType" example:"types"`
 	DocumentID             string           `json:"documentId" example:"550e8400-e29b-41d4-a716-446655440003" format:"uuid"`
-	DocumentIdentity       string           `json:"documentIdentity" example:"example"`
+	DocumentIdentity       string           `json:"documentIdentity" example:"main"`
 	RevisionNumber         int              `json:"revisionNumber" example:"3"`
 	WorkspaceSequence      *int64           `json:"workspaceSequence,omitempty" example:"1"`
 	Operation              string           `json:"operation" example:"update"`
-	ParentRevisionID       *string          `json:"parentRevisionId,omitempty" example:"example" format:"uuid"`
-	RestoredFromRevisionID *string          `json:"restoredFromRevisionId,omitempty" example:"example" format:"uuid"`
-	CommittedInCommitID    *string          `json:"committedInCommitId,omitempty" example:"example" format:"uuid"`
+	ParentRevisionID       *string          `json:"parentRevisionId,omitempty" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
+	RestoredFromRevisionID *string          `json:"restoredFromRevisionId,omitempty" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
+	CommittedInCommitID    *string          `json:"committedInCommitId,omitempty" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
 	MutationBatchID        string           `json:"mutationBatchId" example:"550e8400-e29b-41d4-a716-446655440005" format:"uuid"`
 	SnapshotVersion        int              `json:"snapshotVersion" example:"1"`
 	Snapshot               json.RawMessage  `json:"snapshot" swaggertype:"object"`
 	Checksum               string           `json:"checksum" example:"sha256:0123456789abcdef"`
 	CreatedBy              entities.Actor   `json:"createdBy"`
 	AccessTokenID          *string          `json:"accessTokenId,omitempty" example:"550e8400-e29b-41d4-a716-446655440006" format:"uuid"`
-	AccessTokenName        *string          `json:"accessTokenName,omitempty" example:"Codex: инспектор рейса"`
+	AccessTokenName        *string          `json:"accessTokenName,omitempty" example:"Codex: правка запросов"`
 	CreatedAt              time.Time        `json:"createdAt" example:"2026-08-04T10:00:00Z" format:"date-time"`
 	Contributors           []entities.Actor `json:"contributors,omitempty"`
 }
