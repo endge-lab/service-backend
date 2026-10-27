@@ -18,7 +18,7 @@ var openAPI3YAML = []byte(
 		"    «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).\n" +
 		"  title: Endge Service Backend API\n" +
 		"  contact: {}\n" +
-		"  version: 0.17.0\n" +
+		"  version: 0.17.1\n" +
 		"paths:\n" +
 		"  /api/session/me:\n" +
 		"    get:\n" +
@@ -521,6 +521,7 @@ var openAPI3YAML = []byte(
 		"                    identity: main\n" +
 		"                    managedBy: user\n" +
 		"                    revision: 3\n" +
+		"                    sourceVersion: 1\n" +
 		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
 		"                limit: 100\n" +
 		"                offset: 0\n" +
@@ -601,6 +602,7 @@ var openAPI3YAML = []byte(
 		"                identity: main\n" +
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -683,6 +685,7 @@ var openAPI3YAML = []byte(
 		"                identity: main\n" +
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
@@ -759,6 +762,7 @@ var openAPI3YAML = []byte(
 		"                identity: main\n" +
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -840,6 +844,7 @@ var openAPI3YAML = []byte(
 		"            example:\n" +
 		"              description: Описание объекта\n" +
 		"              displayName: Основной объект\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -863,6 +868,7 @@ var openAPI3YAML = []byte(
 		"                identity: main\n" +
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -958,6 +964,7 @@ var openAPI3YAML = []byte(
 		"                identity: main\n" +
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -3977,7 +3984,7 @@ var openAPI3YAML = []byte(
 		"                    managedBy: user\n" +
 		"                    revision: 3\n" +
 		"                    source: export default {}\n" +
-		"                    sourceVersion: 2\n" +
+		"                    sourceVersion: 1\n" +
 		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
 		"                limit: 100\n" +
 		"                offset: 0\n" +
@@ -4036,7 +4043,7 @@ var openAPI3YAML = []byte(
 		"              kindIdentity: main-component\n" +
 		"              managedBy: user\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -4063,7 +4070,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -4149,7 +4156,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
@@ -4229,7 +4236,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -4312,7 +4319,7 @@ var openAPI3YAML = []byte(
 		"              description: Описание объекта\n" +
 		"              displayName: Основной объект\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -4339,7 +4346,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -4438,7 +4445,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -4550,7 +4557,7 @@ var openAPI3YAML = []byte(
 		"                    managedBy: user\n" +
 		"                    revision: 3\n" +
 		"                    source: export default {}\n" +
-		"                    sourceVersion: 2\n" +
+		"                    sourceVersion: 1\n" +
 		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
 		"                limit: 100\n" +
 		"                offset: 0\n" +
@@ -4608,7 +4615,7 @@ var openAPI3YAML = []byte(
 		"              identity: main\n" +
 		"              managedBy: user\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -4634,7 +4641,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -4719,7 +4726,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
@@ -4798,7 +4805,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -4881,7 +4888,7 @@ var openAPI3YAML = []byte(
 		"              description: Описание объекта\n" +
 		"              displayName: Основной объект\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -4907,7 +4914,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -5005,7 +5012,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -6042,7 +6049,7 @@ var openAPI3YAML = []byte(
 		"                    managedBy: user\n" +
 		"                    revision: 3\n" +
 		"                    source: export default {}\n" +
-		"                    sourceVersion: 2\n" +
+		"                    sourceVersion: 1\n" +
 		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
 		"                limit: 100\n" +
 		"                offset: 0\n" +
@@ -6099,7 +6106,7 @@ var openAPI3YAML = []byte(
 		"              identity: main\n" +
 		"              managedBy: user\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -6124,7 +6131,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -6208,7 +6215,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
@@ -6286,7 +6293,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -6369,7 +6376,7 @@ var openAPI3YAML = []byte(
 		"              description: Описание объекта\n" +
 		"              displayName: Основной объект\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -6394,7 +6401,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -6491,7 +6498,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -8561,7 +8568,7 @@ var openAPI3YAML = []byte(
 		"                    managedBy: user\n" +
 		"                    revision: 3\n" +
 		"                    source: export default {}\n" +
-		"                    sourceVersion: 2\n" +
+		"                    sourceVersion: 1\n" +
 		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
 		"                limit: 100\n" +
 		"                offset: 0\n" +
@@ -8618,7 +8625,7 @@ var openAPI3YAML = []byte(
 		"              identity: main\n" +
 		"              managedBy: user\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -8643,7 +8650,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -8727,7 +8734,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
@@ -8805,7 +8812,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -8888,7 +8895,7 @@ var openAPI3YAML = []byte(
 		"              description: Описание объекта\n" +
 		"              displayName: Основной объект\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -8913,7 +8920,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -9010,7 +9017,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -14026,7 +14033,7 @@ var openAPI3YAML = []byte(
 		"                    managedBy: user\n" +
 		"                    revision: 3\n" +
 		"                    source: export default {}\n" +
-		"                    sourceVersion: 2\n" +
+		"                    sourceVersion: 1\n" +
 		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
 		"                limit: 100\n" +
 		"                offset: 0\n" +
@@ -14083,7 +14090,7 @@ var openAPI3YAML = []byte(
 		"              identity: main\n" +
 		"              managedBy: user\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -14108,7 +14115,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -14192,7 +14199,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
@@ -14270,7 +14277,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -14353,7 +14360,7 @@ var openAPI3YAML = []byte(
 		"              description: Описание объекта\n" +
 		"              displayName: Основной объект\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -14378,7 +14385,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -14475,7 +14482,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -14586,7 +14593,7 @@ var openAPI3YAML = []byte(
 		"                    managedBy: user\n" +
 		"                    revision: 3\n" +
 		"                    source: export default {}\n" +
-		"                    sourceVersion: 2\n" +
+		"                    sourceVersion: 1\n" +
 		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
 		"                limit: 100\n" +
 		"                offset: 0\n" +
@@ -14643,7 +14650,7 @@ var openAPI3YAML = []byte(
 		"              identity: main\n" +
 		"              managedBy: user\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -14668,7 +14675,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -14752,7 +14759,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
@@ -14830,7 +14837,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -14913,7 +14920,7 @@ var openAPI3YAML = []byte(
 		"              description: Описание объекта\n" +
 		"              displayName: Основной объект\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -14938,7 +14945,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -15035,7 +15042,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -15146,7 +15153,7 @@ var openAPI3YAML = []byte(
 		"                    managedBy: user\n" +
 		"                    revision: 3\n" +
 		"                    source: export default {}\n" +
-		"                    sourceVersion: 2\n" +
+		"                    sourceVersion: 1\n" +
 		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
 		"                limit: 100\n" +
 		"                offset: 0\n" +
@@ -15203,7 +15210,7 @@ var openAPI3YAML = []byte(
 		"              identity: main\n" +
 		"              managedBy: user\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -15228,7 +15235,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -15312,7 +15319,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
@@ -15390,7 +15397,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -15473,7 +15480,7 @@ var openAPI3YAML = []byte(
 		"              description: Описание объекта\n" +
 		"              displayName: Основной объект\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -15498,7 +15505,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -15595,7 +15602,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -15707,7 +15714,7 @@ var openAPI3YAML = []byte(
 		"                    managedBy: user\n" +
 		"                    revision: 3\n" +
 		"                    source: export default {}\n" +
-		"                    sourceVersion: 2\n" +
+		"                    sourceVersion: 1\n" +
 		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
 		"                limit: 100\n" +
 		"                offset: 0\n" +
@@ -15765,7 +15772,7 @@ var openAPI3YAML = []byte(
 		"              isPrimitive: true\n" +
 		"              managedBy: user\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -15791,7 +15798,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -15876,7 +15883,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
@@ -15955,7 +15962,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -16038,7 +16045,7 @@ var openAPI3YAML = []byte(
 		"              description: Описание объекта\n" +
 		"              displayName: Основной объект\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -16064,7 +16071,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -16162,7 +16169,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
 		"          description: Некорректный запрос\n" +
@@ -16273,7 +16280,7 @@ var openAPI3YAML = []byte(
 		"                    managedBy: user\n" +
 		"                    revision: 3\n" +
 		"                    source: export default {}\n" +
-		"                    sourceVersion: 2\n" +
+		"                    sourceVersion: 1\n" +
 		"                    storeIdentity: application-store\n" +
 		"                    updatedAt: 2026-08-04T10:05:00Z\n" +
 		"                limit: 100\n" +
@@ -16331,7 +16338,7 @@ var openAPI3YAML = []byte(
 		"              identity: main\n" +
 		"              managedBy: user\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"              storeIdentity: application-store\n" +
 		"        description: Данные нового документа\n" +
 		"        required: true\n" +
@@ -16357,7 +16364,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                storeIdentity: application-store\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
@@ -16442,7 +16449,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                storeIdentity: application-store\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"401\":\n" +
@@ -16521,7 +16528,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                storeIdentity: application-store\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
@@ -16605,7 +16612,7 @@ var openAPI3YAML = []byte(
 		"              description: Описание объекта\n" +
 		"              displayName: Основной объект\n" +
 		"              source: export default {}\n" +
-		"              sourceVersion: 2\n" +
+		"              sourceVersion: 1\n" +
 		"        description: Изменяемые поля документа\n" +
 		"        required: true\n" +
 		"      responses:\n" +
@@ -16630,7 +16637,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                storeIdentity: application-store\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
@@ -16728,7 +16735,7 @@ var openAPI3YAML = []byte(
 		"                managedBy: user\n" +
 		"                revision: 3\n" +
 		"                source: export default {}\n" +
-		"                sourceVersion: 2\n" +
+		"                sourceVersion: 1\n" +
 		"                storeIdentity: application-store\n" +
 		"                updatedAt: 2026-08-04T10:05:00Z\n" +
 		"        \"400\":\n" +
@@ -18703,9 +18710,10 @@ var openAPI3YAML = []byte(
 		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
 		"          minimum: 1\n" +
+		"          example: 1\n" +
 		"        target:\n" +
 		"          description: Цель действия (JSON-объект).\n" +
 		"          type: object\n" +
@@ -18784,9 +18792,10 @@ var openAPI3YAML = []byte(
 		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
 		"          minimum: 1\n" +
+		"          example: 1\n" +
 		"        target:\n" +
 		"          description: Цель действия (JSON-объект).\n" +
 		"          type: object\n" +
@@ -18865,8 +18874,9 @@ var openAPI3YAML = []byte(
 		"          description: 'Исходный текст документа (source-first): строка до 8 МиБ в формате коллекции. Сервер хранит его как есть; формат описан в справочнике коллекции.'\n" +
 		"          type: string\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
+		"          example: 1\n" +
 		"        target:\n" +
 		"          description: Цель действия (JSON-объект).\n" +
 		"          type: object\n" +
@@ -20047,7 +20057,7 @@ var openAPI3YAML = []byte(
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        modelVersion:\n" +
-		"          description: Версия модели компонента; положительное целое.\n" +
+		"          description: Версия модели компонента (вместо sourceVersion); обязательна при создании, текущее значение — 1.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        source:\n" +
@@ -20133,7 +20143,7 @@ var openAPI3YAML = []byte(
 		"          type: object\n" +
 		"          additionalProperties: {}\n" +
 		"        modelVersion:\n" +
-		"          description: Версия модели компонента; положительное целое.\n" +
+		"          description: Версия модели компонента (вместо sourceVersion); обязательна при создании, текущее значение — 1.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        source:\n" +
@@ -20212,7 +20222,7 @@ var openAPI3YAML = []byte(
 		"          description: Произвольные метаданные документа (JSON-объект); сервер их не интерпретирует.\n" +
 		"          type: object\n" +
 		"        modelVersion:\n" +
-		"          description: Версия модели компонента; положительное целое.\n" +
+		"          description: Версия модели компонента (вместо sourceVersion); обязательна при создании, текущее значение — 1.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        revision:\n" +
@@ -20308,9 +20318,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
 		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
@@ -20390,9 +20400,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
 		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
@@ -20471,9 +20481,9 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        updatedAt:\n" +
 		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
@@ -20501,7 +20511,7 @@ var openAPI3YAML = []byte(
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        contractVersion:\n" +
-		"          description: Версия контракта входа/выхода вычисления; положительное целое.\n" +
+		"          description: Версия контракта входа/выхода вычисления; обязательна при создании, текущее значение — 1.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        description:\n" +
@@ -20544,9 +20554,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
 		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
@@ -20579,7 +20589,7 @@ var openAPI3YAML = []byte(
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        contractVersion:\n" +
-		"          description: Версия контракта входа/выхода вычисления; положительное целое.\n" +
+		"          description: Версия контракта входа/выхода вычисления; обязательна при создании, текущее значение — 1.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        description:\n" +
@@ -20622,9 +20632,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
 		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
@@ -20637,7 +20647,7 @@ var openAPI3YAML = []byte(
 		"          type: boolean\n" +
 		"          example: true\n" +
 		"        contractVersion:\n" +
-		"          description: Версия контракта входа/выхода вычисления; положительное целое.\n" +
+		"          description: Версия контракта входа/выхода вычисления; обязательна при создании, текущее значение — 1.\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        createdAt:\n" +
@@ -20699,9 +20709,9 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        updatedAt:\n" +
 		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
@@ -20767,7 +20777,7 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: defineConfig({})\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
@@ -20841,7 +20851,7 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: defineConfig({})\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
@@ -20914,7 +20924,7 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          example: defineConfig({})\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        updatedAt:\n" +
@@ -21169,9 +21179,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
 		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
@@ -21243,9 +21253,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
 		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
@@ -21316,9 +21326,9 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        updatedAt:\n" +
 		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
@@ -21660,9 +21670,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
 		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
@@ -21738,9 +21748,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
 		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
@@ -21815,9 +21825,9 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        updatedAt:\n" +
 		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
@@ -22744,9 +22754,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
 		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
@@ -22823,9 +22833,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
 		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
@@ -22901,9 +22911,9 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        updatedAt:\n" +
 		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
@@ -24312,7 +24322,7 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
@@ -24386,7 +24396,7 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        workspaceFolderIdentity:\n" +
@@ -24459,7 +24469,7 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
 		"          example: 2\n" +
 		"        updatedAt:\n" +
@@ -25094,7 +25104,7 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: \"defineSimulation({ target: composition(''), overrides: { runtimes: {} } })\"\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
@@ -25168,7 +25178,7 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: \"defineSimulation({ target: composition(''), overrides: { runtimes: {} } })\"\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
@@ -25241,7 +25251,7 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          example: \"defineSimulation({ target: composition(''), overrides: { runtimes: {} } })\"\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        updatedAt:\n" +
@@ -25309,9 +25319,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
 		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
@@ -25383,9 +25393,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
 		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
@@ -25456,9 +25466,9 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        updatedAt:\n" +
 		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
@@ -25524,9 +25534,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
 		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
@@ -25598,9 +25608,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
 		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
@@ -25671,9 +25681,9 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        updatedAt:\n" +
 		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
@@ -25739,9 +25749,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
 		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
@@ -25813,9 +25823,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
 		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
@@ -25886,9 +25896,9 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        updatedAt:\n" +
 		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
 		"          type: string\n" +
@@ -25955,9 +25965,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        storeIdentity:\n" +
 		"          description: identity хранилища (коллекция stores), состояние которого обновляет документ.\n" +
 		"          type: string\n" +
@@ -26034,9 +26044,9 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        storeIdentity:\n" +
 		"          description: identity хранилища (коллекция stores), состояние которого обновляет документ.\n" +
 		"          type: string\n" +
@@ -26112,9 +26122,9 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          example: export default {}\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
-		"          example: 2\n" +
+		"          example: 1\n" +
 		"        storeIdentity:\n" +
 		"          description: identity хранилища (коллекция stores), состояние которого обновляет документ.\n" +
 		"          type: string\n" +
@@ -26209,7 +26219,7 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: \"defineVocab({ outputs: { items: output().from(response()) } })\"\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
@@ -26310,7 +26320,7 @@ var openAPI3YAML = []byte(
 		"          maxLength: 8388608\n" +
 		"          example: \"defineVocab({ outputs: { items: output().from(response()) } })\"\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        workspaceFolderIdentity:\n" +
@@ -26403,7 +26413,7 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          example: \"defineVocab({ outputs: { items: output().from(response()) } })\"\n" +
 		"        sourceVersion:\n" +
-		"          description: Версия формата source; положительное целое. Допустимые значения зависят от коллекции (например, queries — 2, configurations и simulations — 1).\n" +
+		"          description: 'Версия языка source (не ревизия документа). Текущее значение: queries — 2, все остальные коллекции с source — 1; так создаёт документы Configurator и это принимает компилятор Core. queries, configurations, simulations и vocabs принимают только текущее значение.'\n" +
 		"          type: integer\n" +
 		"          example: 1\n" +
 		"        updatedAt:\n" +

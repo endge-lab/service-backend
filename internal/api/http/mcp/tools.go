@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"strings"
 	"time"
 
@@ -24,6 +25,7 @@ type tools struct {
 	contracts Contracts
 	logger    *zap.Logger
 	docs      *docsSource
+	allowed   permissions
 }
 
 func boolPtr(value bool) *bool { return &value }
@@ -44,6 +46,27 @@ func collectionProperty(properties map[string]*jsonschema.Schema) {
 		enum = append(enum, name)
 	}
 	properties["collection"].Enum = enum
+}
+
+// adminCollections — коллекции, изменение которых требует роли Admin workspace
+// (shared.AdminContext): персональному токену они недоступны (access_token_admin_forbidden).
+var adminCollections = []string{entities.CollectionAuthProfiles}
+
+// adminCollectionsNote объясняет агенту, что делать без доступа к auth-profiles.
+const adminCollectionsNote = "auth-profiles (профили авторизации) меняет только пользователь с ролью Admin workspace; персональному токену они недоступны (access_token_admin_forbidden). " +
+	"Без профиля укажите в Query и Stream auth: { mode: 'inherit' } или попросите пользователя создать профиль в Configurator и затем сошлитесь на его identity: auth: { mode: 'profile', profile: '<identity>' }."
+
+// writeCollectionProperty — collection инструментов изменения: персональному токену
+// административные коллекции не предлагаются, их изменение он не пройдёт.
+func (t *tools) writeCollectionProperty(properties map[string]*jsonschema.Schema) {
+	collectionProperty(properties)
+	if !t.allowed.token {
+		return
+	}
+	properties["collection"].Enum = slices.DeleteFunc(properties["collection"].Enum, func(value any) bool {
+		name, _ := value.(string)
+		return slices.Contains(adminCollections, name)
+	})
 }
 
 // revisionProperty требует неотрицательную revision.
@@ -200,18 +223,18 @@ func (t *tools) registerWriteTools(server *mcp.Server) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "endge_create_document",
 		Description: "Создаёт документ в коллекции. Поля как в REST (схема <коллекция>.CreateRequest справочника API, ресурс llms-full/api/{group}.txt): identity, displayName, source, поле версии формата и другие. Возвращает краткий вид с revision.\n" +
-			"Поле версии формата по коллекциям (неизвестное поле — validation_error):\n" + formatVersionSummary(t.contracts.FormatVersions, entities.DocumentCollections) + "\n" +
+			"Поле версии формата по коллекциям — текущая версия языка Source, которую пишет Configurator и принимает компилятор; передавайте ровно это значение (неизвестное поле — validation_error). Проверенные тела всех коллекций — страница agents/document-examples.md:\n" + t.createSummary() + "\n" +
 			"- facets: нет поля версии; тело — identity, displayName, icon (имя иконки, например MapPin), color (#rrggbb), meta\n" +
 			"- facet-documents (с facetIdentity): нет поля версии; тело — identity, displayName, description, configuration (обязательно: {\"mode\":\"inherit\",\"patch\":{…}} или {\"mode\":\"replace\",\"value\":{…}}), meta, active",
 		Annotations: mutating("Создать документ", false),
-		InputSchema: inputSchema[createInput](collectionProperty),
+		InputSchema: inputSchema[createInput](t.writeCollectionProperty),
 	}, t.createDocument)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "endge_update_document",
 		Description: "Частично изменяет документ (как PATCH): передайте только изменяемые поля и текущую revision. Меняя source, передавайте поле версии формата коллекции (sourceVersion или modelVersion у components, см. endge_create_document). Возвращает краткий вид с новой revision.",
 		Annotations: mutating("Изменить документ", false),
 		InputSchema: inputSchema[updateInput](func(p map[string]*jsonschema.Schema) {
-			collectionProperty(p)
+			t.writeCollectionProperty(p)
 			revisionProperty(p)
 		}),
 	}, t.updateDocument)
@@ -220,7 +243,7 @@ func (t *tools) registerWriteTools(server *mcp.Server) {
 		Description: "Восстанавливает мягко удалённый документ. Вернуть прошлое содержимое существующего документа — endge_restore_revision.",
 		Annotations: mutating("Восстановить документ", false),
 		InputSchema: inputSchema[mutateInput](func(p map[string]*jsonschema.Schema) {
-			collectionProperty(p)
+			t.writeCollectionProperty(p)
 			revisionProperty(p)
 		}),
 	}, t.restoreDocument)
@@ -229,7 +252,7 @@ func (t *tools) registerWriteTools(server *mcp.Server) {
 		Description: "Откатывает документ к прошлой ревизии (как REST POST .../revisions/{revisionId}/restore с If-Match): содержимое берётся из снимка ревизии, создаётся новая ревизия restore, история не переписывается. Нужны revisionId из endge_document_revisions и текущая revision документа.",
 		Annotations: mutating("Откатить документ к ревизии", false),
 		InputSchema: inputSchema[restoreRevisionInput](func(p map[string]*jsonschema.Schema) {
-			collectionProperty(p)
+			t.writeCollectionProperty(p)
 			revisionProperty(p)
 		}),
 	}, t.restoreRevision)
@@ -241,7 +264,7 @@ func (t *tools) registerDeleteTool(server *mcp.Server) {
 		Description: "Мягко удаляет документ, фасет или документ фасета. Только по явной просьбе пользователя; восстановление — endge_restore_document.",
 		Annotations: mutating("Удалить документ", true),
 		InputSchema: inputSchema[mutateInput](func(p map[string]*jsonschema.Schema) {
-			collectionProperty(p)
+			t.writeCollectionProperty(p)
 			revisionProperty(p)
 		}),
 	}, t.deleteDocument)
@@ -576,10 +599,22 @@ func (t *tools) writeSummary(tool, collection string, store collectionStore, ope
 	return jsonResult(summarize(view))
 }
 
+// createSummary — строки поля версии и обязательных полей для описания endge_create_document.
+// Персональному токену административные коллекции не перечисляются, вместо них — что делать без них.
+func (t *tools) createSummary() string {
+	if !t.allowed.token {
+		return formatVersionSummary(t.contracts.FormatVersions, entities.DocumentCollections) + "\n" +
+			"Персональному токену: " + adminCollectionsNote
+	}
+	return formatVersionSummary(t.contracts.FormatVersions, entities.DocumentCollections, adminCollections...) + "\n" +
+		"- Недоступно этому токену: " + adminCollectionsNote
+}
+
 // formatVersionHint напоминает поле версии формата коллекции при ошибке проверки тела.
 func (t *tools) formatVersionHint(collection string, err error) string {
 	switch domainerrors.CodeOf(err) {
-	case "validation_error", "source_version_invalid", "query_source_version_invalid", "simulation_source_version_invalid":
+	case "validation_error", "source_version_invalid", "query_source_version_invalid", "simulation_source_version_invalid",
+		"configuration_source_version_invalid", "vocab_source_version_invalid", "component_model_version_invalid", "computation_contract_version_invalid", "update_store_required":
 	default:
 		return ""
 	}

@@ -11,6 +11,7 @@ import (
 	"path"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -28,6 +29,12 @@ const (
 	docsCacheTTL = 10 * time.Minute
 	// docsCacheMaxBytes ограничивает память кеша: шаблоны позволяют запросить много страниц.
 	docsCacheMaxBytes = 32 << 20
+	// docsPartMaxChars — наибольший ответ resources/read в символах вместе с заголовком части.
+	// MCP-клиенты ограничивают вывод инструмента (Claude Code — около 25 тыс. токенов),
+	// поэтому длинный файл отдаётся частями по ?part=N.
+	docsPartMaxChars = 60_000
+	// docsPartParam — параметр адреса ресурса с номером части.
+	docsPartParam = "part"
 )
 
 // agentDoc — файл llms-документации, публикуемый как ресурс MCP. Порядок важен:
@@ -37,7 +44,7 @@ type agentDoc struct {
 }
 
 var agentDocs = []agentDoc{
-	{"llms-agent.txt", "llms-agent", "Ядро для агента — читать первым", "Всё для типовой работы одним файлом (≈45 тыс. токенов): руководство агента, токены, MCP, правила версий и лимитов, сценарии, коды ошибок, авторинг Source, все HTTP-операции. Схемы тел — в llms-full/api/{group}.txt, Source каждого типа — в llms-full/reference/{type}.txt."},
+	{"llms-agent.txt", "llms-agent", "Ядро для агента — читать первым", "Всё для типовой работы одним файлом (≈45 тыс. токенов, отдаётся частями по ≈60 тыс. символов): руководство агента, токены, MCP, правила версий и лимитов, сценарии, коды ошибок, авторинг Source, все HTTP-операции. Схемы тел — в llms-full/api/{group}.txt, Source каждого типа — в llms-full/reference/{type}.txt."},
 	{"llms.txt", "llms", "Оглавление документации", "Оглавление всех страниц с описаниями (llmstxt.org); страницы читаются шаблоном {path}.md."},
 	{"agents/index.md", "agents-guide", "Руководство агента", "Порядок работы агента: вход по токену, workspace, чтение и изменение документов, коммиты, лимиты."},
 	{"agents/mcp.md", "agents-mcp", "MCP-сервер Endge", "Инструменты, ресурсы и права MCP-сервера backend."},
@@ -56,7 +63,37 @@ var agentDocTemplates = []agentDocTemplate{
 	{"llms-full/reference/{+type}.txt", "llms-reference", "Справочник Source по типу", "Авторский Source одного типа документа, например query, component-sfc, type, data-view; контракты пакетов — contracts/<пакет>.", "text/plain"},
 	{"llms-full/{section}.txt", "llms-section", "Раздел документации целиком", "Раздел сайта одним файлом, например agents, guides, domain, start.", "text/plain"},
 	{"{+path}.md", "docs-page", "Страница документации в Markdown", "Любая страница сайта: путь из llms.txt без расширения, например agents/tokens или reference/query.", "text/markdown"},
+	{"{+resource}{?part}", "docs-part", "Часть длинного ресурса", "Ответ resources/read не длиннее ≈60 тыс. символов: длинный файл делится на части по заголовкам. resource — адрес ресурса из списка или шаблонов выше без префикса, part — номер части с 1. Первая строка части: «[Часть N из M: <адрес>. Следующая: <адрес>?part=N+1]»; читайте части по порядку.", ""},
 }
+
+// docsPartTemplate — шаблон частей; он совпадает с любым адресом под префиксом, поэтому
+// читать разрешено только файлы из agentDocs и других шаблонов (published).
+const docsPartTemplate = "{+resource}{?part}"
+
+// publishedPatterns — относительные пути шаблонов agentDocTemplates, кроме шаблона частей.
+var publishedPatterns = func() []*regexp.Regexp {
+	variable := regexp.MustCompile(`\{(\+?)[a-z]+\}`)
+	patterns := make([]*regexp.Regexp, 0, len(agentDocTemplates))
+	for _, template := range agentDocTemplates {
+		if template.uriTemplate == docsPartTemplate {
+			continue
+		}
+		var pattern strings.Builder
+		last := 0
+		for _, match := range variable.FindAllStringSubmatchIndex(template.uriTemplate, -1) {
+			pattern.WriteString(regexp.QuoteMeta(template.uriTemplate[last:match[0]]))
+			if match[3] > match[2] {
+				pattern.WriteString(`[A-Za-z0-9._/-]+`)
+			} else {
+				pattern.WriteString(`[A-Za-z0-9._-]+`)
+			}
+			last = match[1]
+		}
+		pattern.WriteString(regexp.QuoteMeta(template.uriTemplate[last:]))
+		patterns = append(patterns, regexp.MustCompile("^"+pattern.String()+"$"))
+	}
+	return patterns
+}()
 
 // docsPathPattern — допустимый относительный путь ресурса: латиница, цифры, «.», «_», «-» и «/».
 var docsPathPattern = regexp.MustCompile(`^[A-Za-z0-9._/-]+$`)
@@ -71,8 +108,10 @@ type docsSource struct {
 	ttl      time.Duration
 	maxBytes int
 	maxCache int
-	agent    string
-	now      func() time.Time
+	// partChars — наибольший размер части ответа в символах.
+	partChars int
+	agent     string
+	now       func() time.Time
 
 	mu          sync.Mutex
 	cache       map[string]docsEntry
@@ -92,7 +131,7 @@ func newDocsSource(base, version string) *docsSource {
 		return nil
 	}
 	source := &docsSource{
-		base: base, prefix: base + "/", ttl: docsCacheTTL, maxBytes: docsMaxBytes, maxCache: docsCacheMaxBytes,
+		base: base, prefix: base + "/", ttl: docsCacheTTL, maxBytes: docsMaxBytes, maxCache: docsCacheMaxBytes, partChars: docsPartMaxChars,
 		agent: "endge-backend-mcp/" + version, now: time.Now, cache: map[string]docsEntry{},
 	}
 	source.client = &http.Client{Timeout: docsFetchTimeout, CheckRedirect: source.checkRedirect}
@@ -154,17 +193,225 @@ func (d *docsSource) orderResources(next mcp.MethodHandler) mcp.MethodHandler {
 	}
 }
 
-// read — обработчик resources/read для ресурсов и шаблонов.
+// read — обработчик resources/read для ресурсов и шаблонов. Файл длиннее partChars
+// отдаётся частями: без ?part — первая часть, каждая часть с заголовком и адресом следующей.
 func (d *docsSource) read(ctx context.Context, request *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
 	uri := request.Params.URI
-	if !d.allowed(uri) {
+	base, part, ok := splitPartURI(uri)
+	if !ok || !d.allowed(base) || !d.published(base) {
 		return nil, mcp.ResourceNotFoundError(uri)
 	}
-	text, mimeType, err := d.fetch(ctx, uri)
+	text, mimeType, err := d.fetch(ctx, base)
 	if err != nil {
 		return nil, err
 	}
+	parts := splitDocParts(text, d.partChars-docsPartFrameChars(base))
+	if part > len(parts) {
+		return nil, fmt.Errorf("в ресурсе %s %d %s: запросите ?%s=1…%d", base, len(parts), pluralParts(len(parts)), docsPartParam, len(parts))
+	}
+	if len(parts) > 1 {
+		text = framePart(base, parts[part-1], part, len(parts))
+	}
 	return &mcp.ReadResourceResult{Contents: []*mcp.ResourceContents{{URI: uri, MIMEType: mimeType, Text: text}}}, nil
+}
+
+// published — файл опубликован ресурсом или одним из шаблонов (кроме шаблона частей).
+func (d *docsSource) published(uri string) bool {
+	relative, ok := strings.CutPrefix(uri, d.prefix)
+	if !ok {
+		return false
+	}
+	for _, doc := range agentDocs {
+		if doc.path == relative {
+			return true
+		}
+	}
+	for _, pattern := range publishedPatterns {
+		if pattern.MatchString(relative) {
+			return true
+		}
+	}
+	return false
+}
+
+// splitPartURI отделяет ?part=N от адреса. Без параметра — первая часть; другие параметры
+// и некорректный номер не принимаются.
+func splitPartURI(uri string) (string, int, bool) {
+	base, query, found := strings.Cut(uri, "?")
+	if !found {
+		return uri, 1, true
+	}
+	value, ok := strings.CutPrefix(query, docsPartParam+"=")
+	if !ok || value == "" || len(value) > 4 || strings.TrimLeft(value, "0123456789") != "" || value[0] == '0' {
+		return "", 0, false
+	}
+	part, err := strconv.Atoi(value)
+	if err != nil || part < 1 {
+		return "", 0, false
+	}
+	return base, part, true
+}
+
+// partURI — адрес части number файла base.
+func partURI(base string, number int) string {
+	return fmt.Sprintf("%s?%s=%d", base, docsPartParam, number)
+}
+
+// docsPartFrameChars — запас символов под заголовок и концовку части.
+func docsPartFrameChars(base string) int {
+	return 3*utf8.RuneCountInString(base) + 200
+}
+
+// framePart добавляет к части заголовок и концовку с адресом следующей части.
+func framePart(base, body string, number, total int) string {
+	header := fmt.Sprintf("[Часть %d из %d: %s. Следующая: %s]\n\n", number, total, base, partURI(base, number+1))
+	footer := fmt.Sprintf("\n\n[Конец части %d из %d. Продолжение: %s]\n", number, total, partURI(base, number+1))
+	if number == total {
+		header = fmt.Sprintf("[Часть %d из %d: %s. Это последняя часть]\n\n", number, total, base)
+		footer = fmt.Sprintf("\n\n[Конец файла %s]\n", base)
+	}
+	return header + strings.TrimRight(body, "\n") + footer
+}
+
+func pluralParts(count int) string {
+	switch {
+	case count%10 == 1 && count%100 != 11:
+		return "часть"
+	case count%10 >= 2 && count%10 <= 4 && (count%100 < 12 || count%100 > 14):
+		return "части"
+	}
+	return "частей"
+}
+
+// docLine — строка файла и её свойства для выбора места разреза.
+type docLine struct {
+	text    string
+	chars   int
+	heading bool // заголовок Markdown вне блока кода
+	blank   bool // пустая строка вне блока кода
+	fence   bool // строка открывает блок кода
+}
+
+// splitDocParts делит текст на части не длиннее limit символов. Разрез ставится перед
+// заголовком Markdown вне блока кода, иначе после пустой строки или перед блоком кода,
+// иначе по границе строки;
+// строка длиннее limit режется по символам. Короткий текст возвращается одной частью.
+func splitDocParts(text string, limit int) []string {
+	if limit < 1 || utf8.RuneCountInString(text) <= limit {
+		return []string{text}
+	}
+	lines := docLines(text, limit)
+	parts := []string{}
+	for start := 0; start < len(lines); {
+		chars, end := 0, start
+		for end < len(lines) && (end == start || chars+lines[end].chars <= limit) {
+			chars += lines[end].chars
+			end++
+		}
+		if end < len(lines) {
+			end = cutBefore(lines, start, end, limit)
+		}
+		var part strings.Builder
+		for _, line := range lines[start:end] {
+			part.WriteString(line.text)
+		}
+		parts = append(parts, part.String())
+		start = end
+	}
+	return parts
+}
+
+// cutBefore выбирает индекс строки, перед которой режется часть lines[start:end].
+// Разрез не раньше середины части: заголовок, затем пустая строка или начало блока кода,
+// иначе конец части.
+func cutBefore(lines []docLine, start, end, limit int) int {
+	heading, blank := -1, -1
+	chars := 0
+	for index := start; index < end; index++ {
+		if index > start && chars >= limit/2 {
+			// Не отрывать заголовок от следующего за ним заголовка или текста.
+			if lines[index].heading && !lines[index-1].heading {
+				heading = index
+			}
+			if (lines[index-1].blank && !lines[index].blank) || (lines[index].fence && !lines[index-1].heading) {
+				blank = index
+			}
+		}
+		chars += lines[index].chars
+	}
+	switch {
+	case heading > start:
+		return heading
+	case blank > start:
+		return blank
+	}
+	return end
+}
+
+// docLines разбивает текст на строки с признаками заголовка и пустой строки вне блоков кода.
+func docLines(text string, limit int) []docLine {
+	lines := []docLine{}
+	fence := ""
+	for _, raw := range strings.SplitAfter(text, "\n") {
+		if raw == "" {
+			continue
+		}
+		trimmed := strings.TrimSpace(raw)
+		inCode, opens := fence != "", false
+		if marker := fenceMarker(trimmed); marker != "" && (fence == "" || strings.HasPrefix(trimmed, fence)) {
+			opens = fence == ""
+			if opens {
+				fence = marker
+			} else {
+				fence = ""
+			}
+			inCode = true
+		}
+		line := docLine{
+			heading: !inCode && isHeading(raw),
+			blank:   !inCode && trimmed == "",
+			fence:   opens,
+		}
+		for _, piece := range splitLongLine(raw, limit) {
+			line.text, line.chars = piece, utf8.RuneCountInString(piece)
+			lines = append(lines, line)
+			line.heading, line.fence = false, false
+		}
+	}
+	return lines
+}
+
+// fenceMarker — открывающая или закрывающая последовательность блока кода (``` или ~~~).
+func fenceMarker(line string) string {
+	for _, marker := range []string{"```", "~~~"} {
+		if strings.HasPrefix(line, marker) {
+			return marker
+		}
+	}
+	return ""
+}
+
+// isHeading — заголовок ATX Markdown: от одного до шести «#» и пробел.
+func isHeading(line string) bool {
+	level := 0
+	for level < len(line) && line[level] == '#' {
+		level++
+	}
+	return level >= 1 && level <= 6 && level < len(line) && (line[level] == ' ' || line[level] == '\t')
+}
+
+// splitLongLine режет строку длиннее limit на куски по символам.
+func splitLongLine(line string, limit int) []string {
+	if utf8.RuneCountInString(line) <= limit {
+		return []string{line}
+	}
+	pieces := []string{}
+	runes := []rune(line)
+	for len(runes) > limit {
+		pieces = append(pieces, string(runes[:limit]))
+		runes = runes[limit:]
+	}
+	return append(pieces, string(runes))
 }
 
 // allowed пропускает только файлы .md, .txt и манифест под префиксом AGENT_DOCS_URL без «..».

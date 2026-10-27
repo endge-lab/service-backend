@@ -2,12 +2,14 @@ package mcp
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -29,6 +31,8 @@ func newDocsServer(t *testing.T) *httptest.Server {
 		"/endge-docs/llms-full/reference/contracts/core.txt": "# Контракты core",
 		"/endge-docs/llms-full/agents.txt":                   "# Раздел агентов",
 		"/endge-docs/reference/query.md":                     "# Query",
+		"/endge-docs/llms-full/long.txt":                     longDoc(),
+		"/endge-docs/llms-full.txt":                          longDoc(),
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		docsRequests.Add(1)
@@ -180,5 +184,123 @@ func TestMCPWithoutDocsURLHasNoResources(t *testing.T) {
 	defer session.Close()
 	if session.InitializeResult().Capabilities.Resources != nil {
 		t.Fatalf("resources capability must be absent without AGENT_DOCS_URL")
+	}
+}
+
+// longDoc — файл ≈200 тыс. символов из разделов с заголовками и блоками кода.
+func longDoc() string {
+	var text strings.Builder
+	text.WriteString("# Длинный раздел\n\n")
+	for section := 1; section <= 60; section++ {
+		fmt.Fprintf(&text, "## Раздел %d\n\n", section)
+		text.WriteString("```bash\n# комментарий в коде, а не заголовок\necho ok\n```\n\n")
+		for paragraph := 0; paragraph < 50; paragraph++ {
+			text.WriteString("Строка текста раздела документации для проверки частей ресурса.\n")
+		}
+		text.WriteString("\n")
+	}
+	return text.String()
+}
+
+func TestMCPResourcesServeLongFilesInParts(t *testing.T) {
+	h := newHarness(t)
+	session := h.connect(t, "read")
+	base := h.docs.URL + "/endge-docs/llms-full/long.txt"
+	whole := longDoc()
+	first, err := readResource(t, session, base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	header := first.Contents[0].Text[:strings.Index(first.Contents[0].Text, "\n")]
+	var total int
+	if _, err := fmt.Sscanf(header, "[Часть 1 из %d:", &total); err != nil || total < 3 || !strings.Contains(header, "Следующая: "+base+"?part=2]") {
+		t.Fatalf("first part must name the count and the next part: %q %v", header, err)
+	}
+	var joined strings.Builder
+	for part := 1; part <= total; part++ {
+		uri := fmt.Sprintf("%s?part=%d", base, part)
+		read, err := readResource(t, session, uri)
+		if err != nil {
+			t.Fatalf("read %s: %v", uri, err)
+		}
+		text := read.Contents[0].Text
+		if read.Contents[0].URI != uri || read.Contents[0].MIMEType != "text/plain" {
+			t.Fatalf("part %d contents: %+v", part, read.Contents[0])
+		}
+		if chars := utf8.RuneCountInString(text); chars > docsPartMaxChars {
+			t.Fatalf("part %d has %d characters, limit %d", part, chars, docsPartMaxChars)
+		}
+		lines := strings.Split(text, "\n")
+		body := strings.Join(lines[2:len(lines)-3], "\n")
+		if part > 1 && !strings.HasPrefix(body, "## Раздел ") {
+			t.Fatalf("part %d must start at a heading: %q", part, body[:80])
+		}
+		if part < total && !strings.Contains(text, fmt.Sprintf("Продолжение: %s?part=%d]", base, part+1)) {
+			t.Fatalf("part %d must end with the next part link", part)
+		}
+		if part == total && !strings.Contains(lines[0], "Это последняя часть") {
+			t.Fatalf("last part must say so: %q", lines[0])
+		}
+		joined.WriteString(body)
+		joined.WriteString("\n")
+	}
+	// Части без заголовков и концовок дают тот же текст (с точностью до пустых строк на стыках).
+	if strings.Join(strings.Fields(joined.String()), " ") != strings.Join(strings.Fields(whole), " ") {
+		t.Fatalf("parts must join back into the file")
+	}
+	if _, err := readResource(t, session, fmt.Sprintf("%s?part=%d", base, total+1)); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("?part=1…%d", total)) {
+		t.Fatalf("part out of range must name the valid range: %v", err)
+	}
+	// Короткий файл отдаётся целиком, без заголовка части, и с ?part=1 тоже.
+	short := h.docs.URL + "/endge-docs/agents/index.md"
+	for _, uri := range []string{short, short + "?part=1"} {
+		if read, err := readResource(t, session, uri); err != nil || read.Contents[0].Text != "# Endge для ИИ-агентов" {
+			t.Fatalf("short file %s: %+v %v", uri, read, err)
+		}
+	}
+	for name, uri := range map[string]string{
+		"unpublished file":     h.docs.URL + "/endge-docs/llms-full.txt",
+		"unpublished part":     h.docs.URL + "/endge-docs/llms-full.txt?part=2",
+		"zero part":            base + "?part=0",
+		"leading zero":         base + "?part=02",
+		"other parameter":      base + "?x=1",
+		"extra parameter":      base + "?part=1&x=1",
+		"part outside prefix":  "https://example.com/llms.txt?part=1",
+		"traversal with parts": h.docs.URL + "/endge-docs/agents/../../secret.md?part=1",
+	} {
+		if _, err := readResource(t, session, uri); err == nil {
+			t.Fatalf("%s must fail: %s", name, uri)
+		}
+	}
+}
+
+func TestSplitDocPartsCutsAtHeadingsOutsideCode(t *testing.T) {
+	text := "# A\n" + strings.Repeat("текст\n", 20) + "```\n" + strings.Repeat("# не заголовок\n", 10) + "```\n" + "## B\n" + strings.Repeat("текст\n", 10)
+	parts := splitDocParts(text, 200)
+	if strings.Join(parts, "") != text {
+		t.Fatalf("parts must keep every character")
+	}
+	for index, part := range parts {
+		if utf8.RuneCountInString(part) > 200 {
+			t.Fatalf("part %d is longer than the limit", index)
+		}
+		if index > 0 && strings.HasPrefix(part, "# не заголовок") {
+			t.Fatalf("a part must not start inside a code block: %q", part)
+		}
+	}
+	if len(parts) != 3 || !strings.HasPrefix(parts[1], "```") || !strings.HasPrefix(parts[2], "## B") {
+		t.Fatalf("the cuts must fall before the code block and before the heading B: %q", parts)
+	}
+	// Без заголовков режется после пустой строки, а строка длиннее лимита — по символам.
+	parts = splitDocParts(strings.Repeat("абзац\n", 20)+"\n"+strings.Repeat("абзац\n", 20), 150)
+	if len(parts) < 2 || !strings.HasPrefix(parts[1], "абзац") || !strings.HasSuffix(parts[0], "\n") {
+		t.Fatalf("paragraph cut: %q", parts)
+	}
+	long := strings.Repeat("ж", 250)
+	if parts := splitDocParts(long, 100); len(parts) != 3 || strings.Join(parts, "") != long {
+		t.Fatalf("long line must be cut by characters: %d", len(parts))
+	}
+	if parts := splitDocParts("короткий", 100); len(parts) != 1 {
+		t.Fatalf("short text is one part")
 	}
 }

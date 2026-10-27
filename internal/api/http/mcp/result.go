@@ -84,7 +84,7 @@ func hintFor(code string, status int) string {
 	case "facet_identity_required":
 		return "Для collection=facet-documents передайте facetIdentity: identity фасета из endge_list_documents с collection=facets."
 	case "access_token_admin_forbidden":
-		return "Операция требует роли Admin workspace и недоступна токену: покажите пользователю endge_commit_plan и попросите выполнить её в Configurator."
+		return "Операция требует роли Admin workspace и недоступна персональному токену. Профиль авторизации (auth-profiles): укажите в Query и Stream auth: { mode: 'inherit' } или попросите пользователя создать профиль в Configurator и сошлитесь на его identity. Другие административные операции попросите выполнить пользователя в Configurator."
 	case "collection_unsupported":
 		return "Используйте одну из коллекций из описания параметра collection."
 	case "precondition_required":

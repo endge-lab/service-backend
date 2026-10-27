@@ -8,21 +8,21 @@ import (
 type CreateRequest struct {
 	shared.CreateDocumentRequest
 	Source          string `json:"source" validate:"required,max=8388608" example:"export default {}"`
-	SourceVersion   int    `json:"sourceVersion" validate:"required,gt=0" example:"2"`
+	SourceVersion   int    `json:"sourceVersion" validate:"required,gt=0" example:"1"`
 	ContractVersion int    `json:"contractVersion" validate:"required,gt=0" example:"1"`
 }
 
 type PatchRequest struct {
 	shared.PatchDocumentRequest
 	Source          *string `json:"source,omitempty" validate:"omitempty,max=8388608" example:"export default {}"`
-	SourceVersion   *int    `json:"sourceVersion,omitempty" validate:"omitempty,gt=0" example:"2"`
+	SourceVersion   *int    `json:"sourceVersion,omitempty" validate:"omitempty,gt=0" example:"1"`
 	ContractVersion *int    `json:"contractVersion,omitempty" validate:"omitempty,gt=0" example:"1"`
 }
 
 type Response struct {
 	shared.DocumentMetadata
 	Source          string `json:"source" example:"export default {}"`
-	SourceVersion   int    `json:"sourceVersion" example:"2"`
+	SourceVersion   int    `json:"sourceVersion" example:"1"`
 	ContractVersion int    `json:"contractVersion" example:"1"`
 }
 

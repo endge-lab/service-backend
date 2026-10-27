@@ -1,8 +1,8 @@
 package mcp
 
 import (
-	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/endge-lab/service-backend/internal/usecase/documents"
@@ -10,6 +10,10 @@ import (
 
 // formatVersionFields — имена полей версии формата документа в REST DTO.
 var formatVersionFields = []string{"sourceVersion", "modelVersion"}
+
+// commonCreateFields — поля тела создания, которые описаны в инструменте отдельно
+// и не повторяются в списке дополнительных обязательных полей коллекции.
+var commonCreateFields = []string{"identity", "displayName", "source", "sourceVersion", "modelVersion"}
 
 // FormatVersion — поле версии формата документа коллекции, выведенное из её CreateRequest.
 // Описание инструментов строится из него, поэтому не расходится с проверкой DTO.
@@ -20,89 +24,129 @@ type FormatVersion struct {
 	Required bool
 	// WithSource — DTO допускает пропуск, но use case требует поле вместе с source (source_version_invalid).
 	WithSource bool
-	// Rule — допустимые значения: «ровно 2», «целое > 0», «целое ≥ 1».
-	Rule string
-	// Example — значение из example-тега DTO.
-	Example string
+	// Exact — сервер принимает только это значение (validate:"eq=…").
+	Exact bool
+	// Current — текущая версия формата: значение example-тега DTO. Его пишет Configurator
+	// при создании документа и его же принимает компилятор Core.
+	Current string
+	// Also — другие обязательные поля тела создания коллекции, например contractVersion=1
+	// у computations или storeIdentity у updates.
+	Also []string
 }
 
-// formatVersionOf ищет поле версии в DTO создания (включая встроенные структуры).
+// formatVersionOf ищет поле версии и дополнительные обязательные поля в DTO создания
+// (включая встроенные структуры).
 func formatVersionOf(collection string, request reflect.Type) FormatVersion {
+	version := FormatVersion{Also: extraRequiredFields(request)}
 	field, ok := findVersionField(request)
 	if !ok {
-		return FormatVersion{}
+		return version
 	}
-	name := strings.Split(field.Tag.Get("json"), ",")[0]
-	rules := strings.Split(field.Tag.Get("validate"), ",")
-	version := FormatVersion{Field: name, Example: field.Tag.Get("example"), Rule: "целое > 0"}
-	for _, rule := range rules {
+	version.Field = strings.Split(field.Tag.Get("json"), ",")[0]
+	version.Current = field.Tag.Get("example")
+	for _, rule := range strings.Split(field.Tag.Get("validate"), ",") {
 		switch {
 		case rule == "required":
 			version.Required = true
 		case strings.HasPrefix(rule, "eq="):
-			version.Rule = "ровно " + strings.TrimPrefix(rule, "eq=")
-		case strings.HasPrefix(rule, "gt="):
-			version.Rule = "целое > " + strings.TrimPrefix(rule, "gt=")
-		case strings.HasPrefix(rule, "min="):
-			version.Rule = "целое ≥ " + strings.TrimPrefix(rule, "min=")
+			version.Exact = true
+			version.Current = strings.TrimPrefix(rule, "eq=")
 		}
 	}
-	if name == "sourceVersion" && !version.Required && documents.RequiresSourceVersion(collection) {
+	if version.Field == "sourceVersion" && !version.Required && documents.RequiresSourceVersion(collection) {
 		version.WithSource = true
 	}
 	return version
 }
 
 func findVersionField(request reflect.Type) (reflect.StructField, bool) {
+	var found reflect.StructField
+	ok := false
+	walkFields(request, func(field reflect.StructField, name string) bool {
+		if ok || !slices.Contains(formatVersionFields, name) {
+			return true
+		}
+		found, ok = field, true
+		return false
+	})
+	return found, ok
+}
+
+// extraRequiredFields — обязательные поля DTO, кроме общих: «storeIdentity», «contractVersion=1».
+func extraRequiredFields(request reflect.Type) []string {
+	var fields []string
+	walkFields(request, func(field reflect.StructField, name string) bool {
+		if slices.Contains(commonCreateFields, name) || !slices.Contains(strings.Split(field.Tag.Get("validate"), ","), "required") {
+			return true
+		}
+		if strings.HasSuffix(name, "Version") && field.Tag.Get("example") != "" {
+			name += "=" + field.Tag.Get("example")
+		}
+		fields = append(fields, name)
+		return true
+	})
+	return fields
+}
+
+// walkFields обходит поля структуры с JSON-именем, включая встроенные; visit возвращает false, чтобы остановиться.
+func walkFields(request reflect.Type, visit func(field reflect.StructField, name string) bool) bool {
 	for request.Kind() == reflect.Pointer {
 		request = request.Elem()
 	}
 	if request.Kind() != reflect.Struct {
-		return reflect.StructField{}, false
+		return true
 	}
 	for i := range request.NumField() {
 		field := request.Field(i)
 		if field.Anonymous {
-			if nested, ok := findVersionField(field.Type); ok {
-				return nested, true
+			if !walkFields(field.Type, visit) {
+				return false
 			}
 			continue
 		}
 		name := strings.Split(field.Tag.Get("json"), ",")[0]
-		for _, candidate := range formatVersionFields {
-			if name == candidate {
-				return field, true
-			}
+		if name == "" || name == "-" {
+			continue
+		}
+		if !visit(field, name) {
+			return false
 		}
 	}
-	return reflect.StructField{}, false
+	return true
 }
 
-// describe — строка для описания инструмента: «modelVersion (обязательно, целое > 0, например 1)».
+// describe — строка для описания инструмента, например «sourceVersion=1 (обязательно); ещё обязательно: contractVersion=1».
 func (v FormatVersion) describe() string {
-	if v.Field == "" {
-		return "нет поля версии"
+	text := "нет поля версии"
+	if v.Field != "" {
+		text = v.Field
+		if v.Current != "" {
+			text += "=" + v.Current
+		}
+		switch {
+		case v.Required && v.Exact:
+			text += " (обязательно, другое значение — ошибка)"
+		case v.Required:
+			text += " (обязательно)"
+		case v.WithSource:
+			text += " (обязательно вместе с source)"
+		default:
+			text += " (необязательно)"
+		}
 	}
-	parts := []string{"необязательно"}
-	switch {
-	case v.Required:
-		parts[0] = "обязательно"
-	case v.WithSource:
-		parts[0] = "обязательно вместе с source"
+	if len(v.Also) > 0 {
+		text += "; ещё обязательно: " + strings.Join(v.Also, ", ")
 	}
-	parts = append(parts, v.Rule)
-	if v.Example != "" && !strings.HasPrefix(v.Rule, "ровно") {
-		parts = append(parts, "обычно "+v.Example)
-	}
-	return fmt.Sprintf("%s (%s)", v.Field, strings.Join(parts, ", "))
+	return text
 }
 
-// formatVersionSummary перечисляет поле версии формата по коллекциям в порядке collections.
-func formatVersionSummary(versions map[string]FormatVersion, collections []string) string {
+// formatVersionSummary перечисляет поле версии формата по коллекциям в порядке collections,
+// пропуская коллекции из skip.
+func formatVersionSummary(versions map[string]FormatVersion, collections []string, skip ...string) string {
 	lines := make([]string, 0, len(collections))
 	for _, collection := range collections {
 		version, ok := versions[collection]
-		if !ok {
+		if !ok || slices.Contains(skip, collection) {
 			continue
 		}
 		lines = append(lines, "- "+collection+": "+version.describe())

@@ -11,21 +11,21 @@ type CreateRequest struct {
 	shared.CreateDocumentRequest
 	Fields        []json.RawMessage `json:"fields,omitempty" swaggertype:"array,object"`
 	Source        string            `json:"source,omitempty" validate:"omitempty,max=8388608" example:"export default {}"`
-	SourceVersion int               `json:"sourceVersion,omitempty" validate:"omitempty,gt=0" example:"2"`
+	SourceVersion int               `json:"sourceVersion,omitempty" validate:"omitempty,gt=0" example:"1"`
 }
 
 type PatchRequest struct {
 	shared.PatchDocumentRequest
 	Fields        *[]json.RawMessage `json:"fields,omitempty" swaggertype:"array,object"`
 	Source        *string            `json:"source,omitempty" validate:"omitempty,max=8388608" example:"export default {}"`
-	SourceVersion *int               `json:"sourceVersion,omitempty" validate:"omitempty,gt=0" example:"2"`
+	SourceVersion *int               `json:"sourceVersion,omitempty" validate:"omitempty,gt=0" example:"1"`
 }
 
 type Response struct {
 	shared.DocumentMetadata
 	Fields        []json.RawMessage `json:"fields" swaggertype:"array,object"`
 	Source        string            `json:"source" example:"export default {}"`
-	SourceVersion int               `json:"sourceVersion" example:"2"`
+	SourceVersion int               `json:"sourceVersion" example:"1"`
 }
 
 type ListResponse struct {

@@ -35,8 +35,10 @@ func NewHandler(cfg Config, useCases UseCases, contracts Contracts, logger *zap.
 	for _, write := range []bool{false, true} {
 		for _, commit := range []bool{false, true} {
 			for _, remove := range []bool{false, true} {
-				set := permissions{write: write, commit: commit, delete: remove}
-				h.servers[set] = newServer(cfg, useCases, contracts, logger, set, docs)
+				for _, token := range []bool{false, true} {
+					set := permissions{write: write, commit: commit, delete: remove, token: token}
+					h.servers[set] = newServer(cfg, useCases, contracts, logger, set, docs)
+				}
 			}
 		}
 	}

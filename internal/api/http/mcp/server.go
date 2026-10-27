@@ -25,8 +25,10 @@ type Config struct {
 
 // permissions — набор инструментов изменения. Для персонального токена он сужается
 // scope и флагами токена, поэтому агент не видит недоступных ему операций.
+// token — запрос по персональному токену: административные коллекции (auth-profiles)
+// токену недоступны (access_token_admin_forbidden), инструменты изменения их не предлагают.
 type permissions struct {
-	write, commit, delete bool
+	write, commit, delete, token bool
 }
 
 // permissionsFrom вычисляет набор по токену запроса; сессия пользователя получает все
@@ -37,7 +39,7 @@ func permissionsFrom(ctx context.Context) permissions {
 		return permissions{write: true, commit: true, delete: true}
 	}
 	write := token.CanWrite()
-	return permissions{write: write, commit: write && token.CanCommit, delete: write && token.CanDelete}
+	return permissions{write: write, commit: write && token.CanCommit, delete: write && token.CanDelete, token: true}
 }
 
 // instructions — порядок работы и правила для агента; передаются клиенту в initialize.
@@ -45,11 +47,13 @@ func instructions(docs *docsSource) string {
 	var text strings.Builder
 	if docs != nil {
 		fmt.Fprintf(&text, "Сначала прочитайте ресурс llms-agent (%s): ядро документации для агента — правила, коды ошибок, авторинг Source и все операции. Схемы тел — шаблон ресурса llms-full/api/{group}.txt, Source каждого типа — llms-full/reference/{type}.txt, любая страница — {path}.md.\n", docs.uri("llms-agent.txt"))
+		fmt.Fprintf(&text, "Ответ resources/read не длиннее ≈%d тыс. символов: длинный файл приходит частями. Первая строка части — «[Часть N из M: <адрес>. Следующая: <адрес>?part=N+1]»; прочитайте все части по порядку (адрес с ?part=N читается тем же resources/read).\n", docsPartMaxChars/1000)
 	}
 	text.WriteString(`Инструменты работают с Endge Service Backend от имени владельца токена (или пользователя JWT) через те же use case, что REST API.
 Порядок: endge_status → endge_list_workspaces → чтение (endge_get_workspace, endge_list_documents, endge_get_document) → изменение → endge_commit_plan.
 Персональный токен выпущен на один workspace: параметр workspace можно не передавать. С JWT передавайте workspace в каждый инструмент.
-Документы описываются полем source на DSL Endge (defineQuery, defineComponent и т. д.). Перед созданием прочитайте похожий документ той же коллекции; поле версии формата коллекции (sourceVersion или modelVersion) указано в описании endge_create_document.
+Документы описываются полем source на DSL Endge (defineQuery, defineComponent и т. д.). Перед созданием прочитайте похожий документ той же коллекции или проверенный пример (страница agents/document-examples.md); текущее значение поля версии формата коллекции (sourceVersion или modelVersion) и другие обязательные поля указаны в описании endge_create_document.
+Профили авторизации (auth-profiles) меняет только пользователь с ролью Admin: персональному токену они недоступны (access_token_admin_forbidden). Без профиля указывайте в Query и Stream auth: { mode: 'inherit' } или попросите пользователя создать профиль в Configurator.
 Фасеты и их документы (тенанты, регионы) — коллекции facets и facet-documents тех же инструментов; для facet-documents передавайте facetIdentity.
 Изменение, удаление и восстановление требуют текущей revision; при revision_conflict перечитайте документ. Откат к прошлой версии: endge_document_revisions → endge_get_revision → endge_restore_revision.
 Изменения агента помечаются токеном в истории ревизий. Удаление и коммит выполняйте только по явной просьбе пользователя; перед коммитом покажите план (endge_commit_plan перечисляет документы). История коммитов — endge_list_commits, изменения коммита — endge_get_commit.
@@ -67,7 +71,7 @@ func instructions(docs *docsSource) string {
 // Сервер не хранит состояния запроса и переиспользуется всеми запросами с тем же набором.
 func newServer(cfg Config, useCases UseCases, contracts Contracts, logger *zap.Logger, allowed permissions, docs *docsSource) *mcp.Server {
 	server := mcp.NewServer(&mcp.Implementation{Name: ServerName, Title: "Endge Service Backend", Version: cfg.Version}, &mcp.ServerOptions{Instructions: instructions(docs)})
-	t := &tools{cfg: cfg, useCases: useCases, contracts: contracts, logger: logger, docs: docs}
+	t := &tools{cfg: cfg, useCases: useCases, contracts: contracts, logger: logger, docs: docs, allowed: allowed}
 	t.registerReadTools(server)
 	if allowed.write {
 		t.registerWriteTools(server)

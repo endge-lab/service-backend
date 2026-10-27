@@ -10,7 +10,7 @@ import (
 type CreateRequest struct {
 	shared.CreateDocumentRequest
 	Source                string          `json:"source" validate:"required"`
-	SourceVersion         int             `json:"sourceVersion" validate:"required,min=1"`
+	SourceVersion         int             `json:"sourceVersion" validate:"required,min=1" example:"1"`
 	Target                json.RawMessage `json:"target,omitempty" swaggertype:"object"`
 	DefaultImplementation json.RawMessage `json:"defaultImplementation,omitempty" swaggertype:"object"`
 	Owner                 json.RawMessage `json:"owner,omitempty" swaggertype:"object"`
@@ -19,7 +19,7 @@ type CreateRequest struct {
 type PatchRequest struct {
 	shared.PatchDocumentRequest
 	Source                *string         `json:"source,omitempty"`
-	SourceVersion         *int            `json:"sourceVersion,omitempty" validate:"omitempty,min=1"`
+	SourceVersion         *int            `json:"sourceVersion,omitempty" validate:"omitempty,min=1" example:"1"`
 	Target                json.RawMessage `json:"target,omitempty" swaggertype:"object"`
 	DefaultImplementation json.RawMessage `json:"defaultImplementation,omitempty" swaggertype:"object"`
 	Owner                 json.RawMessage `json:"owner,omitempty" swaggertype:"object"`
@@ -28,7 +28,7 @@ type PatchRequest struct {
 type Response struct {
 	shared.DocumentMetadata
 	Source                string          `json:"source"`
-	SourceVersion         int             `json:"sourceVersion"`
+	SourceVersion         int             `json:"sourceVersion" example:"1"`
 	Target                json.RawMessage `json:"target" swaggertype:"object"`
 	DefaultImplementation json.RawMessage `json:"defaultImplementation" swaggertype:"object"`
 	Owner                 json.RawMessage `json:"owner" swaggertype:"object"`
