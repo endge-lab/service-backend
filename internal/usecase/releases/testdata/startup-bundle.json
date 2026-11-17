@@ -1,0 +1,477 @@
+{
+  "executionGraphVersion": 1,
+  "version": 1,
+  "programId": "38b7e318-cee0-4f06-b32a-8e797a96c479",
+  "compilerVersion": "program-v5",
+  "createdAt": "2026-11-17T11:27:50.689Z",
+  "context": {
+    "workspace": "workspace-test",
+    "facets": {
+      "region": "us",
+      "channel": "web"
+    },
+    "user": "anonymous",
+    "locale": "en",
+    "theme": "light",
+    "timezone": "local",
+    "configuration": {
+      "vars": [],
+      "locales": [
+        {
+          "code": "en",
+          "displayName": "English",
+          "shortLabel": "EN",
+          "direction": "ltr"
+        },
+        {
+          "code": "ru",
+          "displayName": "Русский",
+          "shortLabel": "RU",
+          "direction": "ltr"
+        }
+      ],
+      "defaultLocale": "ru",
+      "fallbackLocale": "ru",
+      "themes": [
+        {
+          "identity": "light",
+          "displayName": "Светлая"
+        },
+        {
+          "identity": "dark",
+          "displayName": "Тёмная"
+        }
+      ],
+      "defaultTheme": "light",
+      "timezones": [
+        {
+          "identity": "local",
+          "displayName": "Local time"
+        },
+        {
+          "identity": "UTC",
+          "displayName": "UTC"
+        }
+      ],
+      "defaultTimezone": "local",
+      "defaultAuthProfileIdentity": null,
+      "sfcAdapterIds": [
+        "vue-native"
+      ],
+      "defaultSfcAdapterId": "vue-native",
+      "sfcEditing": {
+        "cancelOn": [
+          {
+            "event": "keydown",
+            "key": [
+              "Escape"
+            ],
+            "stop": true,
+            "prevent": true
+          },
+          {
+            "event": "focusout"
+          }
+        ],
+        "commitOn": [
+          {
+            "event": "keydown",
+            "key": [
+              "Enter"
+            ],
+            "prevent": true
+          }
+        ]
+      },
+      "tooltips": {
+        "side": "right",
+        "align": "start",
+        "openDelay": 250,
+        "closeDelay": 100
+      },
+      "diagnostics": {
+        "telemetry": {
+          "collection": {
+            "enabled": true,
+            "signals": [
+              "log",
+              "span"
+            ],
+            "minSeverity": 9,
+            "maxRecords": 2000
+          },
+          "outputs": [],
+          "routes": []
+        },
+        "snapshots": {
+          "content": {
+            "telemetry": true,
+            "problems": true,
+            "configuration": false,
+            "effectiveConfiguration": true,
+            "domain": true,
+            "program": true,
+            "runtime": true,
+            "raphData": true,
+            "raphGraph": true
+          },
+          "shortcut": {
+            "triggerSet": [],
+            "content": {
+              "telemetry": true,
+              "problems": true,
+              "configuration": false,
+              "effectiveConfiguration": true,
+              "domain": true,
+              "program": true,
+              "runtime": true,
+              "raphData": true,
+              "raphGraph": true
+            }
+          },
+          "automatic": {
+            "enabled": false,
+            "errorCount": 10,
+            "windowSeconds": 60,
+            "cooldownSeconds": 300,
+            "outputIds": []
+          }
+        }
+      },
+      "values": {}
+    }
+  },
+  "catalog": {
+    "workspace": {
+      "identity": "workspace-test",
+      "displayName": "Test Workspace",
+      "startupCompositionIdentity": "app",
+      "documentStructure": "frontend"
+    },
+    "folders": {},
+    "documents": {
+      "query:customer-us-web": {
+        "id": "customer-us-web",
+        "identity": "customer-us-web",
+        "entityType": "query",
+        "displayName": "customer-us-web",
+        "folderId": null,
+        "workspaceFolderId": null,
+        "position": 2,
+        "documentType": "query-rest",
+        "artifactKeys": [
+          "query:customer-us-web"
+        ],
+        "status": "compiled"
+      },
+      "composition:app": {
+        "id": "app",
+        "identity": "app",
+        "entityType": "composition",
+        "displayName": "app",
+        "folderId": null,
+        "workspaceFolderId": null,
+        "position": 0,
+        "documentType": "composition",
+        "kind": "library",
+        "artifactKeys": [
+          "composition:app"
+        ],
+        "status": "compiled"
+      },
+      "composition:america": {
+        "id": "america",
+        "identity": "america",
+        "entityType": "composition",
+        "displayName": "america",
+        "folderId": null,
+        "workspaceFolderId": null,
+        "position": 2,
+        "documentType": "composition",
+        "kind": "library",
+        "artifactKeys": [
+          "composition:america"
+        ],
+        "status": "compiled"
+      }
+    }
+  },
+  "requirements": {
+    "artifactTypes": [
+      "composition",
+      "query"
+    ],
+    "componentTags": []
+  },
+  "artifacts": {
+    "composition:app": {
+      "ref": {
+        "entityType": "composition",
+        "id": "app",
+        "identity": "app"
+      },
+      "sourceHash": "yu4yro",
+      "compilerVersion": "program-v5",
+      "contextHash": "ctx-cb109da5",
+      "status": "valid",
+      "diagnostics": [],
+      "dependencies": [
+        {
+          "entityType": "composition",
+          "id": "america",
+          "identity": "america",
+          "role": "composition-runtime"
+        }
+      ],
+      "capabilities": [
+        "compilable",
+        "executable",
+        "configuration"
+      ],
+      "metadata": {
+        "self": {},
+        "nodes": []
+      },
+      "payload": {
+        "type": "composition",
+        "sourceVersion": 1,
+        "dataMode": null,
+        "activation": null,
+        "props": [],
+        "data": [],
+        "resources": [],
+        "scopes": [
+          {
+            "name": "scope_default",
+            "path": "scope_default",
+            "parentPath": null,
+            "activationOverride": null,
+            "effectiveActivation": {
+              "mode": "startup"
+            },
+            "data": [],
+            "resources": [],
+            "runtimes": [
+              "screen"
+            ],
+            "children": [],
+            "sourceOrder": 0
+          }
+        ],
+        "runtimes": [
+          {
+            "name": "screen",
+            "path": "screen",
+            "scopePath": "scope_default",
+            "sourceLocations": {
+              "runtime": {
+                "start": 40,
+                "end": 169
+              },
+              "call": {
+                "start": 135,
+                "end": 157
+              },
+              "withProps": null
+            },
+            "kind": "composition",
+            "identity": "america",
+            "activationOverride": null,
+            "effectiveActivation": {
+              "mode": "startup"
+            },
+            "props": {},
+            "dataBindings": {},
+            "storeTo": []
+          }
+        ],
+        "hooks": [],
+        "outputs": [],
+        "i18nResources": [],
+        "graph": {
+          "inputs": [],
+          "dataInputs": [],
+          "updates": [],
+          "successes": [],
+          "publications": [],
+          "mounts": [],
+          "events": []
+        }
+      }
+    },
+    "composition:america": {
+      "ref": {
+        "entityType": "composition",
+        "id": "america",
+        "identity": "america"
+      },
+      "sourceHash": "ntx2y4",
+      "compilerVersion": "program-v5",
+      "contextHash": "ctx-cb109da5",
+      "status": "valid",
+      "diagnostics": [],
+      "dependencies": [
+        {
+          "entityType": "query",
+          "id": "customer-us-web",
+          "identity": "customer-us-web",
+          "role": "composition-runtime"
+        }
+      ],
+      "capabilities": [
+        "compilable",
+        "executable",
+        "configuration"
+      ],
+      "metadata": {
+        "self": {},
+        "nodes": []
+      },
+      "payload": {
+        "type": "composition",
+        "sourceVersion": 1,
+        "dataMode": null,
+        "activation": null,
+        "props": [],
+        "data": [],
+        "resources": [],
+        "scopes": [
+          {
+            "name": "scope_default",
+            "path": "scope_default",
+            "parentPath": null,
+            "activationOverride": null,
+            "effectiveActivation": {
+              "mode": "startup"
+            },
+            "data": [],
+            "resources": [],
+            "runtimes": [
+              "request"
+            ],
+            "children": [],
+            "sourceOrder": 0
+          }
+        ],
+        "runtimes": [
+          {
+            "name": "request",
+            "path": "request",
+            "scopePath": "scope_default",
+            "sourceLocations": {
+              "runtime": {
+                "start": 41,
+                "end": 187
+              },
+              "call": {
+                "start": 76,
+                "end": 100
+              },
+              "withProps": null
+            },
+            "kind": "query",
+            "identity": "customer-us-web",
+            "activationOverride": null,
+            "effectiveActivation": {
+              "mode": "startup"
+            },
+            "props": {},
+            "dataBindings": {},
+            "storeTo": []
+          }
+        ],
+        "hooks": [],
+        "outputs": [],
+        "i18nResources": [],
+        "graph": {
+          "inputs": [],
+          "dataInputs": [],
+          "updates": [],
+          "successes": [],
+          "publications": [],
+          "mounts": [],
+          "events": []
+        }
+      }
+    },
+    "query:customer-us-web": {
+      "ref": {
+        "entityType": "query",
+        "id": "customer-us-web",
+        "identity": "customer-us-web"
+      },
+      "sourceHash": "dfaa7c",
+      "compilerVersion": "program-v5",
+      "contextHash": "ctx-cb109da5",
+      "status": "valid",
+      "diagnostics": [],
+      "dependencies": [],
+      "capabilities": [
+        "compilable",
+        "runnable",
+        "data-provider"
+      ],
+      "metadata": {
+        "self": {},
+        "nodes": []
+      },
+      "payload": {
+        "type": "query-rest",
+        "sourceVersion": 2,
+        "endpoint": "https://us-web.example.test",
+        "query": "/search",
+        "props": [
+          {
+            "key": "filterPayload",
+            "type": "Object",
+            "optional": true,
+            "array": false
+          }
+        ],
+        "requestBody": {
+          "type": "operation",
+          "operation": "merge",
+          "arguments": [
+            {
+              "type": "object",
+              "properties": {
+                "limit": {
+                  "type": "literal",
+                  "value": 100
+                }
+              }
+            },
+            {
+              "type": "read",
+              "source": "prop",
+              "path": "filterPayload"
+            }
+          ]
+        },
+        "outputs": [
+          {
+            "key": "raw",
+            "source": {
+              "type": "response",
+              "path": "items"
+            },
+            "transforms": [],
+            "dataViews": [],
+            "contract": null,
+            "materialization": {
+              "kind": "source"
+            }
+          }
+        ],
+        "method": "POST",
+        "headers": {},
+        "auth": {
+          "mode": "inherit"
+        },
+        "mockDataEnabled": false,
+        "mockData": null
+      }
+    }
+  },
+  "exportScope": "startup-composition"
+}

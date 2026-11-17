@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/endge-lab/service-backend/test/support"
@@ -17,10 +18,20 @@ import (
 )
 
 func TestBuiltReleaseCommitSnapshotAndRollback(t *testing.T) {
+	for _, scope := range []string{"complete-model", "startup-composition"} {
+		t.Run(scope, func(t *testing.T) { testBuiltReleaseCommitSnapshotAndRollback(t, scope) })
+	}
+}
+
+func testBuiltReleaseCommitSnapshotAndRollback(t *testing.T, buildScope string) {
 	database := postgresSuite.NewDatabase(t)
 	app := support.NewTestApp(t, database, support.DevConfig())
-	createWorkspace(t, app, nil, "build-workspace")
-	headers := map[string]string{"X-Endge-Workspace": "build-workspace"}
+	workspaceIdentity := "build-workspace"
+	if buildScope == "startup-composition" {
+		workspaceIdentity = "workspace-test"
+	}
+	createWorkspace(t, app, nil, workspaceIdentity)
+	headers := map[string]string{"X-Endge-Workspace": workspaceIdentity}
 	createQuery := func(identity string) {
 		response := perform(t, app, http.MethodPost, "/api/v1/queries", map[string]any{"identity": identity, "displayName": identity, "source": "query {}", "sourceVersion": 2}, headers)
 		assertStatus(t, response, fiber.StatusCreated)
@@ -31,14 +42,33 @@ func TestBuiltReleaseCommitSnapshotAndRollback(t *testing.T) {
 		assertStatus(t, response, fiber.StatusOK)
 		return objectField(t, objectField(t, decodeObject(t, response), "workspace"), "state")
 	}
+	programID := "test-program"
+	compilerVersion := "program-v4"
+	raw := []byte(`{"format":"endge-bundle","version":1,"bundle":{"version":1,"programId":"test-program","compilerVersion":"program-v4","context":{},"catalog":{"folders":{},"documents":{}},"artifacts":{}}}`)
+	if buildScope == "startup-composition" {
+		program, err := os.ReadFile("../../internal/usecase/releases/testdata/startup-bundle.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		var decoded map[string]any
+		if err := json.Unmarshal(program, &decoded); err != nil {
+			t.Fatal(err)
+		}
+		programID = decoded["programId"].(string)
+		compilerVersion = decoded["compilerVersion"].(string)
+		raw, err = json.Marshal(map[string]any{"format": "endge-bundle", "version": 1, "bundle": json.RawMessage(program)})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
 	var zipped bytes.Buffer
 	writer := gzip.NewWriter(&zipped)
-	_, _ = writer.Write([]byte(`{"format":"endge-bundle","version":1,"bundle":{"version":1,"programId":"test-program","compilerVersion":"program-v4","context":{},"catalog":{"folders":{},"documents":{}},"artifacts":{}}}`))
+	_, _ = writer.Write(raw)
 	if err := writer.Close(); err != nil {
 		t.Fatal(err)
 	}
 	metadata := func(state map[string]any) map[string]any {
-		return map[string]any{"identity": "built-release", "displayName": "Built release", "description": "Комментарий к релизу", "workspaceId": state["id"], "generation": state["generation"], "headSequence": state["headSequence"], "commitMessage": "Build source", "buildMetadata": map[string]any{"version": 1, "programId": "test-program", "compilerVersion": "program-v4", "runtime": "ts-browser", "scope": "complete-model", "contextMode": "effective-context", "includeAst": false, "fileFormat": "gzip", "profile": map[string]any{"identity": "profile", "displayName": "Original profile", "revision": 3}}}
+		return map[string]any{"identity": "built-release", "displayName": "Built release", "description": "Комментарий к релизу", "workspaceId": state["id"], "generation": state["generation"], "headSequence": state["headSequence"], "commitMessage": "Build source", "buildMetadata": map[string]any{"version": 1, "programId": programID, "compilerVersion": compilerVersion, "runtime": "ts-browser", "scope": buildScope, "contextMode": "effective-context", "includeAst": false, "fileFormat": "gzip", "profile": map[string]any{"identity": "profile", "displayName": "Original profile", "revision": 3}}}
 	}
 	upload := func(value map[string]any, data []byte) *http.Response {
 		var body bytes.Buffer
@@ -59,7 +89,7 @@ func TestBuiltReleaseCommitSnapshotAndRollback(t *testing.T) {
 		}
 		request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/v1/releases/from-build", &body)
 		request.Header.Set("Content-Type", form.FormDataContentType())
-		request.Header.Set("X-Endge-Workspace", "build-workspace")
+		request.Header.Set("X-Endge-Workspace", workspaceIdentity)
 		response, err := app.Test(request, 15000)
 		if err != nil {
 			t.Fatal(err)
