@@ -121,7 +121,7 @@ func validateReleaseBuild(data []byte, metadata entities.ReleaseBuildMetadata) (
 	if len(data) == 0 || len(data) > MaxReleaseBuildBytes {
 		return invalid("Compressed Bundle must not exceed 15 MiB")
 	}
-	if metadata.Version != 1 || metadata.Runtime != "ts-browser" || metadata.Scope != "complete-model" || metadata.ContextMode != "effective-context" || metadata.FileFormat != "gzip" {
+	if metadata.Version != 1 || metadata.Runtime != "ts-browser" || (metadata.Scope != "complete-model" && metadata.Scope != "startup-composition") || metadata.ContextMode != "effective-context" || metadata.FileFormat != "gzip" {
 		return invalid("Unsupported build metadata")
 	}
 	if metadata.Profile != nil && (metadata.Profile.Identity == "" || len(metadata.Profile.Identity) > 160 || len(metadata.Profile.DisplayName) > 255 || metadata.Profile.Revision < 1) {
@@ -141,18 +141,26 @@ func validateReleaseBuild(data []byte, metadata entities.ReleaseBuildMetadata) (
 		Version    int             `json:"version"`
 		Inspection json.RawMessage `json:"inspection"`
 		Bundle     *struct {
-			Version         int                        `json:"version"`
-			ProgramID       string                     `json:"programId"`
-			CompilerVersion string                     `json:"compilerVersion"`
-			Context         json.RawMessage            `json:"context"`
-			Artifacts       map[string]json.RawMessage `json:"artifacts"`
-			Catalog         json.RawMessage            `json:"catalog"`
+			Version               int                        `json:"version"`
+			ExportScope           string                     `json:"exportScope"`
+			ExecutionGraphVersion int                        `json:"executionGraphVersion"`
+			ProgramID             string                     `json:"programId"`
+			CompilerVersion       string                     `json:"compilerVersion"`
+			Context               json.RawMessage            `json:"context"`
+			Artifacts             map[string]json.RawMessage `json:"artifacts"`
+			Catalog               json.RawMessage            `json:"catalog"`
 		} `json:"bundle"`
 	}
 	if json.Unmarshal(decoded, &envelope) != nil || envelope.Format != "endge-bundle" || envelope.Version != 1 || envelope.Bundle == nil || len(envelope.Inspection) != 0 {
 		return invalid("Release requires one program without an inspection recording")
 	}
 	program := envelope.Bundle
+	if metadata.Scope == "startup-composition" && (program.ExportScope != "startup-composition" || program.ExecutionGraphVersion != 1 || metadata.IncludeAST) {
+		return invalid("Context-specific release requires a scoped execution Bundle without AST")
+	}
+	if program.ExportScope != "" && metadata.Scope != program.ExportScope {
+		return invalid("Build scope does not match Bundle")
+	}
 	if program.Version != 1 || program.ProgramID == "" || program.CompilerVersion == "" || program.Artifacts == nil || len(program.Context) == 0 || len(program.Catalog) == 0 {
 		return invalid("Incomplete execution program")
 	}

@@ -18,7 +18,7 @@ var openAPI3YAML = []byte(
 		"    «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).\n" +
 		"  title: Endge Service Backend API\n" +
 		"  contact: {}\n" +
-		"  version: 0.17.1\n" +
+		"  version: 0.18.0\n" +
 		"paths:\n" +
 		"  /api/session/me:\n" +
 		"    get:\n" +

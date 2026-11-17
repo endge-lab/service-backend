@@ -218,3 +218,21 @@ func TestBundleFileSettingsPersistAndLegacyDefaults(t *testing.T) {
 		t.Fatal("unknown codec accepted")
 	}
 }
+
+func TestContextSpecificBuildProfileSettings(t *testing.T) {
+	settings := validBuildProfileSettings()
+	settings.BuildScope = "startup-composition"
+	settings.Contexts = "effective-context"
+	if _, err := ValidateSettings(settings); err != nil {
+		t.Fatal(err)
+	}
+	settings.IncludeAST = true
+	if _, err := ValidateSettings(settings); err == nil {
+		t.Fatal("accepted AST with foreign context source")
+	}
+	settings.IncludeAST = false
+	settings.Contexts = "all-contexts"
+	if _, err := ValidateSettings(settings); err == nil {
+		t.Fatal("accepted contradictory context selection")
+	}
+}

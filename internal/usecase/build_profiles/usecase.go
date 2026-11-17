@@ -186,7 +186,7 @@ func ValidateSettings(value entities.BuildProfileSettings) (json.RawMessage, err
 	if value.FileFormat != "gzip" && value.FileFormat != "json" {
 		return nil, domainerrors.InvalidInput("build_profile.settings_invalid", "fileFormat is not supported")
 	}
-	if value.BuildScope != "complete-model" || value.Contexts != "all-contexts" {
+	if !((value.BuildScope == "complete-model" && value.Contexts == "all-contexts") || (value.BuildScope == "startup-composition" && value.Contexts == "effective-context" && !value.IncludeAST)) {
 		return nil, domainerrors.InvalidInput("build_profile.settings_invalid", "buildScope and contexts are not supported")
 	}
 	if value.Diagnostics != "minimal" && value.Diagnostics != "standard" && value.Diagnostics != "detailed" {

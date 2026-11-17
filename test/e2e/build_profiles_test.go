@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -185,6 +186,35 @@ func buildProfilePayload(visibility string) map[string]any {
 			"topology":          []any{map[string]any{"node": "frontend", "runtime": "ts-browser"}},
 		},
 	}
+}
+
+func TestScopedBuildProfileHTTPPersistence(t *testing.T) {
+	database := postgresSuite.NewDatabase(t)
+	app := support.NewTestApp(t, database, support.DevConfig())
+	createWorkspace(t, app, nil, "scoped-profile")
+	headers := map[string]string{"X-Endge-Workspace": "scoped-profile"}
+	payload := buildProfilePayload("shared")
+	settings := payload["settings"].(map[string]any)
+	settings["buildScope"] = "startup-composition"
+	settings["contexts"] = "effective-context"
+	settings["includeAst"] = false
+	created := perform(t, app, http.MethodPost, "/api/v1/build-profiles", payload, headers)
+	assertStatus(t, created, fiber.StatusCreated)
+	profile := decodeObject(t, created)
+	if objectField(t, profile, "settings")["buildScope"] != "startup-composition" {
+		t.Fatal("scope lost after create")
+	}
+	listed := perform(t, app, http.MethodGet, "/api/v1/build-profiles", nil, headers)
+	assertStatus(t, listed, fiber.StatusOK)
+	body, _ := io.ReadAll(listed.Body)
+	listed.Body.Close()
+	if !bytes.Contains(body, []byte("startup-composition")) || !bytes.Contains(body, []byte("effective-context")) {
+		t.Fatal("scope lost after database round-trip")
+	}
+	settings["includeAst"] = true
+	rejected := perform(t, app, http.MethodPost, "/api/v1/build-profiles", payload, headers)
+	assertStatus(t, rejected, fiber.StatusBadRequest)
+	rejected.Body.Close()
 }
 
 func withIfMatch(headers map[string]string, etag string) map[string]string {
