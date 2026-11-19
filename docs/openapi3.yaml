@@ -13,7 +13,7 @@ info:
     «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).
   title: Endge Service Backend API
   contact: {}
-  version: 0.19.0
+  version: 0.20.0
 paths:
   /api/session/me:
     get:
@@ -22673,6 +22673,14 @@ components:
         updatedBy:
           description: Кто последним изменил объект. Заполняет сервер.
           type: string
+    entities.ModuleContributions:
+      type: object
+      properties:
+        renderers:
+          description: Именованные реализации SFC-примитивов, доступные для выбора в Configurator.
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.ModuleRendererDescriptor"
     entities.ModuleDetail:
       type: object
       properties:
@@ -22702,6 +22710,10 @@ components:
     entities.ModuleManifest:
       type: object
       properties:
+        contributes:
+          description: Опциональный список реализаций, предоставляемых версией модуля.
+          allOf:
+            - $ref: "#/components/schemas/entities.ModuleContributions"
         formatVersion:
           description: Версия структуры ZIP и manifest.
           type: integer
@@ -22713,6 +22725,18 @@ components:
           type: string
         version:
           description: Версия.
+          type: string
+    entities.ModuleRendererDescriptor:
+      type: object
+      properties:
+        id:
+          description: Серверный UUID записи. В путях документов используется identity, а не id.
+          type: string
+        label:
+          description: Отображаемое имя рендерера.
+          type: string
+        primitive:
+          description: Регистрочувствительный тег SFC-примитива, например Table.
           type: string
     entities.ModuleVersion:
       type: object

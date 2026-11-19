@@ -12,10 +12,21 @@ type Module struct {
 }
 
 type ModuleManifest struct {
-	Identity      string `json:"identity"`
-	Version       string `json:"version"`
-	FormatVersion int    `json:"formatVersion"`
-	HostAPI       int    `json:"hostApi"`
+	Identity      string               `json:"identity"`
+	Version       string               `json:"version"`
+	FormatVersion int                  `json:"formatVersion"`
+	HostAPI       int                  `json:"hostApi"`
+	Contributes   *ModuleContributions `json:"contributes,omitempty"`
+}
+
+type ModuleContributions struct {
+	Renderers []ModuleRendererDescriptor `json:"renderers,omitempty"`
+}
+
+type ModuleRendererDescriptor struct {
+	Primitive string `json:"primitive"`
+	ID        string `json:"id"`
+	Label     string `json:"label"`
 }
 
 type ModuleVersion struct {

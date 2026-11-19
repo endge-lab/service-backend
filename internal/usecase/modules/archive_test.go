@@ -65,3 +65,22 @@ func TestParseModuleArchive(t *testing.T) {
 		t.Fatal("accepted ZIP for a different module")
 	}
 }
+
+func TestParseModuleRendererContributions(t *testing.T) {
+	base := `{"identity":"slot-ui","version":"1.0.0","formatVersion":1,"hostApi":1,"contributes":{"renderers":[%s]}}`
+	renderer := `{"primitive":"Table","id":"slot","label":"Slot"}`
+	manifest := func(value string) entry { return entry{"manifest.json", strings.Replace(base, "%s", value, 1)} }
+	js := entry{"module.js", "export default function load() {}"}
+	version, err := parseArchive(makeArchive(t, manifest(renderer), js), "slot-ui", "publisher")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if version.Manifest.Contributes == nil || len(version.Manifest.Contributes.Renderers) != 1 || version.Manifest.Contributes.Renderers[0].ID != "slot" {
+		t.Fatalf("renderer descriptor was not preserved: %#v", version.Manifest)
+	}
+	for _, value := range []string{renderer + "," + renderer, strings.Replace(renderer, "Table", "table", 1), strings.Replace(renderer, `"label":"Slot"`, `"label":""`, 1)} {
+		if _, err := parseArchive(makeArchive(t, manifest(value), js), "slot-ui", "publisher"); err == nil {
+			t.Fatalf("accepted invalid renderer descriptors %s", value)
+		}
+	}
+}
