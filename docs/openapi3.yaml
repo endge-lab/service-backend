@@ -13,7 +13,7 @@ info:
     «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).
   title: Endge Service Backend API
   contact: {}
-  version: 0.18.0
+  version: 0.19.0
 paths:
   /api/session/me:
     get:
@@ -11696,6 +11696,407 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
+  /api/v1/modules:
+    get:
+      security:
+        - BearerAuth: []
+      description: Глобальный каталог опубликованных модулей Backend.
+      tags:
+        - Модули
+      summary: Каталог модулей
+      operationId: listModules
+      responses:
+        "200":
+          description: Глобальный каталог
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/modules.ListResponse"
+        "401":
+          description: Требуется аутентификация
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+    post:
+      security:
+        - BearerAuth: []
+      description: Операция администратора платформы. Каталог общий для всех рабочих пространств.
+      tags:
+        - Модули
+      summary: Создать модуль и первую версию
+      operationId: createModule
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                identity:
+                  description: Идентификатор модуля
+                  type: string
+                name:
+                  description: Название
+                  type: string
+                description:
+                  description: Описание
+                  type: string
+                archive:
+                  description: ZIP сборки (не более 15 МиБ)
+                  type: string
+                  format: binary
+              required:
+                - identity
+                - name
+                - archive
+        required: true
+      responses:
+        "201":
+          description: Модуль создан
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/entities.ModuleDetail"
+        "400":
+          description: Некорректный запрос
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Требуется аутентификация
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Требуется администратор платформы
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Конфликт версии, identity или ревизии
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/modules/{identity}":
+    get:
+      security:
+        - BearerAuth: []
+      description: Метаданные модуля и все его опубликованные версии.
+      tags:
+        - Модули
+      summary: Модуль и список версий
+      operationId: getModule
+      parameters:
+        - description: Идентификатор модуля
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Карточка
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/entities.ModuleDetail"
+        "401":
+          description: Требуется аутентификация
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Объект не найден
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+    patch:
+      security:
+        - BearerAuth: []
+      description: Операция администратора платформы. Каталог общий для всех рабочих пространств.
+      tags:
+        - Модули
+      summary: Изменить название или описание
+      operationId: patchModule
+      parameters:
+        - description: Идентификатор модуля
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Ревизия метаданных
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/modules.PatchRequest"
+        description: Изменяемые поля
+        required: true
+      responses:
+        "200":
+          description: Метаданные
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/entities.Module"
+        "400":
+          description: Некорректный запрос
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Требуется аутентификация
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Требуется администратор платформы
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Объект не найден
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Конфликт версии, identity или ревизии
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "428":
+          description: Требуется заголовок If-Match
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/modules/{identity}/versions":
+    post:
+      security:
+        - BearerAuth: []
+      description: Операция администратора платформы. Каталог общий для всех рабочих пространств.
+      tags:
+        - Модули
+      summary: Опубликовать версию модуля
+      operationId: publishModuleVersion
+      parameters:
+        - description: Идентификатор модуля
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                archive:
+                  description: ZIP сборки (не более 15 МиБ)
+                  type: string
+                  format: binary
+              required:
+                - archive
+        required: true
+      responses:
+        "201":
+          description: Опубликованная версия
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/entities.ModuleVersion"
+        "400":
+          description: Некорректный запрос
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Требуется аутентификация
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Требуется администратор платформы
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Объект не найден
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Конфликт версии, identity или ревизии
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/modules/{identity}/versions/{version}":
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает manifest, SHA-256 ZIP и адреса файлов для загрузки в браузере.
+      tags:
+        - Модули
+      summary: Метаданные версии модуля
+      operationId: getModuleVersion
+      parameters:
+        - description: Идентификатор модуля
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Точная версия SemVer
+          name: version
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Manifest, SHA-256 и адреса файлов
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/modules.VersionResponse"
+        "401":
+          description: Требуется аутентификация
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Объект не найден
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/modules/{identity}/versions/{version}/archive":
+    get:
+      security:
+        - BearerAuth: []
+      description: Возвращает неизменяемый оригинальный ZIP для точной версии.
+      tags:
+        - Модули
+      summary: Скачать оригинальный ZIP
+      operationId: downloadModuleArchive
+      parameters:
+        - description: Идентификатор модуля
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Точная версия SemVer
+          name: version
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ZIP
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Требуется аутентификация
+          content:
+            application/zip:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Объект не найден
+          content:
+            application/zip:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/modules/{identity}/versions/{version}/assets/{file}":
+    get:
+      security:
+        - BearerAuth: []
+      description: Загружает JavaScript или CSS точной опубликованной версии.
+      tags:
+        - Модули
+      summary: Файл сборки модуля
+      operationId: getModuleAsset
+      parameters:
+        - description: Идентификатор модуля
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Точная версия SemVer
+          name: version
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: module.js или module.css
+          name: file
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - module.js
+              - module.css
+      responses:
+        "200":
+          description: JavaScript или CSS
+          content:
+            text/javascript:
+              schema:
+                type: string
+                format: binary
+            text/css:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Требуется аутентификация
+          content:
+            text/javascript:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+            text/css:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Объект не найден
+          content:
+            text/javascript:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+            text/css:
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
   /api/v1/navigations:
     get:
       security:
@@ -22251,6 +22652,93 @@ components:
         status:
           description: Состояние потока.
           type: string
+    entities.Module:
+      type: object
+      properties:
+        description:
+          description: Произвольное описание для людей.
+          type: string
+        id:
+          description: Серверный UUID записи. В путях документов используется identity, а не id.
+          type: string
+        identity:
+          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.
+          type: string
+        name:
+          description: Имя объекта для людей.
+          type: string
+        revision:
+          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'
+          type: integer
+        updatedBy:
+          description: Кто последним изменил объект. Заполняет сервер.
+          type: string
+    entities.ModuleDetail:
+      type: object
+      properties:
+        description:
+          description: Произвольное описание для людей.
+          type: string
+        id:
+          description: Серверный UUID записи. В путях документов используется identity, а не id.
+          type: string
+        identity:
+          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.
+          type: string
+        name:
+          description: Имя объекта для людей.
+          type: string
+        revision:
+          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'
+          type: integer
+        updatedBy:
+          description: Кто последним изменил объект. Заполняет сервер.
+          type: string
+        versions:
+          description: Опубликованные неизменяемые версии модуля.
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.ModuleVersion"
+    entities.ModuleManifest:
+      type: object
+      properties:
+        formatVersion:
+          description: Версия структуры ZIP и manifest.
+          type: integer
+        hostApi:
+          description: Версия контракта JS-фабрики с хостом.
+          type: integer
+        identity:
+          description: Стабильный строковый идентификатор документа, уникальный в коллекции workspace (до 160 символов). Используется в путях API и ссылках между документами; задаётся при создании.
+          type: string
+        version:
+          description: Версия.
+          type: string
+    entities.ModuleVersion:
+      type: object
+      properties:
+        hasCss:
+          description: Сборка содержит опциональный module.css.
+          type: boolean
+        manifest:
+          description: Manifest опубликованной версии.
+          allOf:
+            - $ref: "#/components/schemas/entities.ModuleManifest"
+        publishedAt:
+          description: Время публикации этой версии.
+          type: string
+        publishedBy:
+          description: UUID администратора платформы, опубликовавшего версию.
+          type: string
+        sha256:
+          description: Контрольная сумма SHA-256 оригинального ZIP в hex.
+          type: string
+        size:
+          description: Размер оригинального ZIP в байтах.
+          type: integer
+        version:
+          description: Версия.
+          type: string
     entities.PortableAICatalog:
       type: object
       properties:
@@ -24063,6 +24551,67 @@ components:
           description: Параметры потока.
           allOf:
             - $ref: "#/components/schemas/mock_data.StreamParameters"
+    modules.AssetURLs:
+      type: object
+      properties:
+        css:
+          description: Адрес module.css на Backend, если файл опубликован.
+          type: string
+        js:
+          description: Адрес module.js на Backend.
+          type: string
+    modules.ListResponse:
+      type: object
+      properties:
+        items:
+          description: Элементы страницы списка.
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.Module"
+        total:
+          description: Общее количество элементов.
+          type: integer
+    modules.PatchRequest:
+      type: object
+      properties:
+        description:
+          description: Произвольное описание для людей.
+          type: string
+        name:
+          description: Имя объекта для людей.
+          type: string
+    modules.VersionResponse:
+      type: object
+      properties:
+        archiveUrl:
+          description: Адрес оригинального ZIP на Backend.
+          type: string
+        assets:
+          description: Адреса файлов версии для браузерного загрузчика.
+          allOf:
+            - $ref: "#/components/schemas/modules.AssetURLs"
+        hasCss:
+          description: Сборка содержит опциональный module.css.
+          type: boolean
+        manifest:
+          description: Manifest опубликованной версии.
+          allOf:
+            - $ref: "#/components/schemas/entities.ModuleManifest"
+        publishedAt:
+          description: Время публикации этой версии.
+          type: string
+        publishedBy:
+          description: UUID администратора платформы, опубликовавшего версию.
+          type: string
+        sha256:
+          description: Контрольная сумма SHA-256 оригинального ZIP в hex.
+          type: string
+        size:
+          description: Размер оригинального ZIP в байтах.
+          type: integer
+        version:
+          description: Версия.
+          type: string
     navigation.CreateRequest:
       type: object
       required:

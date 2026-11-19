@@ -27,6 +27,7 @@ var accessTokenDeniedPrefixes = []string{
 	"/v1/ai",
 	"/v1/backend-connections",
 	"/v1/integrations",
+	"/v1/modules",
 	"/v1/bridge",
 	"/v1/domain/import",
 	"/v1/domain/backups",

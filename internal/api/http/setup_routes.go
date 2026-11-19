@@ -33,6 +33,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/integration"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/mock"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/mock_data"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/modules"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/navigation"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/query"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/release"
@@ -70,6 +71,7 @@ type Handlers struct {
 	BackendConnection *backend_connection.Handler
 	Session           *httpsession.Handler
 	Integration       *integration.Handler
+	Modules           *modules.Handler
 	Facet             *facet.Handler
 	Folder            *folder.Handler
 	Type              *domain_type.Handler
@@ -170,5 +172,6 @@ func registerUnscopedAPIRoutes(api fiber.Router, handlers Handlers) fiber.Router
 	ai_catalog.RegisterRoutes(v1, handlers.AICatalog)
 	backend_connection.RegisterRoutes(v1, handlers.BackendConnection)
 	integration.RegisterRoutes(v1, handlers.Integration)
+	modules.RegisterRoutes(v1, handlers.Modules)
 	return v1
 }

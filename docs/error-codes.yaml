@@ -1358,6 +1358,54 @@ codes:
     action: 'Не повторяйте. Проверьте роль через GET /api/session/me (MCP: endge_status). Попросите пользователя выдать нужную роль или выполнить операцию самому.'
     sources:
       - internal/usecase/mock_data/usecase.go
+  - code: module_archive_invalid
+    status: 400
+    defaultMessage: A ZIP archive of at most 15 MiB is required
+    otherMessages:
+      - ZIP archive exceeds 15 MiB
+    meaning: ZIP не соответствует формату модуля или лимиту размера.
+    action: Проверьте manifest.json, точный identity и SemVer, module.js и опциональный module.css.
+    sources:
+      - internal/api/http/v1/modules/transport.go
+      - internal/usecase/modules/usecase.go
+  - code: module_asset_not_found
+    status: 404
+    defaultMessage: Module asset not found
+    meaning: Запрошенный файл отсутствует в опубликованной версии.
+    action: Получите метаданные версии и используйте адрес из assets.
+    sources:
+      - internal/usecase/modules/usecase.go
+  - code: module_conflict
+    status: 409
+    defaultMessage: Module identity, revision or version conflicts with the catalog
+    meaning: Идентификатор занят, ревизия устарела или версия уже опубликована с другими байтами.
+    action: Проверьте текущую карточку и выберите новую версию для изменённой сборки.
+    sources:
+      - internal/usecase/modules/usecase.go
+  - code: module_metadata_invalid
+    status: 400
+    defaultMessage: Invalid module identity, name or description
+    otherMessages:
+      - Provide a name or description
+    meaning: Поля карточки модуля отсутствуют или не проходят проверку.
+    action: Укажите identity в нижнем регистре, название и необязательное описание в пределах лимита.
+    sources:
+      - internal/api/http/v1/modules/handler.go
+      - internal/usecase/modules/usecase.go
+  - code: module_not_found
+    status: 404
+    defaultMessage: Module or version not found
+    meaning: Модуль или его версия отсутствуют в глобальном каталоге Backend.
+    action: Проверьте identity и точный номер опубликованной версии.
+    sources:
+      - internal/usecase/modules/usecase.go
+  - code: module_platform_admin_required
+    status: 403
+    defaultMessage: Publishing modules requires a platform admin session
+    meaning: Изменять каталог и публиковать версии может администратор платформы.
+    action: Используйте сессию администратора платформы.
+    sources:
+      - internal/usecase/modules/usecase.go
   - code: move_document_deleted
     status: 400
     defaultMessage: Deleted documents cannot be moved

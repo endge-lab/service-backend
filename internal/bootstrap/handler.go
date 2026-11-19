@@ -30,6 +30,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/integration"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/mock"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/mock_data"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/modules"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/navigation"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/query"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/release"
@@ -112,6 +113,8 @@ func HandlerModules() fx.Option {
 			backup.NewHandler,
 			httpsession.NewHandler,
 			integration.NewHandler,
+			modules.BindUseCase,
+			modules.NewHandler,
 			facet.NewHandler,
 			folder.NewHandler,
 			domain_type.NewHandler,
