@@ -18,7 +18,7 @@ var openAPI3YAML = []byte(
 		"    «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).\n" +
 		"  title: Endge Service Backend API\n" +
 		"  contact: {}\n" +
-		"  version: 0.19.0\n" +
+		"  version: 0.20.0\n" +
 		"paths:\n" +
 		"  /api/session/me:\n" +
 		"    get:\n" +
@@ -22678,6 +22678,14 @@ var openAPI3YAML = []byte(
 		"        updatedBy:\n" +
 		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
 		"          type: string\n" +
+		"    entities.ModuleContributions:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        renderers:\n" +
+		"          description: Именованные реализации SFC-примитивов, доступные для выбора в Configurator.\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/entities.ModuleRendererDescriptor\"\n" +
 		"    entities.ModuleDetail:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -22707,6 +22715,10 @@ var openAPI3YAML = []byte(
 		"    entities.ModuleManifest:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
+		"        contributes:\n" +
+		"          description: Опциональный список реализаций, предоставляемых версией модуля.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.ModuleContributions\"\n" +
 		"        formatVersion:\n" +
 		"          description: Версия структуры ZIP и manifest.\n" +
 		"          type: integer\n" +
@@ -22718,6 +22730,18 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        version:\n" +
 		"          description: Версия.\n" +
+		"          type: string\n" +
+		"    entities.ModuleRendererDescriptor:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
+		"          type: string\n" +
+		"        label:\n" +
+		"          description: Отображаемое имя рендерера.\n" +
+		"          type: string\n" +
+		"        primitive:\n" +
+		"          description: Регистрочувствительный тег SFC-примитива, например Table.\n" +
 		"          type: string\n" +
 		"    entities.ModuleVersion:\n" +
 		"      type: object\n" +

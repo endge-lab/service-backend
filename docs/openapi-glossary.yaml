@@ -300,6 +300,12 @@ schemas:
   entities.ModuleManifest:
     formatVersion: "Версия структуры ZIP и manifest."
     hostApi: "Версия контракта JS-фабрики с хостом."
+    contributes: "Опциональный список реализаций, предоставляемых версией модуля."
+  entities.ModuleContributions:
+    renderers: "Именованные реализации SFC-примитивов, доступные для выбора в Configurator."
+  entities.ModuleRendererDescriptor:
+    label: "Отображаемое имя рендерера."
+    primitive: "Регистрочувствительный тег SFC-примитива, например Table."
   entities.ModuleVersion:
     hasCss: "Сборка содержит опциональный module.css."
     manifest: "Manifest опубликованной версии."

@@ -20,6 +20,7 @@ const maxExpandedSize = 32 << 20
 const maxManifestSize = 16 << 10
 
 var identityPattern = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+var rendererPrimitivePattern = regexp.MustCompile(`^[A-Z][A-Za-z0-9]{0,63}$`)
 var versionPattern = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$`)
 
 func validVersion(version string) bool {
@@ -98,6 +99,24 @@ func parseArchive(data []byte, identity, actor string) (entities.ModuleVersion, 
 	if manifest.Identity != identity || !validVersion(manifest.Version) || manifest.FormatVersion != 1 || manifest.HostAPI != 1 {
 		return entities.ModuleVersion{}, errors.New("manifest requires the matching identity, exact SemVer, formatVersion 1 and hostApi 1")
 	}
+	if manifest.Contributes != nil {
+		if err := validateRenderers(manifest.Contributes.Renderers); err != nil {
+			return entities.ModuleVersion{}, err
+		}
+	}
 	sum := sha256.Sum256(data)
 	return entities.ModuleVersion{Version: manifest.Version, Manifest: manifest, SHA256: hex.EncodeToString(sum[:]), Size: len(data), HasCSS: files["module.css"] != nil, Archive: data, PublishedBy: actor}, nil
+}
+
+func validateRenderers(renderers []entities.ModuleRendererDescriptor) error {
+	seen := make(map[string]bool, len(renderers))
+	for _, renderer := range renderers {
+		key := renderer.Primitive + "/" + renderer.ID
+		if !rendererPrimitivePattern.MatchString(renderer.Primitive) || len(renderer.ID) > 128 || !identityPattern.MatchString(renderer.ID) ||
+			strings.TrimSpace(renderer.Label) == "" || len(renderer.Label) > 640 || seen[key] {
+			return fmt.Errorf("invalid or duplicate renderer descriptor %q", key)
+		}
+		seen[key] = true
+	}
+	return nil
 }
