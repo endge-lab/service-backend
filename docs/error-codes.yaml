@@ -654,6 +654,8 @@ codes:
   - code: build_source_invalid
     status: 400
     defaultMessage: Build belongs to another Workspace or has no source revision
+    otherMessages:
+      - Delivery belongs to another Workspace
     meaning: Сборка относится к другому workspace или не имеет исходной ревизии.
     action: Соберите бандл в этом workspace и повторите.
     sources:

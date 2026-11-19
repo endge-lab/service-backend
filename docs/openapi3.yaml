@@ -13,7 +13,7 @@ info:
     «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).
   title: Endge Service Backend API
   contact: {}
-  version: 0.22.0
+  version: 0.21.0
 paths:
   /api/session/me:
     get:
@@ -11766,7 +11766,6 @@ paths:
               required:
                 - name
                 - archive
-        required: true
       responses:
         "201":
           description: Модуль создан
