@@ -41,6 +41,13 @@ func (s *UseCase) CreateFromBuild(ctx context.Context, input CreateFromBuildInpu
 	if err != nil {
 		return nil, err
 	}
+	var deliveryContext struct {
+		Workspace string          `json:"workspace"`
+		Facets    json.RawMessage `json:"deliveryFacets"`
+	}
+	if json.Unmarshal(metadata.Context, &deliveryContext) == nil && len(deliveryContext.Facets) > 0 && deliveryContext.Workspace != scope.Workspace.Identity {
+		return nil, domainerrors.InvalidInput("build_source_invalid", "Delivery belongs to another Workspace")
+	}
 	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
 		if err := s.builds.LockWorkspaceSnapshot(txctx, scope.Workspace.ID); err != nil {
 			return err
@@ -137,21 +144,14 @@ func validateReleaseBuild(data []byte, metadata entities.ReleaseBuildMetadata) (
 		return invalid("Damaged or oversized Bundle")
 	}
 	var envelope struct {
-		Format     string          `json:"format"`
-		Version    int             `json:"version"`
-		Inspection json.RawMessage `json:"inspection"`
-		Bundle     *struct {
-			Version               int                        `json:"version"`
-			ExportScope           string                     `json:"exportScope"`
-			ExecutionGraphVersion int                        `json:"executionGraphVersion"`
-			ProgramID             string                     `json:"programId"`
-			CompilerVersion       string                     `json:"compilerVersion"`
-			Context               json.RawMessage            `json:"context"`
-			Artifacts             map[string]json.RawMessage `json:"artifacts"`
-			Catalog               json.RawMessage            `json:"catalog"`
-		} `json:"bundle"`
+		Format     string           `json:"format"`
+		Version    int              `json:"version"`
+		Inspection json.RawMessage  `json:"inspection"`
+		Bundle     *releaseProgram  `json:"bundle"`
+		Delivery   *releaseDelivery `json:"delivery"`
 	}
-	if json.Unmarshal(decoded, &envelope) != nil || envelope.Format != "endge-bundle" || envelope.Version != 1 || envelope.Bundle == nil || len(envelope.Inspection) != 0 {
+	if json.Unmarshal(decoded, &envelope) != nil || envelope.Format != "endge-bundle" || envelope.Bundle == nil || len(envelope.Inspection) != 0 ||
+		(envelope.Version != 1 && envelope.Version != 2) || (envelope.Version == 2) != (envelope.Delivery != nil) {
 		return invalid("Release requires one program without an inspection recording")
 	}
 	program := envelope.Bundle
@@ -172,6 +172,16 @@ func validateReleaseBuild(data []byte, metadata entities.ReleaseBuildMetadata) (
 		return invalid("Invalid build context")
 	}
 	delete(buildContext, "configuration")
+	if envelope.Delivery != nil {
+		if metadata.Scope != "startup-composition" || metadata.IncludeAST {
+			return invalid("Delivery requires a scoped execution Bundle without AST")
+		}
+		facets, err := validateDeliveryPrograms(program, envelope.Delivery)
+		if err != nil {
+			return invalid(err.Error())
+		}
+		buildContext["deliveryFacets"], _ = json.Marshal(facets)
+	}
 	metadata.Context, _ = json.Marshal(buildContext)
 	metadata.SizeBytes = int64(len(data))
 	sum := sha256.Sum256(data)

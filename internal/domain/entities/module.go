@@ -3,12 +3,13 @@ package entities
 import "time"
 
 type Module struct {
-	ID          string `json:"id"`
-	Identity    string `json:"identity"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Revision    int64  `json:"revision"`
-	UpdatedBy   string `json:"updatedBy"`
+	ID          string     `json:"id"`
+	Identity    string     `json:"identity"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	Revision    int64      `json:"revision"`
+	UpdatedBy   string     `json:"updatedBy"`
+	DeletedAt   *time.Time `json:"deletedAt,omitempty"`
 }
 
 type ModuleManifest struct {
@@ -30,14 +31,15 @@ type ModuleRendererDescriptor struct {
 }
 
 type ModuleVersion struct {
-	Version     string         `json:"version"`
-	Manifest    ModuleManifest `json:"manifest"`
-	SHA256      string         `json:"sha256"`
-	HasCSS      bool           `json:"hasCss"`
-	Size        int            `json:"size"`
-	PublishedBy string         `json:"publishedBy"`
-	PublishedAt time.Time      `json:"publishedAt"`
-	Archive     []byte         `json:"-"`
+	Version        string         `json:"version"`
+	Manifest       ModuleManifest `json:"manifest"`
+	SHA256         string         `json:"sha256"`
+	HasCSS         bool           `json:"hasCss"`
+	Size           int            `json:"size"`
+	PublishedBy    string         `json:"publishedBy"`
+	PublishedAt    time.Time      `json:"publishedAt"`
+	Archive        []byte         `json:"-"`
+	ModuleArchived bool           `json:"-"`
 }
 
 type ModuleDetail struct {

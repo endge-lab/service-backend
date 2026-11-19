@@ -52,25 +52,37 @@ func catalogError(err error) error {
 
 func validate(value *entities.Module) error {
 	value.Name = strings.TrimSpace(value.Name)
-	if len(value.Identity) > 128 || !identityPattern.MatchString(value.Identity) ||
+	if (value.Identity != "" && !validIdentity(value.Identity)) ||
 		value.Name == "" || utf8.RuneCountInString(value.Name) > 160 || utf8.RuneCountInString(value.Description) > 4000 {
 		return domainerrors.InvalidInput("module_metadata_invalid", "Invalid module identity, name or description")
 	}
 	return nil
 }
 
-func (u *UseCase) List(ctx context.Context) ([]entities.Module, error) {
-	if _, err := shared.Actor(ctx); err != nil {
+func (u *UseCase) List(ctx context.Context, deleted bool) ([]entities.Module, error) {
+	if deleted {
+		if _, err := requirePublisher(ctx); err != nil {
+			return nil, err
+		}
+	} else if _, err := shared.Actor(ctx); err != nil {
 		return nil, err
 	}
-	return u.repository.ListModules(ctx)
+	return u.repository.ListModules(ctx, deleted)
+}
+
+func (u *UseCase) activeModule(ctx context.Context, identity string) (entities.Module, error) {
+	value, err := u.repository.GetModule(ctx, identity)
+	if err == nil && value.DeletedAt != nil {
+		return entities.Module{}, ports.ErrNotFound
+	}
+	return value, err
 }
 
 func (u *UseCase) Detail(ctx context.Context, identity string) (entities.ModuleDetail, error) {
 	if _, err := shared.Actor(ctx); err != nil {
 		return entities.ModuleDetail{}, err
 	}
-	value, err := u.repository.GetModule(ctx, identity)
+	value, err := u.activeModule(ctx, identity)
 	if err != nil {
 		return entities.ModuleDetail{}, catalogError(err)
 	}
@@ -90,6 +102,7 @@ func (u *UseCase) Create(ctx context.Context, value entities.Module, data []byte
 	if err != nil {
 		return result, domainerrors.InvalidInput("module_archive_invalid", err.Error())
 	}
+	value.Identity = version.Manifest.Identity
 	value.UpdatedBy = actor
 	err = u.tx.WithinTransaction(ctx, func(ctx context.Context) error {
 		created, err := u.repository.CreateModule(ctx, value)
@@ -110,7 +123,7 @@ func (u *UseCase) Patch(ctx context.Context, identity string, revision int64, na
 	if err != nil {
 		return entities.Module{}, err
 	}
-	value, err := u.repository.GetModule(ctx, identity)
+	value, err := u.activeModule(ctx, identity)
 	if err != nil {
 		return value, catalogError(err)
 	}
@@ -128,12 +141,25 @@ func (u *UseCase) Patch(ctx context.Context, identity string, revision int64, na
 	return value, catalogError(err)
 }
 
+func (u *UseCase) SetDeleted(ctx context.Context, identity string, revision int64, deleted bool) (entities.Module, error) {
+	actor, err := requirePublisher(ctx)
+	if err != nil {
+		return entities.Module{}, err
+	}
+	value, err := u.repository.GetModule(ctx, identity)
+	if err != nil {
+		return entities.Module{}, catalogError(err)
+	}
+	value, err = u.repository.SetModuleDeleted(ctx, value.ID, revision, actor, deleted)
+	return value, catalogError(err)
+}
+
 func (u *UseCase) Publish(ctx context.Context, identity string, data []byte) (entities.ModuleVersion, error) {
 	actor, err := requirePublisher(ctx)
 	if err != nil {
 		return entities.ModuleVersion{}, err
 	}
-	value, err := u.repository.GetModule(ctx, identity)
+	value, err := u.activeModule(ctx, identity)
 	if err != nil {
 		return entities.ModuleVersion{}, catalogError(err)
 	}
@@ -141,8 +167,13 @@ func (u *UseCase) Publish(ctx context.Context, identity string, data []byte) (en
 	if err != nil {
 		return version, domainerrors.InvalidInput("module_archive_invalid", err.Error())
 	}
-	version, err = u.repository.PublishModuleVersion(ctx, value.ID, version)
-	return version, catalogError(err)
+	var published entities.ModuleVersion
+	err = u.tx.WithinTransaction(ctx, func(ctx context.Context) error {
+		var publishErr error
+		published, publishErr = u.repository.PublishModuleVersion(ctx, value.ID, version)
+		return publishErr
+	})
+	return published, catalogError(err)
 }
 
 func (u *UseCase) Version(ctx context.Context, identity, version string, archive bool) (entities.ModuleVersion, error) {
@@ -154,6 +185,7 @@ func (u *UseCase) Version(ctx context.Context, identity, version string, archive
 		return entities.ModuleVersion{}, catalogError(err)
 	}
 	result, err := u.repository.GetModuleVersion(ctx, value.ID, version, archive)
+	result.ModuleArchived = value.DeletedAt != nil
 	return result, catalogError(err)
 }
 

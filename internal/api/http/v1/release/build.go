@@ -14,7 +14,7 @@ import (
 
 // CreateFromBuild creates a release from a saved build and optionally creates its commit.
 // @Summary Создать релиз из сборки
-// @Description Сохраняет релиз, snapshot выбранной ревизии и проверенный Gzip Bundle в одной транзакции.
+// @Description Сохраняет релиз, snapshot выбранной ревизии и проверенный Gzip Bundle в одной транзакции. Формат 2 поддерживает варианты одного тенанта и встроенные модули.
 // @ID createReleaseFromBuild
 // @Tags Релизы
 // @Accept multipart/form-data

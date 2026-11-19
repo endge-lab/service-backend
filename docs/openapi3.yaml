@@ -13,7 +13,7 @@ info:
     «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).
   title: Endge Service Backend API
   contact: {}
-  version: 0.20.0
+  version: 0.22.0
 paths:
   /api/session/me:
     get:
@@ -11700,11 +11700,17 @@ paths:
     get:
       security:
         - BearerAuth: []
-      description: Глобальный каталог опубликованных модулей Backend.
+      description: Глобальный каталог активных модулей Backend. Администратор платформы может запросить только удалённые модули.
       tags:
         - Модули
       summary: Каталог модулей
       operationId: listModules
+      parameters:
+        - description: Показать только удалённые модули
+          name: deleted
+          in: query
+          schema:
+            type: boolean
       responses:
         "200":
           description: Глобальный каталог
@@ -11712,8 +11718,20 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/modules.ListResponse"
+        "400":
+          description: Некорректный фильтр
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
         "401":
           description: Требуется аутентификация
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Архив доступен администратору платформы
           content:
             "*/*":
               schema:
@@ -11721,7 +11739,7 @@ paths:
     post:
       security:
         - BearerAuth: []
-      description: Операция администратора платформы. Каталог общий для всех рабочих пространств.
+      description: Операция администратора платформы. Каталог общий для всех рабочих пространств. Идентификатор и версия берутся из manifest.json.
       tags:
         - Модули
       summary: Создать модуль и первую версию
@@ -11733,7 +11751,7 @@ paths:
               type: object
               properties:
                 identity:
-                  description: Идентификатор модуля
+                  description: Ожидаемый идентификатор из manifest.json для совместимости со старыми клиентами
                   type: string
                 name:
                   description: Название
@@ -11746,7 +11764,6 @@ paths:
                   type: string
                   format: binary
               required:
-                - identity
                 - name
                 - archive
         required: true
@@ -11816,6 +11833,70 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/shared.ErrorResponse"
+    delete:
+      security:
+        - BearerAuth: []
+      description: Убирает модуль из каталога. Ранее опубликованные версии остаются доступны по точным ссылкам; существующие привязки сохраняются.
+      tags:
+        - Модули
+      summary: Перенести модуль в архив
+      operationId: deleteModule
+      parameters:
+        - description: Идентификатор модуля
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Ревизия метаданных
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Модуль в архиве
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/entities.Module"
+        "400":
+          description: Некорректная ревизия
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Требуется аутентификация
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Требуется администратор платформы
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Модуль не найден
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Конфликт состояния или ревизии
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "428":
+          description: Требуется заголовок If-Match
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
     patch:
       security:
         - BearerAuth: []
@@ -11877,6 +11958,71 @@ paths:
                 $ref: "#/components/schemas/shared.ErrorResponse"
         "409":
           description: Конфликт версии, identity или ревизии
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "428":
+          description: Требуется заголовок If-Match
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+  "/api/v1/modules/{identity}/restore":
+    post:
+      security:
+        - BearerAuth: []
+      description: Возвращает модуль и его опубликованные версии в глобальный каталог.
+      tags:
+        - Модули
+      summary: Восстановить модуль из архива
+      operationId: restoreModule
+      parameters:
+        - description: Идентификатор модуля
+          name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Ревизия метаданных
+          name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Восстановленный модуль
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/entities.Module"
+        "400":
+          description: Некорректная ревизия
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "401":
+          description: Требуется аутентификация
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "403":
+          description: Требуется администратор платформы
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "404":
+          description: Модуль не найден
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/shared.ErrorResponse"
+        "409":
+          description: Конфликт состояния или ревизии
           content:
             "*/*":
               schema:
@@ -13342,7 +13488,7 @@ paths:
     post:
       security:
         - BearerAuth: []
-      description: Сохраняет релиз, snapshot выбранной ревизии и проверенный Gzip Bundle в одной транзакции.
+      description: Сохраняет релиз, snapshot выбранной ревизии и проверенный Gzip Bundle в одной транзакции. Формат 2 поддерживает варианты одного тенанта и встроенные модули.
       tags:
         - Релизы
       summary: Создать релиз из сборки
@@ -22655,6 +22801,9 @@ components:
     entities.Module:
       type: object
       properties:
+        deletedAt:
+          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.
+          type: string
         description:
           description: Произвольное описание для людей.
           type: string
@@ -22684,6 +22833,9 @@ components:
     entities.ModuleDetail:
       type: object
       properties:
+        deletedAt:
+          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.
+          type: string
         description:
           description: Произвольное описание для людей.
           type: string
@@ -24621,6 +24773,9 @@ components:
           description: Manifest опубликованной версии.
           allOf:
             - $ref: "#/components/schemas/entities.ModuleManifest"
+        moduleArchived:
+          description: Признак архивирования модуля, которому принадлежит доступная закреплённая версия.
+          type: boolean
         publishedAt:
           description: Время публикации этой версии.
           type: string

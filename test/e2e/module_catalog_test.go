@@ -23,12 +23,15 @@ func TestGlobalModuleCatalog(t *testing.T) {
 	delete(platform, "X-Endge-Workspace")
 	viewer := cloneHeaders(fixture.viewer)
 	delete(viewer, "X-Endge-Workspace")
-	fields := map[string]string{"name": "Slot UI", "identity": "slot-ui"}
+	fields := map[string]string{"name": "Slot UI"}
 	original := moduleZIP(t, "0.1.0-dev.1+build", "export default () => ({})")
 
 	assertStatus(t, perform(t, app, http.MethodGet, "/api/v1/modules", nil, nil), http.StatusUnauthorized)
 	assertStatus(t, uploadModule(t, app, "/api/v1/modules", viewer, fields, original), http.StatusForbidden)
 	assertStatus(t, uploadModule(t, app, "/api/v1/modules", platform, fields, []byte("invalid")), http.StatusBadRequest)
+	assertStatus(t, uploadModule(t, app, "/api/v1/modules", platform, map[string]string{
+		"name": "Slot UI", "identity": "another-module",
+	}, original), http.StatusBadRequest)
 	assertStatus(t, perform(t, app, http.MethodGet, path, nil, viewer), http.StatusNotFound)
 
 	created := uploadModule(t, app, "/api/v1/modules", platform, fields, original)
@@ -75,8 +78,48 @@ func TestGlobalModuleCatalog(t *testing.T) {
 	assertStatus(t, perform(t, app, http.MethodPatch, path, map[string]any{"name": "New name"}, platform), http.StatusPreconditionRequired)
 	patch := cloneHeaders(platform)
 	patch["If-Match"] = created.Header.Get("ETag")
-	assertStatus(t, perform(t, app, http.MethodPatch, path, map[string]any{"name": "New name"}, patch), http.StatusOK)
+	updated := perform(t, app, http.MethodPatch, path, map[string]any{"name": "New name"}, patch)
+	assertStatus(t, updated, http.StatusOK)
 	assertStatus(t, perform(t, app, http.MethodPatch, path, map[string]any{"name": "Old name"}, patch), http.StatusConflict)
+
+	archivePath := "/api/v1/modules?deleted=true"
+	archiveHeaders := cloneHeaders(platform)
+	archiveHeaders["If-Match"] = updated.Header.Get("ETag")
+	viewerMatch := cloneHeaders(viewer)
+	viewerMatch["If-Match"] = archiveHeaders["If-Match"]
+	assertStatus(t, perform(t, app, http.MethodDelete, path, nil, viewerMatch), http.StatusForbidden)
+	assertStatus(t, perform(t, app, http.MethodGet, archivePath, nil, viewer), http.StatusForbidden)
+	assertStatus(t, perform(t, app, http.MethodDelete, path, nil, patch), http.StatusConflict)
+
+	archived := perform(t, app, http.MethodDelete, path, nil, archiveHeaders)
+	assertStatus(t, archived, http.StatusOK)
+	if stringField(t, decodeObject(t, archived), "deletedAt") == "" {
+		t.Fatal("archiving must record a timestamp")
+	}
+	assertStatus(t, perform(t, app, http.MethodGet, path, nil, viewer), http.StatusNotFound)
+	activeList := perform(t, app, http.MethodGet, "/api/v1/modules", nil, viewer)
+	assertStatus(t, activeList, http.StatusOK)
+	if numberField(t, decodeObject(t, activeList), "total") != 0 {
+		t.Fatal("archived module must be absent from the active catalog")
+	}
+	archivedList := perform(t, app, http.MethodGet, archivePath, nil, platform)
+	assertStatus(t, archivedList, http.StatusOK)
+	if numberField(t, decodeObject(t, archivedList), "total") != 1 {
+		t.Fatal("archived module must be visible to an administrator")
+	}
+	assertStatus(t, uploadModule(t, app, versions, platform, nil, next), http.StatusNotFound)
+	assertStatus(t, perform(t, app, http.MethodGet, versionPath, nil, viewer), http.StatusOK)
+	assertStatus(t, perform(t, app, http.MethodGet, js, nil, viewer), http.StatusOK)
+
+	restorePath := path + "/restore"
+	assertStatus(t, perform(t, app, http.MethodPost, restorePath, nil, archiveHeaders), http.StatusConflict)
+	archiveHeaders["If-Match"] = archived.Header.Get("ETag")
+	assertStatus(t, perform(t, app, http.MethodPost, restorePath, nil, archiveHeaders), http.StatusOK)
+	restored := perform(t, app, http.MethodGet, path, nil, viewer)
+	assertStatus(t, restored, http.StatusOK)
+	if versions := arrayField(t, decodeObject(t, restored), "versions"); len(versions) != 2 {
+		t.Fatalf("restore must retain published versions, got %d", len(versions))
+	}
 }
 
 func moduleZIP(t *testing.T, version, source string) []byte {
