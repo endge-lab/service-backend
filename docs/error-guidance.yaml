@@ -118,6 +118,31 @@ dynamic:
       используется mock.upstream_error. Смысл таких кодов описан в документации Mock Generator.
 
 codes:
+  # --- Каталог модулей ---
+  module_archive_invalid:
+    use: fix-field
+    meaning: "ZIP не соответствует формату модуля или лимиту размера."
+    action: "Проверьте manifest.json, точный identity и SemVer, module.js и опциональный module.css."
+  module_asset_not_found:
+    use: not-found
+    meaning: "Запрошенный файл отсутствует в опубликованной версии."
+    action: "Получите метаданные версии и используйте адрес из assets."
+  module_conflict:
+    use: fix-field
+    meaning: "Идентификатор занят, ревизия устарела или версия уже опубликована с другими байтами."
+    action: "Проверьте текущую карточку и выберите новую версию для изменённой сборки."
+  module_metadata_invalid:
+    use: fix-field
+    meaning: "Поля карточки модуля отсутствуют или не проходят проверку."
+    action: "Укажите identity в нижнем регистре, название и необязательное описание в пределах лимита."
+  module_not_found:
+    use: not-found
+    meaning: "Модуль или его версия отсутствуют в глобальном каталоге Backend."
+    action: "Проверьте identity и точный номер опубликованной версии."
+  module_platform_admin_required:
+    use: platform-role
+    meaning: "Изменять каталог и публиковать версии может администратор платформы."
+    action: "Используйте сессию администратора платформы."
   # --- Управление доступом ---
   access_grant_id_invalid:
     use: fix-field

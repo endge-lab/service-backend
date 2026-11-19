@@ -31,6 +31,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/integrations"
 	"github.com/endge-lab/service-backend/internal/usecase/mock_data"
 	"github.com/endge-lab/service-backend/internal/usecase/mocks"
+	"github.com/endge-lab/service-backend/internal/usecase/modules"
 	"github.com/endge-lab/service-backend/internal/usecase/navigations"
 	"github.com/endge-lab/service-backend/internal/usecase/portable"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
@@ -70,6 +71,7 @@ func UseCaseModules() fx.Option {
 		workspaces.NewUseCase,
 		backend_connections.NewUseCase,
 		integrations.NewUseCase,
+		modules.NewUseCase,
 		session.NewUseCase,
 		facets.NewUseCase,
 		folders.NewUseCase,

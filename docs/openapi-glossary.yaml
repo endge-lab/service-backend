@@ -295,6 +295,30 @@ properties:
   workspaces: "Workspace, доступные пользователю, с его ролью."
 
 schemas:
+  entities.ModuleDetail:
+    versions: "Опубликованные неизменяемые версии модуля."
+  entities.ModuleManifest:
+    formatVersion: "Версия структуры ZIP и manifest."
+    hostApi: "Версия контракта JS-фабрики с хостом."
+  entities.ModuleVersion:
+    hasCss: "Сборка содержит опциональный module.css."
+    manifest: "Manifest опубликованной версии."
+    publishedAt: "Время публикации этой версии."
+    publishedBy: "UUID администратора платформы, опубликовавшего версию."
+    sha256: "Контрольная сумма SHA-256 оригинального ZIP в hex."
+    size: "Размер оригинального ZIP в байтах."
+  modules.AssetURLs:
+    css: "Адрес module.css на Backend, если файл опубликован."
+    js: "Адрес module.js на Backend."
+  modules.VersionResponse:
+    archiveUrl: "Адрес оригинального ZIP на Backend."
+    assets: "Адреса файлов версии для браузерного загрузчика."
+    hasCss: "Сборка содержит опциональный module.css."
+    manifest: "Manifest опубликованной версии."
+    publishedAt: "Время публикации этой версии."
+    publishedBy: "UUID администратора платформы, опубликовавшего версию."
+    sha256: "Контрольная сумма SHA-256 оригинального ZIP в hex."
+    size: "Размер оригинального ZIP в байтах."
   # --- Ошибки ---
   respond.ErrorResponse:
     "": "Ошибка HTTP API. Действие по code — в каталоге ошибок docs/error-codes.yaml."

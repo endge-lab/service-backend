@@ -1,0 +1,134 @@
+//go:build e2e
+
+package e2e_test
+
+import (
+	"archive/zip"
+	"bytes"
+	"fmt"
+	"io"
+	"mime/multipart"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/gofiber/fiber/v2"
+)
+
+func TestGlobalModuleCatalog(t *testing.T) {
+	fixture := newServiceAPIFixture(t)
+	app := fixture.app
+	path := "/api/v1/modules/slot-ui"
+	platform := cloneHeaders(fixture.platform)
+	delete(platform, "X-Endge-Workspace")
+	viewer := cloneHeaders(fixture.viewer)
+	delete(viewer, "X-Endge-Workspace")
+	fields := map[string]string{"name": "Slot UI", "identity": "slot-ui"}
+	original := moduleZIP(t, "0.1.0-dev.1+build", "export default () => ({})")
+
+	assertStatus(t, perform(t, app, http.MethodGet, "/api/v1/modules", nil, nil), http.StatusUnauthorized)
+	assertStatus(t, uploadModule(t, app, "/api/v1/modules", viewer, fields, original), http.StatusForbidden)
+	assertStatus(t, uploadModule(t, app, "/api/v1/modules", platform, fields, []byte("invalid")), http.StatusBadRequest)
+	assertStatus(t, perform(t, app, http.MethodGet, path, nil, viewer), http.StatusNotFound)
+
+	created := uploadModule(t, app, "/api/v1/modules", platform, fields, original)
+	assertStatus(t, created, http.StatusCreated)
+	if etag := created.Header.Get("ETag"); etag != "\"1\"" {
+		t.Fatalf("ETag: %s", etag)
+	}
+	for _, workspace := range []string{fixture.workspace, fixture.isolatedWorkspace} {
+		response := perform(t, app, http.MethodGet, path, nil, workspaceHeaders(viewer, workspace))
+		assertStatus(t, response, http.StatusOK)
+		if identity := stringField(t, decodeObject(t, response), "identity"); identity != "slot-ui" {
+			t.Fatalf("module not visible globally: %s", identity)
+		}
+	}
+
+	versionPath := path + "/versions/0.1.0-dev.1%2Bbuild"
+	response := perform(t, app, http.MethodGet, versionPath, nil, viewer)
+	assertStatus(t, response, http.StatusOK)
+	manifest := decodeObject(t, response)
+	archiveURL := stringField(t, manifest, "archiveUrl")
+	payload := perform(t, app, http.MethodGet, archiveURL, nil, viewer)
+	assertStatus(t, payload, http.StatusOK)
+	defer payload.Body.Close()
+	saved, err := io.ReadAll(payload.Body)
+	if err != nil || !bytes.Equal(saved, original) {
+		t.Fatal("download must return the original ZIP")
+	}
+	assets := objectField(t, manifest, "assets")
+	js := stringField(t, assets, "js")
+	assertStatus(t, perform(t, app, http.MethodGet, js, nil, nil), http.StatusUnauthorized)
+	javascript := perform(t, app, http.MethodGet, js, nil, viewer)
+	assertStatus(t, javascript, http.StatusOK)
+	if javascript.Header.Get("Content-Type") != "text/javascript; charset=utf-8" {
+		t.Fatal("incorrect module.js content type")
+	}
+	assertStatus(t, perform(t, app, http.MethodGet, stringField(t, assets, "css"), nil, viewer), http.StatusOK)
+
+	versions := path + "/versions"
+	assertStatus(t, uploadModule(t, app, versions, platform, nil, original), http.StatusCreated)
+	conflict := moduleZIP(t, "0.1.0-dev.1+build", "export default () => undefined")
+	assertStatus(t, uploadModule(t, app, versions, platform, nil, conflict), http.StatusConflict)
+	next := moduleZIP(t, "0.1.0-dev.2", "export default () => ({})")
+	assertStatus(t, uploadModule(t, app, versions, platform, nil, next), http.StatusCreated)
+	assertStatus(t, perform(t, app, http.MethodPatch, path, map[string]any{"name": "New name"}, platform), http.StatusPreconditionRequired)
+	patch := cloneHeaders(platform)
+	patch["If-Match"] = created.Header.Get("ETag")
+	assertStatus(t, perform(t, app, http.MethodPatch, path, map[string]any{"name": "New name"}, patch), http.StatusOK)
+	assertStatus(t, perform(t, app, http.MethodPatch, path, map[string]any{"name": "Old name"}, patch), http.StatusConflict)
+}
+
+func moduleZIP(t *testing.T, version, source string) []byte {
+	t.Helper()
+	var payload bytes.Buffer
+	writer := zip.NewWriter(&payload)
+	for _, file := range []struct{ name, source string }{
+		{"manifest.json", fmt.Sprintf(`{"identity":"slot-ui","version":%q,"formatVersion":1,"hostApi":1}`, version)},
+		{"module.js", source},
+		{"module.css", ".slot-table{color:#297bba}"},
+	} {
+		w, err := writer.Create(file.name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err = io.WriteString(w, file.source); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return payload.Bytes()
+}
+
+func uploadModule(t *testing.T, app *fiber.App, path string, headers, fields map[string]string, data []byte) *http.Response {
+	t.Helper()
+	var payload bytes.Buffer
+	writer := multipart.NewWriter(&payload)
+	for key, value := range fields {
+		if err := writer.WriteField(key, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+	file, err := writer.CreateFormFile("archive", "module.zip")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := file.Write(data); err != nil {
+		t.Fatal(err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	request := httptest.NewRequest(http.MethodPost, path, &payload)
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	for key, value := range headers {
+		request.Header.Set(key, value)
+	}
+	response, err := app.Test(request, -1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return response
+}
