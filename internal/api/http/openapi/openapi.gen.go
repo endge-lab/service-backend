@@ -18,7 +18,7 @@ var openAPI3YAML = []byte(
 		"    «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).\n" +
 		"  title: Endge Service Backend API\n" +
 		"  contact: {}\n" +
-		"  version: 0.20.0\n" +
+		"  version: 0.22.0\n" +
 		"paths:\n" +
 		"  /api/session/me:\n" +
 		"    get:\n" +
@@ -11705,11 +11705,17 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Глобальный каталог опубликованных модулей Backend.\n" +
+		"      description: Глобальный каталог активных модулей Backend. Администратор платформы может запросить только удалённые модули.\n" +
 		"      tags:\n" +
 		"        - Модули\n" +
 		"      summary: Каталог модулей\n" +
 		"      operationId: listModules\n" +
+		"      parameters:\n" +
+		"        - description: Показать только удалённые модули\n" +
+		"          name: deleted\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: boolean\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
 		"          description: Глобальный каталог\n" +
@@ -11717,8 +11723,20 @@ var openAPI3YAML = []byte(
 		"            \"*/*\":\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/modules.ListResponse\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректный фильтр\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"401\":\n" +
 		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Архив доступен администратору платформы\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
@@ -11726,7 +11744,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Операция администратора платформы. Каталог общий для всех рабочих пространств.\n" +
+		"      description: Операция администратора платформы. Каталог общий для всех рабочих пространств. Идентификатор и версия берутся из manifest.json.\n" +
 		"      tags:\n" +
 		"        - Модули\n" +
 		"      summary: Создать модуль и первую версию\n" +
@@ -11738,7 +11756,7 @@ var openAPI3YAML = []byte(
 		"              type: object\n" +
 		"              properties:\n" +
 		"                identity:\n" +
-		"                  description: Идентификатор модуля\n" +
+		"                  description: Ожидаемый идентификатор из manifest.json для совместимости со старыми клиентами\n" +
 		"                  type: string\n" +
 		"                name:\n" +
 		"                  description: Название\n" +
@@ -11751,7 +11769,6 @@ var openAPI3YAML = []byte(
 		"                  type: string\n" +
 		"                  format: binary\n" +
 		"              required:\n" +
-		"                - identity\n" +
 		"                - name\n" +
 		"                - archive\n" +
 		"        required: true\n" +
@@ -11821,6 +11838,70 @@ var openAPI3YAML = []byte(
 		"            \"*/*\":\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"    delete:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Убирает модуль из каталога. Ранее опубликованные версии остаются доступны по точным ссылкам; существующие привязки сохраняются.\n" +
+		"      tags:\n" +
+		"        - Модули\n" +
+		"      summary: Перенести модуль в архив\n" +
+		"      operationId: deleteModule\n" +
+		"      parameters:\n" +
+		"        - description: Идентификатор модуля\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Ревизия метаданных\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Модуль в архиве\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/entities.Module\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректная ревизия\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Требуется администратор платформы\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Модуль не найден\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт состояния или ревизии\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
@@ -11882,6 +11963,71 @@ var openAPI3YAML = []byte(
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
 		"        \"409\":\n" +
 		"          description: Конфликт версии, identity или ревизии\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"428\":\n" +
+		"          description: Требуется заголовок If-Match\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  \"/api/v1/modules/{identity}/restore\":\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      description: Возвращает модуль и его опубликованные версии в глобальный каталог.\n" +
+		"      tags:\n" +
+		"        - Модули\n" +
+		"      summary: Восстановить модуль из архива\n" +
+		"      operationId: restoreModule\n" +
+		"      parameters:\n" +
+		"        - description: Идентификатор модуля\n" +
+		"          name: identity\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Ревизия метаданных\n" +
+		"          name: If-Match\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: Восстановленный модуль\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/entities.Module\"\n" +
+		"        \"400\":\n" +
+		"          description: Некорректная ревизия\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"401\":\n" +
+		"          description: Требуется аутентификация\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Требуется администратор платформы\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"404\":\n" +
+		"          description: Модуль не найден\n" +
+		"          content:\n" +
+		"            \"*/*\":\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"        \"409\":\n" +
+		"          description: Конфликт состояния или ревизии\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +
@@ -13347,7 +13493,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Сохраняет релиз, snapshot выбранной ревизии и проверенный Gzip Bundle в одной транзакции.\n" +
+		"      description: Сохраняет релиз, snapshot выбранной ревизии и проверенный Gzip Bundle в одной транзакции. Формат 2 поддерживает варианты одного тенанта и встроенные модули.\n" +
 		"      tags:\n" +
 		"        - Релизы\n" +
 		"      summary: Создать релиз из сборки\n" +
@@ -22660,6 +22806,9 @@ var openAPI3YAML = []byte(
 		"    entities.Module:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
+		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
+		"          type: string\n" +
 		"        description:\n" +
 		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
@@ -22689,6 +22838,9 @@ var openAPI3YAML = []byte(
 		"    entities.ModuleDetail:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
+		"        deletedAt:\n" +
+		"          description: Время удаления (RFC 3339). Есть только у удалённых объектов (includeDeleted=true); восстановление — POST …/restore с If-Match.\n" +
+		"          type: string\n" +
 		"        description:\n" +
 		"          description: Произвольное описание для людей.\n" +
 		"          type: string\n" +
@@ -24626,6 +24778,9 @@ var openAPI3YAML = []byte(
 		"          description: Manifest опубликованной версии.\n" +
 		"          allOf:\n" +
 		"            - $ref: \"#/components/schemas/entities.ModuleManifest\"\n" +
+		"        moduleArchived:\n" +
+		"          description: Признак архивирования модуля, которому принадлежит доступная закреплённая версия.\n" +
+		"          type: boolean\n" +
 		"        publishedAt:\n" +
 		"          description: Время публикации этой версии.\n" +
 		"          type: string\n" +

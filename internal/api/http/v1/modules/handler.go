@@ -20,15 +20,22 @@ func NewHandler(usecase UseCase) *Handler {
 }
 
 // @Summary Каталог модулей
-// @Description Глобальный каталог опубликованных модулей Backend.
+// @Description Глобальный каталог активных модулей Backend. Администратор платформы может запросить только удалённые модули.
 // @ID listModules
 // @Tags Модули
+// @Param deleted query boolean false "Показать только удалённые модули"
 // @Success 200 {object} ListResponse "Глобальный каталог"
+// @Failure 400 {object} shared.ErrorResponse "Некорректный фильтр"
 // @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Архив доступен администратору платформы"
 // @Security BearerAuth
 // @Router /api/v1/modules [get]
 func (h *Handler) list(c *fiber.Ctx) error {
-	items, err := h.usecase.List(c.UserContext())
+	deleted, err := shared.OptionalBoolQuery(c, "deleted", false)
+	if err != nil {
+		return respond.WriteErrorResponse(c, err)
+	}
+	items, err := h.usecase.List(c.UserContext(), deleted)
 	if err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}
@@ -64,10 +71,10 @@ func (h *Handler) detail(c *fiber.Ctx) error {
 // @Summary Создать модуль и первую версию
 // @ID createModule
 // @Tags Модули
-// @Description Операция администратора платформы. Каталог общий для всех рабочих пространств.
+// @Description Операция администратора платформы. Каталог общий для всех рабочих пространств. Идентификатор и версия берутся из manifest.json.
 // @Accept multipart/form-data
 // @Header 201 {string} ETag "Ревизия метаданных"
-// @Param identity formData string true "Идентификатор модуля"
+// @Param identity formData string false "Ожидаемый идентификатор из manifest.json для совместимости со старыми клиентами"
 // @Param name formData string true "Название"
 // @Param description formData string false "Описание"
 // @Param archive formData file true "ZIP сборки (не более 15 МиБ)"
@@ -127,6 +134,59 @@ func (h *Handler) patch(c *fiber.Ctx) error {
 	return c.JSON(result)
 }
 
+// @Summary Перенести модуль в архив
+// @Description Убирает модуль из каталога. Ранее опубликованные версии остаются доступны по точным ссылкам; существующие привязки сохраняются.
+// @ID deleteModule
+// @Tags Модули
+// @Header 200 {string} ETag "Новая ревизия метаданных"
+// @Param identity path string true "Идентификатор модуля"
+// @Param If-Match header string true "Ревизия метаданных"
+// @Success 200 {object} entities.Module "Модуль в архиве"
+// @Failure 400 {object} shared.ErrorResponse "Некорректная ревизия"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Требуется администратор платформы"
+// @Failure 404 {object} shared.ErrorResponse "Модуль не найден"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт состояния или ревизии"
+// @Failure 428 {object} shared.ErrorResponse "Требуется заголовок If-Match"
+// @Security BearerAuth
+// @Router /api/v1/modules/{identity} [delete]
+func (h *Handler) softDelete(c *fiber.Ctx) error {
+	return h.setDeleted(c, true)
+}
+
+// @Summary Восстановить модуль из архива
+// @Description Возвращает модуль и его опубликованные версии в глобальный каталог.
+// @ID restoreModule
+// @Tags Модули
+// @Header 200 {string} ETag "Новая ревизия метаданных"
+// @Param identity path string true "Идентификатор модуля"
+// @Param If-Match header string true "Ревизия метаданных"
+// @Success 200 {object} entities.Module "Восстановленный модуль"
+// @Failure 400 {object} shared.ErrorResponse "Некорректная ревизия"
+// @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
+// @Failure 403 {object} shared.ErrorResponse "Требуется администратор платформы"
+// @Failure 404 {object} shared.ErrorResponse "Модуль не найден"
+// @Failure 409 {object} shared.ErrorResponse "Конфликт состояния или ревизии"
+// @Failure 428 {object} shared.ErrorResponse "Требуется заголовок If-Match"
+// @Security BearerAuth
+// @Router /api/v1/modules/{identity}/restore [post]
+func (h *Handler) restore(c *fiber.Ctx) error {
+	return h.setDeleted(c, false)
+}
+
+func (h *Handler) setDeleted(c *fiber.Ctx, deleted bool) error {
+	revision, err := shared.IfMatch(c)
+	if err != nil {
+		return respond.WriteErrorResponse(c, err)
+	}
+	result, err := h.usecase.SetDeleted(c.UserContext(), c.Params("identity"), int64(revision), deleted)
+	if err != nil {
+		return respond.RespondDomainError(c, nil, err)
+	}
+	setRevision(c, result.Revision)
+	return c.JSON(result)
+}
+
 // @Summary Опубликовать версию модуля
 // @ID publishModuleVersion
 // @Tags Модули
@@ -176,7 +236,7 @@ func (h *Handler) version(c *fiber.Ctx) error {
 		assets.CSS = base + "/assets/module.css"
 	}
 	c.Set(fiber.HeaderCacheControl, "private, no-store")
-	return c.JSON(VersionResponse{ModuleVersion: result, ArchiveURL: base + "/archive", Assets: assets})
+	return c.JSON(VersionResponse{ModuleVersion: result, ModuleArchived: result.ModuleArchived, ArchiveURL: base + "/archive", Assets: assets})
 }
 
 // @Summary Скачать оригинальный ZIP

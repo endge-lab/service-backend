@@ -16,8 +16,9 @@ type ListResponse struct {
 
 type VersionResponse struct {
 	entities.ModuleVersion
-	ArchiveURL string    `json:"archiveUrl"`
-	Assets     AssetURLs `json:"assets"`
+	ModuleArchived bool      `json:"moduleArchived"`
+	ArchiveURL     string    `json:"archiveUrl"`
+	Assets         AssetURLs `json:"assets"`
 }
 
 type AssetURLs struct {

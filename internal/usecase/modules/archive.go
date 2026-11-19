@@ -23,6 +23,10 @@ var identityPattern = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 var rendererPrimitivePattern = regexp.MustCompile(`^[A-Z][A-Za-z0-9]{0,63}$`)
 var versionPattern = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$`)
 
+func validIdentity(identity string) bool {
+	return len(identity) <= 128 && identityPattern.MatchString(identity)
+}
+
 func validVersion(version string) bool {
 	if len(version) > 128 || !versionPattern.MatchString(version) {
 		return false
@@ -66,7 +70,7 @@ func openArchive(data []byte) (map[string]*zip.File, error) {
 	return files, nil
 }
 
-func parseArchive(data []byte, identity, actor string) (entities.ModuleVersion, error) {
+func parseArchive(data []byte, expectedIdentity, actor string) (entities.ModuleVersion, error) {
 	files, err := openArchive(data)
 	if err != nil {
 		return entities.ModuleVersion{}, err
@@ -96,8 +100,17 @@ func parseArchive(data []byte, identity, actor string) (entities.ModuleVersion, 
 			return entities.ModuleVersion{}, fmt.Errorf("%s: %w", name, err)
 		}
 	}
-	if manifest.Identity != identity || !validVersion(manifest.Version) || manifest.FormatVersion != 1 || manifest.HostAPI != 1 {
-		return entities.ModuleVersion{}, errors.New("manifest requires the matching identity, exact SemVer, formatVersion 1 and hostApi 1")
+	if !validIdentity(manifest.Identity) {
+		return entities.ModuleVersion{}, errors.New("manifest.json requires a valid module identity")
+	}
+	if expectedIdentity != "" && manifest.Identity != expectedIdentity {
+		return entities.ModuleVersion{}, fmt.Errorf("archive module identity %q does not match expected identity %q", manifest.Identity, expectedIdentity)
+	}
+	if !validVersion(manifest.Version) {
+		return entities.ModuleVersion{}, errors.New("manifest.json requires an exact SemVer version")
+	}
+	if manifest.FormatVersion != 1 || manifest.HostAPI != 1 {
+		return entities.ModuleVersion{}, errors.New("manifest.json requires formatVersion 1 and hostApi 1")
 	}
 	if manifest.Contributes != nil {
 		if err := validateRenderers(manifest.Contributes.Renderers); err != nil {
