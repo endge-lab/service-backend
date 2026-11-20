@@ -13,7 +13,7 @@ info:
     «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).
   title: Endge Service Backend API
   contact: {}
-  version: 0.23.0
+  version: 0.23.1
 paths:
   /api/session/me:
     get:
@@ -11739,10 +11739,10 @@ paths:
     post:
       security:
         - BearerAuth: []
-      description: Операция администратора платформы. Каталог общий для всех рабочих пространств. Идентификатор и версия берутся из manifest.json.
+      description: Операция администратора платформы. Каталог общий для всех рабочих пространств. Идентификатор и версия берутся из manifest.json. Архивный модуль с этим identity восстанавливается с переданными названием и описанием. Восстановление сохраняет опубликованные версии и выполняется в одной транзакции с загрузкой ZIP.
       tags:
         - Модули
-      summary: Создать модуль и первую версию
+      summary: Создать или восстановить модуль и опубликовать версию
       operationId: createModule
       requestBody:
         content:
@@ -11768,7 +11768,7 @@ paths:
                 - archive
       responses:
         "201":
-          description: Модуль создан
+          description: Активный модуль и его опубликованные версии
           content:
             "*/*":
               schema:

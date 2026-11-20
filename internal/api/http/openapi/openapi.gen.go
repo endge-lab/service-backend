@@ -18,7 +18,7 @@ var openAPI3YAML = []byte(
 		"    «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).\n" +
 		"  title: Endge Service Backend API\n" +
 		"  contact: {}\n" +
-		"  version: 0.23.0\n" +
+		"  version: 0.23.1\n" +
 		"paths:\n" +
 		"  /api/session/me:\n" +
 		"    get:\n" +
@@ -11744,10 +11744,10 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: Операция администратора платформы. Каталог общий для всех рабочих пространств. Идентификатор и версия берутся из manifest.json.\n" +
+		"      description: Операция администратора платформы. Каталог общий для всех рабочих пространств. Идентификатор и версия берутся из manifest.json. Архивный модуль с этим identity восстанавливается с переданными названием и описанием. Восстановление сохраняет опубликованные версии и выполняется в одной транзакции с загрузкой ZIP.\n" +
 		"      tags:\n" +
 		"        - Модули\n" +
-		"      summary: Создать модуль и первую версию\n" +
+		"      summary: Создать или восстановить модуль и опубликовать версию\n" +
 		"      operationId: createModule\n" +
 		"      requestBody:\n" +
 		"        content:\n" +
@@ -11773,7 +11773,7 @@ var openAPI3YAML = []byte(
 		"                - archive\n" +
 		"      responses:\n" +
 		"        \"201\":\n" +
-		"          description: Модуль создан\n" +
+		"          description: Активный модуль и его опубликованные версии\n" +
 		"          content:\n" +
 		"            \"*/*\":\n" +
 		"              schema:\n" +

@@ -1380,8 +1380,8 @@ codes:
   - code: module_conflict
     status: 409
     defaultMessage: Module identity, revision or version conflicts with the catalog
-    meaning: Идентификатор занят, ревизия устарела или версия уже опубликована с другими байтами.
-    action: Проверьте текущую карточку и выберите новую версию для изменённой сборки.
+    meaning: Идентификатор занят активным модулем, ревизия устарела или версия уже опубликована с другими байтами.
+    action: Для активного модуля добавьте версию из его карточки. Для изменённого ZIP выберите свободную версию. При конфликте ревизии обновите карточку.
     sources:
       - internal/usecase/modules/usecase.go
   - code: module_metadata_invalid

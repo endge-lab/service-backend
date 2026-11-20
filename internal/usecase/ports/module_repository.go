@@ -12,7 +12,7 @@ var ErrModuleConflict = errors.New("module identity, revision or version conflic
 type ModuleRepository interface {
 	ListModules(context.Context, bool) ([]entities.Module, error)
 	GetModule(context.Context, string) (entities.Module, error)
-	CreateModule(context.Context, entities.Module) (entities.Module, error)
+	CreateOrRestoreModule(context.Context, entities.Module) (entities.Module, error)
 	PatchModule(context.Context, entities.Module) (entities.Module, error)
 	SetModuleDeleted(context.Context, string, int64, string, bool) (entities.Module, error)
 	ListModuleVersions(context.Context, string) ([]entities.ModuleVersion, error)

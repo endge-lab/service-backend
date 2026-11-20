@@ -105,15 +105,19 @@ func (u *UseCase) Create(ctx context.Context, value entities.Module, data []byte
 	value.Identity = version.Manifest.Identity
 	value.UpdatedBy = actor
 	err = u.tx.WithinTransaction(ctx, func(ctx context.Context) error {
-		created, err := u.repository.CreateModule(ctx, value)
+		module, err := u.repository.CreateOrRestoreModule(ctx, value)
 		if err != nil {
 			return err
 		}
-		published, err := u.repository.PublishModuleVersion(ctx, created.ID, version)
-		if err == nil {
-			result = entities.ModuleDetail{Module: created, Versions: []entities.ModuleVersion{published}}
+		if _, err = u.repository.PublishModuleVersion(ctx, module.ID, version); err != nil {
+			return err
 		}
-		return err
+		versions, err := u.repository.ListModuleVersions(ctx, module.ID)
+		if err != nil {
+			return err
+		}
+		result = entities.ModuleDetail{Module: module, Versions: versions}
+		return nil
 	})
 	return result, catalogError(err)
 }
