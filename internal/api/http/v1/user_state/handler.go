@@ -1,9 +1,6 @@
 package user_state
 
 import (
-	"encoding/json"
-
-	"github.com/endge-lab/service-backend/internal/api/http/middleware"
 	"github.com/endge-lab/service-backend/internal/api/http/respond"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	state "github.com/endge-lab/service-backend/internal/usecase/user_state"
@@ -11,62 +8,15 @@ import (
 )
 
 type Handler struct {
-	usecase *state.UseCase
+	usecase UseCase
 }
 
-func NewHandler(usecase *state.UseCase) *Handler { return &Handler{usecase: usecase} }
-
-func RegisterRoutes(router fiber.Router, h *Handler) {
-	root := router.Group("/user-state")
-	root.Get("/", h.self)
-	root.Patch("/", h.saveSelf)
-	root.Get("/admin/contexts", h.contexts)
-	root.Get("/admin/users", h.users)
-	root.Get("/admin/users/:user", h.readUser)
-	root.Patch("/admin/users/:user", h.saveUser)
-	root.Post("/admin/reset", h.reset)
-}
-
-type contextsResponse struct {
-	Items   []state.Scope      `json:"items"`
-	Current *state.Scope       `json:"current"`
-	Catalog []state.Definition `json:"catalog"`
-}
-
-type resetRequest struct {
-	Partition    string `json:"partition"`
-	User         string `json:"userId,omitempty"`
-	Confirmation string `json:"confirmation"`
-}
-
-type resetResponse struct {
-	Deleted int64 `json:"deleted"`
-}
-
-func groups(c *fiber.Ctx) []string {
-	identity, _ := middleware.IdentityFromContext(c.UserContext())
-	return identity.Groups
-}
-
-func selections(c *fiber.Ctx) (map[string]string, error) {
-	raw := c.Query("facets", "{}")
-	var result map[string]string
-	if len(raw) > 4096 || json.Unmarshal([]byte(raw), &result) != nil || result == nil {
-		return nil, domainerrors.InvalidInput("user_state_context_invalid", "Expected a facet selection object")
-	}
-	return result, nil
-}
-
-func decode(c *fiber.Ctx, target any) error {
-	if len(c.Body()) > 64*1024 || json.Unmarshal(c.Body(), target) != nil {
-		return domainerrors.InvalidInput("user_state_body_invalid", "Expected a settings request of at most 64 KiB")
-	}
-	return nil
-}
+func NewHandler(usecase UseCase) *Handler { return &Handler{usecase: usecase} }
 
 // @Summary Прочитать свои рабочие настройки
 // @Tags User State
 // @ID getUserState
+// @Description Возвращает настройки текущей учётной записи и ревизию сброса в выбранном контексте рабочего пространства.
 // @Produce json
 // @Param X-Endge-Workspace header string true "Workspace identity"
 // @Param facets query string false "JSON object of selected facet documents"
@@ -79,6 +29,7 @@ func (h *Handler) self(c *fiber.Ctx) error { return h.read(false)(c) }
 // @Summary Сохранить свои рабочие настройки
 // @Tags User State
 // @ID saveUserState
+// @Description Применяет пакет операций текущей учётной записи с проверкой контекста, ревизии сброса и ревизий ключей.
 // @Produce json
 // @Param X-Endge-Workspace header string true "Workspace identity"
 // @Param facets query string false "JSON object of selected facet documents"
@@ -93,6 +44,7 @@ func (h *Handler) saveSelf(c *fiber.Ctx) error { return h.save(false)(c) }
 // @Summary Прочитать настройки пользователя
 // @Tags User State
 // @ID adminReadUserState
+// @Description Возвращает настройки выбранного пользователя администратору рабочего пространства в доступном ему контексте.
 // @Produce json
 // @Param X-Endge-Workspace header string true "Workspace identity"
 // @Param facets query string false "JSON object of selected facet documents"
@@ -106,6 +58,7 @@ func (h *Handler) readUser(c *fiber.Ctx) error { return h.read(true)(c) }
 // @Summary Сохранить настройки пользователя
 // @Tags User State
 // @ID adminSaveUserState
+// @Description Применяет подтверждённые администратором изменения по ревизиям ключей выбранного пользователя в доступном контексте.
 // @Produce json
 // @Param X-Endge-Workspace header string true "Workspace identity"
 // @Param facets query string false "JSON object of selected facet documents"
@@ -121,6 +74,7 @@ func (h *Handler) saveUser(c *fiber.Ctx) error { return h.save(true)(c) }
 // @Summary Получить разрешённые контексты и каталог настроек
 // @Tags User State
 // @ID listUserStateContexts
+// @Description Возвращает доступные администратору контексты, активный контекст и каталог поддерживаемых ключей с их описаниями.
 // @Produce json
 // @Param X-Endge-Workspace header string true "Workspace identity"
 // @Param facets query string false "JSON object of selected facet documents"
@@ -150,6 +104,7 @@ func (h *Handler) contexts(c *fiber.Ctx) error {
 // @Summary Получить пользователей с настройками
 // @Tags User State
 // @ID listUserStateUsers
+// @Description Показывает пользователей с серверными настройками в выбранном контексте с поиском и постраничной выдачей.
 // @Produce json
 // @Param X-Endge-Workspace header string true "Workspace identity"
 // @Param facets query string false "JSON object of selected facet documents"
@@ -198,6 +153,7 @@ func (h *Handler) save(admin bool) fiber.Handler {
 // @Summary Сбросить пользовательские настройки в контексте
 // @Tags User State
 // @ID resetUserState
+// @Description Сбрасывает настройки выбранного пользователя или всех пользователей в подтверждённом контексте и отзывает прежнюю очередь записей.
 // @Produce json
 // @Param X-Endge-Workspace header string true "Workspace identity"
 // @Param facets query string false "JSON object of selected facet documents"
@@ -218,12 +174,4 @@ func (h *Handler) reset(c *fiber.Ctx) error {
 	}
 	count, err := h.usecase.Reset(c.UserContext(), facets, groups(c), input.User, input.Confirmation, input.Partition)
 	return send(c, resetResponse{Deleted: count}, err)
-}
-
-func send(c *fiber.Ctx, data any, err error) error {
-	if err != nil {
-		return respond.RespondDomainError(c, nil, err)
-	}
-	c.Set(fiber.HeaderCacheControl, "no-store")
-	return c.JSON(data)
 }
