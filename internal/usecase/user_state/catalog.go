@@ -40,6 +40,7 @@ var Catalog = []Definition{
 			return json.Unmarshal(raw, &value) == nil && (value == "human" || value == "robot")
 		},
 	},
+	sppTabsWorkspaceDefinition,
 }
 
 func validOperation(op Operation) bool {

@@ -2,7 +2,6 @@ package bootstrap
 
 import (
 	"context"
-	"strings"
 
 	"github.com/endge-lab/service-backend/internal/config"
 	"github.com/endge-lab/service-backend/internal/domain/access"
@@ -110,7 +109,7 @@ func UseCaseModules() fx.Option {
 }
 
 func newUserStateUseCase(repo ports.UserStateRepository, facets ports.FacetRepository, tx ports.TxManager, cfg *config.Config) *user_state.UseCase {
-	return user_state.NewUseCase(repo, facets, tx, cfg.UserStateEnvironment, strings.Split(cfg.UserStateProtectedFacets, ","))
+	return user_state.NewUseCase(repo, facets, tx, cfg.UserStateEnvironment)
 }
 
 func releaseArtifactCacheConfig(cfg *config.Config) config.ReleaseArtifactCacheConfig {

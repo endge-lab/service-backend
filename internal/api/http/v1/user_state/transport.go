@@ -3,7 +3,6 @@ package user_state
 import (
 	"encoding/json"
 
-	"github.com/endge-lab/service-backend/internal/api/http/middleware"
 	"github.com/endge-lab/service-backend/internal/api/http/respond"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
 	state "github.com/endge-lab/service-backend/internal/usecase/user_state"
@@ -24,11 +23,6 @@ type resetRequest struct {
 
 type resetResponse struct {
 	Deleted int64 `json:"deleted"`
-}
-
-func groups(c *fiber.Ctx) []string {
-	identity, _ := middleware.IdentityFromContext(c.UserContext())
-	return identity.Groups
 }
 
 func selections(c *fiber.Ctx) (map[string]string, error) {

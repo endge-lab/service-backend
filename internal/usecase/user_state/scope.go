@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"net/url"
-	"slices"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
@@ -43,7 +41,7 @@ type facetConfig struct {
 	} `json:"configuration"`
 }
 
-func (s *UseCase) resolveScope(ctx context.Context, workspace entities.Workspace, selections map[string]string, groups []string) (entities.UserStateScope, Scope, error) {
+func (s *UseCase) resolveScope(ctx context.Context, workspace entities.Workspace, selections map[string]string) (entities.UserStateScope, Scope, error) {
 	invalid := domainerrors.InvalidInput("user_state_context_invalid", "Invalid facet selection for this workspace")
 	if selections == nil {
 		selections = map[string]string{}
@@ -79,12 +77,6 @@ func (s *UseCase) resolveScope(ctx context.Context, workspace entities.Workspace
 				return entities.UserStateScope{}, Scope{}, invalid
 			}
 			continue
-		}
-		if s.protected[facet.Identity] {
-			group := "/endge-user-state/" + url.PathEscape(s.environment) + "/" + url.PathEscape(workspace.Identity) + "/" + url.PathEscape(facet.Identity) + "/" + url.PathEscape(selection)
-			if !slices.Contains(groups, group) {
-				return entities.UserStateScope{}, Scope{}, domainerrors.Forbidden("user_state_facet_forbidden", "Access to the requested persistence context is forbidden")
-			}
 		}
 		doc, err := s.facets.GetFacetDocument(ctx, workspace.ID, facet.Identity, selection, false)
 		if errors.Is(err, ports.ErrNotFound) || (err == nil && !doc.Active) {

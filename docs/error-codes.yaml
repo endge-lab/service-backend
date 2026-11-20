@@ -1935,13 +1935,6 @@ codes:
     sources:
       - internal/api/http/v1/user_state/transport.go
       - internal/usecase/user_state/scope.go
-  - code: user_state_facet_forbidden
-    status: 403
-    defaultMessage: Access to the requested persistence context is forbidden
-    meaning: Сеансу недоступен защищённый контекст сохранения.
-    action: Выберите разрешённый контекст или обратитесь к владельцу политики OIDC.
-    sources:
-      - internal/usecase/user_state/scope.go
   - code: user_state_filter_invalid
     status: 400
     defaultMessage: Invalid user search or cursor
@@ -2087,6 +2080,7 @@ codes:
     action: 'Не повторяйте. Проверьте роль через GET /api/session/me (MCP: endge_status). Попросите пользователя выдать нужную роль или выполнить операцию самому.'
     sources:
       - internal/usecase/shared/context.go
+      - internal/usecase/user_state/usecase.go
       - internal/usecase/workspace_state/support.go
   - code: workspace_forbidden
     status: 403
