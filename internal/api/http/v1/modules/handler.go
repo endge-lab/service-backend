@@ -68,17 +68,17 @@ func (h *Handler) detail(c *fiber.Ctx) error {
 	return c.JSON(result)
 }
 
-// @Summary Создать модуль и первую версию
+// @Summary Создать или восстановить модуль и опубликовать версию
 // @ID createModule
 // @Tags Модули
-// @Description Операция администратора платформы. Каталог общий для всех рабочих пространств. Идентификатор и версия берутся из manifest.json.
+// @Description Операция администратора платформы. Каталог общий для всех рабочих пространств. Идентификатор и версия берутся из manifest.json. Архивный модуль с этим identity восстанавливается с переданными названием и описанием. Восстановление сохраняет опубликованные версии и выполняется в одной транзакции с загрузкой ZIP.
 // @Accept multipart/form-data
 // @Header 201 {string} ETag "Ревизия метаданных"
 // @Param identity formData string false "Ожидаемый идентификатор из manifest.json для совместимости со старыми клиентами"
 // @Param name formData string true "Название"
 // @Param description formData string false "Описание"
 // @Param archive formData file true "ZIP сборки (не более 15 МиБ)"
-// @Success 201 {object} entities.ModuleDetail "Модуль создан"
+// @Success 201 {object} entities.ModuleDetail "Активный модуль и его опубликованные версии"
 // @Failure 400 {object} shared.ErrorResponse "Некорректный запрос"
 // @Failure 401 {object} shared.ErrorResponse "Требуется аутентификация"
 // @Failure 403 {object} shared.ErrorResponse "Требуется администратор платформы"

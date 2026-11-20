@@ -39,6 +39,8 @@ func TestGlobalModuleCatalog(t *testing.T) {
 	if etag := created.Header.Get("ETag"); etag != "\"1\"" {
 		t.Fatalf("ETag: %s", etag)
 	}
+	moduleID := stringField(t, decodeObject(t, created), "id")
+	assertStatus(t, uploadModule(t, app, "/api/v1/modules", platform, fields, original), http.StatusConflict)
 	for _, workspace := range []string{fixture.workspace, fixture.isolatedWorkspace} {
 		response := perform(t, app, http.MethodGet, path, nil, workspaceHeaders(viewer, workspace))
 		assertStatus(t, response, http.StatusOK)
@@ -111,6 +113,10 @@ func TestGlobalModuleCatalog(t *testing.T) {
 	assertStatus(t, perform(t, app, http.MethodGet, versionPath, nil, viewer), http.StatusOK)
 	assertStatus(t, perform(t, app, http.MethodGet, js, nil, viewer), http.StatusOK)
 
+	replacementFields := map[string]string{"name": "Restored Slot UI", "description": "Updated renderers"}
+	assertStatus(t, uploadModule(t, app, "/api/v1/modules", platform, replacementFields, conflict), http.StatusConflict)
+	assertStatus(t, perform(t, app, http.MethodGet, path, nil, viewer), http.StatusNotFound)
+
 	restorePath := path + "/restore"
 	assertStatus(t, perform(t, app, http.MethodPost, restorePath, nil, archiveHeaders), http.StatusConflict)
 	archiveHeaders["If-Match"] = archived.Header.Get("ETag")
@@ -120,6 +126,29 @@ func TestGlobalModuleCatalog(t *testing.T) {
 	if versions := arrayField(t, decodeObject(t, restored), "versions"); len(versions) != 2 {
 		t.Fatalf("restore must retain published versions, got %d", len(versions))
 	}
+
+	archiveHeaders["If-Match"] = restored.Header.Get("ETag")
+	assertStatus(t, perform(t, app, http.MethodDelete, path, nil, archiveHeaders), http.StatusOK)
+	// Re-uploading the identical ZIP restores the existing card and reuses its published version.
+	reuploaded := uploadModule(t, app, "/api/v1/modules", platform, replacementFields, original)
+	assertStatus(t, reuploaded, http.StatusCreated)
+	reuploadedModule := decodeObject(t, reuploaded)
+	if stringField(t, reuploadedModule, "id") != moduleID ||
+		stringField(t, reuploadedModule, "name") != replacementFields["name"] ||
+		stringField(t, reuploadedModule, "description") != replacementFields["description"] ||
+		len(arrayField(t, reuploadedModule, "versions")) != 2 {
+		t.Fatal("re-upload must restore the same module with the submitted metadata and both existing versions")
+	}
+
+	archiveHeaders["If-Match"] = reuploaded.Header.Get("ETag")
+	assertStatus(t, perform(t, app, http.MethodDelete, path, nil, archiveHeaders), http.StatusOK)
+	newVersion := moduleZIP(t, "0.1.0-dev.3", "export default () => ({})")
+	recreated := uploadModule(t, app, "/api/v1/modules", platform, replacementFields, newVersion)
+	assertStatus(t, recreated, http.StatusCreated)
+	if versions := arrayField(t, decodeObject(t, recreated), "versions"); len(versions) != 3 {
+		t.Fatalf("upload with a new version must restore the module and publish the ZIP, got %d versions", len(versions))
+	}
+	assertStatus(t, perform(t, app, http.MethodGet, path+"/versions/0.1.0-dev.3", nil, viewer), http.StatusOK)
 }
 
 func moduleZIP(t *testing.T, version, source string) []byte {

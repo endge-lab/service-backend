@@ -39,9 +39,14 @@ func (r *EndgeRepository) GetModule(ctx context.Context, identity string) (entit
 	return scanModule(r.executor(ctx).QueryRow(ctx, "SELECT "+moduleColumns+" FROM modules WHERE identity=$1", identity))
 }
 
-func (r *EndgeRepository) CreateModule(ctx context.Context, value entities.Module) (entities.Module, error) {
+func (r *EndgeRepository) CreateOrRestoreModule(ctx context.Context, value entities.Module) (entities.Module, error) {
 	saved, err := scanModule(r.executor(ctx).QueryRow(ctx, `INSERT INTO modules (identity,name,description,updated_by)
-		VALUES ($1,$2,$3,$4) ON CONFLICT (identity) DO NOTHING RETURNING `+moduleColumns,
+		VALUES ($1,$2,$3,$4)
+		ON CONFLICT (identity) DO UPDATE SET
+			name=EXCLUDED.name, description=EXCLUDED.description, updated_by=EXCLUDED.updated_by,
+			deleted_at=NULL, revision=modules.revision+1
+		WHERE modules.deleted_at IS NOT NULL
+		RETURNING `+moduleColumns,
 		value.Identity, value.Name, value.Description, value.UpdatedBy))
 	if errors.Is(err, ports.ErrNotFound) {
 		return saved, ports.ErrModuleConflict
