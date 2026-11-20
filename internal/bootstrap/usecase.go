@@ -2,6 +2,8 @@ package bootstrap
 
 import (
 	"context"
+	"strings"
+
 	"github.com/endge-lab/service-backend/internal/config"
 	"github.com/endge-lab/service-backend/internal/domain/access"
 	platformbridge "github.com/endge-lab/service-backend/internal/platform/bridge"
@@ -47,6 +49,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/styles"
 	"github.com/endge-lab/service-backend/internal/usecase/types"
 	"github.com/endge-lab/service-backend/internal/usecase/updates"
+	"github.com/endge-lab/service-backend/internal/usecase/user_state"
 	"github.com/endge-lab/service-backend/internal/usecase/vocabs"
 	"github.com/endge-lab/service-backend/internal/usecase/workspace_state"
 	"github.com/endge-lab/service-backend/internal/usecase/workspaces"
@@ -102,7 +105,12 @@ func UseCaseModules() fx.Option {
 		releases.NewUseCase,
 		backups.NewUseCase,
 		build_profiles.NewUseCase,
+		newUserStateUseCase,
 	))
+}
+
+func newUserStateUseCase(repo ports.UserStateRepository, facets ports.FacetRepository, tx ports.TxManager, cfg *config.Config) *user_state.UseCase {
+	return user_state.NewUseCase(repo, facets, tx, cfg.UserStateEnvironment, strings.Split(cfg.UserStateProtectedFacets, ","))
 }
 
 func releaseArtifactCacheConfig(cfg *config.Config) config.ReleaseArtifactCacheConfig {

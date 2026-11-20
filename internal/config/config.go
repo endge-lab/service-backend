@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/endge-lab/service-backend/internal/domain/access"
 
@@ -25,7 +27,9 @@ type Config struct {
 	Bridge                 BridgeConfig
 	AccessTokens           AccessTokenConfig
 	// AgentDocsURL — корень llms-документации для агентов: MCP читает её файлы и отдаёт как ресурсы; пусто — не публикуется.
-	AgentDocsURL string
+	AgentDocsURL             string
+	UserStateEnvironment     string
+	UserStateProtectedFacets string
 }
 
 // Load загружает базовую конфигурацию service-kit и дополняет её настройками
@@ -86,20 +90,26 @@ func Load() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	environment := strings.TrimSpace(os.Getenv("ENDGE_USER_STATE_ENVIRONMENT"))
+	if environment == "" {
+		environment = base.App.Env
+	}
 	return &Config{
-		AgentDocsURL:           agentDocsURL,
-		Bridge:                 bridge,
-		AccessTokens:           accessTokens,
-		ServiceConfig:          base,
-		WorkspaceSchemaVersion: buildMetadata.WorkspaceSchemaVersion,
-		HTTPBasePath:           httpBasePath,
-		Identity:               identity,
-		Access:                 accessPolicy,
-		ConfiguratorAuth:       configuratorAuth,
-		Encryption:             encryption,
-		Snapshots:              loadSnapshotConfig(),
-		ReleaseArtifactCache:   releaseArtifactCache,
-		AIWorkbench:            aiWorkbench,
-		MockGenerator:          mockGenerator,
+		UserStateEnvironment:     environment,
+		UserStateProtectedFacets: os.Getenv("ENDGE_USER_STATE_PROTECTED_FACETS"),
+		AgentDocsURL:             agentDocsURL,
+		Bridge:                   bridge,
+		AccessTokens:             accessTokens,
+		ServiceConfig:            base,
+		WorkspaceSchemaVersion:   buildMetadata.WorkspaceSchemaVersion,
+		HTTPBasePath:             httpBasePath,
+		Identity:                 identity,
+		Access:                   accessPolicy,
+		ConfiguratorAuth:         configuratorAuth,
+		Encryption:               encryption,
+		Snapshots:                loadSnapshotConfig(),
+		ReleaseArtifactCache:     releaseArtifactCache,
+		AIWorkbench:              aiWorkbench,
+		MockGenerator:            mockGenerator,
 	}, nil
 }

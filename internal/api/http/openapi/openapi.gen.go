@@ -18,7 +18,7 @@ var openAPI3YAML = []byte(
 		"    «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).\n" +
 		"  title: Endge Service Backend API\n" +
 		"  contact: {}\n" +
-		"  version: 0.21.0\n" +
+		"  version: 0.22.0\n" +
 		"paths:\n" +
 		"  /api/session/me:\n" +
 		"    get:\n" +
@@ -17326,6 +17326,268 @@ var openAPI3YAML = []byte(
 		"            application/json:\n" +
 		"              schema:\n" +
 		"                $ref: \"#/components/schemas/shared.ErrorResponse\"\n" +
+		"  /api/v1/user-state:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - User State\n" +
+		"      summary: Прочитать свои рабочие настройки\n" +
+		"      operationId: getUserState\n" +
+		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: JSON object of selected facet documents\n" +
+		"          name: facets\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/user_state.Snapshot\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - User State\n" +
+		"      summary: Сохранить свои рабочие настройки\n" +
+		"      operationId: saveUserState\n" +
+		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: JSON object of selected facet documents\n" +
+		"          name: facets\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        $ref: \"#/components/requestBodies/user_state.Batch\"\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/user_state.BatchResult\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"  /api/v1/user-state/admin/contexts:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - User State\n" +
+		"      summary: Получить разрешённые контексты и каталог настроек\n" +
+		"      operationId: listUserStateContexts\n" +
+		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: JSON object of selected facet documents\n" +
+		"          name: facets\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/user_state.contextsResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"  /api/v1/user-state/admin/reset:\n" +
+		"    post:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - User State\n" +
+		"      summary: Сбросить пользовательские настройки в контексте\n" +
+		"      operationId: resetUserState\n" +
+		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: JSON object of selected facet documents\n" +
+		"          name: facets\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        content:\n" +
+		"          application/json:\n" +
+		"            schema:\n" +
+		"              $ref: \"#/components/schemas/user_state.resetRequest\"\n" +
+		"        description: Settings request\n" +
+		"        required: true\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/user_state.resetResponse\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"  /api/v1/user-state/admin/users:\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - User State\n" +
+		"      summary: Получить пользователей с настройками\n" +
+		"      operationId: listUserStateUsers\n" +
+		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: JSON object of selected facet documents\n" +
+		"          name: facets\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Username or display name\n" +
+		"          name: q\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: User cursor\n" +
+		"          name: after\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/user_state.UserPage\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"  \"/api/v1/user-state/admin/users/{user}\":\n" +
+		"    get:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - User State\n" +
+		"      summary: Прочитать настройки пользователя\n" +
+		"      operationId: adminReadUserState\n" +
+		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: JSON object of selected facet documents\n" +
+		"          name: facets\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Service user UUID\n" +
+		"          name: user\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/user_state.Snapshot\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
+		"    patch:\n" +
+		"      security:\n" +
+		"        - BearerAuth: []\n" +
+		"      tags:\n" +
+		"        - User State\n" +
+		"      summary: Сохранить настройки пользователя\n" +
+		"      operationId: adminSaveUserState\n" +
+		"      parameters:\n" +
+		"        - description: Workspace identity\n" +
+		"          name: X-Endge-Workspace\n" +
+		"          in: header\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: JSON object of selected facet documents\n" +
+		"          name: facets\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Service user UUID\n" +
+		"          name: user\n" +
+		"          in: path\n" +
+		"          required: true\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"      requestBody:\n" +
+		"        $ref: \"#/components/requestBodies/user_state.Batch\"\n" +
+		"      responses:\n" +
+		"        \"200\":\n" +
+		"          description: OK\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/user_state.BatchResult\"\n" +
+		"        \"403\":\n" +
+		"          description: Forbidden\n" +
+		"          content:\n" +
+		"            application/json:\n" +
+		"              schema:\n" +
+		"                $ref: \"#/components/schemas/respond.ErrorResponse\"\n" +
 		"  /api/v1/vocabs:\n" +
 		"    get:\n" +
 		"      security:\n" +
@@ -18895,6 +19157,14 @@ var openAPI3YAML = []byte(
 		"servers:\n" +
 		"  - url: /\n" +
 		"components:\n" +
+		"  requestBodies:\n" +
+		"    user_state.Batch:\n" +
+		"      content:\n" +
+		"        application/json:\n" +
+		"          schema:\n" +
+		"            $ref: \"#/components/schemas/user_state.Batch\"\n" +
+		"      description: Settings request\n" +
+		"      required: true\n" +
 		"  securitySchemes:\n" +
 		"    BearerAuth:\n" +
 		"      type: apiKey\n" +
@@ -23068,6 +23338,41 @@ var openAPI3YAML = []byte(
 		"        skippedBuildProfiles:\n" +
 		"          description: Сколько профилей сборки пропущено при импорте.\n" +
 		"          type: integer\n" +
+		"    entities.UserStateEntry:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        deleted:\n" +
+		"          description: Признак сброса ключа. Ревизия записи сохраняется для обнаружения конфликтов.\n" +
+		"          type: boolean\n" +
+		"        key:\n" +
+		"          description: Стабильный ключ из каталога пользовательских настроек.\n" +
+		"          type: string\n" +
+		"        revision:\n" +
+		"          description: 'Текущая revision объекта: целое, растёт на 1 при каждом изменении. Передавайте её в If-Match при изменении, удалении и восстановлении; при несовпадении — 409 revision_conflict.'\n" +
+		"          type: integer\n" +
+		"        updatedAt:\n" +
+		"          description: Время последнего изменения (RFC 3339, UTC). Заполняет сервер.\n" +
+		"          type: string\n" +
+		"        updatedBy:\n" +
+		"          description: Кто последним изменил объект. Заполняет сервер.\n" +
+		"          type: string\n" +
+		"        value:\n" +
+		"          description: JSON-значение по схеме ключа. При сбросе равно null.\n" +
+		"    entities.UserStateUser:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        count:\n" +
+		"          description: Количество генерируемых записей.\n" +
+		"          type: integer\n" +
+		"        displayName:\n" +
+		"          description: Отображаемое имя для людей; не идентификатор.\n" +
+		"          type: string\n" +
+		"        id:\n" +
+		"          description: Серверный UUID записи. В путях документов используется identity, а не id.\n" +
+		"          type: string\n" +
+		"        username:\n" +
+		"          description: Логин пользователя.\n" +
+		"          type: string\n" +
 		"    facet.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +
@@ -26869,6 +27174,177 @@ var openAPI3YAML = []byte(
 		"          description: identity папки в проекции workspace (свободные папки); независима от folderIdentity коллекции.\n" +
 		"          type: string\n" +
 		"          example: root-workspace-files\n" +
+		"    user_state.Batch:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        actorId:\n" +
+		"          description: Идентификатор сеанса-владельца при записи собственных настроек. Сверяется с аутентифицированной сессией.\n" +
+		"          type: string\n" +
+		"        operations:\n" +
+		"          description: До 32 независимых операций с разными ключами.\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/user_state.Operation\"\n" +
+		"        partition:\n" +
+		"          description: Серверный идентификатор раздела рабочего пространства и среды из снимка.\n" +
+		"          type: string\n" +
+		"        resetRevision:\n" +
+		"          description: Ревизия последнего сброса из исходного снимка.\n" +
+		"          type: integer\n" +
+		"    user_state.BatchResult:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        resetRevision:\n" +
+		"          description: Актуальная ревизия последнего сброса в контексте пользователя.\n" +
+		"          type: integer\n" +
+		"        results:\n" +
+		"          description: Результаты операций по ключам в порядке запроса.\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/user_state.Outcome\"\n" +
+		"    user_state.Definition:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        default: {description: Значение по умолчанию по схеме ключа.}\n" +
+		"        description:\n" +
+		"          description: Произвольное описание для людей.\n" +
+		"          type: object\n" +
+		"          additionalProperties:\n" +
+		"            type: string\n" +
+		"        key:\n" +
+		"          description: Стабильный ключ настройки.\n" +
+		"          type: string\n" +
+		"        schema:\n" +
+		"          description: JSON Schema генерируемых данных.\n" +
+		"          type: object\n" +
+		"          additionalProperties: {}\n" +
+		"    user_state.FacetLabel:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        document:\n" +
+		"          description: Документ (JSON-объект).\n" +
+		"          type: string\n" +
+		"        facet:\n" +
+		"          description: Отображаемое имя фасета.\n" +
+		"          type: string\n" +
+		"    user_state.Operation:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        baseRevision:\n" +
+		"          description: Ожидаемая ревизия ключа. Для новой записи передаётся 0.\n" +
+		"          type: integer\n" +
+		"        delete:\n" +
+		"          description: При true сбрасывает ключ.\n" +
+		"          type: boolean\n" +
+		"        id:\n" +
+		"          description: UUID операции для безопасного повтора.\n" +
+		"          type: string\n" +
+		"        key:\n" +
+		"          description: Стабильный ключ из каталога пользовательских настроек.\n" +
+		"          type: string\n" +
+		"        value:\n" +
+		"          description: JSON-значение по схеме ключа. При сбросе поле отсутствует.\n" +
+		"    user_state.Outcome:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        entry:\n" +
+		"          description: Актуальная запись ключа, если она существует.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/entities.UserStateEntry\"\n" +
+		"        key:\n" +
+		"          description: Ключ из исходной операции.\n" +
+		"          type: string\n" +
+		"        status:\n" +
+		"          description: saved при подтверждении, conflict при изменённой ревизии ключа и reset при сбросе контекста.\n" +
+		"          type: string\n" +
+		"    user_state.Scope:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        driver:\n" +
+		"          description: Итоговый драйвер хранения по сохранённой конфигурации.\n" +
+		"          type: string\n" +
+		"        environment:\n" +
+		"          description: Идентификатор среды Service Backend.\n" +
+		"          type: string\n" +
+		"        facets:\n" +
+		"          description: Идентификаторы выбранных документов по идентификаторам фасетов.\n" +
+		"          type: object\n" +
+		"          additionalProperties:\n" +
+		"            type: string\n" +
+		"        labels:\n" +
+		"          description: Отображаемые имена выбранных фасетов и документов.\n" +
+		"          type: object\n" +
+		"          additionalProperties:\n" +
+		"            $ref: \"#/components/schemas/user_state.FacetLabel\"\n" +
+		"        partition:\n" +
+		"          description: Серверный идентификатор рабочего пространства и среды для проверки сброса.\n" +
+		"          type: string\n" +
+		"        source:\n" +
+		"          description: Workspace или идентификатор фасета, переопределившего драйвер.\n" +
+		"          type: string\n" +
+		"    user_state.Snapshot:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        actorId:\n" +
+		"          description: ID аутентифицированного пользователя Backend. Предъявляется при записи собственных настроек.\n" +
+		"          type: string\n" +
+		"        entries:\n" +
+		"          description: Сохранённые настройки и ключи сброшенных значений с ревизиями.\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/entities.UserStateEntry\"\n" +
+		"        partition:\n" +
+		"          description: Серверный идентификатор раздела рабочего пространства и среды.\n" +
+		"          type: string\n" +
+		"        resetRevision:\n" +
+		"          description: Ревизия последнего сброса для этого пользователя и контекста.\n" +
+		"          type: integer\n" +
+		"    user_state.UserPage:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/entities.UserStateUser\"\n" +
+		"        next:\n" +
+		"          description: Курсор следующей страницы. При последней странице отсутствует.\n" +
+		"          type: string\n" +
+		"    user_state.contextsResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        catalog:\n" +
+		"          description: Схемы значений и локализованные описания поддерживаемых ключей.\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/user_state.Definition\"\n" +
+		"        current:\n" +
+		"          description: Запрошенный контекст, если он доступен администратору.\n" +
+		"          allOf:\n" +
+		"            - $ref: \"#/components/schemas/user_state.Scope\"\n" +
+		"        items:\n" +
+		"          description: Элементы страницы списка.\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/user_state.Scope\"\n" +
+		"    user_state.resetRequest:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        confirmation:\n" +
+		"          description: Строка reset-user для одного пользователя или reset-all для всех в выбранном контексте.\n" +
+		"          type: string\n" +
+		"        partition:\n" +
+		"          description: Идентификатор раздела выбранного контекста из списка контекстов.\n" +
+		"          type: string\n" +
+		"        userId:\n" +
+		"          description: UUID пользователя Endge.\n" +
+		"          type: string\n" +
+		"    user_state.resetResponse:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        deleted:\n" +
+		"          description: Число удалённых ключей с сохранёнными значениями.\n" +
+		"          type: integer\n" +
 		"    vocab.CreateRequest:\n" +
 		"      type: object\n" +
 		"      required:\n" +

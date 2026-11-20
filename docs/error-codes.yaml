@@ -1890,6 +1890,102 @@ codes:
     action: Исправьте параметр запроса, названный в message, по описанию параметра в OpenAPI и повторите запрос.
     sources:
       - internal/usecase/access_control/usecase.go
+  - code: user_state_actor_changed
+    status: 403
+    defaultMessage: The active session does not match this settings queue
+    meaning: Сеанс сменился после подготовки пакета настроек.
+    action: Восстановите исходный сеанс и загрузите подтверждённое состояние перед отправкой.
+    sources:
+      - internal/usecase/user_state/usecase.go
+  - code: user_state_backend_disabled
+    status: 403
+    defaultMessage: Backend persistence is inactive in this context
+    meaning: Для этого контекста выбран другой драйвер хранения.
+    action: Проверьте настройки workspace и выбранных документов фасетов.
+    sources:
+      - internal/usecase/user_state/usecase.go
+  - code: user_state_batch_invalid
+    status: 400
+    defaultMessage: Invalid settings batch
+    meaning: Пакет настроек пуст, превышает 32 операции или содержит неверную ревизию сброса.
+    action: Уменьшите пакет и передайте resetRevision из снимка.
+    sources:
+      - internal/usecase/user_state/usecase.go
+  - code: user_state_body_invalid
+    status: 400
+    defaultMessage: Expected a settings request of at most 64 KiB
+    meaning: Тело запроса имеет неверный JSON или превышает 64 КиБ.
+    action: Не повторяйте запрос без изменений. Исправьте поле, названное в message (и в details.field, если оно есть), по схеме операции в OpenAPI и отправьте запрос снова.
+    sources:
+      - internal/api/http/v1/user_state/handler.go
+  - code: user_state_confirmation_required
+    status: 400
+    defaultMessage: Explicit confirmation is required
+    meaning: Не передано явное подтверждение сброса.
+    action: Покажите выбранный контекст и масштаб удаления. Отправляйте подтверждение после согласия администратора.
+    sources:
+      - internal/usecase/user_state/usecase.go
+  - code: user_state_context_invalid
+    status: 400
+    defaultMessage: Expected a facet selection object
+    otherMessages:
+      - Invalid facet selection for this workspace
+    meaning: Запрошенный набор документов фасетов недействителен.
+    action: Уточните текущий контекст и передайте все выбранные активные документы.
+    sources:
+      - internal/api/http/v1/user_state/handler.go
+      - internal/usecase/user_state/scope.go
+  - code: user_state_facet_forbidden
+    status: 403
+    defaultMessage: Access to the requested persistence context is forbidden
+    meaning: Сеансу недоступен защищённый контекст сохранения.
+    action: Выберите разрешённый контекст или обратитесь к владельцу политики OIDC.
+    sources:
+      - internal/usecase/user_state/scope.go
+  - code: user_state_filter_invalid
+    status: 400
+    defaultMessage: Invalid user search or cursor
+    meaning: Некорректный поисковый фильтр или курсор пользователей.
+    action: Исправьте параметр запроса, названный в message, по описанию параметра в OpenAPI и повторите запрос.
+    sources:
+      - internal/usecase/user_state/usecase.go
+  - code: user_state_operation_invalid
+    status: 400
+    defaultMessage: Invalid key, revision or value in settings batch
+    meaning: Операция содержит неподдерживаемый ключ, значение, UUID или ревизию.
+    action: Проверьте значение по каталогу и передайте одну операцию на ключ.
+    sources:
+      - internal/usecase/user_state/usecase.go
+  - code: user_state_partition_changed
+    status: 403
+    defaultMessage: The current server context does not match this settings queue
+    otherMessages:
+      - The current server context does not match this settings reset
+    meaning: Очередь относится к другой среде или прежнему рабочему пространству.
+    action: Загрузите актуальный контекст перед созданием нового пакета.
+    sources:
+      - internal/usecase/user_state/usecase.go
+  - code: user_state_session_required
+    status: 403
+    defaultMessage: User settings require an interactive session
+    meaning: Пользовательские настройки требуют аутентифицированную пользовательскую сессию.
+    action: Войдите через настроенный OIDC-провайдер.
+    sources:
+      - internal/usecase/user_state/usecase.go
+  - code: user_state_target_invalid
+    status: 400
+    defaultMessage: Invalid settings target user
+    meaning: Цель операции должна быть пользователем Backend с валидным UUID.
+    action: Не повторяйте запрос без изменений. Исправьте поле, названное в message (и в details.field, если оно есть), по схеме операции в OpenAPI и отправьте запрос снова.
+    sources:
+      - internal/usecase/user_state/usecase.go
+  - code: user_state_user_not_found
+    status: 404
+    defaultMessage: No saved settings for this user in this context
+    meaning: Для указанного пользователя отсутствуют сохранённые настройки в этом контексте.
+    action: Обновите список пользователей и выберите актуальную запись.
+    sources:
+      - internal/usecase/user_state/usecase.go
   - code: validation_error
     status: 400
     defaultMessage: Некорректное тело запроса

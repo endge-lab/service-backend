@@ -45,6 +45,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/style"
 	domain_type "github.com/endge-lab/service-backend/internal/api/http/v1/type"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/update"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/user_state"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/vocab"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/workspace"
 	"github.com/endge-lab/service-backend/internal/config"
@@ -60,6 +61,7 @@ type Handlers struct {
 
 	Bridge            *bridge.Handler
 	BuildProfile      *build_profile.Handler
+	UserState         *user_state.Handler
 	CurrentUser       *httpmiddleware.CurrentUserMiddleware
 	AccessControl     *access_control.Handler
 	AccessToken       *access_token.Handler
@@ -126,6 +128,7 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, connectedServices *service_
 	v1 := registerUnscopedAPIRoutes(api, handlers)
 	scoped := v1.Group("", handlers.Workspace.RequireWorkspace())
 	build_profile.RegisterRoutes(scoped, handlers.BuildProfile)
+	user_state.RegisterRoutes(scoped, handlers.UserState)
 	facet.RegisterRoutes(scoped, handlers.Facet)
 	folder.RegisterRoutes(scoped, handlers.Folder)
 	domain_type.RegisterRoutes(scoped, handlers.Type)
