@@ -7,8 +7,12 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func (r *EndgeRepository) LockUserState(ctx context.Context, s entities.UserStateScope) error {
-	_, err := r.executor(ctx).Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('user-state:' || $1::text || ':' || $2::text || ':' || $3::text, 0))`, s.WorkspaceID, s.Environment, s.Facets)
+func (r *EndgeRepository) LockUserState(ctx context.Context, s entities.UserStateScope, user string) error {
+	owner := s.WorkspaceID
+	if s.Application != "" {
+		owner = "app:" + s.Application + ":" + user
+	}
+	_, err := r.executor(ctx).Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('user-state:' || $1::text || ':' || $2::text || ':' || $3::text, 0))`, owner, s.Environment, s.Facets)
 	return err
 }
 
@@ -35,6 +39,9 @@ func (r *EndgeRepository) UserStateUsers(ctx context.Context, s entities.UserSta
 }
 
 func (r *EndgeRepository) UserStateRevision(ctx context.Context, s entities.UserStateScope, user string) (int64, error) {
+	if s.Application != "" {
+		return 0, nil
+	}
 	var revision int64
 	err := r.executor(ctx).QueryRow(ctx, `SELECT COALESCE(MAX(revision),0) FROM user_state_resets
 		WHERE workspace_id=$1 AND environment=$2 AND facet_scope=$3 AND user_id IN ('',$4)`, s.WorkspaceID, s.Environment, s.Facets, user).Scan(&revision)
@@ -51,7 +58,8 @@ func scanUserState(row scanner) (entities.UserStateEntry, error) {
 
 func (r *EndgeRepository) ReadUserState(ctx context.Context, s entities.UserStateScope, user string) ([]entities.UserStateEntry, error) {
 	rows, err := r.executor(ctx).Query(ctx, `SELECT `+userStateColumns+` FROM user_state
-		WHERE workspace_id=$1 AND environment=$2 AND facet_scope=$3 AND user_id=$4 ORDER BY key`, s.WorkspaceID, s.Environment, s.Facets, user)
+		WHERE (workspace_id=NULLIF($1,'')::uuid OR ($1='' AND workspace_id IS NULL))
+		AND environment=$2 AND facet_scope=$3 AND user_id=$4 AND application=$5 ORDER BY key`, s.WorkspaceID, s.Environment, s.Facets, user, s.Application)
 	if err != nil {
 		return nil, err
 	}
@@ -64,12 +72,12 @@ func (r *EndgeRepository) WriteUserState(ctx context.Context, s entities.UserSta
 		value = item.Value
 	}
 	return scanUserState(r.executor(ctx).QueryRow(ctx, `INSERT INTO user_state
-		(workspace_id,environment,facet_scope,user_id,key,value,mutation_id,updated_by)
-		VALUES($1,$2,$3,$4,$5,$6,$7,$8)
-		ON CONFLICT(workspace_id,environment,facet_scope,user_id,key) DO UPDATE SET
+		(workspace_id,environment,facet_scope,user_id,key,value,mutation_id,updated_by,application)
+		VALUES(NULLIF($1,'')::uuid,$2,$3,$4,$5,$6,$7,$8,$9)
+		ON CONFLICT ON CONSTRAINT user_state_key DO UPDATE SET
 			value=excluded.value, revision=excluded.revision, mutation_id=excluded.mutation_id,
 			updated_at=now(), updated_by=excluded.updated_by
-		RETURNING `+userStateColumns, s.WorkspaceID, s.Environment, s.Facets, user, item.Key, value, item.MutationID, actor))
+		RETURNING `+userStateColumns, s.WorkspaceID, s.Environment, s.Facets, user, item.Key, value, item.MutationID, actor, s.Application))
 }
 
 func (r *EndgeRepository) ResetUserState(ctx context.Context, s entities.UserStateScope, user string) (int64, error) {

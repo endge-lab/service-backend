@@ -13,7 +13,7 @@ info:
     «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).
   title: Endge Service Backend API
   contact: {}
-  version: 0.23.1
+  version: 0.24.0
 paths:
   /api/session/me:
     get:
@@ -17342,6 +17342,11 @@ paths:
           in: query
           schema:
             type: string
+        - description: Application identity for personal settings shared across workspaces
+          name: application
+          in: query
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -17372,6 +17377,11 @@ paths:
             type: string
         - description: JSON object of selected facet documents
           name: facets
+          in: query
+          schema:
+            type: string
+        - description: Application identity for personal settings shared across workspaces
+          name: application
           in: query
           schema:
             type: string
@@ -27289,6 +27299,9 @@ components:
       properties:
         actorId:
           description: ID аутентифицированного пользователя Backend. Предъявляется при записи собственных настроек.
+          type: string
+        application:
+          description: Идентификатор приложения для настроек учётной записи, общих для его рабочих пространств.
           type: string
         entries:
           description: Сохранённые настройки и ключи сброшенных значений с ревизиями.

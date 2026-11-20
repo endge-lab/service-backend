@@ -28,6 +28,7 @@ type Snapshot struct {
 	ActorID       string                    `json:"actorId"`
 	ResetRevision int64                     `json:"resetRevision"`
 	Entries       []entities.UserStateEntry `json:"entries"`
+	Application   string                    `json:"application,omitempty"`
 }
 
 type Operation struct {
@@ -130,7 +131,7 @@ func (s *UseCase) Users(ctx context.Context, facets map[string]string, search, a
 	return result, nil
 }
 
-func (s *UseCase) Read(ctx context.Context, facets map[string]string, user string, managed bool) (Snapshot, error) {
+func (s *UseCase) Read(ctx context.Context, facets map[string]string, user string, managed bool, application string) (Snapshot, error) {
 	actor, key, scope, err := s.Context(ctx, facets)
 	if err != nil {
 		return Snapshot{}, err
@@ -141,12 +142,16 @@ func (s *UseCase) Read(ctx context.Context, facets map[string]string, user strin
 		}
 		user = actor.User.ID
 	}
+	key, err = settingsScope(key, managed, application)
+	if err != nil {
+		return Snapshot{}, err
+	}
 	if !validID(user) {
 		return Snapshot{}, invalidTarget()
 	}
-	result := Snapshot{ActorID: actor.User.ID, Partition: partition(key)}
+	result := Snapshot{ActorID: actor.User.ID, Partition: partition(key), Application: key.Application}
 	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
-		if err := s.repo.LockUserState(txctx, key); err != nil {
+		if err := s.repo.LockUserState(txctx, key, user); err != nil {
 			return err
 		}
 		result.ResetRevision, err = s.repo.UserStateRevision(txctx, key, user)
@@ -159,7 +164,7 @@ func (s *UseCase) Read(ctx context.Context, facets map[string]string, user strin
 	return result, err
 }
 
-func (s *UseCase) Save(ctx context.Context, facets map[string]string, user string, managed bool, batch Batch) (BatchResult, error) {
+func (s *UseCase) Save(ctx context.Context, facets map[string]string, user string, managed bool, application string, batch Batch) (BatchResult, error) {
 	actor, access, err := userContext(ctx)
 	if err != nil {
 		return BatchResult{}, err
@@ -180,6 +185,10 @@ func (s *UseCase) Save(ctx context.Context, facets map[string]string, user strin
 		}
 		user = actor.User.ID
 	}
+	key, err = settingsScope(key, managed, application)
+	if err != nil {
+		return BatchResult{}, err
+	}
 	if !validID(user) {
 		return BatchResult{}, invalidTarget()
 	}
@@ -192,7 +201,7 @@ func (s *UseCase) Save(ctx context.Context, facets map[string]string, user strin
 
 	result := BatchResult{Results: []Outcome{}}
 	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
-		if err := s.repo.LockUserState(txctx, key); err != nil {
+		if err := s.repo.LockUserState(txctx, key, user); err != nil {
 			return err
 		}
 		rev, err := s.repo.UserStateRevision(txctx, key, user)
@@ -272,7 +281,7 @@ func (s *UseCase) Reset(ctx context.Context, facets map[string]string, user, con
 	}
 	var count int64
 	err = s.tx.WithinTransaction(ctx, func(txctx context.Context) error {
-		if err := s.repo.LockUserState(txctx, key); err != nil {
+		if err := s.repo.LockUserState(txctx, key, user); err != nil {
 			return err
 		}
 		count, err = s.repo.ResetUserState(txctx, key, user)
@@ -285,6 +294,9 @@ func (s *UseCase) Reset(ctx context.Context, facets map[string]string, user, con
 }
 
 func partition(key entities.UserStateScope) string {
+	if key.Application != "" {
+		return "app:" + key.Application + ":" + key.Environment
+	}
 	return key.WorkspaceID + ":" + key.Environment
 }
 

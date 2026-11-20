@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"regexp"
 
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	domainerrors "github.com/endge-lab/service-backend/internal/domain/errors"
@@ -26,6 +27,19 @@ type FacetLabel struct {
 
 type driverConfig struct {
 	UserStateDriver string `json:"userStateDriver"`
+}
+
+var applicationIdentity = regexp.MustCompile(`^[A-Za-z0-9@][A-Za-z0-9@._/-]{0,127}$`)
+
+// Application preferences are personal and do not belong to a workspace administrator.
+func settingsScope(key entities.UserStateScope, managed bool, application string) (entities.UserStateScope, error) {
+	if application == "" {
+		return key, nil
+	}
+	if managed || !applicationIdentity.MatchString(application) {
+		return entities.UserStateScope{}, domainerrors.InvalidInput("user_state_context_invalid", "Invalid application settings scope")
+	}
+	return entities.UserStateScope{Environment: key.Environment, Facets: "{}", Application: application}, nil
 }
 
 type facetConfig struct {
