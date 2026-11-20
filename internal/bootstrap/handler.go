@@ -67,6 +67,7 @@ func HandlerModules() fx.Option {
 			build_profile.BindUseCase,
 			bridge.NewHandler,
 			build_profile.NewHandler,
+			user_state.BindUseCase,
 			user_state.NewHandler,
 			access_control.BindUseCase,
 			access_token.BindUseCase,

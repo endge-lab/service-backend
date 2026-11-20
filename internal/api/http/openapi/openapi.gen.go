@@ -18,7 +18,7 @@ var openAPI3YAML = []byte(
 		"    «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).\n" +
 		"  title: Endge Service Backend API\n" +
 		"  contact: {}\n" +
-		"  version: 0.22.0\n" +
+		"  version: 0.22.1\n" +
 		"paths:\n" +
 		"  /api/session/me:\n" +
 		"    get:\n" +
@@ -17330,6 +17330,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Возвращает настройки текущей учётной записи и ревизию сброса в выбранном контексте рабочего пространства.\n" +
 		"      tags:\n" +
 		"        - User State\n" +
 		"      summary: Прочитать свои рабочие настройки\n" +
@@ -17362,6 +17363,7 @@ var openAPI3YAML = []byte(
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Применяет пакет операций текущей учётной записи с проверкой контекста, ревизии сброса и ревизий ключей.\n" +
 		"      tags:\n" +
 		"        - User State\n" +
 		"      summary: Сохранить свои рабочие настройки\n" +
@@ -17397,6 +17399,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Возвращает доступные администратору контексты, активный контекст и каталог поддерживаемых ключей с их описаниями.\n" +
 		"      tags:\n" +
 		"        - User State\n" +
 		"      summary: Получить разрешённые контексты и каталог настроек\n" +
@@ -17430,6 +17433,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Сбрасывает настройки выбранного пользователя или всех пользователей в подтверждённом контексте и отзывает прежнюю очередь записей.\n" +
 		"      tags:\n" +
 		"        - User State\n" +
 		"      summary: Сбросить пользовательские настройки в контексте\n" +
@@ -17470,6 +17474,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Показывает пользователей с серверными настройками в выбранном контексте с поиском и постраничной выдачей.\n" +
 		"      tags:\n" +
 		"        - User State\n" +
 		"      summary: Получить пользователей с настройками\n" +
@@ -17513,6 +17518,7 @@ var openAPI3YAML = []byte(
 		"    get:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Возвращает настройки выбранного пользователя администратору рабочего пространства в доступном ему контексте.\n" +
 		"      tags:\n" +
 		"        - User State\n" +
 		"      summary: Прочитать настройки пользователя\n" +
@@ -17551,6 +17557,7 @@ var openAPI3YAML = []byte(
 		"    patch:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
+		"      description: Применяет подтверждённые администратором изменения по ревизиям ключей выбранного пользователя в доступном контексте.\n" +
 		"      tags:\n" +
 		"        - User State\n" +
 		"      summary: Сохранить настройки пользователя\n" +
