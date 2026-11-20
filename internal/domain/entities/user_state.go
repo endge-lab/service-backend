@@ -9,6 +9,7 @@ type UserStateScope struct {
 	WorkspaceID string
 	Environment string
 	Facets      string
+	Application string
 }
 
 type UserStateEntry struct {

@@ -3,6 +3,8 @@ package user_state
 import (
 	"encoding/json"
 	"math"
+	"strings"
+	"unicode"
 )
 
 type Definition struct {
@@ -44,13 +46,26 @@ var Catalog = []Definition{
 }
 
 func validOperation(op Operation) bool {
+	if len(op.Key) == 0 || len(op.Key) > 512 || strings.TrimSpace(op.Key) != op.Key ||
+		strings.IndexFunc(op.Key, unicode.IsControl) >= 0 {
+		return false
+	}
+	if op.Delete {
+		return len(op.Value) == 0
+	}
+	if len(op.Value) > 60*1024 {
+		return false
+	}
+	switch op.Key {
+	case "appearance.theme", "appearance.locale", "appearance.timezone":
+		var value *string
+		return json.Unmarshal(op.Value, &value) == nil &&
+			(value == nil && op.Key == "appearance.theme" || value != nil && len(*value) > 0 && len(*value) <= 256)
+	}
 	for _, definition := range Catalog {
 		if definition.Key == op.Key {
-			if op.Delete {
-				return len(op.Value) == 0
-			}
 			return definition.valid(op.Value)
 		}
 	}
-	return false
+	return json.Valid(op.Value)
 }

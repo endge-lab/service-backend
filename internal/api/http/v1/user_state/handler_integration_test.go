@@ -130,7 +130,7 @@ func TestUserStateHTTPPostgres(t *testing.T) {
 	otherEnvironment := state.NewUseCase(repository, repository, tx, "another-deployment")
 	envSession := entities.WithWorkspaceAccess(ctx, entities.WorkspaceAccess{Workspace: workspace, Role: "viewer"})
 	envSession = entities.WithCurrentActor(envSession, entities.CurrentActor{User: &entities.User{ID: actorID}})
-	isolated, err := otherEnvironment.Read(envSession, nil, "", false)
+	isolated, err := otherEnvironment.Read(envSession, nil, "", false, "")
 	require.NoError(t, err)
 	require.Empty(t, isolated.Entries)
 	require.NotEqual(t, first.Partition, isolated.Partition)
@@ -213,6 +213,37 @@ func TestUserStateHTTPPostgres(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("application settings and arbitrary workspace keys", func(t *testing.T) {
+		appQuery := query + "&application=fixture-app"
+		var personal state.Snapshot
+		requestAs(t, "GET", "/"+appQuery, nil, actorID, "viewer", false, 200, &personal)
+		require.Equal(t, "fixture-app", personal.Application)
+		require.NotEqual(t, own.Partition, personal.Partition)
+		change := state.Batch{ActorID: personal.ActorID, Partition: personal.Partition,
+			Operations: []state.Operation{op("appearance.theme", `"dark"`, 0), op("aodb.shortcuts", `["KeyA"]`, 0)}}
+		var saved state.BatchResult
+		requestAs(t, "PATCH", "/"+appQuery, change, actorID, "viewer", false, 200, &saved)
+		require.Equal(t, "saved", saved.Results[0].Status)
+		require.Equal(t, "saved", saved.Results[1].Status)
+
+		var other state.Snapshot
+		requestAs(t, "GET", "/?application=fixture-app", nil, actorID, "viewer", true, 200, &other)
+		require.Equal(t, personal.Partition, other.Partition)
+		require.Len(t, other.Entries, 2)
+		requestAs(t, "GET", "/?application=other-app", nil, actorID, "viewer", true, 200, &other)
+		require.Empty(t, other.Entries)
+		requestAs(t, "GET", "/?application=fixture-app", nil, adminID, "admin", true, 200, &other)
+		require.Empty(t, other.Entries)
+		requestAs(t, "GET", target+"&application=fixture-app", nil, adminID, "admin", false, 400, nil)
+
+		var separate state.Snapshot
+		requestAs(t, "GET", "/", nil, actorID, "viewer", true, 200, &separate)
+		change = state.Batch{ActorID: separate.ActorID, Partition: separate.Partition,
+			Operations: []state.Operation{op("external.settings", `{"flag":true}`, 0)}}
+		requestAs(t, "PATCH", "/", change, actorID, "viewer", true, 200, &saved)
+		require.Equal(t, "saved", saved.Results[0].Status)
+	})
 
 	t.Run("SPP workspace", func(t *testing.T) {
 		const key = "aodb.spp-tabs.workspace"

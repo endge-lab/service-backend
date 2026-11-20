@@ -20,6 +20,7 @@ func NewHandler(usecase UseCase) *Handler { return &Handler{usecase: usecase} }
 // @Produce json
 // @Param X-Endge-Workspace header string true "Workspace identity"
 // @Param facets query string false "JSON object of selected facet documents"
+// @Param application query string false "Application identity for personal settings shared across workspaces"
 // @Success 200 {object} state.Snapshot
 // @Failure 403 {object} respond.ErrorResponse
 // @Security BearerAuth
@@ -33,6 +34,7 @@ func (h *Handler) self(c *fiber.Ctx) error { return h.read(false)(c) }
 // @Produce json
 // @Param X-Endge-Workspace header string true "Workspace identity"
 // @Param facets query string false "JSON object of selected facet documents"
+// @Param application query string false "Application identity for personal settings shared across workspaces"
 // @Accept json
 // @Param payload body state.Batch true "Settings request"
 // @Success 200 {object} state.BatchResult
@@ -130,7 +132,7 @@ func (h *Handler) read(managed bool) fiber.Handler {
 			return respond.RespondDomainError(c, nil, err)
 		}
 		c.Set(fiber.HeaderCacheControl, "no-store")
-		result, err := h.usecase.Read(c.UserContext(), facets, c.Params("user"), managed)
+		result, err := h.usecase.Read(c.UserContext(), facets, c.Params("user"), managed, c.Query("application"))
 		return send(c, result, err)
 	}
 }
@@ -145,7 +147,7 @@ func (h *Handler) save(managed bool) fiber.Handler {
 		if err := decode(c, &batch); err != nil {
 			return respond.RespondDomainError(c, nil, err)
 		}
-		result, err := h.usecase.Save(c.UserContext(), facets, c.Params("user"), managed, batch)
+		result, err := h.usecase.Save(c.UserContext(), facets, c.Params("user"), managed, c.Query("application"), batch)
 		return send(c, result, err)
 	}
 }

@@ -7,7 +7,7 @@ import (
 )
 
 type UserStateRepository interface {
-	LockUserState(context.Context, entities.UserStateScope) error
+	LockUserState(context.Context, entities.UserStateScope, string) error
 	UserStateScopes(context.Context, entities.UserStateScope) ([]string, error)
 	UserStateUsers(context.Context, entities.UserStateScope, string, string, int) ([]entities.UserStateUser, error)
 	UserStateRevision(context.Context, entities.UserStateScope, string) (int64, error)

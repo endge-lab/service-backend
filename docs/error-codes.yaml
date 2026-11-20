@@ -1929,6 +1929,7 @@ codes:
     status: 400
     defaultMessage: Expected a facet selection object
     otherMessages:
+      - Invalid application settings scope
       - Invalid facet selection for this workspace
     meaning: Запрошенный набор документов фасетов недействителен.
     action: Уточните текущий контекст и передайте все выбранные активные документы.

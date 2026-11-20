@@ -18,7 +18,7 @@ var openAPI3YAML = []byte(
 		"    «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).\n" +
 		"  title: Endge Service Backend API\n" +
 		"  contact: {}\n" +
-		"  version: 0.23.1\n" +
+		"  version: 0.24.0\n" +
 		"paths:\n" +
 		"  /api/session/me:\n" +
 		"    get:\n" +
@@ -17347,6 +17347,11 @@ var openAPI3YAML = []byte(
 		"          in: query\n" +
 		"          schema:\n" +
 		"            type: string\n" +
+		"        - description: Application identity for personal settings shared across workspaces\n" +
+		"          name: application\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
 		"      responses:\n" +
 		"        \"200\":\n" +
 		"          description: OK\n" +
@@ -17377,6 +17382,11 @@ var openAPI3YAML = []byte(
 		"            type: string\n" +
 		"        - description: JSON object of selected facet documents\n" +
 		"          name: facets\n" +
+		"          in: query\n" +
+		"          schema:\n" +
+		"            type: string\n" +
+		"        - description: Application identity for personal settings shared across workspaces\n" +
+		"          name: application\n" +
 		"          in: query\n" +
 		"          schema:\n" +
 		"            type: string\n" +
@@ -27294,6 +27304,9 @@ var openAPI3YAML = []byte(
 		"      properties:\n" +
 		"        actorId:\n" +
 		"          description: ID аутентифицированного пользователя Backend. Предъявляется при записи собственных настроек.\n" +
+		"          type: string\n" +
+		"        application:\n" +
+		"          description: Идентификатор приложения для настроек учётной записи, общих для его рабочих пространств.\n" +
 		"          type: string\n" +
 		"        entries:\n" +
 		"          description: Сохранённые настройки и ключи сброшенных значений с ревизиями.\n" +
