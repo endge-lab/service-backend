@@ -44,7 +44,7 @@ func (h *Handler) saveSelf(c *fiber.Ctx) error { return h.save(false)(c) }
 // @Summary Прочитать настройки пользователя
 // @Tags User State
 // @ID adminReadUserState
-// @Description Возвращает настройки выбранного пользователя администратору рабочего пространства в доступном ему контексте.
+// @Description Возвращает настройки выбранного пользователя участнику рабочего пространства в выбранном контексте.
 // @Produce json
 // @Param X-Endge-Workspace header string true "Workspace identity"
 // @Param facets query string false "JSON object of selected facet documents"
@@ -58,7 +58,7 @@ func (h *Handler) readUser(c *fiber.Ctx) error { return h.read(true)(c) }
 // @Summary Сохранить настройки пользователя
 // @Tags User State
 // @ID adminSaveUserState
-// @Description Применяет подтверждённые администратором изменения по ревизиям ключей выбранного пользователя в доступном контексте.
+// @Description Применяет изменения по ревизиям ключей выбранного пользователя. Требуется роль Editor или Admin в рабочем пространстве.
 // @Produce json
 // @Param X-Endge-Workspace header string true "Workspace identity"
 // @Param facets query string false "JSON object of selected facet documents"
@@ -74,7 +74,7 @@ func (h *Handler) saveUser(c *fiber.Ctx) error { return h.save(true)(c) }
 // @Summary Получить разрешённые контексты и каталог настроек
 // @Tags User State
 // @ID listUserStateContexts
-// @Description Возвращает доступные администратору контексты, активный контекст и каталог поддерживаемых ключей с их описаниями.
+// @Description Возвращает участнику рабочего пространства контексты с сохранёнными настройками, активный контекст и каталог поддерживаемых ключей.
 // @Produce json
 // @Param X-Endge-Workspace header string true "Workspace identity"
 // @Param facets query string false "JSON object of selected facet documents"
@@ -87,15 +87,15 @@ func (h *Handler) contexts(c *fiber.Ctx) error {
 	if err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}
-	items, err := h.usecase.Scopes(c.UserContext(), groups(c))
+	items, err := h.usecase.Scopes(c.UserContext())
 	if err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}
-	_, _, current, err := h.usecase.Context(c.UserContext(), facets, groups(c), true)
+	_, _, current, err := h.usecase.Context(c.UserContext(), facets)
 	var active *state.Scope
 	if err == nil {
 		active = &current
-	} else if code := domainerrors.CodeOf(err); code != "user_state_context_invalid" && code != "user_state_facet_forbidden" {
+	} else if domainerrors.CodeOf(err) != "user_state_context_invalid" {
 		return respond.RespondDomainError(c, nil, err)
 	}
 	return send(c, contextsResponse{Items: items, Current: active, Catalog: state.Catalog}, nil)
@@ -104,7 +104,7 @@ func (h *Handler) contexts(c *fiber.Ctx) error {
 // @Summary Получить пользователей с настройками
 // @Tags User State
 // @ID listUserStateUsers
-// @Description Показывает пользователей с серверными настройками в выбранном контексте с поиском и постраничной выдачей.
+// @Description Показывает участнику рабочего пространства пользователей с серверными настройками в выбранном контексте с поиском и постраничной выдачей.
 // @Produce json
 // @Param X-Endge-Workspace header string true "Workspace identity"
 // @Param facets query string false "JSON object of selected facet documents"
@@ -119,23 +119,23 @@ func (h *Handler) users(c *fiber.Ctx) error {
 	if err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}
-	result, err := h.usecase.Users(c.UserContext(), facets, groups(c), c.Query("q"), c.Query("after"))
+	result, err := h.usecase.Users(c.UserContext(), facets, c.Query("q"), c.Query("after"))
 	return send(c, result, err)
 }
 
-func (h *Handler) read(admin bool) fiber.Handler {
+func (h *Handler) read(managed bool) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		facets, err := selections(c)
 		if err != nil {
 			return respond.RespondDomainError(c, nil, err)
 		}
 		c.Set(fiber.HeaderCacheControl, "no-store")
-		result, err := h.usecase.Read(c.UserContext(), facets, groups(c), c.Params("user"), admin)
+		result, err := h.usecase.Read(c.UserContext(), facets, c.Params("user"), managed)
 		return send(c, result, err)
 	}
 }
 
-func (h *Handler) save(admin bool) fiber.Handler {
+func (h *Handler) save(managed bool) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		facets, err := selections(c)
 		if err != nil {
@@ -145,7 +145,7 @@ func (h *Handler) save(admin bool) fiber.Handler {
 		if err := decode(c, &batch); err != nil {
 			return respond.RespondDomainError(c, nil, err)
 		}
-		result, err := h.usecase.Save(c.UserContext(), facets, groups(c), c.Params("user"), admin, batch)
+		result, err := h.usecase.Save(c.UserContext(), facets, c.Params("user"), managed, batch)
 		return send(c, result, err)
 	}
 }
@@ -153,7 +153,7 @@ func (h *Handler) save(admin bool) fiber.Handler {
 // @Summary Сбросить пользовательские настройки в контексте
 // @Tags User State
 // @ID resetUserState
-// @Description Сбрасывает настройки выбранного пользователя или всех пользователей в подтверждённом контексте и отзывает прежнюю очередь записей.
+// @Description Сбрасывает настройки выбранного пользователя или всех пользователей в подтверждённом контексте. Требуется роль Admin в рабочем пространстве.
 // @Produce json
 // @Param X-Endge-Workspace header string true "Workspace identity"
 // @Param facets query string false "JSON object of selected facet documents"
@@ -172,6 +172,6 @@ func (h *Handler) reset(c *fiber.Ctx) error {
 	if err := decode(c, &input); err != nil {
 		return respond.RespondDomainError(c, nil, err)
 	}
-	count, err := h.usecase.Reset(c.UserContext(), facets, groups(c), input.User, input.Confirmation, input.Partition)
+	count, err := h.usecase.Reset(c.UserContext(), facets, input.User, input.Confirmation, input.Partition)
 	return send(c, resetResponse{Deleted: count}, err)
 }

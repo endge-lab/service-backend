@@ -56,14 +56,11 @@ func TestUserStateHTTPPostgres(t *testing.T) {
 	metrics, err := postgres.NewRepositoryMetrics(noop.NewMeterProvider().Meter("test"))
 	require.NoError(t, err)
 	tx := postgres.NewTxManager(pool, observability.NewCore(trace.NewTracerProvider().Tracer("test"), zap.NewNop()), metrics)
-	usecase := state.NewUseCase(repository, repository, tx, "test", nil)
+	usecase := state.NewUseCase(repository, repository, tx, "test")
 
 	app := fiber.New(fiber.Config{DisableStartupMessage: true})
 	app.Use(func(c *fiber.Ctx) error {
-		user, role := actorID, "viewer"
-		if c.Get("Test-Admin") == "1" {
-			user, role = adminID, "admin"
-		}
+		user, role := c.Get("Test-Actor"), c.Get("Test-Role")
 		current := workspace
 		if c.Get("Test-Other") == "1" {
 			current = otherWorkspace
@@ -74,15 +71,14 @@ func TestUserStateHTTPPostgres(t *testing.T) {
 	})
 	user_state.RegisterRoutes(app, user_state.NewHandler(usecase))
 
-	request := func(method, path string, body any, admin, other bool, status int, out any) {
+	requestAs := func(t *testing.T, method, path string, body any, user, role string, other bool, status int, out any) {
 		t.Helper()
 		raw, err := json.Marshal(body)
 		require.NoError(t, err)
 		req := httptest.NewRequest(method, "/user-state"+path, bytes.NewReader(raw))
 		req.Header.Set("Content-Type", "application/json")
-		if admin {
-			req.Header.Set("Test-Admin", "1")
-		}
+		req.Header.Set("Test-Actor", user)
+		req.Header.Set("Test-Role", role)
 		if other {
 			req.Header.Set("Test-Other", "1")
 		}
@@ -93,6 +89,14 @@ func TestUserStateHTTPPostgres(t *testing.T) {
 		if out != nil {
 			require.NoError(t, json.NewDecoder(res.Body).Decode(out))
 		}
+	}
+	request := func(method, path string, body any, admin, other bool, status int, out any) {
+		t.Helper()
+		user, role := actorID, "viewer"
+		if admin {
+			user, role = adminID, "admin"
+		}
+		requestAs(t, method, path, body, user, role, other, status, out)
 	}
 	getSnapshot := func() state.Snapshot {
 		var snapshot state.Snapshot
@@ -113,7 +117,7 @@ func TestUserStateHTTPPostgres(t *testing.T) {
 	entry := patch("/", batch, false).Results[0].Entry
 	require.Equal(t, entry.Revision, patch("/", batch, false).Results[0].Entry.Revision, "duplicate acknowledged mutation")
 	require.JSONEq(t, "125", string(getSnapshot().Entries[0].Value))
-	request("GET", "/admin/users", nil, false, false, 403, nil)
+	request("GET", "/admin/users", nil, false, false, 200, nil)
 	request("PATCH", "/", batch, true, false, 403, nil)
 	request("PATCH", "/", batch, false, true, 403, nil)
 	var page state.UserPage
@@ -123,10 +127,10 @@ func TestUserStateHTTPPostgres(t *testing.T) {
 	var otherPage state.UserPage
 	request("GET", "/admin/users", nil, true, true, 200, &otherPage)
 	require.Empty(t, otherPage.Items)
-	otherEnvironment := state.NewUseCase(repository, repository, tx, "another-deployment", nil)
+	otherEnvironment := state.NewUseCase(repository, repository, tx, "another-deployment")
 	envSession := entities.WithWorkspaceAccess(ctx, entities.WorkspaceAccess{Workspace: workspace, Role: "viewer"})
 	envSession = entities.WithCurrentActor(envSession, entities.CurrentActor{User: &entities.User{ID: actorID}})
-	isolated, err := otherEnvironment.Read(envSession, nil, nil, "", false)
+	isolated, err := otherEnvironment.Read(envSession, nil, "", false)
 	require.NoError(t, err)
 	require.Empty(t, isolated.Entries)
 	require.NotEqual(t, first.Partition, isolated.Partition)
@@ -165,14 +169,81 @@ func TestUserStateHTTPPostgres(t *testing.T) {
 		Active: true, Revision: 1, CreatedBy: entities.Actor{ID: adminID},
 	})
 	require.NoError(t, err)
-	north := map[string]string{"tenant": "north"}
-	query := url.Values{"facets": {`{"tenant":"north"}`}}.Encode()
-	request("GET", "/?"+query, nil, false, false, 403, nil)
+	query := "?" + url.Values{"facets": {`{"tenant":"north"}`}}.Encode()
+	var own state.Snapshot
+	request("GET", "/"+query, nil, false, false, 200, &own)
+	require.Empty(t, own.Entries)
 	request("GET", "/", nil, false, false, 400, nil)
-	access := entities.WithWorkspaceAccess(ctx, entities.WorkspaceAccess{Workspace: workspace, Role: "admin"})
-	access = entities.WithCurrentActor(access, entities.CurrentActor{User: &entities.User{ID: adminID}})
-	_, _, scope, err := usecase.Context(access, north, []string{"/endge-user-state/test/settings-fixture/tenant/north"}, true)
-	require.NoError(t, err)
-	require.Equal(t, "backend", scope.Driver)
-	require.Equal(t, "tenant", scope.Source)
+	request("GET", "/?"+url.Values{"facets": {`{"tenant":"unknown"}`}}.Encode(), nil, false, false, 400, nil)
+	ownChange := state.Batch{ActorID: own.ActorID, Partition: own.Partition,
+		Operations: []state.Operation{op(zoom, "125", 0)}}
+	require.Equal(t, "saved", patch("/"+query, ownChange, false).Results[0].Status)
+
+	target := "/admin/users/" + actorID + query
+	for _, role := range []string{"viewer", "editor", "admin", "platform_admin"} {
+		t.Run(role, func(t *testing.T) {
+			var contexts struct {
+				Current *state.Scope
+			}
+			requestAs(t, "GET", "/admin/contexts"+query, nil, adminID, role, false, 200, &contexts)
+			require.NotNil(t, contexts.Current)
+			require.Equal(t, "tenant", contexts.Current.Source)
+			require.Equal(t, "backend", contexts.Current.Driver)
+			var users state.UserPage
+			requestAs(t, "GET", "/admin/users"+query, nil, adminID, role, false, 200, &users)
+			require.Len(t, users.Items, 1)
+			require.Equal(t, actorID, users.Items[0].ID)
+			var snapshot state.Snapshot
+			requestAs(t, "GET", target, nil, adminID, role, false, 200, &snapshot)
+			require.Len(t, snapshot.Entries, 1)
+
+			change := state.Batch{Partition: snapshot.Partition, ResetRevision: snapshot.ResetRevision,
+				Operations: []state.Operation{op(zoom, "130", snapshot.Entries[0].Revision)}}
+			if role == "viewer" {
+				requestAs(t, "PATCH", target, change, adminID, role, false, 403, nil)
+			} else {
+				var result state.BatchResult
+				requestAs(t, "PATCH", target, change, adminID, role, false, 200, &result)
+				require.Equal(t, "saved", result.Results[0].Status)
+			}
+			if role == "viewer" || role == "editor" {
+				requestAs(t, "POST", "/admin/reset"+query, map[string]string{
+					"partition": snapshot.Partition, "confirmation": "reset-all",
+				}, adminID, role, false, 403, nil)
+			}
+		})
+	}
+
+	t.Run("SPP workspace", func(t *testing.T) {
+		const key = "aodb.spp-tabs.workspace"
+		const selected = `{"version":1,"tabs":[{"id":1,"kind":"arrival","filterStates":{"filterPanel":{"airport":"KZN"}}},{"id":2,"kind":"timeline"}],"activeId":2}`
+		const empty = `{"version":1,"tabs":[],"activeId":null}`
+		change := state.Batch{ActorID: own.ActorID, Partition: own.Partition,
+			Operations: []state.Operation{op(key, selected, 0)}}
+		var saved state.BatchResult
+		requestAs(t, "PATCH", "/"+query, change, actorID, "viewer", false, 200, &saved)
+		require.Equal(t, "saved", saved.Results[0].Status)
+		entry := saved.Results[0].Entry
+		require.JSONEq(t, selected, string(entry.Value))
+
+		var managed state.Snapshot
+		requestAs(t, "GET", target, nil, adminID, "editor", false, 200, &managed)
+		require.Len(t, managed.Entries, 2)
+		update := state.Batch{Partition: managed.Partition, ResetRevision: managed.ResetRevision,
+			Operations: []state.Operation{op(key, `{"version":1,"tabs":[{"id":1,"kind":"unknown"}]}`, entry.Revision)}}
+		requestAs(t, "PATCH", target, update, adminID, "editor", false, 400, nil)
+		update.Operations = []state.Operation{op(key, empty, entry.Revision)}
+		var edited state.BatchResult
+		requestAs(t, "PATCH", target, update, adminID, "editor", false, 200, &edited)
+		require.Equal(t, "saved", edited.Results[0].Status)
+		var refreshed state.Snapshot
+		requestAs(t, "GET", "/"+query, nil, actorID, "viewer", false, 200, &refreshed)
+		for _, item := range refreshed.Entries {
+			if item.Key == key {
+				require.JSONEq(t, empty, string(item.Value))
+				return
+			}
+		}
+		t.Fatal("missing SPP workspace settings")
+	})
 }

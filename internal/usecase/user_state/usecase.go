@@ -17,17 +17,10 @@ type UseCase struct {
 	facets      ports.FacetRepository
 	tx          ports.TxManager
 	environment string
-	protected   map[string]bool
 }
 
-func NewUseCase(repo ports.UserStateRepository, facets ports.FacetRepository, tx ports.TxManager, environment string, protected []string) *UseCase {
-	protectedFacets := map[string]bool{"tenant": true}
-	for _, facet := range protected {
-		if facet = strings.TrimSpace(facet); facet != "" {
-			protectedFacets[facet] = true
-		}
-	}
-	return &UseCase{repo: repo, facets: facets, tx: tx, environment: environment, protected: protectedFacets}
+func NewUseCase(repo ports.UserStateRepository, facets ports.FacetRepository, tx ports.TxManager, environment string) *UseCase {
+	return &UseCase{repo: repo, facets: facets, tx: tx, environment: environment}
 }
 
 type Snapshot struct {
@@ -68,19 +61,16 @@ type UserPage struct {
 	Next  string                   `json:"next,omitempty"`
 }
 
-func (s *UseCase) Context(ctx context.Context, facets map[string]string, groups []string, admin bool) (entities.CurrentActor, entities.UserStateScope, Scope, error) {
-	actor, access, err := userContext(ctx, admin)
+func (s *UseCase) Context(ctx context.Context, facets map[string]string) (entities.CurrentActor, entities.UserStateScope, Scope, error) {
+	actor, access, err := userContext(ctx)
 	if err != nil {
 		return actor, entities.UserStateScope{}, Scope{}, err
 	}
-	key, scope, err := s.resolveScope(ctx, access.Workspace, facets, groups)
+	key, scope, err := s.resolveScope(ctx, access.Workspace, facets)
 	return actor, key, scope, err
 }
 
-func userContext(ctx context.Context, admin bool) (entities.CurrentActor, entities.WorkspaceAccess, error) {
-	if admin {
-		return shared.AdminContext(ctx)
-	}
+func userContext(ctx context.Context) (entities.CurrentActor, entities.WorkspaceAccess, error) {
 	actor, err := shared.Actor(ctx)
 	if err != nil {
 		return actor, entities.WorkspaceAccess{}, err
@@ -92,8 +82,8 @@ func userContext(ctx context.Context, admin bool) (entities.CurrentActor, entiti
 	return actor, access, err
 }
 
-func (s *UseCase) Scopes(ctx context.Context, groups []string) ([]Scope, error) {
-	_, access, err := userContext(ctx, true)
+func (s *UseCase) Scopes(ctx context.Context) ([]Scope, error) {
+	_, access, err := userContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -107,8 +97,8 @@ func (s *UseCase) Scopes(ctx context.Context, groups []string) ([]Scope, error) 
 		if err := json.Unmarshal([]byte(raw), &facets); err != nil {
 			return nil, err
 		}
-		_, scope, err := s.resolveScope(ctx, access.Workspace, facets, groups)
-		if code := domainerrors.CodeOf(err); code == "user_state_context_invalid" || code == "user_state_facet_forbidden" {
+		_, scope, err := s.resolveScope(ctx, access.Workspace, facets)
+		if domainerrors.CodeOf(err) == "user_state_context_invalid" {
 			continue
 		}
 		if err != nil {
@@ -119,8 +109,8 @@ func (s *UseCase) Scopes(ctx context.Context, groups []string) ([]Scope, error) 
 	return items, nil
 }
 
-func (s *UseCase) Users(ctx context.Context, facets map[string]string, groups []string, search, after string) (UserPage, error) {
-	_, key, _, err := s.Context(ctx, facets, groups, true)
+func (s *UseCase) Users(ctx context.Context, facets map[string]string, search, after string) (UserPage, error) {
+	_, key, _, err := s.Context(ctx, facets)
 	if err != nil {
 		return UserPage{}, err
 	}
@@ -140,12 +130,12 @@ func (s *UseCase) Users(ctx context.Context, facets map[string]string, groups []
 	return result, nil
 }
 
-func (s *UseCase) Read(ctx context.Context, facets map[string]string, groups []string, user string, admin bool) (Snapshot, error) {
-	actor, key, scope, err := s.Context(ctx, facets, groups, admin)
+func (s *UseCase) Read(ctx context.Context, facets map[string]string, user string, managed bool) (Snapshot, error) {
+	actor, key, scope, err := s.Context(ctx, facets)
 	if err != nil {
 		return Snapshot{}, err
 	}
-	if !admin {
+	if !managed {
 		if scope.Driver != "backend" {
 			return Snapshot{}, driverDisabled()
 		}
@@ -169,15 +159,22 @@ func (s *UseCase) Read(ctx context.Context, facets map[string]string, groups []s
 	return result, err
 }
 
-func (s *UseCase) Save(ctx context.Context, facets map[string]string, groups []string, user string, admin bool, batch Batch) (BatchResult, error) {
-	actor, key, scope, err := s.Context(ctx, facets, groups, admin)
+func (s *UseCase) Save(ctx context.Context, facets map[string]string, user string, managed bool, batch Batch) (BatchResult, error) {
+	actor, access, err := userContext(ctx)
+	if err != nil {
+		return BatchResult{}, err
+	}
+	if managed && !shared.CanWrite(access.Role) {
+		return BatchResult{}, domainerrors.Forbidden("workspace_editor_required", "Workspace Editor role is required")
+	}
+	key, scope, err := s.resolveScope(ctx, access.Workspace, facets)
 	if err != nil {
 		return BatchResult{}, err
 	}
 	if scope.Driver != "backend" {
 		return BatchResult{}, driverDisabled()
 	}
-	if !admin {
+	if !managed {
 		if batch.ActorID != actor.User.ID {
 			return BatchResult{}, domainerrors.Forbidden("user_state_actor_changed", "The active session does not match this settings queue")
 		}
@@ -207,8 +204,8 @@ func (s *UseCase) Save(ctx context.Context, facets map[string]string, groups []s
 		if err != nil {
 			return err
 		}
-		// Administrators edit stored settings; this endpoint does not provision users.
-		if admin && len(entries) == 0 && rev == batch.ResetRevision {
+		// The management endpoint edits stored settings and does not provision users.
+		if managed && len(entries) == 0 && rev == batch.ResetRevision {
 			return domainerrors.NotFound("user_state_user_not_found", "No saved settings for this user in this context")
 		}
 		byKey := make(map[string]*entities.UserStateEntry, len(entries))
@@ -240,7 +237,7 @@ func (s *UseCase) Save(ctx context.Context, facets map[string]string, groups []s
 			}
 			result.Results = append(result.Results, outcome)
 		}
-		if admin && len(changed) != 0 {
+		if managed && len(changed) != 0 {
 			return s.repo.RecordUserStateAdminAction(txctx, key, user, actor.User.ID, "edit", changed, int64(len(changed)))
 		}
 		return nil
@@ -248,8 +245,12 @@ func (s *UseCase) Save(ctx context.Context, facets map[string]string, groups []s
 	return result, err
 }
 
-func (s *UseCase) Reset(ctx context.Context, facets map[string]string, groups []string, user, confirmation, expectedPartition string) (int64, error) {
-	actor, key, scope, err := s.Context(ctx, facets, groups, true)
+func (s *UseCase) Reset(ctx context.Context, facets map[string]string, user, confirmation, expectedPartition string) (int64, error) {
+	actor, access, err := shared.AdminContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	key, scope, err := s.resolveScope(ctx, access.Workspace, facets)
 	if err != nil {
 		return 0, err
 	}
