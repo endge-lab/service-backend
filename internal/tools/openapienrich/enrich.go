@@ -140,6 +140,15 @@ func (e *enricher) enrichProperties(schemaName string, schema *yaml.Node) {
 		for index := 0; index+1 < len(properties.Content); index += 2 {
 			propertyName := properties.Content[index].Value
 			property := properties.Content[index+1]
+			// Swagger 2 requires a placeholder type for json.RawMessage.
+			// An OpenAPI 3 property with no type admits any JSON value.
+			if mapGet(property, "x-endge-json-value") != nil {
+				for i := len(property.Content) - 2; i >= 0; i -= 2 {
+					if key := property.Content[i].Value; key == "type" || key == "x-endge-json-value" {
+						property.Content = append(property.Content[:i], property.Content[i+2:]...)
+					}
+				}
+			}
 			e.report.Properties++
 			e.usedNames[propertyName] = true
 			if mapGet(property, "description") == nil {

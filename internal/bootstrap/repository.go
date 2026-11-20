@@ -25,6 +25,7 @@ type endgeRepositoryPorts struct {
 	BackendConnections ports.BackendConnectionRepository
 	AICatalog          ports.AICatalogRepository
 	BuildProfiles      ports.BuildProfileRepository
+	UserState          ports.UserStateRepository
 	AccessControl      ports.AccessControlRepository
 	AccessTokens       ports.AccessTokenRepository
 	Documents          ports.DocumentRepository
@@ -48,6 +49,7 @@ func exposeEndgeRepository(store *postgres.EndgeRepository) endgeRepositoryPorts
 		BackendConnections: store,
 		AICatalog:          store,
 		BuildProfiles:      store,
+		UserState:          store,
 		AccessControl:      store,
 		AccessTokens:       store,
 		Documents:          store,

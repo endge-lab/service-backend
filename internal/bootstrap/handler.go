@@ -42,6 +42,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/api/http/v1/style"
 	domain_type "github.com/endge-lab/service-backend/internal/api/http/v1/type"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/update"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/user_state"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/vocab"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/workspace"
 	"github.com/endge-lab/service-backend/internal/auth"
@@ -66,6 +67,7 @@ func HandlerModules() fx.Option {
 			build_profile.BindUseCase,
 			bridge.NewHandler,
 			build_profile.NewHandler,
+			user_state.NewHandler,
 			access_control.BindUseCase,
 			access_token.BindUseCase,
 			ai_catalog.BindUseCase,

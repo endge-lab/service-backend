@@ -89,7 +89,7 @@ mod-update:
 docs:
 	rm -rf $(OPENAPI_TMP_DIR)
 	mkdir -p $(OPENAPI_TMP_DIR)
-	go run github.com/swaggo/swag/cmd/swag@$(SWAG_VERSION) init --dir ./cmd,./internal/api/http,./internal/domain/entities --generalInfo main.go --parseInternal --parseDepth 5 --outputTypes json --output $(OPENAPI_TMP_DIR)
+	go run github.com/swaggo/swag/cmd/swag@$(SWAG_VERSION) init --dir ./cmd,./internal/api/http,./internal/domain/entities,./internal/usecase/user_state --generalInfo main.go --parseInternal --parseDepth 5 --outputTypes json --output $(OPENAPI_TMP_DIR)
 	npx --yes swagger2openapi@$(SWAGGER2OPENAPI_VERSION) $(OPENAPI_TMP_DIR)/swagger.json -o $(OPENAPI_SPEC)
 	go run ./internal/tools/openapienrich -input $(OPENAPI_SPEC) -glossary $(OPENAPI_GLOSSARY) -examples $(OPENAPI_EXAMPLES) -version-file VERSION
 	go run ./internal/tools/openapiembed -input $(OPENAPI_SPEC) -output $(OPENAPI_GENERATED_GO)
