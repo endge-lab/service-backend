@@ -29,7 +29,7 @@ const workspaceStartupCompositionSource = `defineComposition({
 
 // Create создаёт рабочее пространство и его начальное состояние.
 func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entities.Workspace, err error) {
-	current, err := shared.Actor(ctx)
+	current, err := workspaceManagementActor(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -171,16 +171,13 @@ func (s *UseCase) Create(ctx context.Context, input CreateInput) (result *entiti
 
 // Patch частично обновляет рабочее пространство с проверкой ожидаемой ревизии.
 func (s *UseCase) Patch(ctx context.Context, identity string, input PatchInput, expected int) (result *entities.Workspace, err error) {
-	current, err := shared.Actor(ctx)
+	current, err := workspaceManagementActor(ctx)
 	if err != nil {
 		return nil, err
 	}
-	scope, err := s.Authorize(ctx, identity)
+	scope, err := s.authorizeWorkspaceManagement(ctx, identity)
 	if err != nil {
 		return nil, err
-	}
-	if !shared.CanAdmin(scope.Role) {
-		return nil, domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
 	}
 	if expected <= 0 {
 		return nil, shared.PreconditionRequired()
@@ -274,16 +271,13 @@ func (s *UseCase) Patch(ctx context.Context, identity string, input PatchInput, 
 
 // Delete мягко удаляет Workspace, сохраняя все связанные данные и назначения.
 func (s *UseCase) Delete(ctx context.Context, identity string, expected int) (result *entities.Workspace, err error) {
-	current, err := shared.Actor(ctx)
+	current, err := workspaceManagementActor(ctx)
 	if err != nil {
 		return nil, err
 	}
-	scope, err := s.Authorize(ctx, identity)
+	scope, err := s.authorizeWorkspaceManagement(ctx, identity)
 	if err != nil {
 		return nil, err
-	}
-	if !shared.CanAdmin(scope.Role) {
-		return nil, domainerrors.Forbidden("workspace_admin_required", "Workspace Admin role is required")
 	}
 	if expected <= 0 {
 		return nil, shared.PreconditionRequired()
@@ -307,7 +301,7 @@ func (s *UseCase) Delete(ctx context.Context, identity string, expected int) (re
 
 // Restore restores a deleted Workspace while preserving its documents and grants.
 func (s *UseCase) Restore(ctx context.Context, identity string, expected int) (result *entities.Workspace, err error) {
-	current, err := shared.Actor(ctx)
+	current, err := workspaceManagementActor(ctx)
 	if err != nil {
 		return nil, err
 	}

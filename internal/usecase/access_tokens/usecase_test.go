@@ -37,8 +37,13 @@ type fakeTokens struct {
 
 func (f *fakeTokens) CreateAccessToken(_ context.Context, input ports.CreateAccessTokenInput) (*entities.AccessToken, error) {
 	f.created = append(f.created, input)
-	return &entities.AccessToken{ID: "token-1", Owner: entities.Actor{ID: input.UserID}, WorkspaceID: input.WorkspaceID, Scope: input.Scope,
-		CanCommit: input.CanCommit, CanDelete: input.CanDelete, TokenPrefix: input.TokenPrefix, ExpiresAt: input.ExpiresAt}, nil
+	token := &entities.AccessToken{ID: "token-1", Owner: entities.Actor{ID: input.UserID}, Scope: input.Scope,
+		CanCommit: input.CanCommit, CanDelete: input.CanDelete, TokenPrefix: input.TokenPrefix, ExpiresAt: input.ExpiresAt,
+		AllWorkspaces: input.WorkspaceID == nil, ManageWorkspaces: input.ManageWorkspaces}
+	if input.WorkspaceID != nil {
+		token.WorkspaceID = *input.WorkspaceID
+	}
+	return token, nil
 }
 
 func (f *fakeTokens) ListAccessTokens(_ context.Context, userID *string) ([]entities.AccessToken, error) {
@@ -94,7 +99,7 @@ func TestCreateIssuesReadTokenByDefaultAndStoresOnlyHash(t *testing.T) {
 		t.Fatal("unexpected secret format")
 	}
 	input := tokens.created[0]
-	if input.Scope != entities.AccessTokenScopeRead || input.Name != "Agent" || input.WorkspaceID != "ws-afl" {
+	if input.Scope != entities.AccessTokenScopeRead || input.Name != "Agent" || input.WorkspaceID == nil || *input.WorkspaceID != "ws-afl" {
 		t.Fatalf("unexpected input: %+v", input)
 	}
 	if string(input.SecretHash) != string(hashSecret(created.Secret)) || len(input.SecretHash) != 32 {
@@ -105,6 +110,29 @@ func TestCreateIssuesReadTokenByDefaultAndStoresOnlyHash(t *testing.T) {
 	}
 }
 
+func TestCreateAllWorkspacesTokenAtYearLimit(t *testing.T) {
+	useCase, tokens := newTestUseCase("")
+	useCase.maxTTL = 365 * 24 * time.Hour
+	input := CreateInput{AllWorkspaces: true, ManageWorkspaces: true, Scope: entities.AccessTokenScopeWrite,
+		Name: "Agent", ExpiresAt: testNow.Add(useCase.maxTTL)}
+	created, err := useCase.Create(sessionContext("owner", true), input)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if tokens.created[0].WorkspaceID != nil || !created.Token.AllWorkspaces || !created.Token.ManageWorkspaces {
+		t.Fatalf("expected a global token with workspace management, got %+v", created.Token)
+	}
+	tokens.credential = &ports.AccessTokenCredential{Token: created.Token, SecretHash: hashSecret(created.Secret), Owner: entities.User{ID: "owner"}}
+	auth, err := useCase.Authenticate(context.Background(), created.Secret)
+	if err != nil || !auth.Principal.CanManageWorkspaces() {
+		t.Fatalf("authentication lost workspace scope: %v", err)
+	}
+	input.ExpiresAt = input.ExpiresAt.Add(time.Second)
+	if _, err = useCase.Create(sessionContext("owner", true), input); domainerrors.CodeOf(err) != "access_token_expiry_too_long" {
+		t.Fatalf("expected expiry validation, got %v", err)
+	}
+}
+
 func TestCreateValidation(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -112,6 +140,9 @@ func TestCreateValidation(t *testing.T) {
 		input CreateInput
 		code  string
 	}{
+		{"global token with identity", "admin", CreateInput{WorkspaceIdentity: "afl", AllWorkspaces: true}, "access_token_workspace_scope_invalid"},
+		{"scoped workspace management", "admin", CreateInput{WorkspaceIdentity: "afl", Scope: "write", ManageWorkspaces: true}, "access_token_workspace_scope_invalid"},
+		{"read workspace management", "admin", CreateInput{AllWorkspaces: true, ManageWorkspaces: true, Name: "a"}, "access_token_flags_require_write"},
 		{"expiry required", "editor", CreateInput{WorkspaceIdentity: "afl", Name: "a"}, "access_token_expiry_required"},
 		{"expiry in past", "editor", CreateInput{WorkspaceIdentity: "afl", Name: "a", ExpiresAt: testNow.Add(-time.Hour)}, "access_token_expiry_invalid"},
 		{"expiry too long", "editor", CreateInput{WorkspaceIdentity: "afl", Name: "a", ExpiresAt: testNow.Add(31 * 24 * time.Hour)}, "access_token_expiry_too_long"},

@@ -221,7 +221,7 @@ codes:
     meaning: "expiresAt превышает максимальный срок жизни токена."
   access_token_flags_require_write:
     use: token-field
-    meaning: "Флаги commit и delete допустимы только при scope=write."
+    meaning: "Флаги commit, delete и manageWorkspaces допустимы только при scope=write."
   access_token_invalid:
     use: token-reissue
     meaning: "Персональный токен не найден или его секрет не совпадает."
@@ -236,7 +236,7 @@ codes:
     meaning: "Персональный токен с таким id не найден или принадлежит другому пользователю."
   access_token_owner_admin_required:
     use: token-restricted
-    meaning: "Коммит токеном разрешён, только если владелец токена — Admin этого workspace; при выпуске токена флаг commit доступен только Admin."
+    meaning: "Коммит токеном разрешён, только если владелец токена — Admin этого workspace; для токена на один workspace роль Admin проверяется также при выпуске."
     action: "Не повторяйте. Покажите пользователю план коммита (endge_commit_plan) и попросите закоммитить в Configurator; либо Admin workspace выпускает токен с флагом commit."
   access_token_revoked:
     use: token-reissue
@@ -257,7 +257,14 @@ codes:
     meaning: "scope токена должен быть read или write."
   access_token_workspace_forbidden:
     meaning: "Токен выпущен для другого workspace."
-    action: "Не передавайте X-Endge-Workspace (или параметр workspace в MCP) либо укажите workspace токена (его видно в GET /api/session/me и endge_status)."
+    action: "Укажите workspace токена (его видно в GET /api/session/me и endge_status). В MCP его можно не передавать."
+
+  access_token_workspace_management_forbidden:
+    use: token-restricted
+    meaning: "Для управления workspace в MCP нужен токен на все доступные workspace с правом записи и флагом manageWorkspaces."
+  access_token_workspace_scope_invalid:
+    use: token-field
+    meaning: "Выберите workspaceIdentity или allWorkspaces. Флаг manageWorkspaces требует allWorkspaces."
 
   # --- Аутентификация и сессия ---
   auth.access_token_required:

@@ -18,7 +18,7 @@ var openAPI3YAML = []byte(
 		"    «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).\n" +
 		"  title: Endge Service Backend API\n" +
 		"  contact: {}\n" +
-		"  version: 0.24.0\n" +
+		"  version: 0.25.0\n" +
 		"paths:\n" +
 		"  /api/session/me:\n" +
 		"    get:\n" +
@@ -317,19 +317,21 @@ var openAPI3YAML = []byte(
 		"                $ref: \"#/components/schemas/access_token.ListResponse\"\n" +
 		"              example:\n" +
 		"                items:\n" +
-		"                  - commit: false\n" +
+		"                  - allWorkspaces: false\n" +
+		"                    commit: false\n" +
 		"                    createdAt: \"2026-08-04T10:00:00Z\"\n" +
 		"                    delete: false\n" +
 		"                    expiresAt: \"2026-08-04T10:00:00Z\"\n" +
 		"                    id: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"                    lastUsedAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                    manageWorkspaces: false\n" +
 		"                    name: \"Codex: правка запросов\"\n" +
 		"                    scope: read\n" +
 		"                    status: active\n" +
 		"                    tokenPrefix: endge_pat_Ab3dE6gH\n" +
 		"                    workspaceDisplayName: Основное пространство\n" +
 		"                    workspaceIdentity: main\n" +
-		"                maxTtlSeconds: 2592000\n" +
+		"                maxTtlSeconds: 31536000\n" +
 		"        \"400\":\n" +
 		"          description: Bad Request\n" +
 		"          content:\n" +
@@ -351,7 +353,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: \"Выпускает токен `endge_pat_…` от имени текущего пользователя для одного workspace. Секрет возвращается только в этом ответе; в БД хранится SHA-256. Срок обязателен и ограничен ACCESS_TOKEN_MAX_TTL (по умолчанию 30 дней). Scope по умолчанию `read`; флаги `commit` и `delete` требуют `write`, а `write` — роли Editor или выше. Токеном нельзя выпускать, просматривать и отзывать токены: нужна cookie- или JWT-сессия.\"\n" +
+		"      description: \"Выпускает токен `endge_pat_…` от имени текущего пользователя для одного workspace (workspaceIdentity) или для всех доступных владельцу (allWorkspaces=true). Секрет возвращается только в этом ответе; в БД хранится SHA-256. Срок обязателен и ограничен ACCESS_TOKEN_MAX_TTL (по умолчанию 365 дней). Scope по умолчанию `read`. Флаги `commit`, `delete` и `manageWorkspaces` требуют `write`. `manageWorkspaces` действует только в MCP и требует `allWorkspaces=true`. Каждая операция проверяет текущие права владельца. Токеном нельзя выпускать, просматривать и отзывать токены: нужна cookie- или JWT-сессия.\"\n" +
 		"      tags:\n" +
 		"        - Персональные токены\n" +
 		"      summary: Выпустить персональный токен доступа\n" +
@@ -362,10 +364,12 @@ var openAPI3YAML = []byte(
 		"            schema:\n" +
 		"              $ref: \"#/components/schemas/access_token.CreateRequest\"\n" +
 		"            example:\n" +
+		"              allWorkspaces: false\n" +
 		"              commit: false\n" +
 		"              delete: false\n" +
 		"              description: Правка запросов и представлений данных\n" +
 		"              expiresAt: 2026-11-02T10:00:00Z\n" +
+		"              manageWorkspaces: false\n" +
 		"              name: \"Codex: правка запросов\"\n" +
 		"              scope: read\n" +
 		"              workspaceIdentity: main\n" +
@@ -380,12 +384,14 @@ var openAPI3YAML = []byte(
 		"                $ref: \"#/components/schemas/access_token.CreateResponse\"\n" +
 		"              example:\n" +
 		"                accessToken:\n" +
+		"                  allWorkspaces: false\n" +
 		"                  commit: false\n" +
 		"                  createdAt: \"2026-08-04T10:00:00Z\"\n" +
 		"                  delete: false\n" +
 		"                  expiresAt: \"2026-08-04T10:00:00Z\"\n" +
 		"                  id: 550e8400-e29b-41d4-a716-446655440000\n" +
 		"                  lastUsedAt: \"2026-08-04T10:00:00Z\"\n" +
+		"                  manageWorkspaces: false\n" +
 		"                  name: \"Codex: правка запросов\"\n" +
 		"                  scope: read\n" +
 		"                  status: active\n" +
@@ -19071,7 +19077,7 @@ var openAPI3YAML = []byte(
 		"    post:\n" +
 		"      security:\n" +
 		"        - BearerAuth: []\n" +
-		"      description: \"MCP-сервер Endge (Streamable HTTP, stateless, ответы application/json). Принимает JSON-RPC сообщения MCP: initialize, tools/list, tools/call, resources/list, resources/templates/list, resources/read. Инструменты вызывают те же use case, что REST; персональный токен ограничивает workspace, набор инструментов (scope, флаги commit и delete) и помечает изменения в истории ревизий. Accept должен содержать application/json и text/event-stream.\"\n" +
+		"      description: \"MCP-сервер Endge (Streamable HTTP, stateless, ответы application/json). Принимает JSON-RPC сообщения MCP: initialize, tools/list, tools/call, resources/list, resources/templates/list, resources/read. Инструменты вызывают те же use case, что REST; персональный токен ограничивает workspace, набор инструментов (scope, флаги commit, delete и manageWorkspaces) и помечает изменения в истории ревизий. Accept должен содержать application/json и text/event-stream.\"\n" +
 		"      tags:\n" +
 		"        - MCP\n" +
 		"      summary: \"MCP: сообщение клиента\"\n" +
@@ -19352,8 +19358,11 @@ var openAPI3YAML = []byte(
 		"      required:\n" +
 		"        - expiresAt\n" +
 		"        - name\n" +
-		"        - workspaceIdentity\n" +
 		"      properties:\n" +
+		"        allWorkspaces:\n" +
+		"          description: Токен действует во всех текущих и будущих workspace, доступных владельцу. При выпуске передаётся вместо workspaceIdentity.\n" +
+		"          type: boolean\n" +
+		"          example: false\n" +
 		"        commit:\n" +
 		"          description: 'Флаг персонального токена: разрешены коммиты и релизы. Требует scope=write и роли Admin у владельца.'\n" +
 		"          type: boolean\n" +
@@ -19372,6 +19381,10 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"          format: date-time\n" +
 		"          example: 2026-11-02T10:00:00Z\n" +
+		"        manageWorkspaces:\n" +
+		"          description: Разрешает управление жизненным циклом workspace через MCP в пределах прав владельца. Требует allWorkspaces=true и scope=write.\n" +
+		"          type: boolean\n" +
+		"          example: false\n" +
 		"        name:\n" +
 		"          description: Имя токена для людей (1–120 символов), например имя агента и задачи.\n" +
 		"          type: string\n" +
@@ -19412,10 +19425,14 @@ var openAPI3YAML = []byte(
 		"        maxTtlSeconds:\n" +
 		"          description: Максимальный срок жизни токена в секундах.\n" +
 		"          type: integer\n" +
-		"          example: 2592000\n" +
+		"          example: 31536000\n" +
 		"    access_token.TokenResponse:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
+		"        allWorkspaces:\n" +
+		"          description: Токен действует во всех текущих и будущих workspace, доступных владельцу. При выпуске передаётся вместо workspaceIdentity.\n" +
+		"          type: boolean\n" +
+		"          example: false\n" +
 		"        commit:\n" +
 		"          description: 'Флаг персонального токена: разрешены коммиты и релизы. Требует scope=write и роли Admin у владельца.'\n" +
 		"          type: boolean\n" +
@@ -19444,6 +19461,10 @@ var openAPI3YAML = []byte(
 		"          description: Время последнего использования токена.\n" +
 		"          type: string\n" +
 		"          format: date-time\n" +
+		"        manageWorkspaces:\n" +
+		"          description: Разрешает управление жизненным циклом workspace через MCP в пределах прав владельца. Требует allWorkspaces=true и scope=write.\n" +
+		"          type: boolean\n" +
+		"          example: false\n" +
 		"        name:\n" +
 		"          description: Имя токена для людей (1–120 символов), например имя агента и задачи.\n" +
 		"          type: string\n" +

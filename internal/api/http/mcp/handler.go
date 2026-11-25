@@ -23,7 +23,7 @@ type requestContextKey struct{}
 // Ответы — application/json без SSE. GET и DELETE отвечают 405, как разрешает спецификация.
 type Handler struct {
 	servers    map[permissions]*mcp.Server
-	workspaces WorkspaceAuthorizer
+	workspaces WorkspaceUseCase
 	serve      fiber.Handler
 }
 
@@ -38,6 +38,12 @@ func NewHandler(cfg Config, useCases UseCases, contracts Contracts, logger *zap.
 				for _, token := range []bool{false, true} {
 					set := permissions{write: write, commit: commit, delete: remove, token: token}
 					h.servers[set] = newServer(cfg, useCases, contracts, logger, set, docs)
+					if token && write {
+						for _, workspace := range []workspaceTools{workspaceToolsManage, workspaceToolsPlatform} {
+							set.workspace = workspace
+							h.servers[set] = newServer(cfg, useCases, contracts, logger, set, docs)
+						}
+					}
 				}
 			}
 		}
@@ -62,15 +68,19 @@ func (h *Handler) server(r *http.Request) *mcp.Server {
 }
 
 // commitAvailable скрывает endge_commit, если коммит заведомо будет отклонён use case.
-// Токен с флагом commit: владелец должен быть Admin workspace токена или Platform Admin
-// (access_token_owner_admin_required). Сессия пользователя выбирает workspace в каждом
-// вызове, поэтому инструмент показывается Platform Admin и пользователю с ролью Admin
+// Токен на один workspace проверяет роль владельца в нём. При выборе workspace
+// в каждом вызове (allWorkspaces или JWT) инструмент показывается Platform Admin и пользователю с ролью Admin
 // хотя бы в одном workspace; роль в конкретном workspace по-прежнему проверяет use case
 // (workspace_admin_required).
 func (h *Handler) commitAvailable(ctx context.Context) bool {
 	if token, ok := entities.AccessTokenFromContext(ctx); ok {
-		access, err := h.workspaces.Authorize(ctx, token.WorkspaceIdentity)
-		return err == nil && shared.CanAdmin(access.OwnerRole)
+		if !token.AllWorkspaces {
+			access, err := h.workspaces.Authorize(ctx, token.WorkspaceIdentity)
+			return err == nil && shared.CanAdmin(access.OwnerRole)
+		}
+		if token.OwnerPlatformAdmin {
+			return true
+		}
 	}
 	if actor, ok := entities.CurrentActorFromContext(ctx); ok && actor.PlatformAdmin {
 		return true
@@ -80,7 +90,7 @@ func (h *Handler) commitAvailable(ctx context.Context) bool {
 		return false
 	}
 	for _, access := range items {
-		if shared.CanAdmin(access.Role) {
+		if shared.CanAdmin(access.Role) || shared.CanAdmin(access.OwnerRole) {
 			return true
 		}
 	}
@@ -89,7 +99,7 @@ func (h *Handler) commitAvailable(ctx context.Context) bool {
 
 // Serve обрабатывает сообщение MCP.
 // @Summary MCP: сообщение клиента
-// @Description MCP-сервер Endge (Streamable HTTP, stateless, ответы application/json). Принимает JSON-RPC сообщения MCP: initialize, tools/list, tools/call, resources/list, resources/templates/list, resources/read. Инструменты вызывают те же use case, что REST; персональный токен ограничивает workspace, набор инструментов (scope, флаги commit и delete) и помечает изменения в истории ревизий. Accept должен содержать application/json и text/event-stream.
+// @Description MCP-сервер Endge (Streamable HTTP, stateless, ответы application/json). Принимает JSON-RPC сообщения MCP: initialize, tools/list, tools/call, resources/list, resources/templates/list, resources/read. Инструменты вызывают те же use case, что REST; персональный токен ограничивает workspace, набор инструментов (scope, флаги commit, delete и manageWorkspaces) и помечает изменения в истории ревизий. Accept должен содержать application/json и text/event-stream.
 // @ID postMCP
 // @Tags MCP
 // @Accept json
@@ -151,8 +161,7 @@ func Challenge() fiber.Handler {
 }
 
 // RegisterRoutes регистрирует POST/GET/DELETE /mcp с теми же auth и current user, что /api.
-// Политика токенов /api не нужна: инструменты MCP не обращаются к закрытым разделам,
-// а флаги delete/commit и workspace токена проверяются в инструментах и use case.
+// Флаги токена и доступ к workspace проверяются в инструментах и use case.
 func RegisterRoutes(router fiber.Router, handler *Handler, auth, currentUser fiber.Handler) {
 	router.Post("/mcp", Challenge(), auth, currentUser, handler.Serve)
 	router.Get("/mcp", Challenge(), auth, currentUser, handler.OpenStream)

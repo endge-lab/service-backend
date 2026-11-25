@@ -13,7 +13,7 @@ info:
     «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).
   title: Endge Service Backend API
   contact: {}
-  version: 0.24.0
+  version: 0.25.0
 paths:
   /api/session/me:
     get:
@@ -312,19 +312,21 @@ paths:
                 $ref: "#/components/schemas/access_token.ListResponse"
               example:
                 items:
-                  - commit: false
+                  - allWorkspaces: false
+                    commit: false
                     createdAt: "2026-08-04T10:00:00Z"
                     delete: false
                     expiresAt: "2026-08-04T10:00:00Z"
                     id: 550e8400-e29b-41d4-a716-446655440000
                     lastUsedAt: "2026-08-04T10:00:00Z"
+                    manageWorkspaces: false
                     name: "Codex: правка запросов"
                     scope: read
                     status: active
                     tokenPrefix: endge_pat_Ab3dE6gH
                     workspaceDisplayName: Основное пространство
                     workspaceIdentity: main
-                maxTtlSeconds: 2592000
+                maxTtlSeconds: 31536000
         "400":
           description: Bad Request
           content:
@@ -346,7 +348,7 @@ paths:
     post:
       security:
         - BearerAuth: []
-      description: "Выпускает токен `endge_pat_…` от имени текущего пользователя для одного workspace. Секрет возвращается только в этом ответе; в БД хранится SHA-256. Срок обязателен и ограничен ACCESS_TOKEN_MAX_TTL (по умолчанию 30 дней). Scope по умолчанию `read`; флаги `commit` и `delete` требуют `write`, а `write` — роли Editor или выше. Токеном нельзя выпускать, просматривать и отзывать токены: нужна cookie- или JWT-сессия."
+      description: "Выпускает токен `endge_pat_…` от имени текущего пользователя для одного workspace (workspaceIdentity) или для всех доступных владельцу (allWorkspaces=true). Секрет возвращается только в этом ответе; в БД хранится SHA-256. Срок обязателен и ограничен ACCESS_TOKEN_MAX_TTL (по умолчанию 365 дней). Scope по умолчанию `read`. Флаги `commit`, `delete` и `manageWorkspaces` требуют `write`. `manageWorkspaces` действует только в MCP и требует `allWorkspaces=true`. Каждая операция проверяет текущие права владельца. Токеном нельзя выпускать, просматривать и отзывать токены: нужна cookie- или JWT-сессия."
       tags:
         - Персональные токены
       summary: Выпустить персональный токен доступа
@@ -357,10 +359,12 @@ paths:
             schema:
               $ref: "#/components/schemas/access_token.CreateRequest"
             example:
+              allWorkspaces: false
               commit: false
               delete: false
               description: Правка запросов и представлений данных
               expiresAt: 2026-11-02T10:00:00Z
+              manageWorkspaces: false
               name: "Codex: правка запросов"
               scope: read
               workspaceIdentity: main
@@ -375,12 +379,14 @@ paths:
                 $ref: "#/components/schemas/access_token.CreateResponse"
               example:
                 accessToken:
+                  allWorkspaces: false
                   commit: false
                   createdAt: "2026-08-04T10:00:00Z"
                   delete: false
                   expiresAt: "2026-08-04T10:00:00Z"
                   id: 550e8400-e29b-41d4-a716-446655440000
                   lastUsedAt: "2026-08-04T10:00:00Z"
+                  manageWorkspaces: false
                   name: "Codex: правка запросов"
                   scope: read
                   status: active
@@ -19066,7 +19072,7 @@ paths:
     post:
       security:
         - BearerAuth: []
-      description: "MCP-сервер Endge (Streamable HTTP, stateless, ответы application/json). Принимает JSON-RPC сообщения MCP: initialize, tools/list, tools/call, resources/list, resources/templates/list, resources/read. Инструменты вызывают те же use case, что REST; персональный токен ограничивает workspace, набор инструментов (scope, флаги commit и delete) и помечает изменения в истории ревизий. Accept должен содержать application/json и text/event-stream."
+      description: "MCP-сервер Endge (Streamable HTTP, stateless, ответы application/json). Принимает JSON-RPC сообщения MCP: initialize, tools/list, tools/call, resources/list, resources/templates/list, resources/read. Инструменты вызывают те же use case, что REST; персональный токен ограничивает workspace, набор инструментов (scope, флаги commit, delete и manageWorkspaces) и помечает изменения в истории ревизий. Accept должен содержать application/json и text/event-stream."
       tags:
         - MCP
       summary: "MCP: сообщение клиента"
@@ -19347,8 +19353,11 @@ components:
       required:
         - expiresAt
         - name
-        - workspaceIdentity
       properties:
+        allWorkspaces:
+          description: Токен действует во всех текущих и будущих workspace, доступных владельцу. При выпуске передаётся вместо workspaceIdentity.
+          type: boolean
+          example: false
         commit:
           description: 'Флаг персонального токена: разрешены коммиты и релизы. Требует scope=write и роли Admin у владельца.'
           type: boolean
@@ -19367,6 +19376,10 @@ components:
           type: string
           format: date-time
           example: 2026-11-02T10:00:00Z
+        manageWorkspaces:
+          description: Разрешает управление жизненным циклом workspace через MCP в пределах прав владельца. Требует allWorkspaces=true и scope=write.
+          type: boolean
+          example: false
         name:
           description: Имя токена для людей (1–120 символов), например имя агента и задачи.
           type: string
@@ -19407,10 +19420,14 @@ components:
         maxTtlSeconds:
           description: Максимальный срок жизни токена в секундах.
           type: integer
-          example: 2592000
+          example: 31536000
     access_token.TokenResponse:
       type: object
       properties:
+        allWorkspaces:
+          description: Токен действует во всех текущих и будущих workspace, доступных владельцу. При выпуске передаётся вместо workspaceIdentity.
+          type: boolean
+          example: false
         commit:
           description: 'Флаг персонального токена: разрешены коммиты и релизы. Требует scope=write и роли Admin у владельца.'
           type: boolean
@@ -19439,6 +19456,10 @@ components:
           description: Время последнего использования токена.
           type: string
           format: date-time
+        manageWorkspaces:
+          description: Разрешает управление жизненным циклом workspace через MCP в пределах прав владельца. Требует allWorkspaces=true и scope=write.
+          type: boolean
+          example: false
         name:
           description: Имя токена для людей (1–120 символов), например имя агента и задачи.
           type: string

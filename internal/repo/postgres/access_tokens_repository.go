@@ -16,12 +16,13 @@ func accessTokenSelect() string {
 
 // accessTokenSelectWith добавляет extraColumns в конец списка, сохраняя порядок scanAccessToken.
 func accessTokenSelectWith(extraColumns string) string {
-	return `SELECT t.id::text,` + actorScan("owner") + `,t.workspace_id::text,w.identity,w.display_name,t.name,t.description,t.scope,
+	return `SELECT t.id::text,` + actorScan("owner") + `,COALESCE(t.workspace_id::text,''),COALESCE(w.identity,''),COALESCE(w.display_name,''),t.workspace_id IS NULL,
+		t.manage_workspaces,t.name,t.description,t.scope,
 		t.can_commit,t.can_delete,t.token_prefix,t.created_at,t.expires_at,t.last_used_at,t.revoked_at,
 		CASE WHEN revoker.id IS NULL THEN NULL ELSE ` + actorScan("revoker") + ` END` + extraColumns + `
 		FROM access_tokens t
 		JOIN service_users owner ON owner.id=t.user_id
-		JOIN workspaces w ON w.id=t.workspace_id
+		LEFT JOIN workspaces w ON w.id=t.workspace_id
 		LEFT JOIN service_users revoker ON revoker.id=t.revoked_by`
 }
 
@@ -29,7 +30,8 @@ func scanAccessToken(row scanner, extra ...any) (*entities.AccessToken, error) {
 	value := &entities.AccessToken{}
 	var owner []byte
 	var revoker []byte
-	targets := []any{&value.ID, &owner, &value.WorkspaceID, &value.WorkspaceIdentity, &value.WorkspaceDisplayName, &value.Name,
+	targets := []any{&value.ID, &owner, &value.WorkspaceID, &value.WorkspaceIdentity, &value.WorkspaceDisplayName,
+		&value.AllWorkspaces, &value.ManageWorkspaces, &value.Name,
 		&value.Description, &value.Scope, &value.CanCommit, &value.CanDelete, &value.TokenPrefix, &value.CreatedAt,
 		&value.ExpiresAt, &value.LastUsedAt, &value.RevokedAt, &revoker}
 	if err := row.Scan(append(targets, extra...)...); err != nil {
@@ -45,9 +47,9 @@ func scanAccessToken(row scanner, extra ...any) (*entities.AccessToken, error) {
 
 func (r *EndgeRepository) CreateAccessToken(ctx context.Context, input ports.CreateAccessTokenInput) (*entities.AccessToken, error) {
 	id := uuid.NewString()
-	_, err := r.executor(ctx).Exec(ctx, `INSERT INTO access_tokens(id,user_id,workspace_id,name,description,scope,can_commit,can_delete,token_prefix,secret_hash,expires_at)
-		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`, id, input.UserID, input.WorkspaceID, input.Name, input.Description, input.Scope,
-		input.CanCommit, input.CanDelete, input.TokenPrefix, input.SecretHash, input.ExpiresAt)
+	_, err := r.executor(ctx).Exec(ctx, `INSERT INTO access_tokens(id,user_id,workspace_id,name,description,scope,can_commit,can_delete,manage_workspaces,token_prefix,secret_hash,expires_at)
+		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`, id, input.UserID, input.WorkspaceID, input.Name, input.Description, input.Scope,
+		input.CanCommit, input.CanDelete, input.ManageWorkspaces, input.TokenPrefix, input.SecretHash, input.ExpiresAt)
 	if err != nil {
 		return nil, err
 	}

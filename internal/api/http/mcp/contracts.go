@@ -27,8 +27,10 @@ import (
 	domain_type "github.com/endge-lab/service-backend/internal/api/http/v1/type"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/update"
 	"github.com/endge-lab/service-backend/internal/api/http/v1/vocab"
+	"github.com/endge-lab/service-backend/internal/api/http/v1/workspace"
 	"github.com/endge-lab/service-backend/internal/domain/entities"
 	"github.com/endge-lab/service-backend/internal/usecase/facets"
+	"github.com/endge-lab/service-backend/internal/usecase/workspaces"
 	appvalidator "github.com/endge-lab/service-kit-go/pkg/validator"
 )
 
@@ -40,9 +42,11 @@ import (
 type Contracts struct {
 	Documents map[string]shared.DocumentContract
 	// FormatVersions — поле версии формата каждой коллекции, выведенное из её CreateRequest.
-	FormatVersions map[string]FormatVersion
-	Facets         FacetContracts
-	Commit         shared.RequestContract
+	FormatVersions  map[string]FormatVersion
+	Facets          FacetContracts
+	Commit          shared.RequestContract
+	WorkspaceCreate func([]byte) (workspaces.CreateInput, error)
+	WorkspacePatch  func([]byte) (workspaces.PatchInput, error)
 }
 
 // FacetContracts разбирает тела фасетов и документов фасетов DTO REST /api/v1/facets
@@ -115,7 +119,15 @@ func BindContracts(validator appvalidator.Validator) Contracts {
 			DocumentCreate: decodeWith(validator, facet.DocumentCreateRequest.Input),
 			DocumentPatch:  decodeWith(validator, facet.DocumentPatchRequest.Input),
 		},
-		Commit: shared.NewRequestContract[commit.CreateRequest](validator),
+		Commit:          shared.NewRequestContract[commit.CreateRequest](validator),
+		WorkspaceCreate: decodeWith(validator, workspace.CreateRequest.Input),
+		WorkspacePatch: func(body []byte) (workspaces.PatchInput, error) {
+			request, err := shared.DecodeAndValidateJSON[workspace.PatchRequest](body, validator)
+			if err != nil {
+				return workspaces.PatchInput{}, err
+			}
+			return request.Input(body)
+		},
 	}
 	for collection, binding := range bindings {
 		contracts.Documents[collection] = binding.contract
