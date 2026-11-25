@@ -18,7 +18,7 @@ var openAPI3YAML = []byte(
 		"    «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).\n" +
 		"  title: Endge Service Backend API\n" +
 		"  contact: {}\n" +
-		"  version: 0.25.2\n" +
+		"  version: 0.26.0\n" +
 		"paths:\n" +
 		"  /api/session/me:\n" +
 		"    get:\n" +
@@ -23142,6 +23142,11 @@ var openAPI3YAML = []byte(
 		"          type: array\n" +
 		"          items:\n" +
 		"            $ref: \"#/components/schemas/entities.ModuleRendererDescriptor\"\n" +
+		"        timelinePresets:\n" +
+		"          description: Пресеты Timeline, предоставляемые этой версией модуля.\n" +
+		"          type: array\n" +
+		"          items:\n" +
+		"            $ref: \"#/components/schemas/entities.ModuleTimelinePresetDescriptor\"\n" +
 		"    entities.ModuleDetail:\n" +
 		"      type: object\n" +
 		"      properties:\n" +
@@ -23201,6 +23206,15 @@ var openAPI3YAML = []byte(
 		"          type: string\n" +
 		"        primitive:\n" +
 		"          description: Регистрочувствительный тег SFC-примитива, например Table.\n" +
+		"          type: string\n" +
+		"    entities.ModuleTimelinePresetDescriptor:\n" +
+		"      type: object\n" +
+		"      properties:\n" +
+		"        label:\n" +
+		"          description: Необязательное отображаемое название пресета.\n" +
+		"          type: string\n" +
+		"        name:\n" +
+		"          description: Имя, которое указывается в атрибуте preset тега TimelineChart.\n" +
 		"          type: string\n" +
 		"    entities.ModuleVersion:\n" +
 		"      type: object\n" +

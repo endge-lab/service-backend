@@ -43,6 +43,7 @@ func validateDeliveryPrograms(primary *releaseProgram, delivery *releaseDelivery
 			Facets        map[string]string `json:"facets"`
 			Configuration struct {
 				DefaultRenderers map[string]moduleReference `json:"defaultRenderers"`
+				TimelinePresets  []moduleReference          `json:"timelinePresets"`
 			} `json:"configuration"`
 		}
 		var catalog struct {
@@ -70,6 +71,9 @@ func validateDeliveryPrograms(primary *releaseProgram, delivery *releaseDelivery
 		seen[string(key)] = true
 		facets = append(facets, context.Facets)
 		for _, reference := range context.Configuration.DefaultRenderers {
+			required[reference] = true
+		}
+		for _, reference := range context.Configuration.TimelinePresets {
 			required[reference] = true
 		}
 		for identity, raw := range program.Artifacts {

@@ -84,3 +84,23 @@ func TestParseModuleRendererContributions(t *testing.T) {
 		}
 	}
 }
+
+func TestParseModuleTimelinePresetContributions(t *testing.T) {
+	base := `{"identity":"rms-ui","version":"1.0.0","formatVersion":1,"hostApi":1,"contributes":{"timelinePresets":[%s]}}`
+	preset := `{"name":"rms-load","label":"RMS"}`
+	manifest := func(value string) entry { return entry{"manifest.json", strings.Replace(base, "%s", value, 1)} }
+	js := entry{"module.js", "export default function load() {}"}
+	version, err := parseArchive(makeArchive(t, manifest(preset+`,{"name":"rms-shifts"}`), js), "rms-ui", "publisher")
+	if err != nil {
+		t.Fatal(err)
+	}
+	presets := version.Manifest.Contributes.TimelinePresets
+	if len(presets) != 2 || presets[0].Name != "rms-load" || presets[0].Label != "RMS" || presets[1].Name != "rms-shifts" {
+		t.Fatalf("preset descriptors were not preserved: %#v", presets)
+	}
+	for _, value := range []string{preset + "," + preset, `{"name":" "}`, `{"label":"RMS"}`} {
+		if _, err := parseArchive(makeArchive(t, manifest(value), js), "rms-ui", "publisher"); err == nil {
+			t.Fatalf("accepted invalid preset descriptors %s", value)
+		}
+	}
+}

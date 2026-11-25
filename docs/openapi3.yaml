@@ -13,7 +13,7 @@ info:
     «Агенты» документации (github.com/endge-lab/configurator-docs, docs/agents). Тот же API доступен через MCP (/mcp).
   title: Endge Service Backend API
   contact: {}
-  version: 0.25.2
+  version: 0.26.0
 paths:
   /api/session/me:
     get:
@@ -23137,6 +23137,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/entities.ModuleRendererDescriptor"
+        timelinePresets:
+          description: Пресеты Timeline, предоставляемые этой версией модуля.
+          type: array
+          items:
+            $ref: "#/components/schemas/entities.ModuleTimelinePresetDescriptor"
     entities.ModuleDetail:
       type: object
       properties:
@@ -23196,6 +23201,15 @@ components:
           type: string
         primitive:
           description: Регистрочувствительный тег SFC-примитива, например Table.
+          type: string
+    entities.ModuleTimelinePresetDescriptor:
+      type: object
+      properties:
+        label:
+          description: Необязательное отображаемое название пресета.
+          type: string
+        name:
+          description: Имя, которое указывается в атрибуте preset тега TimelineChart.
           type: string
     entities.ModuleVersion:
       type: object

@@ -355,6 +355,10 @@ schemas:
     contributes: "Опциональный список реализаций, предоставляемых версией модуля."
   entities.ModuleContributions:
     renderers: "Именованные реализации SFC-примитивов, доступные для выбора в Configurator."
+    timelinePresets: "Пресеты Timeline, предоставляемые этой версией модуля."
+  entities.ModuleTimelinePresetDescriptor:
+    name: "Имя, которое указывается в атрибуте preset тега TimelineChart."
+    label: "Необязательное отображаемое название пресета."
   entities.ModuleRendererDescriptor:
     label: "Отображаемое имя рендерера."
     primitive: "Регистрочувствительный тег SFC-примитива, например Table."

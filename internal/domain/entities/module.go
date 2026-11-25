@@ -21,13 +21,19 @@ type ModuleManifest struct {
 }
 
 type ModuleContributions struct {
-	Renderers []ModuleRendererDescriptor `json:"renderers,omitempty"`
+	Renderers       []ModuleRendererDescriptor       `json:"renderers,omitempty"`
+	TimelinePresets []ModuleTimelinePresetDescriptor `json:"timelinePresets,omitempty"`
 }
 
 type ModuleRendererDescriptor struct {
 	Primitive string `json:"primitive"`
 	ID        string `json:"id"`
 	Label     string `json:"label"`
+}
+
+type ModuleTimelinePresetDescriptor struct {
+	Name  string `json:"name"`
+	Label string `json:"label,omitempty"`
 }
 
 type ModuleVersion struct {
