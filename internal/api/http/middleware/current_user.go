@@ -64,7 +64,7 @@ func (m *CurrentUserMiddleware) Resolve() fiber.Handler {
 
 // resolveAccessTokenActor не синхронизирует внешние назначения: у токена нет provider-claims,
 // поэтому права владельца берутся из последней сохранённой проекции access_grants.
-// Platform Admin владельца учитывается только при вычислении роли в workspace токена.
+// Право Platform Admin владельца учитывают только явно разрешённые операции workspace.
 func (m *CurrentUserMiddleware) resolveAccessTokenActor(c *fiber.Ctx, identity RequestIdentity, token entities.AccessTokenPrincipal) error {
 	user, ok := c.UserContext().Value(accessTokenOwnerKey).(*entities.User)
 	if !ok || user == nil {

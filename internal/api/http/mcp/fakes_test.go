@@ -14,6 +14,7 @@ import (
 	"github.com/endge-lab/service-backend/internal/usecase/facets"
 	"github.com/endge-lab/service-backend/internal/usecase/ports"
 	"github.com/endge-lab/service-backend/internal/usecase/session"
+	"github.com/endge-lab/service-backend/internal/usecase/workspaces"
 )
 
 // Поддельные use case повторяют только то поведение, которое видит агент:
@@ -23,13 +24,34 @@ var testUser = &entities.User{ID: "u-1", Username: "egor", DisplayName: "Его�
 
 type fakeWorkspaces struct{}
 
+func (fakeWorkspaces) ListArchive(context.Context) ([]entities.WorkspaceAccess, error) {
+	return []entities.WorkspaceAccess{{Workspace: entities.Workspace{Identity: "archived", Revision: 3}}}, nil
+}
+
+func (fakeWorkspaces) Create(_ context.Context, in workspaces.CreateInput) (*entities.Workspace, error) {
+	return &entities.Workspace{Identity: in.Identity, DisplayName: in.DisplayName, Revision: 1}, nil
+}
+
+func (fakeWorkspaces) Patch(_ context.Context, identity string, _ workspaces.PatchInput, revision int) (*entities.Workspace, error) {
+	return &entities.Workspace{Identity: identity, Revision: revision + 1}, nil
+}
+
+func (fakeWorkspaces) Delete(_ context.Context, identity string, revision int) (*entities.Workspace, error) {
+	deletedAt := time.Unix(1, 0).UTC()
+	return &entities.Workspace{Identity: identity, Revision: revision + 1, DeletedAt: &deletedAt}, nil
+}
+
+func (fakeWorkspaces) Restore(_ context.Context, identity string, revision int) (*entities.Workspace, error) {
+	return &entities.Workspace{Identity: identity, Revision: revision + 1}, nil
+}
+
 func (fakeWorkspaces) Authorize(ctx context.Context, identity string) (entities.WorkspaceAccess, error) {
 	if identity != "afl" && identity != "kzn" {
 		return entities.WorkspaceAccess{}, domainerrors.NotFound("workspace_not_found", "Workspace not found")
 	}
 	role, ownerRole := "editor", ""
 	if token, ok := entities.AccessTokenFromContext(ctx); ok {
-		if !strings.EqualFold(token.WorkspaceIdentity, identity) {
+		if !token.AllWorkspaces && !strings.EqualFold(token.WorkspaceIdentity, identity) {
 			return entities.WorkspaceAccess{}, domainerrors.Forbidden("access_token_workspace_forbidden", "Access token is issued for another workspace")
 		}
 		// Владелец токенов — Admin workspace, кроме t-full-editor (Editor).
@@ -65,7 +87,13 @@ func (fakeSession) Current(ctx context.Context) (*session.Result, error) {
 	actor, _ := entities.CurrentActorFromContext(ctx)
 	items := userWorkspaces(actor.User)
 	if token, ok := entities.AccessTokenFromContext(ctx); ok {
-		items = []entities.WorkspaceAccess{{Workspace: entities.Workspace{Identity: token.WorkspaceIdentity}, Role: token.CapWorkspaceRole("editor")}}
+		if token.AllWorkspaces {
+			for i := range items {
+				items[i].Role = token.CapWorkspaceRole(items[i].Role)
+			}
+		} else {
+			items = []entities.WorkspaceAccess{{Workspace: entities.Workspace{Identity: token.WorkspaceIdentity}, Role: token.CapWorkspaceRole("editor")}}
+		}
 	}
 	return &session.Result{User: actor.User, PlatformAdmin: actor.PlatformAdmin, Workspaces: items}, nil
 }

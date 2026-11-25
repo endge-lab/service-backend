@@ -27,8 +27,8 @@ func (s *UseCase) Authorize(ctx context.Context, identity string) (entities.Work
 	platformAdmin := current.PlatformAdmin
 	token, viaToken := entities.AccessTokenFromContext(ctx)
 	if viaToken {
-		// Токен привязан к одному workspace; роль владельца сужается scope токена.
-		if workspace.ID != token.WorkspaceID {
+		// Токен на один workspace сверяется с его неизменяемым ID.
+		if !token.AllWorkspaces && workspace.ID != token.WorkspaceID {
 			return entities.WorkspaceAccess{}, domainerrors.Forbidden("access_token_workspace_forbidden", "Access token is not valid for this workspace")
 		}
 		platformAdmin = token.OwnerPlatformAdmin
@@ -63,30 +63,41 @@ func (s *UseCase) ListAccess(ctx context.Context) ([]entities.WorkspaceAccess, e
 	if err != nil {
 		return nil, err
 	}
-	if _, viaToken := entities.AccessTokenFromContext(ctx); viaToken {
-		return s.listTokenAccess(ctx)
+	token, viaToken := entities.AccessTokenFromContext(ctx)
+	if viaToken && !token.AllWorkspaces {
+		return s.listTokenAccess(ctx, token)
 	}
-	items, err := s.workspaces.ListWorkspaces(ctx, current.User.ID, current.PlatformAdmin)
+	platformAdmin := current.PlatformAdmin
+	if viaToken {
+		platformAdmin = token.OwnerPlatformAdmin
+	}
+	items, err := s.workspaces.ListWorkspaces(ctx, current.User.ID, platformAdmin)
 	if err != nil {
 		return nil, err
 	}
 	result := make([]entities.WorkspaceAccess, 0, len(items))
 	for _, workspace := range items {
-		role, roleErr := s.workspaces.WorkspaceRole(ctx, workspace.ID, current.User.ID, current.PlatformAdmin)
+		role, roleErr := s.workspaces.WorkspaceRole(ctx, workspace.ID, current.User.ID, platformAdmin)
+		if viaToken && (errors.Is(roleErr, ports.ErrNotFound) || (roleErr == nil && role == "")) {
+			continue
+		}
 		if roleErr != nil {
 			return nil, roleErr
 		}
-		if role == "platform_admin" {
-			role = "admin"
+		access := entities.WorkspaceAccess{Workspace: workspace, Role: role}
+		if viaToken {
+			access.OwnerRole = role
+			access.Role = token.CapWorkspaceRole(role)
+		} else if role == "platform_admin" {
+			access.Role = "admin"
 		}
-		result = append(result, entities.WorkspaceAccess{Workspace: workspace, Role: role})
+		result = append(result, access)
 	}
 	return result, nil
 }
 
 // listTokenAccess показывает агенту только workspace токена с уже суженной ролью.
-func (s *UseCase) listTokenAccess(ctx context.Context) ([]entities.WorkspaceAccess, error) {
-	token, _ := entities.AccessTokenFromContext(ctx)
+func (s *UseCase) listTokenAccess(ctx context.Context, token entities.AccessTokenPrincipal) ([]entities.WorkspaceAccess, error) {
 	access, err := s.Authorize(ctx, token.WorkspaceIdentity)
 	if code := domainerrors.CodeOf(err); code == "workspace_forbidden" || code == "workspace_not_found" {
 		return []entities.WorkspaceAccess{}, nil
@@ -99,7 +110,7 @@ func (s *UseCase) listTokenAccess(ctx context.Context) ([]entities.WorkspaceAcce
 
 // ListArchive returns Workspace tombstones visible to the current actor.
 func (s *UseCase) ListArchive(ctx context.Context) ([]entities.WorkspaceAccess, error) {
-	current, err := shared.Actor(ctx)
+	current, err := workspaceManagementActor(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -108,8 +119,12 @@ func (s *UseCase) ListArchive(ctx context.Context) ([]entities.WorkspaceAccess, 
 		return nil, err
 	}
 	result := make([]entities.WorkspaceAccess, 0, len(items))
+	_, viaToken := entities.AccessTokenFromContext(ctx)
 	for _, workspace := range items {
 		role, roleErr := s.workspaces.DeletedWorkspaceRole(ctx, workspace.ID, current.User.ID, current.PlatformAdmin)
+		if viaToken && (errors.Is(roleErr, ports.ErrNotFound) || (roleErr == nil && !shared.CanAdmin(role))) {
+			continue
+		}
 		if roleErr != nil {
 			return nil, roleErr
 		}

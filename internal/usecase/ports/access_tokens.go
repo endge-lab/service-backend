@@ -9,16 +9,17 @@ import (
 
 // CreateAccessTokenInput содержит только хэш секрета; сам секрет в persistence не передаётся.
 type CreateAccessTokenInput struct {
-	UserID      string
-	WorkspaceID string
-	Name        string
-	Description string
-	Scope       string
-	CanCommit   bool
-	CanDelete   bool
-	TokenPrefix string
-	SecretHash  []byte
-	ExpiresAt   time.Time
+	UserID           string
+	WorkspaceID      *string
+	ManageWorkspaces bool
+	Name             string
+	Description      string
+	Scope            string
+	CanCommit        bool
+	CanDelete        bool
+	TokenPrefix      string
+	SecretHash       []byte
+	ExpiresAt        time.Time
 }
 
 // AccessTokenCredential — запись для проверки токена: хэш, ограничения и владелец.

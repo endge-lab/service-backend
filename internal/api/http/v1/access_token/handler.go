@@ -22,7 +22,7 @@ func NewHandler(usecase UseCase, validator appvalidator.Validator) *Handler {
 
 // Create выпускает персональный токен агента для текущего пользователя.
 // @Summary Выпустить персональный токен доступа
-// @Description Выпускает токен `endge_pat_…` от имени текущего пользователя для одного workspace. Секрет возвращается только в этом ответе; в БД хранится SHA-256. Срок обязателен и ограничен ACCESS_TOKEN_MAX_TTL (по умолчанию 30 дней). Scope по умолчанию `read`; флаги `commit` и `delete` требуют `write`, а `write` — роли Editor или выше. Токеном нельзя выпускать, просматривать и отзывать токены: нужна cookie- или JWT-сессия.
+// @Description Выпускает токен `endge_pat_…` от имени текущего пользователя для одного workspace (workspaceIdentity) или для всех доступных владельцу (allWorkspaces=true). Секрет возвращается только в этом ответе; в БД хранится SHA-256. Срок обязателен и ограничен ACCESS_TOKEN_MAX_TTL (по умолчанию 365 дней). Scope по умолчанию `read`. Флаги `commit`, `delete` и `manageWorkspaces` требуют `write`. `manageWorkspaces` действует только в MCP и требует `allWorkspaces=true`. Каждая операция проверяет текущие права владельца. Токеном нельзя выпускать, просматривать и отзывать токены: нужна cookie- или JWT-сессия.
 // @ID createAccessToken
 // @Tags Персональные токены
 // @Accept json
@@ -42,6 +42,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 	}
 	created, err := h.usecase.Create(c.UserContext(), resourceusecase.CreateInput{
 		WorkspaceIdentity: request.WorkspaceIdentity, Name: request.Name, Description: request.Description,
+		AllWorkspaces: request.AllWorkspaces, ManageWorkspaces: request.ManageWorkspaces,
 		Scope: request.Scope, CanCommit: request.Commit, CanDelete: request.Delete, ExpiresAt: request.ExpiresAt,
 	})
 	if err != nil {

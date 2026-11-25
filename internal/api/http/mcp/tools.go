@@ -87,12 +87,12 @@ const (
 )
 
 type workspaceInput struct {
-	Workspace string `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
+	Workspace string `json:"workspace,omitempty" jsonschema:"Identity workspace. Можно опустить для токена на один workspace"`
 }
 
 type listDocumentsInput struct {
 	Collection     string `json:"collection" jsonschema:"Коллекция: документы (queries, components, data-views и др.), фасеты facets или документы фасета facet-documents"`
-	Workspace      string `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
+	Workspace      string `json:"workspace,omitempty" jsonschema:"Identity workspace. Можно опустить для токена на один workspace"`
 	FacetIdentity  string `json:"facetIdentity,omitempty" jsonschema:"Только для collection=facet-documents: identity фасета (endge_list_documents с collection=facets)"`
 	FolderIdentity string `json:"folderIdentity,omitempty" jsonschema:"Только документы этой папки"`
 	IncludeDeleted bool   `json:"includeDeleted,omitempty" jsonschema:"Включить мягко удалённые документы"`
@@ -105,12 +105,12 @@ type documentInput struct {
 	FacetIdentity  string `json:"facetIdentity,omitempty" jsonschema:"Только для collection=facet-documents: identity фасета (endge_list_documents с collection=facets)"`
 	Collection     string `json:"collection" jsonschema:"Коллекция: документы (queries, components, data-views и др.), фасеты facets или документы фасета facet-documents"`
 	Identity       string `json:"identity" jsonschema:"Identity документа"`
-	Workspace      string `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
+	Workspace      string `json:"workspace,omitempty" jsonschema:"Identity workspace. Можно опустить для токена на один workspace"`
 	IncludeDeleted bool   `json:"includeDeleted,omitempty" jsonschema:"Разрешить чтение мягко удалённого документа"`
 }
 
 type workspaceSnapshotInput struct {
-	Workspace string `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
+	Workspace string `json:"workspace,omitempty" jsonschema:"Identity workspace. Можно опустить для токена на один workspace"`
 	Full      bool   `json:"full,omitempty" jsonschema:"Вернуть полный snapshot со всеми source; может быть большим"`
 }
 
@@ -118,7 +118,7 @@ type revisionsInput struct {
 	FacetIdentity string `json:"facetIdentity,omitempty" jsonschema:"Только для collection=facet-documents: identity фасета (endge_list_documents с collection=facets)"`
 	Collection    string `json:"collection" jsonschema:"Коллекция: документы (queries, components, data-views и др.), фасеты facets или документы фасета facet-documents"`
 	Identity      string `json:"identity" jsonschema:"Identity документа"`
-	Workspace     string `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
+	Workspace     string `json:"workspace,omitempty" jsonschema:"Identity workspace. Можно опустить для токена на один workspace"`
 	WithSnapshot  bool   `json:"withSnapshot,omitempty" jsonschema:"Включить снимки документа в каждой ревизии"`
 	Limit         int    `json:"limit,omitempty" jsonschema:"Размер страницы, от новых ревизий к старым"`
 	Offset        int    `json:"offset,omitempty" jsonschema:"Смещение"`
@@ -127,7 +127,7 @@ type revisionsInput struct {
 type createInput struct {
 	FacetIdentity string         `json:"facetIdentity,omitempty" jsonschema:"Только для collection=facet-documents: identity фасета (endge_list_documents с collection=facets)"`
 	Collection    string         `json:"collection" jsonschema:"Коллекция: документы (queries, components, data-views и др.), фасеты facets или документы фасета facet-documents"`
-	Workspace     string         `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
+	Workspace     string         `json:"workspace,omitempty" jsonschema:"Identity workspace. Можно опустить для токена на один workspace"`
 	Document      map[string]any `json:"document" jsonschema:"Тело создания, как в REST POST /api/v1/<коллекция> (схема <коллекция>.CreateRequest): identity, displayName, source, поле версии формата (sourceVersion или modelVersion — по коллекции, см. описание инструмента), folderIdentity, description, meta. Фасет: identity, displayName, icon, color, meta. Документ фасета: identity, displayName, description, configuration, meta, active"`
 }
 
@@ -136,7 +136,7 @@ type updateInput struct {
 	Collection    string         `json:"collection" jsonschema:"Коллекция: документы (queries, components, data-views и др.), фасеты facets или документы фасета facet-documents"`
 	Identity      string         `json:"identity" jsonschema:"Identity документа"`
 	Revision      int            `json:"revision" jsonschema:"Текущая revision документа (поле revision из endge_get_document)"`
-	Workspace     string         `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
+	Workspace     string         `json:"workspace,omitempty" jsonschema:"Identity workspace. Можно опустить для токена на один workspace"`
 	Changes       map[string]any `json:"changes" jsonschema:"Изменяемые поля, например {\"source\": \"...\"}"`
 }
 
@@ -145,11 +145,11 @@ type mutateInput struct {
 	Collection    string `json:"collection" jsonschema:"Коллекция: документы (queries, components, data-views и др.), фасеты facets или документы фасета facet-documents"`
 	Identity      string `json:"identity" jsonschema:"Identity документа"`
 	Revision      int    `json:"revision" jsonschema:"Текущая revision документа (поле revision из endge_get_document)"`
-	Workspace     string `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
+	Workspace     string `json:"workspace,omitempty" jsonschema:"Identity workspace. Можно опустить для токена на один workspace"`
 }
 
 type commitInput struct {
-	Workspace            string `json:"workspace,omitempty" jsonschema:"Identity workspace. С персональным токеном можно не передавать: используется workspace токена"`
+	Workspace            string `json:"workspace,omitempty" jsonschema:"Identity workspace. Можно опустить для токена на один workspace"`
 	Message              string `json:"message" jsonschema:"Сообщение коммита"`
 	ExpectedHeadSequence int64  `json:"expectedHeadSequence" jsonschema:"headSequence из endge_commit_plan"`
 	RevisionPolicy       string `json:"revisionPolicy,omitempty" jsonschema:"preserve (по умолчанию) — сохранить ревизии, squash — свернуть по документу"`
@@ -163,7 +163,7 @@ func (t *tools) registerReadTools(server *mcp.Server) {
 	}, t.status)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "endge_list_workspaces",
-		Description: "Пользователь, признак Platform Admin и доступные workspace с ролями. С персональным токеном — только workspace токена и роль, суженная правами токена.",
+		Description: "Пользователь, признак Platform Admin и доступные workspace с ролями. Для токена область и роли ограничены его правами; revision нужна для изменения или архивирования workspace.",
 		Annotations: readOnly("Workspace и роли"),
 	}, t.listWorkspaces)
 	mcp.AddTool(server, &mcp.Tool{
@@ -284,11 +284,11 @@ func (t *tools) registerCommitTool(server *mcp.Server) {
 // проверяет доступ use case и кладёт WorkspaceAccess в context.
 func (t *tools) workspaceContext(ctx context.Context, requested string) (context.Context, error) {
 	identity := strings.TrimSpace(requested)
-	if token, ok := entities.AccessTokenFromContext(ctx); ok && identity == "" {
+	if token, ok := entities.AccessTokenFromContext(ctx); ok && !token.AllWorkspaces && identity == "" {
 		identity = token.WorkspaceIdentity
 	}
 	if identity == "" {
-		return nil, domainerrors.InvalidInput("workspace_required", "workspace is required for user sessions")
+		return nil, domainerrors.InvalidInput("workspace_required", "workspace is required when the request has no default workspace")
 	}
 	access, err := t.useCases.Workspaces.Authorize(ctx, identity)
 	if err != nil {
@@ -353,10 +353,14 @@ func (t *tools) status(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) 
 		result["authentication"] = "access_token"
 		result["accessToken"] = map[string]any{
 			"id": token.TokenID, "workspace": token.WorkspaceIdentity, "scope": token.Scope,
+			"allWorkspaces": token.AllWorkspaces, "manageWorkspaces": token.CanManageWorkspaces(),
 			"commit": token.CanWrite() && token.CanCommit, "delete": token.CanWrite() && token.CanDelete,
 			"expiresAt": token.ExpiresAt.UTC().Format(time.RFC3339),
 		}
-		result["defaultWorkspace"] = token.WorkspaceIdentity
+		result["defaultWorkspace"] = nil
+		if !token.AllWorkspaces {
+			result["defaultWorkspace"] = token.WorkspaceIdentity
+		}
 	} else {
 		result["authentication"] = "user"
 		result["defaultWorkspace"] = nil
@@ -374,7 +378,7 @@ func (t *tools) listWorkspaces(ctx context.Context, _ *mcp.CallToolRequest, _ st
 	}
 	items := make([]map[string]any, 0, len(current.Workspaces))
 	for _, access := range current.Workspaces {
-		items = append(items, map[string]any{"identity": access.Workspace.Identity, "displayName": access.Workspace.DisplayName, "role": access.Role})
+		items = append(items, map[string]any{"identity": access.Workspace.Identity, "displayName": access.Workspace.DisplayName, "role": access.Role, "revision": access.Workspace.Revision})
 	}
 	result := map[string]any{"platformAdmin": current.PlatformAdmin, "workspaces": items}
 	if current.User != nil {

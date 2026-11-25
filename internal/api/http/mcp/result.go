@@ -62,9 +62,9 @@ func errorResultWithHint(logger *zap.Logger, tool string, err error, extra strin
 func hintFor(code string, status int) string {
 	switch code {
 	case "revision_conflict":
-		return "Документ изменился: перечитайте его (endge_get_document) и повторите с новой revision."
+		return "При конфликте перечитайте документ (endge_get_document) или workspace (endge_list_workspaces, для архива — endge_list_workspace_archive) и повторите с новой revision."
 	case "expected_revision_invalid":
-		return "Передайте текущую revision документа из поля revision."
+		return "Передайте текущее значение поля revision."
 	case "head_sequence_conflict":
 		return "Появились новые изменения или коммиты: запросите endge_commit_plan заново."
 	case "workspace_required":
@@ -80,7 +80,7 @@ func hintFor(code string, status int) string {
 	case "access_token_owner_admin_required":
 		return "Коммит токеном доступен, только если его владелец — Admin этого workspace: покажите пользователю endge_commit_plan и попросите закоммитить в Configurator."
 	case "validation_error":
-		return "Входные данные не прошли проверку REST-контракта: исправьте поля из details (схема <коллекция>.CreateRequest/PatchRequest или commit.CreateRequest справочника API)."
+		return "Входные данные не прошли проверку REST-контракта: исправьте поля из details (схема <коллекция>.CreateRequest/PatchRequest или workspace.CreateRequest/PatchRequest, commit.CreateRequest справочника API)."
 	case "facet_identity_required":
 		return "Для collection=facet-documents передайте facetIdentity: identity фасета из endge_list_documents с collection=facets."
 	case "access_token_admin_forbidden":

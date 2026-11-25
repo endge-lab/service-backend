@@ -7,7 +7,7 @@ import (
 
 const (
 	// DefaultAccessTokenMaxTTL — максимальный срок персонального токена агента по умолчанию.
-	DefaultAccessTokenMaxTTL = 30 * 24 * time.Hour
+	DefaultAccessTokenMaxTTL = accessTokenMaxTTLLimit
 	// accessTokenMaxTTLLimit не даёт конфигурации превратить токен в бессрочный секрет.
 	accessTokenMaxTTLLimit = 365 * 24 * time.Hour
 )

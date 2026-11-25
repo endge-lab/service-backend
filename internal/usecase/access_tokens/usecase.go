@@ -1,6 +1,5 @@
 // Package access_tokens выпускает, перечисляет, отзывает и проверяет персональные
-// токены доступа агентов (PAT). Токен действует от имени владельца, но только в одном
-// workspace и в пределах выбранного scope.
+// токены доступа агентов (PAT) с правами владельца в пределах выбранной области.
 package access_tokens
 
 import (
@@ -36,6 +35,8 @@ type UseCase struct {
 // CreateInput — параметры выпуска; ExpiresAt обязателен и не больше now+maxTTL.
 type CreateInput struct {
 	WorkspaceIdentity string
+	AllWorkspaces     bool
+	ManageWorkspaces  bool
 	Name              string
 	Description       string
 	Scope             string
@@ -73,27 +74,13 @@ func (u *UseCase) Create(ctx context.Context, input CreateInput) (*Created, erro
 	if err != nil {
 		return nil, err
 	}
-	workspace, err := u.workspaces.GetWorkspace(ctx, strings.TrimSpace(normalized.WorkspaceIdentity))
-	if errors.Is(err, ports.ErrNotFound) {
-		return nil, domainerrors.NotFound("workspace_not_found", "Workspace not found")
-	}
-	if err != nil {
-		return nil, err
-	}
-	role, err := u.workspaces.WorkspaceRole(ctx, workspace.ID, current.User.ID, current.PlatformAdmin)
-	if err != nil {
-		return nil, err
-	}
-	if role == "" {
-		return nil, domainerrors.Forbidden("workspace_forbidden", "Workspace access is forbidden")
-	}
-	if normalized.Scope == entities.AccessTokenScopeWrite && !shared.CanWrite(role) {
-		return nil, domainerrors.Forbidden("access_token_scope_exceeds_role", "Write token requires Workspace Editor role")
-	}
-	// Коммит токеном разрешён только владельцу-Admin (shared.CommitContext): флаг,
-	// который заведомо не сработает, не выпускается.
-	if normalized.CanCommit && !shared.CanAdmin(role) {
-		return nil, domainerrors.Forbidden("access_token_owner_admin_required", "Commit permission requires Workspace Admin role")
+	var workspaceID *string
+	if !normalized.AllWorkspaces {
+		id, err := u.resolveWorkspaceID(ctx, current, normalized)
+		if err != nil {
+			return nil, err
+		}
+		workspaceID = &id
 	}
 
 	secret, displayPrefix, hash, err := generateSecret()
@@ -101,14 +88,38 @@ func (u *UseCase) Create(ctx context.Context, input CreateInput) (*Created, erro
 		return nil, err
 	}
 	token, err := u.tokens.CreateAccessToken(ctx, ports.CreateAccessTokenInput{
-		UserID: current.User.ID, WorkspaceID: workspace.ID, Name: normalized.Name, Description: normalized.Description,
+		UserID: current.User.ID, WorkspaceID: workspaceID, Name: normalized.Name, Description: normalized.Description,
 		Scope: normalized.Scope, CanCommit: normalized.CanCommit, CanDelete: normalized.CanDelete,
-		TokenPrefix: displayPrefix, SecretHash: hash, ExpiresAt: normalized.ExpiresAt,
+		ManageWorkspaces: normalized.ManageWorkspaces, TokenPrefix: displayPrefix, SecretHash: hash, ExpiresAt: normalized.ExpiresAt,
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &Created{Token: *token, Secret: secret}, nil
+}
+
+func (u *UseCase) resolveWorkspaceID(ctx context.Context, current entities.CurrentActor, input CreateInput) (string, error) {
+	workspace, err := u.workspaces.GetWorkspace(ctx, input.WorkspaceIdentity)
+	if errors.Is(err, ports.ErrNotFound) {
+		return "", domainerrors.NotFound("workspace_not_found", "Workspace not found")
+	}
+	if err != nil {
+		return "", err
+	}
+	role, err := u.workspaces.WorkspaceRole(ctx, workspace.ID, current.User.ID, current.PlatformAdmin)
+	if err != nil {
+		return "", err
+	}
+	if role == "" {
+		return "", domainerrors.Forbidden("workspace_forbidden", "Workspace access is forbidden")
+	}
+	if input.Scope == entities.AccessTokenScopeWrite && !shared.CanWrite(role) {
+		return "", domainerrors.Forbidden("access_token_scope_exceeds_role", "Write token requires Workspace Editor role")
+	}
+	if input.CanCommit && !shared.CanAdmin(role) {
+		return "", domainerrors.Forbidden("access_token_owner_admin_required", "Commit permission requires Workspace Admin role")
+	}
+	return workspace.ID, nil
 }
 
 // List возвращает токены текущего пользователя; all=true доступен только Platform Admin.
@@ -181,6 +192,7 @@ func (u *UseCase) Authenticate(ctx context.Context, secret string) (*Authenticat
 		Principal: entities.AccessTokenPrincipal{
 			TokenID: token.ID, UserID: credential.Owner.ID, WorkspaceID: token.WorkspaceID, WorkspaceIdentity: token.WorkspaceIdentity, Scope: token.Scope,
 			CanCommit: token.CanCommit, CanDelete: token.CanDelete, ExpiresAt: token.ExpiresAt,
+			AllWorkspaces: token.AllWorkspaces, ManageWorkspaces: token.ManageWorkspaces,
 		},
 		Owner: credential.Owner,
 	}, nil
@@ -193,8 +205,15 @@ func (u *UseCase) validateCreate(input CreateInput) (CreateInput, error) {
 	if input.Scope == "" {
 		input.Scope = entities.AccessTokenScopeRead
 	}
-	if strings.TrimSpace(input.WorkspaceIdentity) == "" {
-		return input, domainerrors.InvalidInput("workspace_required", "workspaceIdentity is required")
+	input.WorkspaceIdentity = strings.TrimSpace(input.WorkspaceIdentity)
+	if input.AllWorkspaces && input.WorkspaceIdentity != "" {
+		return input, domainerrors.InvalidInput("access_token_workspace_scope_invalid", "Choose either workspaceIdentity or allWorkspaces")
+	}
+	if !input.AllWorkspaces && input.WorkspaceIdentity == "" {
+		return input, domainerrors.InvalidInput("workspace_required", "workspaceIdentity is required for a workspace token")
+	}
+	if input.ManageWorkspaces && !input.AllWorkspaces {
+		return input, domainerrors.InvalidInput("access_token_workspace_scope_invalid", "Workspace management requires allWorkspaces")
 	}
 	if input.Name == "" || utf8.RuneCountInString(input.Name) > maxNameRunes {
 		return input, domainerrors.InvalidInput("access_token_name_invalid", "name must contain 1 to 120 characters")
@@ -205,8 +224,8 @@ func (u *UseCase) validateCreate(input CreateInput) (CreateInput, error) {
 	if input.Scope != entities.AccessTokenScopeRead && input.Scope != entities.AccessTokenScopeWrite {
 		return input, domainerrors.InvalidInput("access_token_scope_invalid", "scope must be read or write")
 	}
-	if (input.CanCommit || input.CanDelete) && input.Scope != entities.AccessTokenScopeWrite {
-		return input, domainerrors.InvalidInput("access_token_flags_require_write", "commit and delete require write scope")
+	if (input.CanCommit || input.CanDelete || input.ManageWorkspaces) && input.Scope != entities.AccessTokenScopeWrite {
+		return input, domainerrors.InvalidInput("access_token_flags_require_write", "commit, delete and manageWorkspaces require write scope")
 	}
 	if input.ExpiresAt.IsZero() {
 		return input, domainerrors.InvalidInput("access_token_expiry_required", "expiresAt is required")

@@ -47,16 +47,20 @@ type DocumentUseCase interface {
 	Restore(context.Context, string, int) (*entities.Document, error)
 }
 
-// SessionUseCase возвращает пользователя и доступные ему workspace (для токена — только его workspace).
+// SessionUseCase возвращает пользователя и доступные ему workspace.
 type SessionUseCase interface {
 	Current(context.Context) (*session.Result, error)
 }
 
-// WorkspaceAuthorizer проверяет доступ к workspace так же, как RequireWorkspace в REST,
-// и перечисляет workspace пользователя с ролями (для выбора набора инструментов JWT-сессии).
-type WorkspaceAuthorizer interface {
+// WorkspaceUseCase использует те же правила авторизации и жизненного цикла workspace, что REST.
+type WorkspaceUseCase interface {
 	Authorize(context.Context, string) (entities.WorkspaceAccess, error)
 	ListAccess(context.Context) ([]entities.WorkspaceAccess, error)
+	ListArchive(context.Context) ([]entities.WorkspaceAccess, error)
+	Create(context.Context, workspaces.CreateInput) (*entities.Workspace, error)
+	Patch(context.Context, string, workspaces.PatchInput, int) (*entities.Workspace, error)
+	Delete(context.Context, string, int) (*entities.Workspace, error)
+	Restore(context.Context, string, int) (*entities.Workspace, error)
 }
 
 // DomainUseCase читает рабочий snapshot workspace.
@@ -105,7 +109,7 @@ type FacetUseCase interface {
 // UseCases — входные порты MCP-инструментов. Documents индексирован именем коллекции.
 type UseCases struct {
 	Session    SessionUseCase
-	Workspaces WorkspaceAuthorizer
+	Workspaces WorkspaceUseCase
 	Domain     DomainUseCase
 	Revisions  RevisionUseCase
 	Commits    CommitUseCase

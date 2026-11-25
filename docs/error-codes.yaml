@@ -99,8 +99,8 @@ codes:
       - internal/usecase/access_tokens/usecase.go
   - code: access_token_flags_require_write
     status: 400
-    defaultMessage: commit and delete require write scope
-    meaning: Флаги commit и delete допустимы только при scope=write.
+    defaultMessage: commit, delete and manageWorkspaces require write scope
+    meaning: Флаги commit, delete и manageWorkspaces допустимы только при scope=write.
     action: Исправьте поле из message (name, description, scope, flags, expiresAt) по схеме access_token.CreateRequest и повторите выпуск.
     sources:
       - internal/usecase/access_tokens/usecase.go
@@ -138,7 +138,7 @@ codes:
     defaultMessage: Access token owner must be Workspace Admin to commit
     otherMessages:
       - Commit permission requires Workspace Admin role
-    meaning: Коммит токеном разрешён, только если владелец токена — Admin этого workspace; при выпуске токена флаг commit доступен только Admin.
+    meaning: Коммит токеном разрешён, только если владелец токена — Admin этого workspace; для токена на один workspace роль Admin проверяется также при выпуске.
     action: Не повторяйте. Покажите пользователю план коммита (endge_commit_plan) и попросите закоммитить в Configurator; либо Admin workspace выпускает токен с флагом commit.
     sources:
       - internal/usecase/access_tokens/usecase.go
@@ -184,9 +184,25 @@ codes:
     status: 403
     defaultMessage: Access token is not valid for this workspace
     meaning: Токен выпущен для другого workspace.
-    action: Не передавайте X-Endge-Workspace (или параметр workspace в MCP) либо укажите workspace токена (его видно в GET /api/session/me и endge_status).
+    action: Укажите workspace токена (его видно в GET /api/session/me и endge_status). В MCP его можно не передавать.
     sources:
       - internal/usecase/workspaces/queries.go
+  - code: access_token_workspace_management_forbidden
+    status: 403
+    defaultMessage: Access token does not allow workspace management
+    meaning: Для управления workspace в MCP нужен токен на все доступные workspace с правом записи и флагом manageWorkspaces.
+    action: Не повторяйте с этим токеном. Покажите пользователю, что нужно сделать, и попросите выполнить операцию в Configurator или выпустить токен с нужными флагами («Для агента» в Configurator).
+    sources:
+      - internal/usecase/workspaces/management.go
+  - code: access_token_workspace_scope_invalid
+    status: 400
+    defaultMessage: Choose either workspaceIdentity or allWorkspaces
+    otherMessages:
+      - Workspace management requires allWorkspaces
+    meaning: Выберите workspaceIdentity или allWorkspaces. Флаг manageWorkspaces требует allWorkspaces.
+    action: Исправьте поле из message (name, description, scope, flags, expiresAt) по схеме access_token.CreateRequest и повторите выпуск.
+    sources:
+      - internal/usecase/access_tokens/usecase.go
   - code: access_user_id_invalid
     status: 400
     defaultMessage: userId must be UUID
@@ -2045,6 +2061,7 @@ codes:
       - internal/usecase/workspace_state/release_restore.go
       - internal/usecase/workspace_state/restore_apply.go
       - internal/usecase/workspaces/commands.go
+      - internal/usecase/workspaces/management.go
       - internal/usecase/workspaces/memberships.go
   - code: workspace_bootstrap_invalid
     status: 500
@@ -2144,8 +2161,8 @@ codes:
     defaultMessage: Workspace context is required
     otherMessages:
       - X-Endge-Workspace header is required
-      - workspace is required for user sessions
-      - workspaceIdentity is required
+      - workspace is required when the request has no default workspace
+      - workspaceIdentity is required for a workspace token
     meaning: Не указан workspace для операции.
     action: Передайте заголовок X-Endge-Workspace (REST) или параметр workspace (MCP) с identity из GET /api/v1/workspaces / endge_list_workspaces.
     sources:

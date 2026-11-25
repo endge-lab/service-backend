@@ -7,9 +7,11 @@ import (
 )
 
 // CreateRequest — выпуск токена для себя. expiresAt обязателен и не позже, чем через
-// ACCESS_TOKEN_MAX_TTL (по умолчанию 30 дней). commit и delete требуют scope write.
+// ACCESS_TOKEN_MAX_TTL (по умолчанию 365 дней).
 type CreateRequest struct {
-	WorkspaceIdentity string    `json:"workspaceIdentity" validate:"required,max=160" example:"main"`
+	WorkspaceIdentity string    `json:"workspaceIdentity,omitempty" validate:"omitempty,max=160" example:"main"`
+	AllWorkspaces     bool      `json:"allWorkspaces,omitempty" example:"false"`
+	ManageWorkspaces  bool      `json:"manageWorkspaces,omitempty" example:"false"`
 	Name              string    `json:"name" validate:"required,max=120" example:"Codex: правка запросов"`
 	Description       string    `json:"description,omitempty" validate:"omitempty,max=1000" example:"Правка запросов и представлений данных"`
 	Scope             string    `json:"scope,omitempty" validate:"omitempty,oneof=read write" enums:"read,write" default:"read" example:"read"`
@@ -24,6 +26,8 @@ type TokenResponse struct {
 	Owner                entities.Actor  `json:"owner"`
 	WorkspaceIdentity    string          `json:"workspaceIdentity" example:"main"`
 	WorkspaceDisplayName string          `json:"workspaceDisplayName" example:"Основное пространство"`
+	AllWorkspaces        bool            `json:"allWorkspaces" example:"false"`
+	ManageWorkspaces     bool            `json:"manageWorkspaces" example:"false"`
 	Name                 string          `json:"name" example:"Codex: правка запросов"`
 	Description          string          `json:"description,omitempty"`
 	Scope                string          `json:"scope" enums:"read,write" example:"read"`
@@ -46,13 +50,14 @@ type CreateResponse struct {
 
 type ListResponse struct {
 	Items         []TokenResponse `json:"items"`
-	MaxTTLSeconds int64           `json:"maxTtlSeconds" example:"2592000"`
+	MaxTTLSeconds int64           `json:"maxTtlSeconds" example:"31536000"`
 }
 
 func newTokenResponse(value entities.AccessToken, now time.Time) TokenResponse {
 	return TokenResponse{
 		ID: value.ID, Owner: value.Owner, WorkspaceIdentity: value.WorkspaceIdentity, WorkspaceDisplayName: value.WorkspaceDisplayName,
 		Name: value.Name, Description: value.Description, Scope: value.Scope, Commit: value.CanCommit, Delete: value.CanDelete,
+		AllWorkspaces: value.AllWorkspaces, ManageWorkspaces: value.ManageWorkspaces,
 		TokenPrefix: value.TokenPrefix, Status: value.Status(now), CreatedAt: value.CreatedAt, ExpiresAt: value.ExpiresAt,
 		LastUsedAt: value.LastUsedAt, RevokedAt: value.RevokedAt, RevokedBy: value.RevokedBy,
 	}

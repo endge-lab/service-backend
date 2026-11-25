@@ -21,9 +21,12 @@ import (
 // testPrincipals — токены, которые понимает поддельная аутентификация; "jwt", "jwt-admin"
 // и "jwt-platform" — сессии пользователя (Editor/Viewer, Admin в afl, Platform Admin).
 var testPrincipals = map[string]entities.AccessTokenPrincipal{
-	"read":  {TokenID: "t-read", WorkspaceIdentity: "afl", Scope: entities.AccessTokenScopeRead, ExpiresAt: time.Unix(4102444800, 0)},
-	"write": {TokenID: "t-write", WorkspaceIdentity: "afl", Scope: entities.AccessTokenScopeWrite, ExpiresAt: time.Unix(4102444800, 0)},
-	"full":  {TokenID: "t-full", WorkspaceIdentity: "afl", Scope: entities.AccessTokenScopeWrite, CanCommit: true, CanDelete: true, ExpiresAt: time.Unix(4102444800, 0)},
+	"read":         {TokenID: "t-read", WorkspaceIdentity: "afl", Scope: entities.AccessTokenScopeRead, ExpiresAt: time.Unix(4102444800, 0)},
+	"write":        {TokenID: "t-write", WorkspaceIdentity: "afl", Scope: entities.AccessTokenScopeWrite, ExpiresAt: time.Unix(4102444800, 0)},
+	"full":         {TokenID: "t-full", WorkspaceIdentity: "afl", Scope: entities.AccessTokenScopeWrite, CanCommit: true, CanDelete: true, ExpiresAt: time.Unix(4102444800, 0)},
+	"all-read":     {TokenID: "t-all-read", AllWorkspaces: true, Scope: entities.AccessTokenScopeRead},
+	"all-manage":   {TokenID: "t-all-manage", AllWorkspaces: true, ManageWorkspaces: true, Scope: entities.AccessTokenScopeWrite},
+	"all-platform": {TokenID: "t-all-platform", AllWorkspaces: true, ManageWorkspaces: true, Scope: entities.AccessTokenScopeWrite, OwnerPlatformAdmin: true},
 	// Флаг commit есть, но владелец — Editor: endge_commit скрыт.
 	"full-editor": {TokenID: "t-full-editor", WorkspaceIdentity: "afl", Scope: entities.AccessTokenScopeWrite, CanCommit: true, CanDelete: true, ExpiresAt: time.Unix(4102444800, 0)},
 }
@@ -356,5 +359,55 @@ func TestMCPUserSessionSeesCommitOnlyWithAdminRole(t *testing.T) {
 		if names := toolNames(t, h.connect(t, principal)); len(names) != 16 || !slices.Contains(names, "endge_commit") {
 			t.Fatalf("%s must see endge_commit: %v", principal, names)
 		}
+	}
+}
+
+func TestMCPWorkspaceTokenTools(t *testing.T) {
+	h := newHarness(t)
+	for _, tc := range []struct {
+		token          string
+		manage, create bool
+	}{
+		{token: "full"},
+		{token: "all-read"},
+		{token: "all-manage", manage: true},
+		{token: "all-platform", manage: true, create: true},
+	} {
+		t.Run(tc.token, func(t *testing.T) {
+			session := h.connect(t, tc.token)
+			names := toolNames(t, session)
+			if slices.Contains(names, "endge_create_workspace") != tc.create {
+				t.Fatalf("unexpected create permission in %v", names)
+			}
+			for _, name := range []string{"endge_update_workspace", "endge_list_workspace_archive", "endge_archive_workspace", "endge_restore_workspace"} {
+				if slices.Contains(names, name) != tc.manage {
+					t.Fatalf("unexpected %s permission in %v", name, names)
+				}
+			}
+		})
+	}
+	session := h.connect(t, "all-platform")
+	if result, failed := call(t, session, "endge_get_workspace", nil); !failed || result["error"] != "workspace_required" {
+		t.Fatalf("global token must choose a workspace: %v", result)
+	}
+	for _, identity := range []string{"afl", "kzn"} {
+		if result, failed := call(t, session, "endge_get_workspace", map[string]any{"workspace": identity}); failed {
+			t.Fatalf("workspace %s: %v", identity, result)
+		}
+	}
+	if result, failed := call(t, session, "endge_create_workspace", map[string]any{"workspace": map[string]any{"identity": "new"}}); !failed {
+		t.Fatalf("REST create DTO must reject missing displayName: %v", result)
+	}
+	if result, failed := call(t, session, "endge_create_workspace", map[string]any{"workspace": map[string]any{"identity": "new", "displayName": "New"}}); failed || result["identity"] != "new" {
+		t.Fatalf("create: %v", result)
+	}
+	if result, failed := call(t, session, "endge_update_workspace", map[string]any{"workspace": "afl", "revision": 1, "changes": map[string]any{"unknown": true}}); !failed {
+		t.Fatalf("REST patch DTO must reject unknown fields: %v", result)
+	}
+	if result, failed := call(t, session, "endge_archive_workspace", map[string]any{"workspace": "afl", "revision": 2}); failed || result["deletedAt"] == nil {
+		t.Fatalf("archive: %v", result)
+	}
+	if result, failed := call(t, session, "endge_restore_workspace", map[string]any{"workspace": "afl", "revision": 3}); failed || result["revision"] != float64(4) {
+		t.Fatalf("restore: %v", result)
 	}
 }

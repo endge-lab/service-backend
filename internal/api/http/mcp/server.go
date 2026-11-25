@@ -29,7 +29,16 @@ type Config struct {
 // токену недоступны (access_token_admin_forbidden), инструменты изменения их не предлагают.
 type permissions struct {
 	write, commit, delete, token bool
+	workspace                    workspaceTools
 }
+
+type workspaceTools int
+
+const (
+	workspaceToolsNone workspaceTools = iota
+	workspaceToolsManage
+	workspaceToolsPlatform
+)
 
 // permissionsFrom вычисляет набор по токену запроса; сессия пользователя получает все
 // инструменты, а права проверяет роль в workspace внутри use case.
@@ -39,7 +48,14 @@ func permissionsFrom(ctx context.Context) permissions {
 		return permissions{write: true, commit: true, delete: true}
 	}
 	write := token.CanWrite()
-	return permissions{write: write, commit: write && token.CanCommit, delete: write && token.CanDelete, token: true}
+	allowed := permissions{write: write, commit: write && token.CanCommit, delete: write && token.CanDelete, token: true}
+	if token.CanManageWorkspaces() {
+		allowed.workspace = workspaceToolsManage
+		if token.OwnerPlatformAdmin {
+			allowed.workspace = workspaceToolsPlatform
+		}
+	}
+	return allowed
 }
 
 // instructions — порядок работы и правила для агента; передаются клиенту в initialize.
@@ -51,7 +67,8 @@ func instructions(docs *docsSource) string {
 	}
 	text.WriteString(`Инструменты работают с Endge Service Backend от имени владельца токена (или пользователя JWT) через те же use case, что REST API.
 Порядок: endge_status → endge_list_workspaces → чтение (endge_get_workspace, endge_list_documents, endge_get_document) → изменение → endge_commit_plan.
-Персональный токен выпущен на один workspace: параметр workspace можно не передавать. С JWT передавайте workspace в каждый инструмент.
+Если токен выпущен на один workspace, параметр workspace можно опустить. С токеном на все доступные workspace или JWT передавайте identity явным параметром workspace.
+Управление workspace доступно токену с отдельным флагом и текущими правами владельца. Для изменения и архивации берите revision из endge_list_workspaces, для восстановления — из endge_list_workspace_archive.
 Документы описываются полем source на DSL Endge (defineQuery, defineComponent и т. д.). Перед созданием прочитайте похожий документ той же коллекции или проверенный пример (страница agents/document-examples.md); текущее значение поля версии формата коллекции (sourceVersion или modelVersion) и другие обязательные поля указаны в описании endge_create_document.
 Профили авторизации (auth-profiles) меняет только пользователь с ролью Admin: персональному токену они недоступны (access_token_admin_forbidden). Без профиля указывайте в Query и Stream auth: { mode: 'inherit' } или попросите пользователя создать профиль в Configurator.
 Фасеты и их документы (тенанты, регионы) — коллекции facets и facet-documents тех же инструментов; для facet-documents передавайте facetIdentity.
@@ -81,6 +98,9 @@ func newServer(cfg Config, useCases UseCases, contracts Contracts, logger *zap.L
 	}
 	if allowed.commit {
 		t.registerCommitTool(server)
+	}
+	if allowed.workspace != workspaceToolsNone {
+		t.registerWorkspaceTools(server)
 	}
 	docs.register(server)
 	return server

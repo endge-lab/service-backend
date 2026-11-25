@@ -26,6 +26,8 @@ type AccessToken struct {
 	WorkspaceID          string
 	WorkspaceIdentity    string
 	WorkspaceDisplayName string
+	AllWorkspaces        bool
+	ManageWorkspaces     bool
 	Name                 string
 	Description          string
 	Scope                string
@@ -51,7 +53,7 @@ func (t AccessToken) Status(now time.Time) string {
 }
 
 // AccessTokenPrincipal — проверенный токен текущего запроса.
-// Он сужает права владельца: один workspace, scope и отдельные флаги commit/delete.
+// Он ограничивает доступ владельца областью workspace, scope и выбранными флагами.
 type AccessTokenPrincipal struct {
 	TokenID            string
 	UserID             string
@@ -62,10 +64,17 @@ type AccessTokenPrincipal struct {
 	CanDelete          bool
 	ExpiresAt          time.Time
 	OwnerPlatformAdmin bool
+	AllWorkspaces      bool
+	ManageWorkspaces   bool
 }
 
 // CanWrite сообщает, разрешает ли scope токена изменять документы.
 func (p AccessTokenPrincipal) CanWrite() bool { return p.Scope == AccessTokenScopeWrite }
+
+// CanManageWorkspaces сообщает, разрешено ли токену управление жизненным циклом workspace.
+func (p AccessTokenPrincipal) CanManageWorkspaces() bool {
+	return p.AllWorkspaces && p.CanWrite() && p.ManageWorkspaces
+}
 
 // CapWorkspaceRole возвращает пересечение роли владельца в workspace и scope токена.
 // Административная роль через токен никогда не выдаётся.
