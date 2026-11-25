@@ -58,14 +58,16 @@ func (s *UseCase) resolveExternalActor(ctx context.Context, input ports.UpsertCu
 			return err
 		}
 		if previous != nil {
+			sameConfig := state.ConfigVersion == previous.ConfigVersion
+			sameGrants := state.GrantsHash == previous.GrantsHash
+			if sameConfig && sameGrants && !state.IssuedAt.After(previous.IssuedAt) {
+				return nil
+			}
 			if state.IssuedAt.Before(previous.IssuedAt) {
 				return domainerrors.Forbidden("external_access_stale", "A newer access token has already been applied; refresh the session")
 			}
-			if state.ConfigVersion == previous.ConfigVersion && state.IssuedAt.Equal(previous.IssuedAt) && state.TokenHash != previous.TokenHash && state.GrantsHash != previous.GrantsHash {
+			if sameConfig && state.IssuedAt.Equal(previous.IssuedAt) && state.TokenHash != previous.TokenHash && !sameGrants {
 				return domainerrors.Forbidden("external_access_ambiguous", "Access tokens with equal iat disagree; obtain a newer token")
-			}
-			if state.ConfigVersion == previous.ConfigVersion && state.IssuedAt.Equal(previous.IssuedAt) && state.GrantsHash == previous.GrantsHash {
-				return nil
 			}
 		}
 		return s.repository.ReplaceExternalAccess(txctx, user.ID, grants, state)
