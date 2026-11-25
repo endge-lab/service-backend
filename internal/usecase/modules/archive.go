@@ -116,6 +116,9 @@ func parseArchive(data []byte, expectedIdentity, actor string) (entities.ModuleV
 		if err := validateRenderers(manifest.Contributes.Renderers); err != nil {
 			return entities.ModuleVersion{}, err
 		}
+		if err := validateTimelinePresets(manifest.Contributes.TimelinePresets); err != nil {
+			return entities.ModuleVersion{}, err
+		}
 	}
 	sum := sha256.Sum256(data)
 	return entities.ModuleVersion{Version: manifest.Version, Manifest: manifest, SHA256: hex.EncodeToString(sum[:]), Size: len(data), HasCSS: files["module.css"] != nil, Archive: data, PublishedBy: actor}, nil
@@ -130,6 +133,18 @@ func validateRenderers(renderers []entities.ModuleRendererDescriptor) error {
 			return fmt.Errorf("invalid or duplicate renderer descriptor %q", key)
 		}
 		seen[key] = true
+	}
+	return nil
+}
+
+func validateTimelinePresets(presets []entities.ModuleTimelinePresetDescriptor) error {
+	seen := make(map[string]bool, len(presets))
+	for _, preset := range presets {
+		if strings.TrimSpace(preset.Name) == "" || len(preset.Name) > 128 ||
+			len(preset.Label) > 640 || seen[preset.Name] {
+			return fmt.Errorf("invalid or duplicate Timeline preset descriptor %q", preset.Name)
+		}
+		seen[preset.Name] = true
 	}
 	return nil
 }

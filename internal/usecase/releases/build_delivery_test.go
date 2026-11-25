@@ -16,7 +16,14 @@ func TestDeliveryReleaseBuild(t *testing.T) {
 		return map[string]any{
 			"version": 1, "exportScope": "startup-composition", "executionGraphVersion": 1,
 			"programId": id, "compilerVersion": "test",
-			"context": map[string]any{"workspace": "source", "facets": map[string]string{"tenant": tenant, "channel": channel}},
+			"context": map[string]any{
+				"workspace": "source",
+				"facets":    map[string]string{"tenant": tenant, "channel": channel},
+				"configuration": map[string]any{"timelinePresets": []map[string]string{
+					{"identity": "rms-ui", "version": "1.0.0", "name": "rms-load"},
+					{"identity": "rms-ui", "version": "1.0.0", "name": "rms-shifts"},
+				}},
+			},
 			"catalog": map[string]any{"workspace": map[string]string{"identity": "source", "startupCompositionIdentity": "app"}},
 			"artifacts": map[string]any{"composition:app": map[string]any{"payload": map[string]any{"resources": []map[string]string{
 				{"kind": "module", "identity": "selected", "version": "1.0.0"},
@@ -34,7 +41,7 @@ func TestDeliveryReleaseBuild(t *testing.T) {
 	}
 	delivery := map[string]any{
 		"variants": []map[string]any{program("second", "customer-a", "mobile")},
-		"modules":  []map[string]any{module("selected")},
+		"modules":  []map[string]any{module("selected"), module("rms-ui")},
 	}
 	envelope := map[string]any{
 		"format": "endge-bundle", "version": 2, "bundle": program("first", "customer-a", "web"), "delivery": delivery,
@@ -54,11 +61,11 @@ func TestDeliveryReleaseBuild(t *testing.T) {
 	if err := validate(); err != nil {
 		t.Fatal(err)
 	}
-	delivery["modules"] = []map[string]any{module("selected"), module("foreign")}
+	delivery["modules"] = []map[string]any{module("selected"), module("rms-ui"), module("foreign")}
 	if validate() == nil {
 		t.Fatal("unrelated embedded module was accepted")
 	}
-	delivery["modules"] = []map[string]any{}
+	delivery["modules"] = []map[string]any{module("selected")}
 	if validate() == nil {
 		t.Fatal("incomplete embedded modules were accepted")
 	}
