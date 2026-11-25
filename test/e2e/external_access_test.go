@@ -140,9 +140,19 @@ func TestExternalAccessBearerLifecycle(t *testing.T) {
 	if value["platformAdmin"] != false || value["workspaces"].([]any)[0].(map[string]any)["role"] != "viewer" {
 		t.Fatal("downgrade not applied")
 	}
+	olderViewer := externalHeaders(t, provider, externalTokenInput("managed", issued, "viewer"))
+	response = perform(t, app, http.MethodGet, "/api/session/me", nil, olderViewer)
+	assertStatus(t, response, 200)
+	if objectField(t, decodeObject(t, response), "accessManagement")["lastSynchronizedAt"] !=
+		objectField(t, value, "accessManagement")["lastSynchronizedAt"] {
+		t.Fatal("older token with identical grants rewrote assignments")
+	}
 	expectCode(t, perform(t, app, http.MethodGet, "/api/session/me", nil, admin), 403, "external_access_stale")
 	ambiguous := externalHeaders(t, provider, externalTokenInput("managed", issued.Add(time.Second), "admin"))
 	expectCode(t, perform(t, app, http.MethodGet, "/api/session/me", nil, ambiguous), 403, "external_access_ambiguous")
+	renamed := strings.Replace(externalAccessYAML, "Test external provider", "Renamed external provider", 1)
+	changedPolicyApp := support.NewTestApp(t, db, externalConfig(t, provider, renamed))
+	expectCode(t, perform(t, changedPolicyApp, http.MethodGet, "/api/session/me", nil, olderViewer), 403, "external_access_stale")
 	// A bad target rolls back the whole set, including removal of prior grants.
 	bad := externalHeaders(t, provider, externalTokenInput("managed", issued.Add(2*time.Second), "platform-admin", "missing"))
 	response = perform(t, app, http.MethodGet, "/api/session/me", nil, bad)
